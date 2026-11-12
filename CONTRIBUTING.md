@@ -24,6 +24,7 @@ build step.
 
 ```bash
 git clone https://github.com/klausbegnis/agent-center.git
+cd agent-center
 ```
 
 ```bash
