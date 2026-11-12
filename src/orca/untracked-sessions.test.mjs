@@ -45,3 +45,16 @@ test('the agent goes to the row of its own workspace, and nowhere when there is 
   const result = withUntrackedSessions(rows, terminals, NOW)
   assert.deepEqual(result.map((item) => item.agents.length), [0, 1])
 })
+
+test('a symbol must be followed by a space, so a title that merely starts with one is not an agent', () => {
+  const terminals = [terminal('p1', '·~/work', 1), terminal('p2', '✳', 1), terminal('p3', '✳   ', 1)]
+  assert.deepEqual(added(withUntrackedSessions([row('/work/rumble-banana')], terminals, NOW)), [])
+})
+
+test('a title set by any program is cleaned and cut before it becomes a name', () => {
+  const title = `✳ Fix\u202E ${'x'.repeat(5000)}`
+  const rows = withUntrackedSessions([row('/work/rumble-banana')], [terminal('p1', title, 1)], NOW)
+  const [[, , name]] = added(rows)
+  assert.ok([...name].length <= 80)
+  assert.ok(!name.includes('\u202E'))
+})

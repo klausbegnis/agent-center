@@ -336,3 +336,39 @@ test('an event for a terminal whose agent is long gone starts a new agent', () =
   store.toolBefore({ workspaceId: 'w-unknown', terminalId: 't1', tool: 'Bash', input: {} })
   assert.deepEqual(store.snapshot().rooms.flatMap((room) => room.agents).map((agent) => agent.id), ['t1'])
 })
+
+test('a call id that is not text still ends its subagent, and later snapshots still work', () => {
+  const { store } = setup()
+  const ref = { agent: 'claude', workspaceId: 'w-api', paneKey: 'p1', terminalId: 't1' }
+  store.toolBefore({ ...ref, tool: 'Agent', input: { subagent_type: 'Explore' }, callId: 42 })
+  store.toolAfter({ ...ref, tool: 'Agent', input: {} })
+  assert.doesNotThrow(() => store.sync('local', unreadRow(false, 'working')))
+  assert.equal(store.snapshot().counts.subs, 0)
+})
+
+test('a title is cleaned and cut before it is shown', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', title: `Fix\u202E ${'x'.repeat(500)}`, receivedAt: 1 })
+  const { title } = agentsOf(store)[0]
+  assert.ok([...title].length <= 80)
+  assert.ok(!title.includes('\u202E'))
+})
+
+test('an agent a hook created under its terminal joins its pane when a status names both', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'working', receivedAt: 1 })
+  store.status({ workspaceId: 'w-api', paneKey: 'p2', state: 'working', receivedAt: 1 })
+  // Two agents in the workspace, so the hook cannot tell which one it is about.
+  store.toolBefore({ agent: 'claude', workspaceId: 'w-api', terminalId: 't9', tool: 'Edit', input: {} })
+  assert.equal(agentsOf(store).length, 3)
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', terminalId: 't9', state: 'working', receivedAt: 2 })
+  assert.deepEqual(agentsOf(store).map((agent) => agent.id).sort(), ['p1', 'p2'])
+})
+
+test('a snapshot read before the agent finished does not clear its bell', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'working', receivedAt: 1 })
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'done', receivedAt: 5 })
+  store.sync('local', unreadRow(false, 'working'))
+  assert.equal(activityOf(store, 'p1'), 'done')
+})
