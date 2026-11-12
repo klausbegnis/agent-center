@@ -1,5 +1,6 @@
 // Loads themes on demand and keeps them. Several can be in use at once, one per room.
 import { el } from './dom.js'
+import { isAllowedAttribute, isAllowedElement } from './sprite-markup.js'
 
 async function fetchTheme(base, id) {
   const dir = `${base}themes/${id}/`
@@ -12,14 +13,10 @@ async function fetchTheme(base, id) {
   return { ...theme, id, dir, sprites }
 }
 
-/** Elements that can run code or load a document of their own; a sprite sheet needs none. */
-const ACTIVE_ELEMENTS = 
-  'script, foreignObject, iframe, object, embed, link, meta, base, set[attributeName$="href"], animate[attributeName$="href"]'
-
 /**
  * Parses a sprite sheet without letting it do anything: a template's content runs no script and
- * loads nothing while it is parsed. Then everything that could act once it is on the page is
- * taken out: active elements, event handler attributes and links that are not plain references.
+ * loads nothing while it is parsed. Then everything that is not plain drawing is taken out, by
+ * the allowlist in `sprite-markup.js`, before the sheet reaches the page.
  *
  * @param {string} markup
  * @returns {DocumentFragment}
@@ -28,13 +25,15 @@ function inertMarkup(markup) {
   const template = document.createElement('template')
   template.innerHTML = markup
   const content = template.content
-  for (const element of content.querySelectorAll(ACTIVE_ELEMENTS)) element.remove()
-  for (const element of content.querySelectorAll('*')) {
+  for (const element of [...content.querySelectorAll('*')]) {
+    // Inside an element already taken out: it went with it.
+    if (!content.contains(element)) continue
+    if (!isAllowedElement(element.localName)) {
+      element.remove()
+      continue
+    }
     for (const attribute of [...element.attributes]) {
-      const name = attribute.name.toLowerCase()
-      const isHandler = name.startsWith('on')
-      const isLink = name === 'href' || name.endsWith(':href')
-      if (isHandler || (isLink && !attribute.value.trim().startsWith('#'))) element.removeAttribute(attribute.name)
+      if (!isAllowedAttribute(attribute.name, attribute.value)) element.removeAttribute(attribute.name)
     }
   }
   return content
