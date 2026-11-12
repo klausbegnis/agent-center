@@ -158,6 +158,10 @@ const controller = createController({
 })
 
 server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: false, controller })
+if (!server) {
+  console.error('Agent Center (demo): no free port. Pick another one with PORT=…')
+  process.exit(1)
+}
 console.log(`Agent Center (demo): ${server.url}`)
 console.log(`  with emotes every few seconds: ${server.url}?emotes=fast`)
 
