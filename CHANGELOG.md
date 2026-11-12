@@ -31,4 +31,4 @@ release is cut.
 - A sidebar panel, an editor tab, a status bar summary, and an external view for a detached
   window, fullscreen on another screen or a small always-on-top window.
 - Project rules under `rules/`, contributing and maintaining guides, issue and pull request
-  templates, and CI on Node 22 and 24, Linux and macOS.
+  templates, and CI on Node 22, 24 and 26, on Linux, macOS and Windows.

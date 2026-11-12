@@ -12,6 +12,7 @@ import {
   MAX_EMOTE_SECONDS,
   MIN_EMOTE_SECONDS
 } from '../ui/engine/emotes.js'
+import { findMarkupProblems } from '../ui/engine/sprite-markup.js'
 
 const ROOM_ASPECT = 8 / 5
 const ASPECT_TOLERANCE = 0.01
@@ -283,6 +284,11 @@ function checkSprites(folder, file, theme, prefixOwners, report) {
   if (!fs.existsSync(sheetFile)) return report(file, `sprite sheet not found: ${theme.actors.file}`)
   const sheet = fs.readFileSync(sheetFile, 'utf8')
   checkSvgComments(sheetFile, sheet, report)
+  // The page strips anything that is not plain drawing, so a sheet that has some would look
+  // different in Orca than in review.
+  for (const problem of findMarkupProblems(sheet)) {
+    report(sheetFile, `${problem}; a sprite sheet is plain drawing only`)
+  }
   const ids = symbolIds(sheet)
   checkPrefix(folder, sheetFile, ids, prefixOwners, report)
 

@@ -25,8 +25,8 @@ paths:
 ## Drawing
 
 - Build DOM with the helpers in `dom.js` and set text with `textContent`. The only markup the
-  engine parses is a theme's own sprite sheet, in `theme-library.js`, which strips everything
-  that can run from it first, and the `<use>` elements
+  engine parses is a theme's own sprite sheet, in `theme-library.js`, which keeps only what the
+  allowlist in `sprite-markup.js` names, and the `<use>` elements
   built from its symbol ids in `actor-view.js`.
 - Update what exists instead of rebuilding: characters keep their element so they can walk
   between stations.

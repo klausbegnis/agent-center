@@ -1,10 +1,13 @@
 // The agent state machine. It has no dependency on Orca: events go in, a snapshot ready to draw
 // comes out. Everything here is synchronous and deterministic, so it is covered by unit tests.
 import { activityForTool, isDelegateTool } from './activities.mjs'
+import { displayText } from './display-text.mjs'
 import { basename, groupRooms } from './rooms.mjs'
 
 const NO_PROJECT_ROOM = { id: 'no-project', name: 'No project', host: null }
 const SUBAGENT_NAME_LIMIT = 40
+/** Long enough for a conversation title, short enough for a label under a character. */
+const TITLE_LIMIT = 80
 /** An agent on no known host that sent nothing for this long is taken as gone. */
 const ABANDONED_AFTER_MS = 30 * 60_000
 /** A terminal link nobody confirmed for this long, leading to no agent, is forgotten. */
@@ -16,6 +19,17 @@ const SNAPSHOT_GRACE_MS = 10_000
  * One snapshot can miss an agent that is busy or still starting.
  */
 const MISSED_SNAPSHOTS_BEFORE_REMOVAL = 2
+
+/**
+ * A hook's call id as a map key. Orca sends a string; anything else is made one, so a key can
+ * always be compared as text.
+ *
+ * @returns {string | null}
+ */
+function callIdOf(event) {
+  const { callId } = event
+  return callId === undefined || callId === null || callId === '' ? null : String(callId)
+}
 
 /** Agent states, from the one that needs the person most to the one that needs them least. */
 const URGENCY = { blocked: 3, waiting: 2, working: 1, done: 0 }
@@ -73,13 +87,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     if (paneKey) {
       if (terminalId) {
         // A hook may have created the agent with only the terminal before the first status.
-        const byTerminal = agents.get(terminalId)
-        if (byTerminal && !agents.has(paneKey)) {
-          agents.delete(terminalId)
-          byTerminal.id = paneKey
-          agents.set(paneKey, byTerminal)
-        }
         linkTerminal(terminalId, paneKey)
+        adoptTerminalEntry(terminalId, paneKey)
       }
       return paneKey
     }
@@ -208,7 +217,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   /** The `agent.status.changed` event. */
   function status(event) {
     const entry = upsert(event)
-    if (event.title) entry.title = event.title
+    entry.title = displayText(event.title, TITLE_LIMIT) ?? entry.title
     const state = mostUrgentState(event.state, event.mainAgent?.state) ?? entry.state
     const startedAt =
       (state === event.mainAgent?.state ? event.mainAgent.stateStartedAt : null) ?? event.receivedAt ?? now()
@@ -241,10 +250,10 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     }
     if (isDelegateTool(event.tool)) {
       const input = event.input && typeof event.input === 'object' ? event.input : {}
-      const callId = event.callId ?? `sub-${entry.subs.size + 1}-${now()}`
+      const callId = callIdOf(event) ?? `sub-${entry.subs.size + 1}-${now()}`
       entry.subs.set(callId, {
         id: `${entry.id}/${callId}`,
-        name: String(input.subagent_type ?? input.description ?? 'subagent').slice(0, SUBAGENT_NAME_LIMIT),
+        name: displayText(input.subagent_type ?? input.description, SUBAGENT_NAME_LIMIT) ?? 'subagent',
         activity: 'think',
         since: now()
       })
@@ -262,8 +271,9 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     const entry = upsert(event)
     if (event.agent) entry.kind = event.agent
     if (!isDelegateTool(event.tool)) return
-    if (event.callId && entry.subs.has(event.callId)) {
-      entry.subs.delete(event.callId)
+    const callId = callIdOf(event)
+    if (callId && entry.subs.has(callId)) {
+      entry.subs.delete(callId)
     } else {
       // No call id: end the oldest subagent that came from a hook.
       for (const key of entry.subs.keys()) {
@@ -300,12 +310,15 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
         seen.add(entry.id)
         entry.host = hostId
         entry.kind = agent.agentType ?? entry.kind
-        entry.title = agent.conversationName ?? agent.taskTitle ?? agent.displayName ?? agent.prompt ?? entry.title
+        const title = agent.conversationName ?? agent.taskTitle ?? agent.displayName ?? agent.prompt
+        entry.title = displayText(title, TITLE_LIMIT) ?? entry.title
         entry.outcome = agent.mainAgent?.outcome ?? null
-        if (typeof agent.unread === 'boolean') entry.unread = agent.unread
         // A snapshot takes a moment to read. If an event changed the agent meanwhile, the event
-        // is newer than what the snapshot saw, and wins.
-        if (entry.state !== state && (isNew || since >= entry.since)) {
+        // is newer than what the snapshot saw, and wins, bell included.
+        const isCurrent = isNew || since >= entry.since
+        const isOutdated = entry.state !== state && !isCurrent
+        if (!isOutdated && typeof agent.unread === 'boolean') entry.unread = agent.unread
+        if (entry.state !== state && isCurrent) {
           entry.state = state
           entry.since = since
         }
@@ -323,7 +336,9 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
       if (!parent || state === 'done') continue
       parent.subs.set(`pane:${child.paneKey}`, {
         id: child.paneKey,
-        name: String(child.displayName ?? child.taskTitle ?? child.conversationName ?? 'subagent').slice(0, SUBAGENT_NAME_LIMIT),
+        name:
+          displayText(child.displayName ?? child.taskTitle ?? child.conversationName, SUBAGENT_NAME_LIMIT) ??
+          'subagent',
         activity: child.toolName ? activityForTool(child.toolName) : 'think',
         since: child.stateStartedAt ?? now()
       })

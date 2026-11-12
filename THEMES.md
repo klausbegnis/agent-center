@@ -276,6 +276,13 @@ plugin, and so is every movement; the theme only draws the characters, the famil
 symbols its emotes use. An SVG comment may not contain two hyphens in a row, so do not write a CSS variable
 name inside one.
 
+A sprite sheet is plain drawing. It may use shapes (`rect`, `circle`, `ellipse`, `line`, `path`,
+`polygon`, `polyline`, `text`), grouping (`g`, `defs`, `symbol`, `use`), gradients, patterns,
+clip paths and masks, with geometry and paint attributes. Links and `url(…)` may only point at an
+`id` in the same sheet. No `<style>`, no `style` attribute, no images, scripts, links to other
+files or animation elements: the page removes them and `npm run check` refuses them. The full
+list is in [`ui/engine/sprite-markup.js`](ui/engine/sprite-markup.js).
+
 ## What `npm run check` checks
 
 For every theme folder, the template included:
@@ -290,7 +297,8 @@ For every theme folder, the template included:
 - every emote has an `id` of its own, lists known activities, uses only the keys and motions
   this page lists, names symbols that are in the sprite sheet and lasts 0.5 to 4 seconds;
 - every station point lies inside the room;
-- no SVG comment contains two hyphens in a row.
+- no SVG comment contains two hyphens in a row;
+- the sprite sheet uses only the elements and attributes listed under [actors.svg](#actorssvg).
 
 It cannot see the art. Whether the head is in the same place in every pose, whether characters
 stand where the scenery suggests and whether the theme reads well when small are for you to
