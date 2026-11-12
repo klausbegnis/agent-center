@@ -180,8 +180,7 @@ Contributions are welcome.
   working or done: there is no per-tool activity, bell or familiar for them.
 - macOS and Linux are what it is tested on. On Windows the plugin loads, but it does not find
   the Orca CLI yet, so agents that were already running, paired machines, the bell and "Open
-  workspace" on a terminal are missing, and the links `.claude/rules` and `.agents/rules` need
-  symlinks turned on in git.
+  workspace" on a terminal are missing.
 
 ## Licence
 

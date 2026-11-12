@@ -105,6 +105,14 @@ catches them walking in. Chrome keeps running because the page holds a live conn
 with Ctrl+C. The other shots use `--window-size=500,1180` with `?view=list`, and
 `--window-size=900,640` with `?view=list&only=rumble`, `only=cosmic` and `only=turbo`.
 
+## Retaking the listing images
+
+The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
+with `--window-size=1280,800` and `?view=gallery` for all rooms, or `?view=gallery&only=rumble`,
+`only=cosmic` and `only=turbo` for one room each. The cover is the gallery shot scaled to
+1600×1000. `assets/icon.png` is `assets/icon.svg` drawn at 256×256. The size limits are in
+[docs/MAINTAINING.md](docs/MAINTAINING.md).
+
 ## Reporting a security problem
 
 Please do not open a public issue. See [SECURITY.md](SECURITY.md).

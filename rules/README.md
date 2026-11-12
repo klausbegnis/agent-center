@@ -20,11 +20,13 @@ paths:
 ```
 
 - `paths` lists the files the rule applies to. Claude Code loads a rule only when it reads or
-  edits a matching file, so a rule costs nothing until it is needed. It finds these files
-  through `.claude/rules`, which is a link to this folder.
+  edits a matching file, so a rule costs nothing until it is needed. It looks for rules in
+  `.claude/rules/`, which holds a copy of this folder. Edit the files here, then run
+  `npm run sync-rules`; `npm run check` fails while the copy differs. It is a copy and not a
+  link because Orca's plugin directory does not list a repository that contains links.
 - `description` is for readers and for other tools. Claude Code ignores it.
 - Tools that read `AGENTS.md` (Codex and others) do not load rules by path. `AGENTS.md` tells
-  them to pick the matching rule from the table below, and `.agents/rules` links here too.
+  them to pick the matching rule from the table below.
 - A rule without `paths` applies everywhere and is always loaded. Keep those few and short.
 
 | Rule | Applies to |

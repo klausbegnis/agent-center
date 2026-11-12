@@ -1,10 +1,40 @@
 {
+  "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
   "manifestVersion": 2,
   "id": "agent-center",
   "name": "Agent Center",
   "version": "0.1.0",
   "description": "One room per project where every agent and subagent is a character acting out what it is doing. Swappable themes.",
   "license": "MIT",
+  "author": {
+    "name": "klausbegnis",
+    "url": "https://github.com/klausbegnis"
+  },
+  "repository": "https://github.com/klausbegnis/agent-center",
+  "homepage": "https://github.com/klausbegnis/agent-center#readme",
+  "icon": "assets/icon.png",
+  "cover": {
+    "path": "assets/cover.png",
+    "alt": "Six project rooms in Gallery view, each with its agents as characters"
+  },
+  "screenshots": [
+    {
+      "path": "assets/screenshot-gallery.png",
+      "alt": "Six project rooms in Gallery view on three themes"
+    },
+    {
+      "path": "assets/screenshot-pixel-dark.png",
+      "alt": "The Pixel Dark theme: a developer office with agents at their desks"
+    },
+    {
+      "path": "assets/screenshot-guild-hall.png",
+      "alt": "The Guild Hall theme: agents by the fireplace, one with a familiar"
+    },
+    {
+      "path": "assets/screenshot-gothic-dungeon.png",
+      "alt": "The Gothic Dungeon theme: an agent with three familiars"
+    }
+  ],
   "engines": {
     "orca": ">=1.4.248"
   },
@@ -25,7 +55,9 @@
       {
         "id": "rooms-tab",
         "title": "Agent Center",
-        "extensions": [".agentcenter"],
+        "extensions": [
+          ".agentcenter"
+        ],
         "entry": "ui/tab.html"
       }
     ],
@@ -47,13 +79,23 @@
       }
     ],
     "events": [
-      { "on": "agent.status.changed" },
-      { "on": "workspace.created" },
-      { "on": "workspace.removed" }
+      {
+        "on": "agent.status.changed"
+      },
+      {
+        "on": "workspace.created"
+      },
+      {
+        "on": "workspace.removed"
+      }
     ],
     "hooks": [
-      { "event": "agent.tool.before" },
-      { "event": "agent.tool.after" }
+      {
+        "event": "agent.tool.before"
+      },
+      {
+        "event": "agent.tool.after"
+      }
     ],
     "settings": [
       {
@@ -93,10 +135,20 @@
     ]
   },
   "capabilities": [
-    { "kind": "workspace:read" },
-    { "kind": "workspace:write" },
-    { "kind": "agent:read" },
-    { "kind": "storage:own" },
-    { "kind": "settings:own" }
+    {
+      "kind": "workspace:read"
+    },
+    {
+      "kind": "workspace:write"
+    },
+    {
+      "kind": "agent:read"
+    },
+    {
+      "kind": "storage:own"
+    },
+    {
+      "kind": "settings:own"
+    }
   ]
 }
