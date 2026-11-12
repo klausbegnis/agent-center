@@ -6,8 +6,9 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
-Everything below is the first public version. It becomes 0.1.0, with its date, when the first
-release is cut.
+## 0.1.0 - 2026-11-12
+
+First public version.
 
 ### Added
 

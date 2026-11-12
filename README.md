@@ -109,7 +109,10 @@ names and change the themes. [SECURITY.md](SECURITY.md) lists everything the pag
 
 ## Install
 
-Agent Center is not in a catalog yet. Load it from a checkout:
+Find **Agent Center** in Orca's plugin directory, or open its page:
+<https://orca.dev/plugins/klausbegnis/agent-center>.
+
+To run it from a checkout instead:
 
 ```bash
 git clone https://github.com/klausbegnis/agent-center.git
