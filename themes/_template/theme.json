@@ -1,0 +1,75 @@
+{
+  "name": "Theme template",
+  "version": 1,
+  "room": {
+    "width": 400,
+    "height": 250,
+    "background": "room.svg",
+    "backgrounds": ["room.svg"],
+    "variants": {
+      "hues": [0, 40, -40],
+      "flip": false
+    }
+  },
+  "actors": {
+    "file": "actors.svg",
+    "width": 36,
+    "height": 48,
+    "subScale": 0.72,
+    "familiar": { "symbol": "tp-familiar", "width": 18, "height": 18, "lift": 8, "motion": "hover", "emotes": ["hop"] },
+    "hueShift": 14,
+    "outfits": [[], ["tp-out-scarf"], ["tp-out-cap"], ["tp-out-cap", "tp-out-scarf"]],
+    "outfitColors": ["#F2C14E", "#6FCF97", "#EB7A77", "#E6EDF5"],
+    "emotes": [
+      { "id": "cheer", "on": ["sleep"], "when": "start", "motion": "hop", "pose": "tp-cheer", "effect": "tp-fx-sparks", "effectMotion": "pulse", "seconds": 1.6 },
+      { "id": "stretch", "on": ["write", "read", "run"], "motion": "stretch", "seconds": 1.8 },
+      { "id": "idea", "on": ["think", "delegate"], "motion": "tilt", "effect": "tp-fx-idea", "seconds": 1.6 },
+      { "id": "fidget", "on": ["wait"], "motion": "sway" },
+      { "id": "fume", "on": ["blocked"], "motion": "shake", "seconds": 0.9 },
+      { "id": "look-around", "on": ["idle"], "motion": "tilt" }
+    ],
+    "poses": {
+      "idle": "tp-idle",
+      "think": "tp-think",
+      "delegate": "tp-delegate",
+      "write": "tp-write",
+      "run": "tp-run",
+      "read": "tp-read",
+      "wait": "tp-wait",
+      "blocked": "tp-blocked",
+      "done": "tp-cheer",
+      "sleep": "tp-sleep"
+    },
+    "species": {
+      "claude": { "parts": ["tp-part-ears"], "colors": { "c1": "#E8956B", "c2": "#B96A45" } },
+      "codex": { "parts": ["tp-part-antenna"], "colors": { "c1": "#7FB2FF", "c2": "#4F86D9" } },
+      "default": { "parts": [], "colors": { "c1": "#B9A6F2", "c2": "#8C76D6" } }
+    }
+  },
+  "stations": {
+    "enter": { "x": 200, "y": 247 },
+    "write": [{ "x": 56, "y": 142 }, { "x": 100, "y": 142 }],
+    "read": [{ "x": 166, "y": 142 }],
+    "run": [{ "x": 232, "y": 142 }],
+    "sleep": [{ "x": 300, "y": 142 }, { "x": 344, "y": 142 }],
+    "done": [{ "x": 300, "y": 204 }, { "x": 344, "y": 204 }],
+    "blocked": [{ "x": 50, "y": 204 }],
+    "wait": [{ "x": 108, "y": 204 }, { "x": 152, "y": 204 }],
+    "think": [{ "x": 214, "y": 204 }],
+    "delegate": [{ "x": 276, "y": 204 }],
+    "idle": [{ "x": 372, "y": 204 }, { "x": 328, "y": 204 }]
+  },
+  "ui": {
+    "pixelated": false,
+    "vars": {
+      "frame": "#1B2430",
+      "label": "#E6EDF5",
+      "label-shadow": "#10161D",
+      "bubble-wait": "#F2C14E",
+      "bubble-blocked": "#EB7A77",
+      "bubble-sleep": "transparent",
+      "bubble-ink": "#10161D",
+      "font": "ui-monospace, 'SF Mono', Menlo, monospace"
+    }
+  }
+}

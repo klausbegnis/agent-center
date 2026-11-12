@@ -1,0 +1,23 @@
+{
+  "name": "agent-center",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An Orca plugin that shows one room per project, where each agent is a character acting out what it is doing.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klausbegnis/agent-center.git"
+  },
+  "homepage": "https://github.com/klausbegnis/agent-center#readme",
+  "bugs": "https://github.com/klausbegnis/agent-center/issues",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.mjs\" \"ui/**/*.test.js\"",
+    "check": "node scripts/check.mjs",
+    "demo": "node scripts/demo.mjs",
+    "verify": "npm run check && npm test"
+  }
+}

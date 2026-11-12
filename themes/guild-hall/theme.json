@@ -1,0 +1,138 @@
+{
+  "name": "Guild Hall",
+  "version": 1,
+  "room": {
+    "width": 400,
+    "height": 250,
+    "background": "room.svg",
+    "variants": {
+      "hues": [0, -6, 6, -10, 8],
+      "flip": true
+    }
+  },
+  "actors": {
+    "file": "actors.svg",
+    "width": 36,
+    "height": 45,
+    "subScale": 0.74,
+    "familiar": {
+      "symbol": "rp-familiar",
+      "width": 22,
+      "height": 22,
+      "emotes": ["hop"]
+    },
+    "outfits": [
+      [],
+      ["rp-out-scarf"],
+      ["rp-out-cap"],
+      ["rp-out-glasses"],
+      ["rp-out-bow"],
+      ["rp-out-bandana"],
+      ["rp-out-glasses", "rp-out-scarf"]
+    ],
+    "outfitColors": ["#2F8F86", "#E3B23C", "#C8443D", "#F3EBDD", "#6FA85B", "#8E6BB8"],
+    "emotes": [
+      { "id": "quest-done", "on": ["sleep"], "when": "start", "motion": "hop", "pose": "rp-cheer", "effect": "rp-fx-stars", "effectMotion": "pulse", "seconds": 1.8 },
+      { "id": "second-wind", "on": ["write", "run"], "motion": "float", "effect": "rp-fx-shine", "seconds": 1.8 },
+      { "id": "study", "on": ["read"], "motion": "tilt", "seconds": 1.6 },
+      { "id": "bright-idea", "on": ["think", "delegate"], "motion": "hop", "effect": "rp-fx-idea", "effectMotion": "pulse", "seconds": 1.4 },
+      { "id": "tap-foot", "on": ["wait"], "motion": "sway", "seconds": 1.6 },
+      { "id": "stomp", "on": ["blocked"], "motion": "shake", "effect": "rp-fx-steam", "seconds": 1 },
+      { "id": "twirl", "on": ["idle"], "motion": "spin", "seconds": 1.4 }
+    ],
+    "poses": {
+      "idle": "rp-idle",
+      "think": "rp-idle",
+      "delegate": "rp-idle",
+      "write": "rp-work",
+      "run": "rp-work",
+      "read": "rp-read",
+      "wait": "rp-wait",
+      "blocked": "rp-blocked",
+      "sleep": "rp-sleep",
+      "done": "rp-cheer"
+    },
+    "species": {
+      "claude": {
+        "parts": ["rp-ears"],
+        "colors": {
+          "c1": "#E2703A",
+          "c2": "#B9532A",
+          "c3": "#F6B48A"
+        }
+      },
+      "codex": {
+        "parts": ["rp-antenna"],
+        "colors": {
+          "c1": "#5C93C9",
+          "c2": "#3F6FA3",
+          "c3": "#A9CCEA"
+        }
+      },
+      "default": {
+        "parts": [],
+        "colors": {
+          "c1": "#A57BC4",
+          "c2": "#7E5A9E",
+          "c3": "#D3BCE4"
+        }
+      }
+    },
+    "hueShift": 7
+  },
+  "stations": {
+    "enter": { "x": 33, "y": 70 },
+    "write": [
+      { "x": 142, "y": 100 },
+      { "x": 100, "y": 98 }
+    ],
+    "read": [
+      { "x": 268, "y": 186 },
+      { "x": 328, "y": 230 }
+    ],
+    "run": [
+      { "x": 338, "y": 160 }
+    ],
+    "think": [
+      { "x": 264, "y": 106 },
+      { "x": 304, "y": 108 }
+    ],
+    "delegate": [
+      { "x": 220, "y": 110 }
+    ],
+    "wait": [
+      { "x": 48, "y": 112 },
+      { "x": 40, "y": 162 }
+    ],
+    "blocked": [
+      { "x": 74, "y": 240 },
+      { "x": 112, "y": 242 }
+    ],
+    "done": [
+      { "x": 198, "y": 238 },
+      { "x": 234, "y": 246 }
+    ],
+    "sleep": [
+      { "x": 352, "y": 104 },
+      { "x": 382, "y": 104 }
+    ],
+    "idle": [
+      { "x": 104, "y": 158 },
+      { "x": 150, "y": 160 },
+      { "x": 208, "y": 170 }
+    ]
+  },
+  "ui": {
+    "pixelated": true,
+    "vars": {
+      "frame": "#2B1D1A",
+      "label": "#FBF3E2",
+      "label-shadow": "#2B1D1A",
+      "bubble-wait": "#FBF3E2",
+      "bubble-blocked": "#E3B23C",
+      "bubble-sleep": "transparent",
+      "bubble-ink": "#2B1D1A",
+      "font": "ui-monospace, 'SF Mono', Menlo, monospace"
+    }
+  }
+}

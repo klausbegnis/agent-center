@@ -1,0 +1,503 @@
+/* UI shared by the panel, the tab and the external view. Colours come from Orca's theme when
+   present (--orca-*); outside it the dark defaults apply. A room theme changes the --ac-*. */
+:root {
+  color-scheme: dark;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--orca-background, #171a21);
+  color: var(--orca-foreground, #e8eaf0);
+  font: 13px/1.4 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.ac-root {
+  --ac-label: #e8eaf0;
+  --ac-label-shadow: #0b0e13;
+  --ac-bubble-wait: #f8b366;
+  --ac-bubble-blocked: #ff9a9a;
+  --ac-bubble-sleep: transparent;
+  --ac-bubble-done: #f8b366;
+  --ac-bubble-ink: #171a21;
+  --ac-frame: #0b0e13;
+  --ac-font: inherit;
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ac-root *,
+.ac-root *::before {
+  box-sizing: border-box;
+}
+.ac-sprites {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.ac-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ac-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ac-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+.ac-chip {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.ac-chip-working { background: #12332f; color: #6fe0d2; }
+.ac-chip-wait { background: #3a2a12; color: #f8b366; }
+.ac-chip-blocked { background: #3b1a1e; color: #ff9a9a; }
+.ac-chip-sleep { background: #242833; color: #c3c9d4; }
+.ac-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ac-select,
+.ac-button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: var(--orca-radius, 6px);
+  background: var(--orca-secondary, #1f232c);
+  color: var(--orca-secondary-foreground, #e8eaf0);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ac-button:hover { background: var(--orca-accent, #2a2f3a); }
+.ac-button:focus-visible,
+.ac-select:focus-visible,
+.ac-actor:focus-visible {
+  outline: 2px solid var(--orca-ring, #6fe0d2);
+  outline-offset: 2px;
+}
+.ac-primary {
+  border-color: #6fe0d2;
+  color: #6fe0d2;
+  background: transparent;
+  font-weight: 600;
+}
+.ac-rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+  align-content: start;
+  flex: 1 0 auto;
+}
+.ac-room {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ac-room-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.ac-room-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ac-room-host,
+.ac-room-meta,
+.ac-muted {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+/* List view: each room takes the full width and keeps its aspect ratio. */
+.ac-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.ac-scene {
+  position: relative;
+  width: 100%;
+  border: 4px solid var(--ac-frame);
+  border-radius: 4px;
+  overflow: hidden;
+  container-type: inline-size;
+}
+.ac-bg {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+/* Gallery view: the rooms split the space there is, each as large as fits, with no scrolling. */
+.ac-gallery { overflow: hidden; }
+.ac-gallery .ac-rooms {
+  flex: 1 1 0;
+  min-height: 0;
+  align-content: stretch;
+}
+/* Pinning is a Gallery feature: one room large, the others in a strip. */
+.ac-root:not(.ac-gallery) .ac-pin { display: none !important; }
+.ac-gallery .ac-room-pinned .ac-scene { box-shadow: 0 0 0 2px var(--orca-ring, #6fe0d2); }
+/* The engine works out the largest room size that fits and passes it as --ac-room-size. */
+.ac-gallery .ac-room {
+  justify-content: center;
+  align-items: center;
+}
+.ac-gallery .ac-room-head,
+.ac-gallery .ac-stage {
+  flex: none;
+  width: var(--ac-room-size, 100%);
+}
+.ac-link {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ac-link:hover { color: var(--orca-foreground, #e8eaf0); }
+/* Per-room controls take the place of the agent count while the room is hovered or focused. */
+.ac-room-control { display: none; }
+.ac-room:hover .ac-room-control,
+.ac-room:focus-within .ac-room-control { display: inline-block; }
+.ac-room:hover .ac-room-meta,
+.ac-room:focus-within .ac-room-meta { display: none; }
+/* The header is as tall as its tallest control at all times, so the scene below does not move
+   when the controls appear. */
+.ac-room-head .ac-select { box-sizing: border-box; height: 22px; min-height: 0; max-width: 150px; padding: 0 4px; }
+.ac-room-head { align-items: center; min-height: 22px; }
+/* The title stays on one line and shortens with an ellipsis in a narrow Gallery cell. */
+.ac-room-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-room-meta { flex: none; white-space: nowrap; }
+.ac-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.ac-shelf[hidden] { display: none; }
+.ac-pixelated .ac-bg,
+.ac-pixelated .ac-sprite svg,
+.ac-pixelated .ac-emote-effect {
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+.ac-actor {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transform: translate(-50%, -100%);
+  transition: left 0.9s ease-in-out, top 0.9s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ac-sprite {
+  display: block;
+  width: 100%;
+}
+.ac-sprite svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.ac-actor[data-activity='write'] .ac-sprite,
+.ac-actor[data-activity='run'] .ac-sprite {
+  animation: ac-bob 0.5s steps(2) infinite;
+}
+.ac-actor[data-activity='sleep'] .ac-sprite { opacity: 0.8; }
+.ac-selected .ac-sprite {
+  outline: 2px dashed var(--ac-label);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.ac-label {
+  position: absolute;
+  top: 100%;
+  margin-top: 1px;
+  max-width: 21cqw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--ac-font);
+  font-size: clamp(9px, 3.2cqw, 12px);
+  color: var(--ac-label);
+  text-shadow: 0 1px 0 var(--ac-label-shadow), 0 0 3px var(--ac-label-shadow);
+}
+/* Subagents gather round their parent. To keep that readable their name shows only on hover,
+   focus or selection, and a small mark above each says what it is doing. */
+.ac-sub .ac-label { display: none; opacity: 0.85; }
+.ac-sub:hover .ac-label,
+.ac-sub:focus-visible .ac-label,
+.ac-sub.ac-selected .ac-label { display: block; max-width: 60cqw; z-index: 1; }
+/* Sleepers do not compete for label space: the name shows on hover or selection. */
+.ac-actor[data-activity='sleep'] .ac-label { display: none; }
+.ac-actor[data-activity='sleep']:hover .ac-label,
+.ac-actor[data-activity='sleep'].ac-selected .ac-label { display: block; max-width: 60cqw; z-index: 1; }
+.ac-actor:hover { z-index: 9999 !important; }
+.ac-bubble {
+  position: absolute;
+  bottom: 96%;
+  left: 68%;
+  min-width: 1.5em;
+  padding: 0 0.3em;
+  border-radius: 3px;
+  font-family: var(--ac-font);
+  font-size: clamp(10px, 4cqw, 15px);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--ac-bubble-ink);
+}
+.ac-bubble:empty { display: none; }
+.ac-actor[data-activity='wait'] .ac-bubble { background: var(--ac-bubble-wait); animation: ac-blink 1.2s steps(2) infinite; }
+.ac-actor[data-activity='blocked'] .ac-bubble { background: var(--ac-bubble-blocked); animation: ac-blink 1.2s steps(2) infinite; }
+.ac-actor[data-activity='done'] .ac-bubble { background: var(--ac-bubble-done); }
+.ac-actor[data-activity='sleep'] .ac-bubble { background: var(--ac-bubble-sleep); color: var(--ac-label); text-shadow: 0 1px 0 var(--ac-label-shadow); }
+.ac-sub .ac-bubble {
+  bottom: 100%;
+  left: 50%;
+  min-width: 0;
+  margin-bottom: 0.15em;
+  padding: 0.2em 0.3em;
+  transform: translateX(-50%);
+  background: var(--ac-label-shadow);
+  color: var(--ac-label);
+  font-size: clamp(7px, 2.6cqw, 12px);
+  line-height: 1;
+}
+.ac-sub[data-activity='wait'] .ac-bubble,
+.ac-sub[data-activity='blocked'] .ac-bubble { color: var(--ac-bubble-ink); }
+.ac-activity-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* A familiar is never quite still. Each starts at its own point in the cycle. */
+.ac-actor.ac-familiar .ac-sprite {
+  animation: ac-familiar-bob 2.4s ease-in-out infinite;
+  animation-delay: var(--ac-familiar-delay, 0s);
+}
+.ac-actor.ac-familiar[data-motion='hover'] .ac-sprite {
+  animation-name: ac-familiar-hover;
+  animation-duration: 3.6s;
+}
+/* Emotes: a character plays a short move now and then (ui/engine/emotes.js). Each move runs
+   once, starts and ends on the character's resting shape, and moves only the sprite, so the
+   name and the bubble stay where they are. These rules come after the idle motions above so
+   that an emote takes their place while it plays. */
+.ac-bubble,
+.ac-label { z-index: 1; }
+.ac-actor.ac-emoting .ac-sprite { transform-origin: 50% 100%; }
+.ac-actor.ac-emoting:not([data-emote='none']) .ac-sprite {
+  animation: var(--ac-emote-seconds, 1.6s) ease-in-out 1 both;
+}
+.ac-actor.ac-emoting[data-emote='hop'] .ac-sprite { animation-name: ac-emote-hop; }
+.ac-actor.ac-emoting[data-emote='spin'] .ac-sprite { animation-name: ac-emote-spin; }
+.ac-actor.ac-emoting[data-emote='flip'] .ac-sprite { animation-name: ac-emote-flip; transform-origin: 50% 50%; }
+.ac-actor.ac-emoting[data-emote='shake'] .ac-sprite { animation-name: ac-emote-shake; }
+.ac-actor.ac-emoting[data-emote='sway'] .ac-sprite { animation-name: ac-emote-sway; }
+.ac-actor.ac-emoting[data-emote='tilt'] .ac-sprite { animation-name: ac-emote-tilt; }
+.ac-actor.ac-emoting[data-emote='float'] .ac-sprite { animation-name: ac-emote-float; }
+.ac-actor.ac-emoting[data-emote='stretch'] .ac-sprite { animation-name: ac-emote-stretch; }
+.ac-actor.ac-emoting[data-emote='wiggle'] .ac-sprite { animation-name: ac-emote-wiggle; }
+/* An emote's effect is a symbol of the theme laid over the character, on the grid of a pose.
+   It sits under the bubble and the name and moves as one piece, about the character's middle. */
+.ac-emote-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  animation: ac-effect-rise var(--ac-emote-seconds, 1.6s) ease-out 1 both;
+}
+.ac-emote-effect[data-motion='pulse'] { animation-name: ac-effect-pulse; animation-timing-function: ease-in-out; }
+.ac-emote-effect[data-motion='toss'] { animation-name: ac-effect-toss; animation-timing-function: ease-in-out; }
+.ac-familiar-more {
+  position: absolute;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  transform: translate(-50%, -100%);
+  background: var(--ac-label-shadow);
+  color: var(--ac-label);
+  font-family: var(--ac-font);
+  font-size: clamp(8px, 2.8cqw, 12px);
+  font-weight: 700;
+  line-height: 1.3;
+  transition: left 0.9s ease-in-out, top 0.9s ease-in-out;
+}
+/* The card lies over the bottom edge of the selected agent's room, like a dialogue box, so
+   opening it does not change the size or place of anything. */
+.ac-stage { position: relative; }
+.ac-detail {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  /* Above every character, including a hovered one. */
+  z-index: 10000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--orca-border, #333a47);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--orca-card, #1f232c) 94%, transparent);
+  font-size: 12px;
+}
+.ac-detail[hidden] { display: none; }
+.ac-detail-info,
+.ac-detail-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ac-detail-info { flex: 1; }
+.ac-detail-status { align-items: flex-end; }
+.ac-state-write, .ac-state-read, .ac-state-run, .ac-state-think, .ac-state-delegate { color: #6fe0d2; }
+.ac-state-wait { color: #f8b366; }
+.ac-state-blocked { color: #ff9a9a; }
+.ac-state-sleep { color: #c3c9d4; }
+.ac-empty {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+
+/* Mini: narrow panel, short tray or picture-in-picture. Rooms only. */
+.ac-mini { padding: 4px; gap: 4px; }
+.ac-mini .ac-header,
+.ac-mini .ac-detail,
+.ac-mini .ac-room-head,
+.ac-mini .ac-shelf { display: none; }
+.ac-mini .ac-rooms { gap: 4px; }
+.ac-mini .ac-label { display: none; }
+.ac-mini .ac-actor:hover .ac-label,
+.ac-mini .ac-selected .ac-label { display: block; max-width: 60cqw; }
+
+/* Collapsed tray: only the header strip with the counters stays. */
+.ac-collapsed .ac-rooms,
+.ac-collapsed .ac-detail { display: none; }
+.ac-collapsed { min-height: 0; }
+
+@keyframes ac-bob { 50% { transform: translateY(-4%); } }
+@keyframes ac-blink { 50% { opacity: 0.3; } }
+@keyframes ac-familiar-bob { 50% { transform: translateY(-7%); } }
+@keyframes ac-familiar-hover {
+  25% { transform: translate(5%, -9%); }
+  75% { transform: translate(-5%, 5%); }
+}
+/* Emote motions. Every one begins and ends with the sprite exactly on its slot. */
+@keyframes ac-emote-hop {
+  0%, 40%, 80%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-16%); }
+  60% { transform: translateY(-11%); }
+}
+@keyframes ac-emote-spin {
+  0%, 50%, 100% { transform: scaleX(1); }
+  25%, 75% { transform: scaleX(-1); }
+}
+@keyframes ac-emote-flip {
+  0% { transform: translateY(0) rotate(0deg); }
+  20% { transform: translateY(-24%) rotate(0deg); }
+  80% { transform: translateY(-24%) rotate(360deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+@keyframes ac-emote-shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-6%); }
+  30%, 60%, 90% { transform: translateX(6%); }
+}
+@keyframes ac-emote-sway {
+  0%, 100% { transform: rotate(0deg); }
+  20%, 60% { transform: rotate(-8deg); }
+  40%, 80% { transform: rotate(8deg); }
+}
+@keyframes ac-emote-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  18%, 42% { transform: rotate(-9deg); }
+  60%, 82% { transform: rotate(7deg); }
+}
+@keyframes ac-emote-float {
+  0%, 100% { transform: translateY(0); }
+  30%, 70% { transform: translateY(-22%); }
+  50% { transform: translateY(-17%); }
+}
+@keyframes ac-emote-stretch {
+  0%, 100% { transform: scale(1, 1); }
+  35%, 65% { transform: scale(0.93, 1.12); }
+  85% { transform: scale(1.04, 0.96); }
+}
+@keyframes ac-emote-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg) translateX(-2%); }
+  20%, 40%, 60%, 80% { transform: rotate(5deg) translateX(2%); }
+}
+/* Effect motions. Distances are fractions of the character's own size. */
+@keyframes ac-effect-rise {
+  0% { opacity: 0; transform: translateY(8%); }
+  20%, 75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-12%); }
+}
+@keyframes ac-effect-pulse {
+  0% { opacity: 0; transform: scale(0.7); }
+  20%, 60% { opacity: 1; transform: scale(1.06); }
+  40%, 80% { opacity: 1; transform: scale(0.94); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+@keyframes ac-effect-toss {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  12%, 88% { opacity: 1; }
+  50% { transform: translateY(-42%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-actor, .ac-familiar-more { transition: none; }
+  .ac-actor .ac-sprite, .ac-bubble { animation: none !important; }
+  /* The engine plays no emote under this setting; this covers one caught half way. */
+  .ac-emote-effect { display: none; }
+}

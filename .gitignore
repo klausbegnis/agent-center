@@ -1,0 +1,17 @@
+# dependencies are not used, but keep stray installs out
+node_modules/
+
+# Orca's generated types and screenshots
+.orca/
+
+# personal settings and secrets
+.claude/settings.local.json
+.env
+.env.*
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

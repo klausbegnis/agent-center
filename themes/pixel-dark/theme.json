@@ -1,0 +1,217 @@
+{
+  "name": "Pixel Dark",
+  "version": 1,
+  "room": {
+    "width": 464,
+    "height": 290,
+    "background": "room.svg"
+  },
+  "actors": {
+    "file": "actors.svg",
+    "width": 36,
+    "height": 36,
+    "subScale": 0.72,
+    "familiar": {
+      "symbol": "pd-familiar",
+      "emotes": ["spin"],
+      "width": 22,
+      "height": 22,
+      "lift": 12,
+      "motion": "hover"
+    },
+    "outfits": [
+      [],
+      [
+        "pd-out-scarf"
+      ],
+      [
+        "pd-out-cap"
+      ],
+      [
+        "pd-out-glasses"
+      ],
+      [
+        "pd-out-bow"
+      ],
+      [
+        "pd-out-headphones"
+      ],
+      [
+        "pd-out-glasses",
+        "pd-out-scarf"
+      ]
+    ],
+    "outfitColors": [
+      "#6FE0D2",
+      "#F8B366",
+      "#FF9A9A",
+      "#E8EAF0",
+      "#9BE08A",
+      "#C9A6FF"
+    ],
+    "emotes": [
+      { "id": "cheer", "on": ["sleep"], "when": "start", "motion": "hop", "effect": "pd-fx-confetti", "seconds": 1.6 },
+      { "id": "overclock", "on": ["write", "run"], "motion": "wiggle", "effect": "pd-fx-spark", "effectMotion": "pulse", "seconds": 1.4 },
+      { "id": "scan", "on": ["read"], "motion": "tilt", "seconds": 1.6 },
+      { "id": "bright-idea", "on": ["think", "delegate"], "motion": "stretch", "effect": "pd-fx-idea", "effectMotion": "pulse", "seconds": 1.6 },
+      { "id": "fidget", "on": ["wait"], "motion": "sway", "seconds": 1.6 },
+      { "id": "fume", "on": ["blocked"], "motion": "shake", "effect": "pd-fx-steam", "seconds": 1 },
+      { "id": "twirl", "on": ["idle"], "motion": "spin", "seconds": 1.4 }
+    ],
+    "poses": {
+      "idle": "pd-idle",
+      "think": "pd-idle",
+      "delegate": "pd-idle",
+      "write": "pd-work",
+      "run": "pd-work",
+      "read": "pd-read",
+      "wait": "pd-wait",
+      "blocked": "pd-blocked",
+      "sleep": "pd-sleep"
+    },
+    "species": {
+      "claude": {
+        "parts": [
+          "pd-ears"
+        ],
+        "colors": {
+          "c1": "#F08A5D",
+          "c2": "#C96A42"
+        }
+      },
+      "codex": {
+        "parts": [
+          "pd-antenna"
+        ],
+        "colors": {
+          "c1": "#7FB2FF",
+          "c2": "#4F86D9"
+        }
+      },
+      "default": {
+        "parts": [],
+        "colors": {
+          "c1": "#B9A6F2",
+          "c2": "#8C76D6"
+        }
+      }
+    }
+  },
+  "stations": {
+    "enter": {
+      "x": 425,
+      "y": 62
+    },
+    "write": [
+      {
+        "x": 240,
+        "y": 178
+      },
+      {
+        "x": 324,
+        "y": 178
+      },
+      {
+        "x": 156,
+        "y": 178
+      },
+      {
+        "x": 260,
+        "y": 262
+      },
+      {
+        "x": 176,
+        "y": 262
+      }
+    ],
+    "read": [
+      {
+        "x": 94,
+        "y": 194
+      }
+    ],
+    "run": [
+      {
+        "x": 86,
+        "y": 118
+      }
+    ],
+    "think": [
+      {
+        "x": 116,
+        "y": 96
+      }
+    ],
+    "delegate": [
+      {
+        "x": 170,
+        "y": 100
+      }
+    ],
+    "blocked": [
+      {
+        "x": 340,
+        "y": 98
+      },
+      {
+        "x": 302,
+        "y": 96
+      }
+    ],
+    "done": [
+      {
+        "x": 392,
+        "y": 110
+      },
+      {
+        "x": 430,
+        "y": 114
+      }
+    ],
+    "wait": [
+      {
+        "x": 412,
+        "y": 202
+      },
+      {
+        "x": 446,
+        "y": 206
+      }
+    ],
+    "sleep": [
+      {
+        "x": 44,
+        "y": 246
+      },
+      {
+        "x": 80,
+        "y": 246
+      }
+    ],
+    "idle": [
+      {
+        "x": 366,
+        "y": 250
+      },
+      {
+        "x": 410,
+        "y": 252
+      },
+      {
+        "x": 318,
+        "y": 278
+      }
+    ]
+  },
+  "ui": {
+    "pixelated": true,
+    "vars": {
+      "frame": "#0B0E13",
+      "label": "#E8EAF0",
+      "label-shadow": "#0B0E13",
+      "bubble-wait": "#F8B366",
+      "bubble-blocked": "#FF9A9A",
+      "bubble-ink": "#171A21"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+name: Bug report
+description: Something does not work the way the README says it does.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please remove real project, host and conversation names from
+        anything you paste or attach.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The shortest list of steps that shows the problem. Say if it also happens in the demo (`npm run demo`).
+      placeholder: |
+        1. Open Gallery view with three rooms
+        2. Pin the second room
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Sidebar panel
+        - Editor tab
+        - Status bar item
+        - External view (browser)
+        - Mini (picture-in-picture)
+        - Demo
+    validations:
+      required: true
+  - type: input
+    id: theme
+    attributes:
+      label: Theme
+      placeholder: Pixel Dark, Guild Hall, Gothic Dungeon, or your own
+  - type: input
+    id: orca-version
+    attributes:
+      label: Orca version
+      placeholder: "1.4.255"
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Agent Center version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and browser
+      placeholder: macOS 15, Chrome 130
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `orca plugin logs local.agent-center`, with names removed.
+      render: text
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: A screenshot from the demo is ideal, since it shows no real names.

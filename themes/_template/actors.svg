@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- TEMPLATE SPRITE SHEET. Replace the drawings, keep the structure.
+
+       Rules the engine relies on:
+       - This file holds only <symbol> elements, all with the same viewBox except the familiar
+         at the end, which has its own. The viewBox has the same shape as "actors.width" x
+         "actors.height" in theme.json: these are drawn on a 30 x 40 grid and shown 36 x 48
+         room units large. The bottom centre of the viewBox is the character's feet: it lands
+         on the station point.
+       - Every id starts with this theme's own prefix ("tp-" here). Several themes can be on
+         screen at once, so pick a prefix no other theme uses and rename every id.
+       - Every id named in theme.json must exist here. "npm run check" tells you which do not.
+       - Colours that change per character are CSS variables: c1 and c2 come from
+         "species.colors" (use them as fill="var(...)" like the body below), and o1 comes from
+         "outfitColors". Any other colour is fixed.
+       - The head is in the same place in every pose, so species parts and outfits line up.
+       - The plugin draws the name, the "?", "!" and "zz" bubbles and the small activity icon
+         over a familiar. Do not draw them.
+       - The plugin also moves the characters for emotes (a hop, a stretch, a turn). Do not
+         animate anything in this file; an emote only needs the extra symbols near the end.
+       - Never put two hyphens in a row inside a comment: the file stops being valid XML. -->
+
+  <!-- POSES: one per activity, named in "actors.poses". Only "idle" is required; an activity
+       without a pose shows "idle". Each pose here is: feet, body, head, face, arms, prop. -->
+
+  <!-- idle: nothing to do. Also the fallback for every pose a theme leaves out. -->
+  <symbol id="tp-idle" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="12" r="1.5" fill="#1B2430"/><circle cx="18" cy="12" r="1.5" fill="#1B2430"/>
+    <rect x="4" y="21" width="4" height="12" rx="2" fill="var(--c2)"/>
+    <rect x="22" y="21" width="4" height="12" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- think: working with no tool in use. A hand on the chin and a thought dot. -->
+  <symbol id="tp-think" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="12" r="1.5" fill="#1B2430"/><circle cx="18" cy="12" r="1.5" fill="#1B2430"/>
+    <rect x="4" y="21" width="4" height="12" rx="2" fill="var(--c2)"/>
+    <rect x="19" y="17" width="4" height="9" rx="2" fill="var(--c2)"/>
+    <circle cx="25.5" cy="5" r="1.6" fill="#E6EDF5"/><circle cx="28" cy="2" r="1" fill="#E6EDF5"/>
+  </symbol>
+  <!-- delegate: waiting on subagents it called. One arm points away. -->
+  <symbol id="tp-delegate" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="12" r="1.5" fill="#1B2430"/><circle cx="18" cy="12" r="1.5" fill="#1B2430"/>
+    <rect x="4" y="21" width="4" height="12" rx="2" fill="var(--c2)"/>
+    <rect x="21" y="21" width="9" height="4" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- write: editing files. Both hands on a sheet with a line of text. -->
+  <symbol id="tp-write" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="13.5" r="1.5" fill="#1B2430"/><circle cx="18" cy="13.5" r="1.5" fill="#1B2430"/>
+    <rect x="5" y="27" width="20" height="6" rx="1" fill="#E6EDF5"/>
+    <path d="M8 30h10" stroke="#1B2430" stroke-width="1"/>
+    <rect x="4" y="22" width="4" height="8" rx="2" fill="var(--c2)"/><rect x="22" y="22" width="4" height="8" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- run: running a command. Holds a dark screen with a prompt. -->
+  <symbol id="tp-run" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="12" r="1.5" fill="#1B2430"/><circle cx="18" cy="12" r="1.5" fill="#1B2430"/>
+    <rect x="5" y="24" width="20" height="10" rx="1" fill="#1B2430"/>
+    <path d="M8 27l3 2l-3 2M13 31.5h5" fill="none" stroke="#6FCF97" stroke-width="1.2"/>
+    <rect x="3" y="24" width="4" height="8" rx="2" fill="var(--c2)"/><rect x="23" y="24" width="4" height="8" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- read: reading or searching files. Looks down at an open book. -->
+  <symbol id="tp-read" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="13.5" r="1.5" fill="#1B2430"/><circle cx="18" cy="13.5" r="1.5" fill="#1B2430"/>
+    <rect x="5" y="24" width="20" height="9" rx="1" fill="#F3EBD8"/>
+    <path d="M15 24v9" stroke="#B5A07A" stroke-width="1.2"/><path d="M7.5 27h5M7.5 30h5M17.5 27h5M17.5 30h5" stroke="#B5A07A" stroke-width="0.8"/>
+    <rect x="3" y="25" width="4" height="7" rx="2" fill="var(--c2)"/><rect x="23" y="25" width="4" height="7" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- wait: waiting for you. One arm raised; the plugin adds the "?" bubble. -->
+  <symbol id="tp-wait" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <circle cx="12" cy="12" r="1.5" fill="#1B2430"/><circle cx="18" cy="12" r="1.5" fill="#1B2430"/>
+    <rect x="4" y="21" width="4" height="12" rx="2" fill="var(--c2)"/>
+    <rect x="22" y="9" width="4" height="14" rx="2" fill="var(--c2)"/>
+  </symbol>
+  <!-- blocked: cannot go on. Arms crossed and a frown; the plugin adds the "!" bubble. -->
+  <symbol id="tp-blocked" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <path d="M10.5 12.5h3M16.5 12.5h3" stroke="#1B2430" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M12.5 16.5q2.5 -2 5 0" fill="none" stroke="#1B2430" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M8 24l14 7M22 24l-14 7" stroke="var(--c2)" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <!-- sleep: done. Sitting slumped with eyes shut; the head has not moved. -->
+  <symbol id="tp-sleep" viewBox="0 0 30 40">
+    <rect x="5" y="18" width="20" height="22" rx="6" fill="var(--c1)"/>
+    <rect x="5" y="34" width="20" height="6" rx="3" fill="var(--c2)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <path d="M10.5 12.5h3M16.5 12.5h3" stroke="#1B2430" stroke-width="1.2" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- SPECIES PARTS: named in "actors.species.<kind>.parts" and drawn on top of the pose, to tell
+       kinds of agent apart. They sit on the head, which is why the head never moves. -->
+
+  <!-- Ears, used by the "claude" species. -->
+  <symbol id="tp-part-ears" viewBox="0 0 30 40">
+    <path d="M8.5 7.5L8 1l5.5 3.5z" fill="var(--c1)"/><path d="M21.5 7.5L22 1l-5.5 3.5z" fill="var(--c1)"/>
+  </symbol>
+  <!-- An antenna, used by the "codex" species. -->
+  <symbol id="tp-part-antenna" viewBox="0 0 30 40">
+    <rect x="14.25" y="1" width="1.5" height="4" fill="var(--c2)"/><circle cx="15" cy="1.6" r="1.6" fill="var(--c2)"/>
+  </symbol>
+
+  <!-- OUTFITS: listed in "actors.outfits". Each agent gets one outfit (a list of these symbols,
+       possibly empty) and one colour from "actors.outfitColors", which arrives as o1. -->
+
+  <!-- A scarf at the neck. -->
+  <symbol id="tp-out-scarf" viewBox="0 0 30 40">
+    <rect x="8" y="18.5" width="14" height="4" rx="2" fill="var(--o1)"/><rect x="17.5" y="20.5" width="4" height="7" rx="1.5" fill="var(--o1)"/>
+  </symbol>
+  <!-- A cap on top of the head. -->
+  <symbol id="tp-out-cap" viewBox="0 0 30 40">
+    <path d="M7.4 9.5a7.6 6.5 0 0 1 15.2 0z" fill="var(--o1)"/><rect x="19" y="8" width="8" height="2" rx="1" fill="var(--o1)"/>
+  </symbol>
+
+  <!-- EMOTES: listed in "actors.emotes". An emote is a short move a character plays now and
+       then. The move itself ("motion") is the plugin's; a theme can add two kinds of symbol
+       to it, both on the same grid as the poses. -->
+
+  <!-- An emote pose, named in an emote's "pose": shown instead of the usual pose while the
+       emote plays. A full character like any pose, with the head where it always is. This
+       one cheers with both arms up, for the "cheer" emote of an agent that just finished. -->
+  <symbol id="tp-cheer" viewBox="0 0 30 40">
+    <rect x="9" y="35" width="5" height="5" rx="1" fill="var(--c2)"/><rect x="16" y="35" width="5" height="5" rx="1" fill="var(--c2)"/>
+    <rect x="7" y="19" width="16" height="18" rx="4" fill="var(--c1)"/>
+    <circle cx="15" cy="12" r="8" fill="var(--c1)"/>
+    <path d="M10.5 12.5q1.5 -2 3 0M16.5 12.5q1.5 -2 3 0" fill="none" stroke="#1B2430" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M12.5 15.5q2.5 2.5 5 0z" fill="#1B2430"/>
+    <rect x="4" y="9" width="4" height="14" rx="2" fill="var(--c2)"/><rect x="22" y="9" width="4" height="14" rx="2" fill="var(--c2)"/>
+  </symbol>
+
+  <!-- Emote effects, named in an emote's "effect": drawn over the character while the emote
+       plays, then gone. Draw only the effect, placed where it belongs relative to the body.
+       The plugin fades it in and out and moves it ("effectMotion"). An effect may reach
+       outside the grid when its symbol says overflow="visible". Keep the top right corner
+       free: the "?", "!" and "zz" bubbles sit there. -->
+
+  <!-- Sparks round the character, for "cheer". -->
+  <symbol id="tp-fx-sparks" viewBox="0 0 30 40" overflow="visible">
+    <path d="M2 3l1 2.5l2.5 1l-2.5 1l-1 2.5l-1 -2.5l-2.5 -1l2.5 -1z" fill="#F2C14E"/>
+    <path d="M28 17l0.8 2l2 0.8l-2 0.8l-0.8 2l-0.8 -2l-2 -0.8l2 -0.8z" fill="#F2C14E"/>
+    <circle cx="8" cy="0.5" r="1" fill="#E6EDF5"/><circle cx="0.5" cy="16" r="0.9" fill="#E6EDF5"/><circle cx="29.5" cy="29" r="0.9" fill="#E6EDF5"/>
+  </symbol>
+  <!-- A lamp that lights up beside the head, for "idea". -->
+  <symbol id="tp-fx-idea" viewBox="0 0 30 40" overflow="visible">
+    <circle cx="3" cy="3" r="2.6" fill="#F2C14E"/><rect x="2" y="5.4" width="2" height="1.6" fill="#E6EDF5"/>
+    <path d="M3 -2v-1.6M-1.6 3h-1.6M-0.4 -0.4l-1.2 -1.2M6.4 -0.4l1.2 -1.2" stroke="#F2C14E" stroke-width="0.9" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- FAMILIAR: named in "actors.familiar". One is drawn for each subagent, beside the agent
+       that called it, at the size given there (18 x 18 room units here, so the viewBox is
+       square too). It has its own viewBox and needs no poses: the plugin shows what the
+       subagent is doing with an icon above it. Use c1 and c2 so it takes its parent's colours;
+       o1 is the parent's outfit colour. This one floats ("lift") and drifts ("motion":
+       "hover"); leave both out for a familiar that walks. -->
+
+  <!-- A small floating helper with a light on top. -->
+  <symbol id="tp-familiar" viewBox="0 0 15 15">
+    <circle cx="7.5" cy="2" r="1.6" fill="var(--o1)"/><rect x="6.9" y="3" width="1.2" height="2" fill="var(--c2)"/>
+    <rect x="1.5" y="4.5" width="12" height="9.5" rx="4.5" fill="var(--c1)"/>
+    <path d="M1.9 10a6 4.6 0 0 0 11.2 0z" fill="var(--c2)"/>
+    <circle cx="5.3" cy="8.4" r="1.2" fill="#1B2430"/><circle cx="9.7" cy="8.4" r="1.2" fill="#1B2430"/>
+  </symbol>
+</svg>

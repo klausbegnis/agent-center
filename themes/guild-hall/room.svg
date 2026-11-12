@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" shape-rendering="crispEdges">
+  <!-- An original adventurers' guild hall: half-timbered back wall and plank floor. From the
+       left: a side door, the quest board, a window, the fireplace with its rug and a weapon
+       rack over a bench. On the floor: a trestle table with benches, a map table, a training
+       dummy, a locked chest, barrels and a crate. No readable text, so rooms may be mirrored. -->
+  <defs>
+    <pattern id="gh-planks" width="96" height="24" patternUnits="userSpaceOnUse">
+      <rect width="96" height="24" fill="#B5875A"/>
+      <rect y="11" width="96" height="1" fill="#9A6F47"/><rect y="23" width="96" height="1" fill="#9A6F47"/>
+      <rect x="30" width="1" height="11" fill="#9A6F47"/><rect x="78" y="12" width="1" height="11" fill="#9A6F47"/>
+      <rect x="6" y="3" width="10" height="1" fill="#C2946A"/><rect x="50" y="16" width="12" height="1" fill="#C2946A"/>
+      <rect x="60" y="5" width="6" height="1" fill="#A67B50"/><rect x="14" y="18" width="8" height="1" fill="#A67B50"/>
+    </pattern>
+    <pattern id="gh-panel" width="12" height="16" patternUnits="userSpaceOnUse">
+      <rect width="12" height="16" fill="#7D5438"/><rect x="11" width="1" height="16" fill="#5E3C28"/><rect width="1" height="16" fill="#8E6344"/>
+    </pattern>
+    <pattern id="gh-stone" width="24" height="16" patternUnits="userSpaceOnUse">
+      <rect width="24" height="16" fill="#918B86"/>
+      <rect y="7" width="24" height="1" fill="#6E6866"/><rect y="15" width="24" height="1" fill="#6E6866"/>
+      <rect x="9" width="1" height="7" fill="#6E6866"/><rect x="19" y="8" width="1" height="7" fill="#6E6866"/>
+      <rect x="2" y="2" width="4" height="1" fill="#A7A19A"/><rect x="12" y="10" width="4" height="1" fill="#A7A19A"/>
+    </pattern>
+    <symbol id="gh-barrel" viewBox="0 0 22 32">
+      <rect x="1" width="20" height="32" fill="#2B1D1A"/><rect y="4" width="22" height="24" fill="#2B1D1A"/>
+      <rect x="3" y="2" width="16" height="28" fill="#8F5F38"/><rect x="2" y="6" width="18" height="20" fill="#8F5F38"/>
+      <rect x="3" y="2" width="16" height="3" fill="#B07A4A"/><rect x="5" y="9" width="2" height="14" fill="#A87245"/>
+      <rect x="15" y="6" width="5" height="20" fill="#75492B"/>
+      <rect x="2" y="7" width="18" height="2" fill="#4B4645"/><rect x="2" y="23" width="18" height="2" fill="#4B4645"/>
+    </symbol>
+  </defs>
+
+  <!-- floor -->
+  <rect width="400" height="250" fill="url(#gh-planks)"/>
+
+  <!-- back wall: plaster between timbers, panelling below -->
+  <rect width="400" height="46" fill="#E4D2AA"/>
+  <rect x="20" y="20" width="9" height="2" fill="#D6C196"/><rect x="136" y="3" width="12" height="2" fill="#D6C196"/><rect x="346" y="9" width="2" height="2" fill="#D6C196"/><rect x="232" y="20" width="8" height="2" fill="#D6C196"/><rect x="176" y="34" width="6" height="2" fill="#D6C196"/>
+  <rect y="46" width="400" height="16" fill="url(#gh-panel)"/>
+  <rect y="44" width="400" height="3" fill="#4E3023"/><rect y="44" width="400" height="1" fill="#6B4630"/>
+  <rect width="400" height="7" fill="#4E3023"/><rect y="6" width="400" height="1" fill="#34201A"/>
+  <g fill="#5A3826"><rect width="6" height="46"/><rect x="60" width="6" height="46"/><rect x="170" width="6" height="46"/><rect x="230" width="6" height="46"/><rect x="324" width="6" height="46"/><rect x="394" width="6" height="46"/></g>
+  <g fill="#7A5237"><rect x="60" y="7" width="1" height="37"/><rect x="170" y="7" width="1" height="37"/><rect x="230" y="7" width="1" height="37"/><rect x="324" y="7" width="1" height="37"/><rect x="394" y="7" width="1" height="37"/></g>
+  <rect y="62" width="400" height="4" fill="#34201A"/><rect y="66" width="400" height="3" fill="#9A6F47"/>
+
+  <!-- side door with a stone step -->
+  <rect x="14" y="10" width="38" height="56" fill="#2B1D1A"/><rect x="16" y="12" width="34" height="54" fill="#8E5E39"/>
+  <rect x="27" y="12" width="1" height="54" fill="#6B4630"/><rect x="38" y="12" width="1" height="54" fill="#6B4630"/><rect x="16" y="12" width="34" height="2" fill="#A87245"/>
+  <rect x="16" y="20" width="34" height="3" fill="#4B4645"/><rect x="16" y="52" width="34" height="3" fill="#4B4645"/>
+  <rect x="19" y="21" width="1" height="1" fill="#8F8A86"/><rect x="33" y="21" width="1" height="1" fill="#8F8A86"/><rect x="46" y="21" width="1" height="1" fill="#8F8A86"/><rect x="19" y="53" width="1" height="1" fill="#8F8A86"/><rect x="33" y="53" width="1" height="1" fill="#8F8A86"/><rect x="46" y="53" width="1" height="1" fill="#8F8A86"/>
+  <rect x="41" y="35" width="6" height="7" fill="#2B1D1A"/><rect x="42" y="36" width="4" height="5" fill="#D6A545"/><rect x="43" y="37" width="2" height="3" fill="#8E5E39"/>
+  <rect x="12" y="66" width="42" height="5" fill="#2B1D1A"/><rect x="13" y="66" width="40" height="4" fill="#A7A19A"/><rect x="13" y="66" width="40" height="1" fill="#C4BEB5"/>
+
+  <!-- quest board -->
+  <rect x="74" y="9" width="92" height="42" fill="#2B1D1A"/><rect x="76" y="11" width="88" height="38" fill="#7D5438"/><rect x="76" y="11" width="88" height="1" fill="#9C6B3F"/>
+  <rect x="79" y="14" width="82" height="32" fill="#C8A468"/>
+  <rect x="94" y="30" width="3" height="1" fill="#B28E54"/><rect x="130" y="15" width="3" height="1" fill="#B28E54"/><rect x="146" y="31" width="3" height="1" fill="#B28E54"/><rect x="113" y="43" width="4" height="1" fill="#B28E54"/><rect x="81" y="28" width="2" height="1" fill="#B28E54"/>
+  <rect x="82" y="16" width="14" height="12" fill="#F6EDD3"/><rect x="84" y="20" width="9" height="1" fill="#A3916B"/><rect x="84" y="23" width="7" height="1" fill="#A3916B"/><rect x="88" y="15" width="2" height="2" fill="#B7352D"/>
+  <rect x="99" y="15" width="12" height="9" fill="#E9C46A"/><rect x="101" y="19" width="7" height="1" fill="#A3823A"/><rect x="104" y="14" width="2" height="2" fill="#2E6B66"/>
+  <rect x="114" y="17" width="16" height="13" fill="#F6EDD3"/><rect x="116" y="21" width="11" height="1" fill="#A3916B"/><rect x="116" y="24" width="8" height="1" fill="#A3916B"/><rect x="125" y="26" width="3" height="3" fill="#B7352D"/><rect x="121" y="16" width="2" height="2" fill="#B7352D"/>
+  <rect x="133" y="16" width="11" height="10" fill="#BFD8B0"/><rect x="135" y="20" width="6" height="1" fill="#6F8F62"/><rect x="138" y="15" width="2" height="2" fill="#B7352D"/>
+  <rect x="147" y="16" width="11" height="14" fill="#F6EDD3"/><rect x="149" y="19" width="7" height="5" fill="#8DBED0"/><rect x="149" y="26" width="6" height="1" fill="#A3916B"/><rect x="152" y="15" width="2" height="2" fill="#2E6B66"/>
+  <rect x="84" y="31" width="12" height="11" fill="#E9A48C"/><rect x="86" y="35" width="7" height="1" fill="#A8604C"/><rect x="86" y="38" width="5" height="1" fill="#A8604C"/><rect x="89" y="30" width="2" height="2" fill="#B7352D"/>
+  <rect x="99" y="27" width="12" height="16" fill="#F6EDD3"/><rect x="102" y="31" width="6" height="6" fill="#5A3826"/><rect x="103" y="32" width="4" height="3" fill="#C8A468"/><rect x="101" y="39" width="8" height="1" fill="#A3916B"/><rect x="104" y="26" width="2" height="2" fill="#B7352D"/>
+  <rect x="115" y="33" width="15" height="9" fill="#F6EDD3"/><rect x="117" y="36" width="10" height="1" fill="#A3916B"/><rect x="117" y="39" width="6" height="1" fill="#A3916B"/><rect x="121" y="32" width="2" height="2" fill="#2E6B66"/>
+  <rect x="133" y="29" width="12" height="14" fill="#F6EDD3"/><rect x="135" y="33" width="8" height="1" fill="#A3916B"/><rect x="135" y="36" width="8" height="1" fill="#A3916B"/><rect x="135" y="39" width="5" height="1" fill="#A3916B"/><rect x="138" y="28" width="2" height="2" fill="#B7352D"/>
+  <rect x="148" y="33" width="10" height="9" fill="#E9C46A"/><rect x="150" y="37" width="6" height="1" fill="#A3823A"/><rect x="152" y="32" width="2" height="2" fill="#B7352D"/>
+
+  <!-- window, with daylight falling on the floor -->
+  <rect x="184" y="10" width="40" height="36" fill="#2B1D1A"/><rect x="186" y="12" width="36" height="32" fill="#6B4630"/>
+  <rect x="189" y="15" width="30" height="26" fill="#A9D8E6"/><rect x="189" y="35" width="30" height="6" fill="#9CC79A"/><rect x="197" y="33" width="9" height="2" fill="#9CC79A"/>
+  <rect x="191" y="17" width="7" height="3" fill="#E4F4F6"/><rect x="208" y="21" width="6" height="2" fill="#E4F4F6"/>
+  <rect x="203" y="15" width="2" height="26" fill="#6B4630"/><rect x="189" y="27" width="30" height="2" fill="#6B4630"/>
+  <rect x="182" y="45" width="44" height="5" fill="#2B1D1A"/><rect x="183" y="46" width="42" height="3" fill="#9C6B3F"/><rect x="183" y="46" width="42" height="1" fill="#B58250"/>
+  <g fill="#FFE7A3" opacity="0.24"><rect x="186" y="69" width="40" height="9"/><rect x="190" y="78" width="42" height="9"/><rect x="194" y="87" width="44" height="9"/><rect x="198" y="96" width="46" height="9"/><rect x="202" y="105" width="48" height="7"/></g>
+
+  <!-- hearth rug -->
+  <rect x="236" y="84" width="92" height="32" fill="#E3C987"/><rect x="239" y="86" width="86" height="28" fill="#2E6B66"/>
+  <rect x="243" y="89" width="78" height="22" fill="#3F8780"/><rect x="245" y="91" width="74" height="18" fill="#2E6B66"/>
+  <g fill="#E3C987"><rect x="255" y="98" width="4" height="4"/><rect x="273" y="98" width="4" height="4"/><rect x="291" y="98" width="4" height="4"/><rect x="309" y="98" width="4" height="4"/></g>
+  <g fill="#D9A441"><rect x="265" y="97" width="2" height="6"/><rect x="264" y="98" width="4" height="4"/><rect x="263" y="99" width="6" height="2"/><rect x="283" y="97" width="2" height="6"/><rect x="282" y="98" width="4" height="4"/><rect x="281" y="99" width="6" height="2"/><rect x="301" y="97" width="2" height="6"/><rect x="300" y="98" width="4" height="4"/><rect x="299" y="99" width="6" height="2"/></g>
+  <g fill="#E3C987"><rect x="233" y="86" width="3" height="2"/><rect x="233" y="91" width="3" height="2"/><rect x="233" y="96" width="3" height="2"/><rect x="233" y="101" width="3" height="2"/><rect x="233" y="106" width="3" height="2"/><rect x="233" y="111" width="3" height="2"/><rect x="328" y="86" width="3" height="2"/><rect x="328" y="91" width="3" height="2"/><rect x="328" y="96" width="3" height="2"/><rect x="328" y="101" width="3" height="2"/><rect x="328" y="106" width="3" height="2"/><rect x="328" y="111" width="3" height="2"/></g>
+
+  <!-- fireplace: stone chimney, mantel, a round shield above it -->
+  <rect x="246" width="68" height="72" fill="#2B1D1A"/><rect x="248" width="64" height="70" fill="url(#gh-stone)"/><rect x="308" width="4" height="70" fill="#6E6866" opacity="0.5"/>
+  <rect x="240" y="30" width="80" height="9" fill="#2B1D1A"/><rect x="242" y="32" width="76" height="5" fill="#7D5438"/><rect x="242" y="32" width="76" height="1" fill="#B58250"/>
+  <rect x="260" y="42" width="40" height="28" fill="#2B1D1A"/><rect x="262" y="44" width="36" height="26" fill="#1B1211"/>
+  <rect x="264" y="60" width="32" height="10" fill="#E2622B" opacity="0.28"/>
+  <rect x="268" y="64" width="24" height="4" fill="#5A3826"/><rect x="272" y="62" width="16" height="3" fill="#6B4630"/>
+  <rect x="270" y="55" width="6" height="9" fill="#E2622B"/><rect x="276" y="50" width="8" height="14" fill="#F2A33A"/><rect x="284" y="56" width="6" height="8" fill="#E2622B"/><rect x="279" y="47" width="3" height="4" fill="#F2A33A"/>
+  <rect x="278" y="56" width="4" height="8" fill="#FFD96B"/><rect x="272" y="60" width="3" height="4" fill="#FFD96B"/><rect x="285" y="61" width="3" height="3" fill="#FFD96B"/>
+  <rect x="240" y="70" width="80" height="8" fill="#2B1D1A"/><rect x="242" y="70" width="76" height="6" fill="#A7A19A"/><rect x="242" y="70" width="76" height="1" fill="#C4BEB5"/>
+  <rect x="252" y="78" width="56" height="6" fill="#FFB45A" opacity="0.25"/>
+  <rect x="273" y="8" width="14" height="20" fill="#2B1D1A"/><rect x="271" y="10" width="18" height="16" fill="#2B1D1A"/>
+  <rect x="273" y="10" width="7" height="16" fill="#2E6B66"/><rect x="280" y="10" width="7" height="16" fill="#E3C987"/><rect x="275" y="26" width="5" height="1" fill="#2E6B66"/><rect x="280" y="26" width="5" height="1" fill="#E3C987"/><rect x="275" y="9" width="5" height="1" fill="#2E6B66"/><rect x="280" y="9" width="5" height="1" fill="#E3C987"/>
+  <rect x="278" y="16" width="4" height="4" fill="#4B4645"/><rect x="279" y="17" width="1" height="1" fill="#C9CFD3"/>
+  <rect x="251" y="25" width="3" height="7" fill="#F6EDD3"/><rect x="252" y="22" width="1" height="3" fill="#F2A33A"/>
+  <rect x="302" y="26" width="7" height="6" fill="#6E6866"/><rect x="303" y="27" width="5" height="1" fill="#A7A19A"/><rect x="309" y="27" width="2" height="3" fill="#6E6866"/>
+
+  <!-- weapon rack: sword, axe and spear on pegs -->
+  <rect x="334" y="11" width="56" height="6" fill="#2B1D1A"/><rect x="335" y="12" width="54" height="4" fill="#7D5438"/><rect x="335" y="12" width="54" height="1" fill="#9C6B3F"/>
+  <rect x="343" y="12" width="5" height="33" fill="#2B1D1A"/><rect x="339" y="17" width="13" height="4" fill="#2B1D1A"/>
+  <rect x="344" y="13" width="3" height="5" fill="#5A3826"/><rect x="340" y="18" width="11" height="2" fill="#D6A545"/><rect x="344" y="20" width="3" height="24" fill="#C9CFD3"/><rect x="346" y="20" width="1" height="24" fill="#9AA3A8"/>
+  <rect x="360" y="13" width="4" height="34" fill="#2B1D1A"/><rect x="355" y="18" width="14" height="11" fill="#2B1D1A"/>
+  <rect x="361" y="14" width="2" height="32" fill="#9C6B3F"/><rect x="356" y="19" width="5" height="9" fill="#C9CFD3"/><rect x="363" y="19" width="5" height="9" fill="#C9CFD3"/><rect x="356" y="26" width="5" height="2" fill="#9AA3A8"/><rect x="363" y="26" width="5" height="2" fill="#9AA3A8"/>
+  <rect x="377" y="12" width="4" height="36" fill="#2B1D1A"/><rect x="376" y="7" width="6" height="9" fill="#2B1D1A"/>
+  <rect x="378" y="16" width="2" height="31" fill="#9C6B3F"/><rect x="377" y="8" width="4" height="7" fill="#C9CFD3"/><rect x="380" y="8" width="1" height="7" fill="#9AA3A8"/>
+
+  <!-- bench by the fire, with a folded blanket -->
+  <rect x="334" y="82" width="60" height="14" fill="#2B1D1A"/><rect x="336" y="84" width="56" height="7" fill="#9C6B3F"/><rect x="336" y="84" width="56" height="1" fill="#B58250"/><rect x="336" y="91" width="56" height="3" fill="#6E4729"/>
+  <rect x="338" y="96" width="6" height="9" fill="#2B1D1A"/><rect x="384" y="96" width="6" height="9" fill="#2B1D1A"/><rect x="340" y="96" width="2" height="7" fill="#6E4729"/><rect x="386" y="96" width="2" height="7" fill="#6E4729"/>
+  <rect x="371" y="79" width="18" height="7" fill="#2B1D1A"/><rect x="372" y="80" width="16" height="5" fill="#C8443D"/><rect x="372" y="82" width="16" height="1" fill="#E3C987"/>
+
+  <!-- trestle table with two benches -->
+  <rect x="80" y="149" width="92" height="10" fill="#2B1D1A"/><rect x="82" y="151" width="88" height="5" fill="#9C6B3F"/><rect x="82" y="151" width="88" height="1" fill="#B58250"/><rect x="82" y="156" width="88" height="1" fill="#6E4729"/>
+  <rect x="78" y="184" width="10" height="14" fill="#2B1D1A"/><rect x="164" y="184" width="10" height="14" fill="#2B1D1A"/><rect x="80" y="184" width="6" height="12" fill="#6E4729"/><rect x="166" y="184" width="6" height="12" fill="#6E4729"/>
+  <rect x="70" y="160" width="112" height="26" fill="#2B1D1A"/><rect x="72" y="162" width="108" height="15" fill="#B58250"/><rect x="72" y="162" width="108" height="1" fill="#CB9D6D"/><rect x="72" y="169" width="108" height="1" fill="#9C6B3F"/><rect x="72" y="177" width="108" height="7" fill="#8A5E3E"/><rect x="72" y="182" width="108" height="2" fill="#6E4729"/>
+  <rect x="88" y="163" width="7" height="7" fill="#2B1D1A"/><rect x="89" y="164" width="5" height="5" fill="#8F8A86"/><rect x="89" y="164" width="5" height="1" fill="#E9C46A"/><rect x="95" y="165" width="2" height="3" fill="#2B1D1A"/>
+  <rect x="108" y="166" width="14" height="6" fill="#F6EDD3"/><rect x="108" y="171" width="14" height="1" fill="#C9BFA2"/><rect x="111" y="165" width="8" height="4" fill="#C07A3A"/><rect x="112" y="165" width="5" height="1" fill="#DDA05C"/>
+  <rect x="134" y="160" width="3" height="8" fill="#F6EDD3"/><rect x="135" y="157" width="1" height="3" fill="#F2A33A"/><rect x="132" y="168" width="7" height="2" fill="#4B4645"/>
+  <rect x="148" y="165" width="18" height="6" fill="#F6EDD3"/><rect x="148" y="165" width="3" height="6" fill="#D9CBA5"/><rect x="163" y="165" width="3" height="6" fill="#D9CBA5"/><rect x="153" y="167" width="8" height="1" fill="#A3916B"/>
+  <rect x="126" y="172" width="2" height="2" fill="#D6A545"/><rect x="129" y="173" width="2" height="2" fill="#D6A545"/>
+  <rect x="80" y="198" width="92" height="11" fill="#2B1D1A"/><rect x="82" y="200" width="88" height="5" fill="#9C6B3F"/><rect x="82" y="200" width="88" height="1" fill="#B58250"/><rect x="82" y="205" width="88" height="2" fill="#6E4729"/>
+  <rect x="84" y="209" width="6" height="6" fill="#2B1D1A"/><rect x="162" y="209" width="6" height="6" fill="#2B1D1A"/>
+
+  <!-- map table -->
+  <rect x="254" y="212" width="9" height="12" fill="#2B1D1A"/><rect x="301" y="212" width="9" height="12" fill="#2B1D1A"/><rect x="256" y="212" width="5" height="10" fill="#6E4729"/><rect x="303" y="212" width="5" height="10" fill="#6E4729"/>
+  <rect x="250" y="186" width="64" height="28" fill="#2B1D1A"/><rect x="252" y="188" width="60" height="19" fill="#9C6B3F"/><rect x="252" y="188" width="60" height="1" fill="#B58250"/><rect x="252" y="207" width="60" height="5" fill="#6E4729"/>
+  <rect x="257" y="190" width="46" height="15" fill="#F0E3BE"/><rect x="257" y="204" width="46" height="1" fill="#CDBE95"/>
+  <rect x="259" y="192" width="20" height="11" fill="#8DBED0"/><rect x="261" y="193" width="9" height="5" fill="#9DBA7C"/><rect x="265" y="197" width="8" height="5" fill="#9DBA7C"/><rect x="274" y="194" width="4" height="3" fill="#9DBA7C"/>
+  <rect x="279" y="192" width="22" height="11" fill="#E6D6A8"/><rect x="282" y="194" width="8" height="6" fill="#9DBA7C"/><rect x="292" y="197" width="6" height="4" fill="#B9A06A"/>
+  <g fill="#B7352D"><rect x="268" y="199" width="2" height="1"/><rect x="272" y="198" width="2" height="1"/><rect x="276" y="198" width="2" height="1"/><rect x="280" y="197" width="2" height="1"/><rect x="284" y="196" width="2" height="1"/><rect x="288" y="195" width="3" height="1"/></g>
+  <rect x="305" y="190" width="5" height="5" fill="#2B1D1A"/><rect x="306" y="191" width="3" height="2" fill="#4E6E8E"/><rect x="308" y="186" width="1" height="5" fill="#F6EDD3"/>
+
+  <!-- training dummy -->
+  <rect x="362" y="158" width="26" height="6" fill="#2B1D1A"/><rect x="364" y="159" width="22" height="3" fill="#6E4729"/>
+  <rect x="372" y="140" width="6" height="20" fill="#2B1D1A"/><rect x="374" y="140" width="2" height="19" fill="#8A5E3E"/>
+  <rect x="356" y="124" width="38" height="6" fill="#2B1D1A"/><rect x="357" y="125" width="36" height="4" fill="#8A5E3E"/><rect x="357" y="125" width="36" height="1" fill="#A87245"/>
+  <rect x="364" y="120" width="22" height="24" fill="#2B1D1A"/><rect x="366" y="122" width="18" height="20" fill="#D9B865"/><rect x="380" y="122" width="4" height="20" fill="#B99445"/><rect x="366" y="140" width="18" height="2" fill="#B99445"/>
+  <rect x="371" y="127" width="8" height="8" fill="#C8443D"/><rect x="373" y="129" width="4" height="4" fill="#F6EDD3"/><rect x="374" y="130" width="2" height="2" fill="#C8443D"/>
+  <rect x="368" y="106" width="14" height="15" fill="#2B1D1A"/><rect x="370" y="108" width="10" height="12" fill="#D9B865"/><rect x="377" y="108" width="3" height="12" fill="#B99445"/><rect x="370" y="116" width="10" height="2" fill="#8A5E3E"/>
+
+  <!-- locked chest -->
+  <rect x="14" y="208" width="38" height="29" fill="#2B1D1A"/><rect x="16" y="210" width="34" height="10" fill="#8E5E39"/><rect x="16" y="210" width="34" height="2" fill="#A87245"/><rect x="16" y="221" width="34" height="14" fill="#6E4729"/>
+  <rect x="21" y="210" width="4" height="25" fill="#5B5F66"/><rect x="41" y="210" width="4" height="25" fill="#5B5F66"/><rect x="21" y="210" width="4" height="1" fill="#8A9097"/><rect x="41" y="210" width="4" height="1" fill="#8A9097"/>
+  <rect x="29" y="216" width="8" height="10" fill="#2B1D1A"/><rect x="30" y="217" width="6" height="8" fill="#E0B43F"/><rect x="32" y="219" width="2" height="2" fill="#2B1D1A"/><rect x="32" y="221" width="1" height="2" fill="#2B1D1A"/>
+
+  <!-- crate and barrels -->
+  <rect x="368" y="182" width="26" height="24" fill="#2B1D1A"/><rect x="370" y="184" width="22" height="20" fill="#B08850"/><rect x="370" y="184" width="22" height="3" fill="#C9A268"/><rect x="370" y="201" width="22" height="3" fill="#8E6A3A"/><rect x="370" y="184" width="3" height="20" fill="#8E6A3A"/><rect x="389" y="184" width="3" height="20" fill="#8E6A3A"/><rect x="379" y="187" width="3" height="14" fill="#9A7642"/>
+  <use href="#gh-barrel" x="348" y="204" width="22" height="32"/>
+  <use href="#gh-barrel" x="372" y="214" width="22" height="32"/>
+</svg>

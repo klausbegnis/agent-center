@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    # `edited` re-runs the title check when the title is changed.
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      # No install step: the project has no dependencies.
+      - name: Static checks
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+
+  # The one check branch protection requires: it passes only when every combination above did.
+  verify:
+    name: verify
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every test job passed
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: test "$RESULT" = "success"
+
+  pr-title:
+    name: pr-title
+    # Dependabot writes its own titles ("ci: Bump ..."), which it cannot be told to lower-case.
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      # The title becomes the squash commit on main, so it must be a Conventional Commit.
+      - name: Check the pull request title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|refactor|perf|test|docs|theme|chore|ci)(\((worker|ui|themes|demo|rules|repo)\))?!?: [a-z0-9].{0,71}$'
+          if ! printf '%s' "$TITLE" | grep -Eq "$pattern"; then
+            echo "The title must be a Conventional Commit, for example:"
+            echo "  fix(worker): keep agents whose terminal is still open"
+            echo "See rules/git-workflow.md for the types and scopes."
+            exit 1
+          fi

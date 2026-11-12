@@ -1,0 +1,102 @@
+{
+  "manifestVersion": 2,
+  "id": "agent-center",
+  "name": "Agent Center",
+  "version": "0.1.0",
+  "description": "One room per project where every agent and subagent is a character acting out what it is doing. Swappable themes.",
+  "license": "MIT",
+  "engines": {
+    "orca": ">=1.4.248"
+  },
+  "execution": "trusted-worker",
+  "pluginApi": 1,
+  "main": "src/worker.mjs",
+  "contributes": {
+    "panels": [
+      {
+        "id": "rooms",
+        "title": "Agent Center",
+        "icon": "bot",
+        "entry": "ui/panel.html",
+        "ui": "html"
+      }
+    ],
+    "customEditors": [
+      {
+        "id": "rooms-tab",
+        "title": "Agent Center",
+        "extensions": [".agentcenter"],
+        "entry": "ui/tab.html"
+      }
+    ],
+    "newFiles": [
+      {
+        "id": "rooms-tab",
+        "title": "Agent Center",
+        "extension": ".agentcenter"
+      }
+    ],
+    "commands": [
+      {
+        "id": "agentCenter.toggle",
+        "title": "Agent Center: Show or Hide the Panel"
+      },
+      {
+        "id": "agentCenter.url",
+        "title": "Agent Center: External View Address"
+      }
+    ],
+    "events": [
+      { "on": "agent.status.changed" },
+      { "on": "workspace.created" },
+      { "on": "workspace.removed" }
+    ],
+    "hooks": [
+      { "event": "agent.tool.before" },
+      { "event": "agent.tool.after" }
+    ],
+    "settings": [
+      {
+        "key": "port",
+        "title": "External view port",
+        "description": "Local port the external view (detached window, fullscreen, mini) is served on. 0 turns it off.",
+        "type": "integer",
+        "default": 47600,
+        "minimum": 0,
+        "maximum": 65535
+      },
+      {
+        "key": "lan",
+        "title": "Open to the local network",
+        "description": "Lets another device on the same network, such as a tablet, open the external view. No password: anyone on the network can see your agent names.",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "sleepMinutes",
+        "title": "Minutes until a finished agent leaves",
+        "description": "Only used when the Orca CLI is unavailable. With it, an agent leaves when its terminal closes.",
+        "type": "integer",
+        "default": 30,
+        "minimum": 1,
+        "maximum": 1440
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "summary",
+        "text": "Agents",
+        "icon": "bot",
+        "tooltip": "Agent Center",
+        "command": "agentCenter.toggle"
+      }
+    ]
+  },
+  "capabilities": [
+    { "kind": "workspace:read" },
+    { "kind": "workspace:write" },
+    { "kind": "agent:read" },
+    { "kind": "storage:own" },
+    { "kind": "settings:own" }
+  ]
+}

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">
+  <!-- TEMPLATE SCENERY. Replace everything in this file with your own room.
+
+       What must stay true:
+       - The viewBox is 8:5 and matches "room.width" and "room.height" in theme.json (400 x 250
+         here). Every station point in theme.json is in these units.
+       - No characters in the scenery: the plugin draws them on top, feet on a station point.
+       - Things a character stands in front of go above its feet point; nothing in the scenery
+         can be drawn in front of a character.
+
+       This placeholder marks every station from theme.json with a dashed pad, one dot per slot
+       and the station's name, so you can see where each activity happens. It has readable
+       text, so theme.json sets "variants.flip" to false; a scenery without text can be
+       mirrored. The blue accents exist to show "variants.hues" shifting the colours per room. -->
+  <defs>
+    <pattern id="tp-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="#465468" stroke-width="0.6"/>
+    </pattern>
+  </defs>
+
+  <!-- Back wall and floor. -->
+  <rect width="400" height="250" fill="#364252"/>
+  <rect width="400" height="250" fill="url(#tp-grid)"/>
+  <rect width="400" height="96" fill="#27313D"/>
+  <rect y="92" width="400" height="4" fill="#4F8FBF"/>
+  <text x="12" y="20" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" fill="#7E93A8">THEME TEMPLATE  400 x 250 (8:5)</text>
+
+  <!-- Top row: the name of each station is a sign on the wall. -->
+  <!-- "write" station: 2 slots. -->
+  <rect x="37" y="133" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="56" cy="142" r="2" fill="#4F8FBF"/>
+  <circle cx="100" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="58" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="78" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">write</text>
+  <!-- "read" station: 1 slot. -->
+  <rect x="147" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="166" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="148.8" y="64" width="34.4" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="166" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">read</text>
+  <!-- "run" station: 1 slot. -->
+  <rect x="213" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="232" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="217.6" y="64" width="28.8" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="232" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">run</text>
+  <!-- "sleep" station: 2 slots. -->
+  <rect x="281" y="133" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="300" cy="142" r="2" fill="#4F8FBF"/>
+  <circle cx="344" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="302" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="322" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">sleep</text>
+
+  <!-- Bottom row: the name of each station is written on the floor below it. -->
+  <!-- "blocked" station: 1 slot. -->
+  <rect x="31" y="195" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="50" cy="204" r="2" fill="#4F8FBF"/>
+  <text x="50" y="232" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">blocked</text>
+  <!-- "wait" station: 2 slots. -->
+  <rect x="89" y="195" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="108" cy="204" r="2" fill="#4F8FBF"/>
+  <circle cx="152" cy="204" r="2" fill="#4F8FBF"/>
+  <text x="130" y="232" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">wait</text>
+  <!-- "think" station: 1 slot. -->
+  <rect x="195" y="195" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="214" cy="204" r="2" fill="#4F8FBF"/>
+  <text x="214" y="232" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">think</text>
+  <!-- "delegate" station: 1 slot. -->
+  <rect x="257" y="195" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="276" cy="204" r="2" fill="#4F8FBF"/>
+  <text x="276" y="232" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">delegate</text>
+  <!-- "idle" station: 2 slots. -->
+  <rect x="309" y="195" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="372" cy="204" r="2" fill="#4F8FBF"/>
+  <circle cx="328" cy="204" r="2" fill="#4F8FBF"/>
+  <text x="350" y="232" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">idle</text>
+
+  <!-- "enter": the single point where a new character appears before walking to its slot. -->
+  <rect x="182" y="240" width="36" height="10" rx="2" fill="#4F8FBF"/>
+  <text x="224" y="247" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" fill="#C9D6E3">enter</text>
+</svg>

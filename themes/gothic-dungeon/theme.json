@@ -1,0 +1,202 @@
+{
+  "name": "Gothic Dungeon",
+  "version": 1,
+  "room": {
+    "width": 400,
+    "height": 250,
+    "background": "room.svg",
+    "variants": {
+      "hues": [
+        0,
+        -8,
+        8,
+        -16,
+        -24
+      ],
+      "flip": true
+    }
+  },
+  "actors": {
+    "file": "actors.svg",
+    "width": 33,
+    "height": 44,
+    "subScale": 0.74,
+    "familiar": {
+      "symbol": "gd-familiar",
+      "emotes": ["spin", "float"],
+      "width": 15,
+      "height": 17,
+      "lift": 9,
+      "motion": "hover"
+    },
+    "hueShift": 8,
+    "outfits": [
+      [],
+      [
+        "gd-out-sash"
+      ],
+      [
+        "gd-out-amulet"
+      ],
+      [
+        "gd-out-trim"
+      ],
+      [
+        "gd-out-mantle"
+      ],
+      [
+        "gd-out-hem"
+      ],
+      [
+        "gd-out-trim",
+        "gd-out-hem"
+      ],
+      [
+        "gd-out-amulet",
+        "gd-out-hem"
+      ]
+    ],
+    "outfitColors": [
+      "#B8923A",
+      "#8A2A2A",
+      "#3A6A5A",
+      "#6A5A9A",
+      "#C9BFA8",
+      "#2E6088"
+    ],
+    "emotes": [
+      { "id": "rite-complete", "on": ["sleep"], "when": "start", "motion": "spin", "pose": "gd-cast", "effect": "gd-fx-circle", "effectMotion": "pulse", "seconds": 2 },
+      { "id": "cast-spell", "on": ["write", "run"], "motion": "float", "pose": "gd-cast", "effect": "gd-fx-sparks", "effectMotion": "pulse", "seconds": 2.2 },
+      { "id": "chant", "on": ["read"], "motion": "sway", "seconds": 2 },
+      { "id": "kindled-thought", "on": ["think", "delegate"], "motion": "tilt", "effect": "gd-fx-wisp", "seconds": 1.8 },
+      { "id": "restless", "on": ["wait"], "motion": "sway", "seconds": 1.6 },
+      { "id": "curse", "on": ["blocked"], "motion": "shake", "effect": "gd-fx-smoke", "seconds": 1 },
+      { "id": "look-around", "on": ["idle"], "motion": "tilt", "seconds": 1.8 }
+    ],
+    "poses": {
+      "idle": "gd-idle",
+      "think": "gd-idle",
+      "delegate": "gd-idle",
+      "write": "gd-work",
+      "run": "gd-work",
+      "read": "gd-read",
+      "wait": "gd-wait",
+      "blocked": "gd-blocked",
+      "sleep": "gd-sleep"
+    },
+    "species": {
+      "claude": {
+        "parts": [
+          "gd-horns"
+        ],
+        "colors": {
+          "c1": "#8E2626",
+          "c2": "#5A1414",
+          "c3": "#FFD24A"
+        }
+      },
+      "codex": {
+        "parts": [
+          "gd-staff"
+        ],
+        "colors": {
+          "c1": "#2E5088",
+          "c2": "#1A3058",
+          "c3": "#8FE0FF"
+        }
+      },
+      "default": {
+        "parts": [],
+        "colors": {
+          "c1": "#5A3E7A",
+          "c2": "#3A2654",
+          "c3": "#B8F07A"
+        }
+      }
+    }
+  },
+  "stations": {
+    "enter": {
+      "x": 200,
+      "y": 236
+    },
+    "write": [
+      {
+        "x": 88,
+        "y": 150
+      },
+      {
+        "x": 140,
+        "y": 146
+      }
+    ],
+    "read": [
+      {
+        "x": 182,
+        "y": 106
+      },
+      {
+        "x": 156,
+        "y": 112
+      }
+    ],
+    "run": [
+      {
+        "x": 286,
+        "y": 134
+      }
+    ],
+    "blocked": [
+      {
+        "x": 268,
+        "y": 184
+      },
+      {
+        "x": 304,
+        "y": 188
+      }
+    ],
+    "wait": [
+      {
+        "x": 214,
+        "y": 182
+      },
+      {
+        "x": 178,
+        "y": 188
+      }
+    ],
+    "sleep": [
+      {
+        "x": 128,
+        "y": 198
+      },
+      {
+        "x": 176,
+        "y": 216
+      }
+    ],
+    "idle": [
+      {
+        "x": 234,
+        "y": 116
+      },
+      {
+        "x": 240,
+        "y": 150
+      }
+    ]
+  },
+  "ui": {
+    "pixelated": false,
+    "vars": {
+      "frame": "#0A0707",
+      "label": "#E0C98A",
+      "label-shadow": "#000000",
+      "bubble-wait": "#FFD24A",
+      "bubble-blocked": "#E8553A",
+      "bubble-ink": "#140C08",
+      "font": "Georgia, 'Times New Roman', serif"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose new behaviour. Do this before writing code for anything large.
+title: "feat: "
+labels: ["feature", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: Describe what you would see and do. A sketch is welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Rooms and characters
+        - Views (Gallery, List, pin)
+        - Themes
+        - External view
+        - Orca integration
+        - Other
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Fits the project
+      description: These are fixed constraints. See rules/architecture.md.
+      options:
+        - label: It needs no runtime dependency and no build step
+        - label: It does not need the plugin to send anything to the internet
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Would you build it?
+      options:
+        - label: I would like to open a pull request for this

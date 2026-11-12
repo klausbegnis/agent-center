@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- Poses on a 16x16 grid drawn at 36x36. The CSS variable c1 is the body colour and c2 the
+       shade; both come from "species.colors" in theme.json. -->
+  <symbol id="pd-idle" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="8" fill="var(--c1)"/>
+    <rect x="4" y="12" width="3" height="2" fill="var(--c2)"/><rect x="9" y="12" width="3" height="2" fill="var(--c2)"/>
+    <rect x="5" y="6" width="2" height="2" fill="#171A21"/><rect x="9" y="6" width="2" height="2" fill="#171A21"/>
+    <rect x="5" y="6" width="1" height="1" fill="#FFFFFF"/><rect x="9" y="6" width="1" height="1" fill="#FFFFFF"/>
+  </symbol>
+  <symbol id="pd-work" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="8" fill="var(--c1)"/>
+    <rect x="4" y="12" width="3" height="2" fill="var(--c2)"/><rect x="9" y="12" width="3" height="2" fill="var(--c2)"/>
+    <rect x="2" y="10" width="2" height="2" fill="var(--c2)"/><rect x="12" y="10" width="2" height="2" fill="var(--c2)"/>
+    <rect x="5" y="6" width="2" height="2" fill="#171A21"/><rect x="9" y="6" width="2" height="2" fill="#171A21"/>
+    <rect x="5" y="6" width="1" height="1" fill="#FFFFFF"/><rect x="9" y="6" width="1" height="1" fill="#FFFFFF"/>
+  </symbol>
+  <symbol id="pd-read" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="8" fill="var(--c1)"/>
+    <rect x="4" y="12" width="3" height="2" fill="var(--c2)"/><rect x="9" y="12" width="3" height="2" fill="var(--c2)"/>
+    <rect x="5" y="6" width="2" height="1" fill="#171A21"/><rect x="9" y="6" width="2" height="1" fill="#171A21"/>
+    <rect x="3" y="8" width="10" height="4" fill="#E8DCC0"/><rect x="7" y="8" width="2" height="4" fill="#B5A07A"/>
+    <rect x="4" y="9" width="2" height="1" fill="#7C6A4A"/><rect x="10" y="9" width="2" height="1" fill="#7C6A4A"/>
+  </symbol>
+  <symbol id="pd-wait" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="8" fill="var(--c1)"/>
+    <rect x="4" y="12" width="3" height="2" fill="var(--c2)"/><rect x="9" y="12" width="3" height="2" fill="var(--c2)"/>
+    <rect x="5" y="5" width="2" height="3" fill="#171A21"/><rect x="9" y="5" width="2" height="3" fill="#171A21"/>
+    <rect x="5" y="5" width="1" height="1" fill="#FFFFFF"/><rect x="9" y="5" width="1" height="1" fill="#FFFFFF"/>
+  </symbol>
+  <symbol id="pd-blocked" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="8" fill="var(--c1)"/>
+    <rect x="4" y="12" width="3" height="2" fill="var(--c2)"/><rect x="9" y="12" width="3" height="2" fill="var(--c2)"/>
+    <rect x="5" y="6" width="2" height="1" fill="#171A21"/><rect x="9" y="6" width="2" height="1" fill="#171A21"/>
+    <rect x="6" y="10" width="4" height="1" fill="#171A21"/>
+  </symbol>
+  <symbol id="pd-sleep" viewBox="0 0 16 16">
+    <!-- Same head position as the other poses, so outfits line up. -->
+    <rect x="4" y="3" width="8" height="1" fill="var(--c1)"/><rect x="3" y="4" width="10" height="9" fill="var(--c1)"/>
+    <rect x="3" y="11" width="10" height="2" fill="var(--c2)"/>
+    <rect x="5" y="7" width="2" height="1" fill="#171A21"/><rect x="9" y="7" width="2" height="1" fill="#171A21"/>
+  </symbol>
+  <!-- Parts: what tells each species apart, drawn on top of the pose. -->
+  <symbol id="pd-ears" viewBox="0 0 16 16">
+    <rect x="4" y="1" width="2" height="2" fill="var(--c1)"/><rect x="10" y="1" width="2" height="2" fill="var(--c1)"/>
+  </symbol>
+  <symbol id="pd-antenna" viewBox="0 0 16 16">
+    <rect x="7" y="0" width="2" height="3" fill="var(--c1)"/>
+  </symbol>
+  <!-- Outfits: one is picked per agent. o1 comes from "outfitColors" in theme.json. -->
+  <symbol id="pd-out-scarf" viewBox="0 0 16 16">
+    <rect x="3" y="10" width="10" height="2" fill="var(--o1)"/><rect x="10" y="12" width="2" height="2" fill="var(--o1)"/>
+  </symbol>
+  <symbol id="pd-out-cap" viewBox="0 0 16 16">
+    <rect x="4" y="3" width="8" height="1" fill="var(--o1)"/><rect x="3" y="4" width="10" height="1" fill="var(--o1)"/><rect x="11" y="5" width="4" height="1" fill="var(--o1)"/>
+  </symbol>
+  <symbol id="pd-out-glasses" viewBox="0 0 16 16">
+    <rect x="4" y="5" width="4" height="1" fill="#FFFFFF"/><rect x="4" y="8" width="4" height="1" fill="#FFFFFF"/><rect x="4" y="5" width="1" height="4" fill="#FFFFFF"/><rect x="7" y="5" width="1" height="4" fill="#FFFFFF"/>
+    <rect x="8" y="5" width="4" height="1" fill="#FFFFFF"/><rect x="8" y="8" width="4" height="1" fill="#FFFFFF"/><rect x="11" y="5" width="1" height="4" fill="#FFFFFF"/>
+  </symbol>
+  <symbol id="pd-out-bow" viewBox="0 0 16 16">
+    <rect x="5" y="10" width="2" height="2" fill="var(--o1)"/><rect x="9" y="10" width="2" height="2" fill="var(--o1)"/><rect x="7" y="10" width="2" height="1" fill="#FFFFFF"/>
+  </symbol>
+  <symbol id="pd-out-headphones" viewBox="0 0 16 16">
+    <rect x="3" y="2" width="10" height="1" fill="var(--o1)"/><rect x="2" y="3" width="1" height="3" fill="var(--o1)"/><rect x="13" y="3" width="1" height="3" fill="var(--o1)"/><rect x="1" y="5" width="2" height="4" fill="var(--o1)"/><rect x="13" y="5" width="2" height="4" fill="var(--o1)"/>
+  </symbol>
+  <!-- Emotes: short moves the plugin plays now and then, listed in "actors.emotes". An effect
+       is laid over the character while its emote plays and may reach outside the grid. -->
+  <!-- Confetti, for a job done. -->
+  <symbol id="pd-fx-confetti" viewBox="0 0 16 16" overflow="visible">
+    <rect x="-1" y="2" width="1" height="1" fill="#F8B366"/><rect x="1" y="-1" width="1" height="1" fill="#6FE0D2"/><rect x="5" y="-2" width="1" height="1" fill="#FF9A9A"/><rect x="9" y="-1" width="1" height="1" fill="#F8B366"/><rect x="16" y="6" width="1" height="1" fill="#6FE0D2"/><rect x="-2" y="7" width="1" height="1" fill="#FF9A9A"/><rect x="17" y="10" width="1" height="1" fill="#F8B366"/><rect x="-1" y="11" width="1" height="1" fill="#6FE0D2"/>
+  </symbol>
+  <!-- Sparks off a machine run hard. -->
+  <symbol id="pd-fx-spark" viewBox="0 0 16 16" overflow="visible">
+    <rect x="0" y="1" width="1" height="3" fill="#6FE0D2"/><rect x="-1" y="2" width="3" height="1" fill="#6FE0D2"/><rect x="0" y="2" width="1" height="1" fill="#FFFFFF"/><rect x="16" y="8" width="1" height="3" fill="#F8B366"/><rect x="15" y="9" width="3" height="1" fill="#F8B366"/><rect x="16" y="9" width="1" height="1" fill="#FFFFFF"/><rect x="-2" y="9" width="1" height="1" fill="#6FE0D2"/><rect x="3" y="-1" width="1" height="1" fill="#F8B366"/>
+  </symbol>
+  <!-- A lamp switching on: an idea. -->
+  <symbol id="pd-fx-idea" viewBox="0 0 16 16" overflow="visible">
+    <rect x="-1" y="-3" width="3" height="3" fill="#F8B366"/><rect x="-1" y="-3" width="1" height="1" fill="#FFFFFF"/><rect x="0" y="0" width="1" height="1" fill="#E8EAF0"/><rect x="-3" y="-2" width="1" height="1" fill="#F8B366"/><rect x="0" y="-5" width="1" height="1" fill="#F8B366"/><rect x="3" y="-2" width="1" height="1" fill="#F8B366"/>
+  </symbol>
+  <!-- Steam let off in a temper. -->
+  <symbol id="pd-fx-steam" viewBox="0 0 16 16" overflow="visible">
+    <rect x="0" y="0" width="2" height="2" fill="#E8EAF0"/><rect x="-2" y="-3" width="2" height="2" fill="#E8EAF0" opacity="0.8"/><rect x="2" y="-3" width="1" height="1" fill="#E8EAF0" opacity="0.6"/>
+  </symbol>
+  <!-- Familiar: a small hovering drone, one per subagent, in its parent's colours. The light
+       under it takes the parent's outfit colour. -->
+  <symbol id="pd-familiar" viewBox="0 0 10 10">
+    <rect x="0" y="1" width="4" height="1" fill="#E8EAF0"/><rect x="6" y="1" width="4" height="1" fill="#E8EAF0"/>
+    <rect x="2" y="2" width="1" height="1" fill="var(--c2)"/><rect x="7" y="2" width="1" height="1" fill="var(--c2)"/>
+    <rect x="2" y="3" width="6" height="1" fill="var(--c1)"/><rect x="1" y="4" width="8" height="3" fill="var(--c1)"/>
+    <rect x="2" y="7" width="6" height="1" fill="var(--c2)"/>
+    <rect x="3" y="4" width="4" height="2" fill="#171A21"/><rect x="3" y="4" width="1" height="1" fill="#FFFFFF"/>
+    <rect x="4" y="8" width="2" height="1" fill="var(--o1, #6FE0D2)"/>
+  </symbol>
+</svg>

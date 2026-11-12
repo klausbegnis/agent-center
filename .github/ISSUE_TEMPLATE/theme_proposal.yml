@@ -1,0 +1,51 @@
+name: Theme proposal
+description: Propose a theme for the shipped set. A theme for yourself needs no proposal.
+title: "theme: "
+labels: ["theme", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A theme is a folder with a scenery, a sprite sheet and a small JSON file. See THEMES.md
+        for the format and rules/themes.md for what a theme needs to be merged.
+  - type: input
+    id: name
+    attributes:
+      label: Theme name
+      placeholder: Lighthouse
+    validations:
+      required: true
+  - type: textarea
+    id: look
+    attributes:
+      label: The look
+      description: Setting, perspective, palette, what the characters are. A sketch or a demo screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: stations
+    attributes:
+      label: Where characters go
+      description: What stands in for writing, reading, running commands, waiting, being blocked and sleeping?
+  - type: dropdown
+    id: art
+    attributes:
+      label: Where the art comes from
+      options:
+        - I am drawing all of it myself
+        - It uses an art pack whose licence allows redistribution (named below)
+        - Not sure yet
+    validations:
+      required: true
+  - type: input
+    id: licence
+    attributes:
+      label: Art pack and licence
+      description: Only if the art is not all yours.
+  - type: checkboxes
+    id: original
+    attributes:
+      label: Original work
+      options:
+        - label: It is in the spirit of a genre or game at most, and copies no specific game's characters, maps, sprites, logos or names
+          required: true
