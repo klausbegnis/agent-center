@@ -2,6 +2,7 @@
 // reaction; this periodic snapshot covers what they cannot: agents that were running before the
 // plugin loaded, paired machines, and terminals that were closed.
 import * as orcaCli from './cli.mjs'
+import { withUntrackedSessions } from './untracked-sessions.mjs'
 
 const LOCAL = 'local'
 /**
@@ -19,9 +20,10 @@ const FAILED_READS_BEFORE_OFFLINE = 3
  *   listLocalWorkspaces: () => Promise<any[] | null>,
  *   log: (message: string) => void,
  *   reader?: Pick<typeof orcaCli, 'listEnvironments' | 'readHost' | 'readTerminals'>
- * }} dependencies `reader` is what reads Orca; tests replace it
+ *   now?: () => number
+ * }} dependencies `reader` is what reads Orca and `now` the clock; tests replace them
  */
-export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reader = orcaCli }) {
+export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reader = orcaCli, now = Date.now }) {
   const { listEnvironments, readHost, readTerminals } = reader
   /** @type {Map<string, any[]>} rows by host id */
   const rowsByHost = new Map()
@@ -47,7 +49,7 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
         // The links are an improvement, not a requirement: without them events still arrive.
         readTerminals(cli, environment).catch(() => [])
       ])
-      rowsByHost.set(host.hostId, host.rows)
+      rowsByHost.set(host.hostId, withUntrackedSessions(host.rows, terminals, now()))
       terminalsByHost.set(host.hostId, terminals)
       failedReads.delete(label)
     } catch (error) {
@@ -59,7 +61,8 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
     }
   }
 
-  async function readRemoteHosts() {
+  /** @param {boolean} onlyReachable leave out the machines whose last read failed */
+  async function readRemoteHosts(onlyReachable) {
     let environments
     try {
       environments = await listEnvironments(cli)
@@ -71,7 +74,8 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
     for (const hostId of rowsByHost.keys()) {
       if (hostId !== LOCAL && !environments.includes(hostId)) markOffline(hostId)
     }
-    await Promise.all(environments.map((name) => readOne(name)))
+    const wanted = onlyReachable ? environments.filter((name) => !failedReads.has(name)) : environments
+    await Promise.all(wanted.map((name) => readOne(name)))
   }
 
   async function applyToStore() {
@@ -90,14 +94,17 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
    * Reads this machine and, when `remote` is set, the paired ones. Calls made while a snapshot
    * is already running share its result, unless they ask for the paired machines and the
    * running one leaves them out: then a full one follows it.
+   *
+   * With `onlyReachable`, paired machines whose last read failed are left out: waiting for one
+   * that is down would hold every round up, so those are only tried on a full read.
    */
-  function sync({ remote = true } = {}) {
-    if (running && remote && !runningIncludesRemote) return running.then(() => sync({ remote }))
+  function sync({ remote = true, onlyReachable = false } = {}) {
+    if (running && remote && !runningIncludesRemote) return running.then(() => sync({ remote, onlyReachable }))
     if (running) return running
     runningIncludesRemote = remote
     running = (async () => {
       await readOne(null)
-      if (remote) await readRemoteHosts()
+      if (remote) await readRemoteHosts(onlyReachable)
       await applyToStore()
     })().finally(() => {
       running = null

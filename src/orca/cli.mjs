@@ -75,7 +75,14 @@ export async function readTerminals(cli, environment = null) {
   for (const terminal of result?.terminals ?? []) {
     // A pane's key is its tab and leaf, the same form `worktree ps` reports.
     if (!terminal.handle || !terminal.tabId || !terminal.leafId) continue
-    links.push({ terminalId: terminal.handle, paneKey: `${terminal.tabId}:${terminal.leafId}` })
+    links.push({
+      terminalId: terminal.handle,
+      paneKey: `${terminal.tabId}:${terminal.leafId}`,
+      // What is needed to recognise a session Orca lost track of: see untracked-sessions.mjs.
+      title: textOrNull(terminal.title),
+      lastOutputAt: typeof terminal.lastOutputAt === 'number' ? terminal.lastOutputAt : null,
+      worktreePath: textOrNull(terminal.worktreePath)
+    })
   }
   return links
 }

@@ -25,6 +25,8 @@ release is cut.
 - A theme template in `themes/_template`, a quick start in `THEMES.md`, and `npm run check`,
   which holds every theme and the template to the same contract.
 - List and Gallery views, pinning a room in Gallery view, and hiding rooms.
+- Sessions that were running when Orca restarted, which Orca stops listing, are still shown:
+  recognised by their terminal title, as working or done.
 - "Open workspace" on an agent's card, which shows the terminal tab the agent runs in.
 - A sidebar panel, an editor tab, a status bar summary, and an external view for a detached
   window, fullscreen on another screen or a small always-on-top window.
