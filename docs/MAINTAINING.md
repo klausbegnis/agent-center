@@ -59,7 +59,8 @@ Priority, for accepted bugs and features:
 
 Area, any that apply: `area:worker`, `area:ui`, `area:themes`, `area:demo`, `area:repo`.
 
-Others: `good first issue`, `help wanted`, `duplicate`, `wontfix`, `breaking`.
+Others: `good first issue`, `help wanted`, `duplicate`, `wontfix`, `breaking`, `accessibility`,
+and `dependencies`, which Dependabot puts on its own pull requests.
 
 ## Pull requests
 

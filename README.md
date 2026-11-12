@@ -94,7 +94,7 @@ listed at the bottom, one click away.
 | Mini, always on top | in the external view, **Mini** (Chrome or Edge) |
 
 The external view is a local page the plugin serves at `http://127.0.0.1:47600/`, or on the next
-free port when that one is taken; **Window** in the panel opens the right address. It takes a
+free port when that one is taken; **Pop out** in the panel opens the right address. It takes a
 few address options, handy for a wall display:
 
 - `?view=gallery` or `?view=list` starts in that view.
