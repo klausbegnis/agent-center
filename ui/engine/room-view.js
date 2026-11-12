@@ -15,7 +15,7 @@ import { ROOM_ASPECT, slotPoint, stationFor } from './stations.js'
  *   variant: { hue: number, flip: boolean, background: string },
  *   transport: object,
  *   emotePace: object | null,
- *   onSelectAgent: (agentId: string) => void,
+ *   onSelectAgent: (agentId: string | null) => void,
  *   onTogglePin: (roomId: string) => void
  * }} options `emotePace` is a pace from emotes.js, or null for a room without emotes
  */
@@ -57,6 +57,11 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   // the scenery and the characters.
   const stage = el('div', 'ac-stage')
   const scene = el('div', 'ac-scene')
+  // A click on the scenery itself, not on a character or on the agent's card, lets go of the
+  // selected agent.
+  stage.addEventListener('click', (event) => {
+    if (!event.target.closest('.ac-actor, .ac-detail')) onSelectAgent(null)
+  })
   scene.style.aspectRatio = String(ROOM_ASPECT)
   const scenery = el('div', 'ac-bg')
   scenery.style.backgroundImage = `url("${theme.dir}${variant.background}")`

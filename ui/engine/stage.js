@@ -90,7 +90,10 @@ export async function mountStage(root, transport, options = {}) {
     transport,
     emotePace: paceFor(options.emotes),
     onSelectAgent: (agentId) => {
-      selectedAgentId = selectedAgentId === agentId ? null : agentId
+      // The same agent again, or the scenery (null), clears the selection.
+      const next = selectedAgentId === agentId ? null : agentId
+      if (next === selectedAgentId) return
+      selectedAgentId = next
       render()
     },
     onTogglePin: (roomId) => {
