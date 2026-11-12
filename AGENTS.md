@@ -21,7 +21,8 @@ doing. Plain JavaScript, no build step, no runtime dependencies.
   Claude Code loads the matching rule by itself. With any other tool, open `rules/README.md`,
   find the rules for the files you are about to change and read them first.
 - This file is the one set of instructions for every coding agent. `CLAUDE.md` only imports
-  it, and `.claude/rules` and `.agents/rules` are links to `rules/`.
+  it. `.claude/rules/` is a copy of `rules/` that Claude Code reads: edit `rules/` and run
+  `npm run sync-rules`.
 
 ## Never
 

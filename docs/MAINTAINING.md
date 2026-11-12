@@ -141,8 +141,26 @@ To cut a release:
 3. Set the same version in `orca-plugin.json` and `package.json`. `npm run check` fails when
    they differ.
 4. Open a pull request titled `chore(repo): release vX.Y.Z` and merge it.
-5. Tag the merge commit `vX.Y.Z` and push the tag.
-6. Publish a GitHub release with the changelog section as its notes.
+5. Run `orca plugin validate .` on the merge commit. It is the check Orca's plugin directory
+   runs.
+6. Tag the merge commit and push the tag: `git tag -a vX.Y.Z -m vX.Y.Z`, then
+   `git push origin vX.Y.Z`.
+7. Publish a GitHub release with the changelog section as its notes.
+
+### Orca's plugin directory
+
+The directory at `orca.dev/plugins` lists the plugin by itself; there is no form. It reads the
+newest `vX.Y.Z` tag of a public repository that has the `orca-plugin` topic, pinned to that
+tag's commit, so a push without a new tag changes nothing there. The page
+`https://orca.dev/plugins/klausbegnis/agent-center` shows whether it is listed and, if not,
+what to fix. What keeps a plugin out, and so must stay true here:
+
+- The manifest passes `orca plugin validate .`.
+- No symbolic links and no binaries other than images. `npm run check` refuses links.
+- The repository is public, not a fork and not archived, and has a licence GitHub detects.
+- The listing images in `assets/` fit: icon square and at least 128×128; cover 16:10, at least
+  800×500, at most 1024 KB; up to six screenshots of at least 1280×800 and at most 1536 KB
+  each. Retake them from the demo, like the README screenshots.
 
 ## Repository settings
 
