@@ -19,7 +19,8 @@ Knowing this helps judge whether something is a vulnerability.
 
 - It runs its own code in Orca's plugin worker, with the access of the user's account.
 - It reads workspace and agent information from Orca, including through the `orca` CLI
-  commands `worktree ps`, `terminal list` and `environment list`. When you click "Open
+  commands `worktree ps`, `terminal list` (titles and the time of the last output, never the
+  output itself) and `environment list`. When you click "Open
   workspace" it also runs `terminal switch`, which only changes the tab shown in Orca.
 - It serves a local page on `127.0.0.1` (port 47600 by default, or the next free port) with no
   login. Any program and any user account on this machine can read it and change its settings. It

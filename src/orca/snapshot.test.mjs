@@ -90,3 +90,15 @@ test('a full snapshot asked for during a local one still reads the paired machin
   await Promise.all([snapshotSync.sync({ remote: false }), snapshotSync.sync()])
   assert.deepEqual(calls, ['local', 'local', 'build-box'])
 })
+
+test('a round for reachable machines skips one whose last read failed, and a full round retries it', async () => {
+  const hosts = { local: [row('local', 'a')], 'build-box': new Error('unreachable'), 'gpu-rig': [row('gpu-rig', 'c')] }
+  const { snapshotSync, calls } = setup(hosts, { value: ['build-box', 'gpu-rig'] })
+  await snapshotSync.sync()
+  calls.length = 0
+  await snapshotSync.sync({ remote: true, onlyReachable: true })
+  assert.deepEqual(calls, ['local', 'gpu-rig'])
+  calls.length = 0
+  await snapshotSync.sync()
+  assert.deepEqual(calls.sort(), ['build-box', 'gpu-rig', 'local'])
+})

@@ -20,8 +20,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 /** Posts to panels are rate limited (200 per 10 s), so changes go out in bursts. */
 const PUBLISH_DELAY_MS = 250
 const SNAPSHOT_INTERVAL_MS = 15_000
-/** Paired machines are slower to reach: read them once every this many local snapshots. */
-const REMOTE_SNAPSHOT_EVERY = 4
+/** A paired machine that could not be read is tried again once every this many snapshots. */
+const UNREACHABLE_RETRY_EVERY = 4
 const DEFAULT_PORT = 47600
 const DEFAULT_SLEEP_MINUTES = 30
 const STATUS_BAR_ITEM = 'summary'
@@ -136,7 +136,9 @@ export default async function activate(orca) {
     // With the CLI snapshot an agent leaves when its terminal closes; the time limit then only
     // applies to agents on no known host, which no snapshot covers.
     if (store.prune({ everyHost: !snapshotSync.hasData() })) publish()
-    refresh({ remote: round % REMOTE_SNAPSHOT_EVERY === 0 })
+    // No events come from paired machines, so they are read every round too; one that is down
+    // is only tried again every few rounds.
+    refresh({ remote: true, onlyReachable: round % UNREACHABLE_RETRY_EVERY !== 0 })
   }, SNAPSHOT_INTERVAL_MS)
   snapshotTimer.unref?.()
 
