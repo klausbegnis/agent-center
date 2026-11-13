@@ -7,6 +7,8 @@
 import { createDetail } from './detail.js'
 import { el } from './dom.js'
 import { paceFor } from './emotes.js'
+import { gameEffects } from './game-effects.js'
+import { createGameFeed } from './game-events.js'
 import { createGameShell } from './game-shell.js'
 import { createHeader, VIEWS } from './header.js'
 import { themeLoadFailure } from './labels.js'
@@ -67,6 +69,8 @@ export async function mountStage(root, transport, options = {}) {
   let selectedAgentId = null
   let view = DEFAULT_VIEW
   let pinnedRoomId = null
+  // Which of the game's events are new; the first state only sets where the page starts.
+  const gameFeed = createGameFeed()
 
   // One update at a time: loading themes is async and state arrives in bursts.
   let queue = Promise.resolve()
@@ -163,6 +167,7 @@ export async function mountStage(root, transport, options = {}) {
 
   async function update(next) {
     state = next
+    const gameChanges = gameFeed.take(next.game)
     // Load every theme a room can end up with before drawing anything. One that fails to load
     // is left out; the rooms are drawn as long as there is a theme for the default.
     await Promise.all(themeIdsToLoad(next).map((id) => library.ensure(id)))
@@ -171,6 +176,7 @@ export async function mountStage(root, transport, options = {}) {
       return
     }
     render()
+    roomList.playGame(gameEffects(gameChanges, next), Date.now())
   }
 
   const savedView = await Promise.resolve(transport.prefs?.get('view')).catch(() => null)
@@ -190,6 +196,7 @@ export async function mountStage(root, transport, options = {}) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   setInterval(() => {
     game.tick(Date.now())
+    roomList.tickGame(Date.now())
     if (root.ownerDocument.hidden || reducedMotion.matches) roomList.stopEmotes()
     else roomList.tickEmotes(Date.now())
   }, EMOTE_TICK_MS)

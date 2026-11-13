@@ -473,3 +473,23 @@ export const SETTINGS = {
 
 /** "main · level 11" as a choice of world. */
 export const worldChoice = (world) => `${world.id} · level ${world.level}`
+
+/** What the game's events say as they play over a room. */
+export const EFFECT = {
+  hit: (share) => `−${share}`,
+  defeated: (count) => (count > 1 ? `Defeated ×${count}` : 'Defeated!'),
+  loot: (text) => `+ ${text}`,
+  level: (level) => `Level ${level}!`,
+  retired: (name, level) => `${name} retired at level ${level}`,
+  arrived: (name, items) => (items.length ? `${name} arrived and took ${items.join(', ')}` : `${name} arrived`),
+  found: (name) => `Found ${name}`,
+  upgraded: (name, level) => `Upgraded ${name} to Lv ${level}`,
+  built: (name, level) => `Built ${name} level ${level}`
+}
+
+/** A name for an item id the state has no name for: "ashwood-wand" becomes "Ashwood wand". */
+export function nameFromId(id) {
+  const words = String(id ?? '').split('-').filter(Boolean)
+  const text = words.join(' ')
+  return text ? text[0].toUpperCase() + text.slice(1) : ''
+}

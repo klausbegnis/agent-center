@@ -25,6 +25,8 @@ import { CLASS_MARKS, pixelPath, TRADE_MARKS } from './pixel-art.js'
 
 /** The grid the class and trade marks are drawn on. */
 const MARK_GRID = 8
+/** How long an event stays over the room; the CSS animation lasts as long. */
+const EFFECT_MS = 2600
 
 /** @param {{ scene: HTMLElement, theme: object }} options */
 export function createRoomGame({ scene, theme }) {
@@ -58,6 +60,13 @@ export function createRoomGame({ scene, theme }) {
   band.append(wave, foe, party)
   /** Agent ids whose character carries a mark now. */
   const marked = new Set()
+
+  // Lines about loot, drops and arrivals appear just under the band, clear of the characters' heads.
+  const lines = el('div', 'ac-game-lines')
+  lines.setAttribute('aria-hidden', 'true')
+  lines.style.top = `${bandHeight(theme) * 100}%`
+  /** Every effect on screen, with the time it is taken away. */
+  const playing = new Map()
 
   function drawFight(fight) {
     waveNumber.textContent = waveLabel(fight.wave)
@@ -141,7 +150,41 @@ export function createRoomGame({ scene, theme }) {
     for (const agentId of present) marked.add(agentId)
   }
 
+  /** Where an effect plays, or null when that part is not on screen. */
+  function placeFor(effect, actorOf) {
+    if (effect.target === 'monster') return band.isConnected ? foe : null
+    if (effect.target === 'agent') return actorOf(effect.agentId) ?? null
+    if (!lines.isConnected) scene.append(lines)
+    return lines
+  }
+
   return {
+    /**
+     * Plays new events once. They are taken away by the stage's clock (`tick`).
+     *
+     * @param {import('./game-effects.js').Effect[]} effects this room's
+     * @param {number} now
+     * @param {(agentId: string) => HTMLElement | undefined} actorOf
+     */
+    play(effects, now, actorOf) {
+      for (const effect of effects) {
+        const place = placeFor(effect, actorOf)
+        if (!place) continue
+        const node = el('span', `ac-game-pop ac-game-pop-${effect.target} ac-game-tone-${effect.tone}`, effect.text)
+        node.setAttribute('aria-hidden', 'true')
+        place.append(node)
+        playing.set(node, now + EFFECT_MS)
+      }
+    },
+    /** Takes away the effects whose time is up. */
+    tick(now) {
+      for (const [node, until] of playing) {
+        if (now < until) continue
+        node.remove()
+        playing.delete(node)
+      }
+      if (playing.size === 0) lines.remove()
+    },
     /**
      * @param {{ id: string, agents: object[] }} room the room as it is now
      * @param {object | null} game the view state's `game` while it runs, otherwise null

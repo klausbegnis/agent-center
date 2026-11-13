@@ -197,6 +197,14 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
       game.update(current, gameModeOf(state.game) === 'running' ? state.game : null, (id) => actors.get(id))
       emoteSchedule?.observe([...cast.values()], now).forEach(stopEmoteOf)
     },
+    /** Plays the game's new events in this room. */
+    playGame(effects, now) {
+      game.play(effects, now, (id) => actors.get(id))
+    },
+    /** Takes away the game's events whose time is up. */
+    tickGame(now) {
+      game.tick(now)
+    },
     /** Starts the emotes that are due at `now` and ends the ones that are over. */
     tickEmotes(now) {
       if (!emoteSchedule) return

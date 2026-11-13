@@ -507,3 +507,81 @@
 .ac-mini .ac-game-settings,
 .ac-collapsed .ac-game-settings { display: none !important; }
 .ac-mini.ac-root[data-game-settings] .ac-rooms { display: grid !important; }
+
+/* Events: each plays once and is taken away by the stage's clock. Under reduced motion they
+   only appear and disappear, without moving. */
+.ac-game-foe { position: relative; }
+.ac-game-pop {
+  pointer-events: none;
+  font-family: var(--ac-font);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ac-label);
+  text-shadow: 0 1px 0 var(--ac-label-shadow), 0 0 3px var(--ac-label-shadow);
+  animation: ac-game-rise 2.6s ease-out 1 both;
+}
+.ac-game-pop-monster {
+  position: absolute;
+  left: 0;
+  bottom: 30%;
+  font-size: clamp(9px, 3cqw, 14px);
+}
+.ac-game-pop-monster + .ac-game-pop-monster { left: 1.2em; bottom: 60%; }
+.ac-game-tone-hit { color: var(--ac-game-bad); }
+.ac-game-tone-kill { color: var(--ac-game-gold); }
+.ac-game-pop-agent {
+  position: absolute;
+  right: 60%;
+  bottom: 100%;
+  z-index: 2;
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+  background: var(--ac-label-shadow);
+  color: var(--ac-game-gold);
+  font-size: clamp(8px, 2.6cqw, 12px);
+  text-shadow: none;
+}
+.ac-game-lines {
+  position: absolute;
+  left: 50%;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  max-width: 92%;
+  margin-top: 0.6cqw;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ac-game-pop-room {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.2em 0.6em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ac-label-shadow) 88%, transparent);
+  font-size: clamp(9px, 2.6cqw, 12px);
+  font-weight: 600;
+  text-shadow: none;
+  animation-name: ac-game-line;
+}
+.ac-game-tone-loot,
+.ac-game-tone-drop { color: var(--ac-game-gold); }
+.ac-game-tone-arrive,
+.ac-game-tone-purchase { color: var(--ac-game-good); }
+@keyframes ac-game-rise {
+  0% { opacity: 0; transform: translateY(30%); }
+  15%, 70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-80%); }
+}
+@keyframes ac-game-line {
+  0% { opacity: 0; transform: translateY(-20%); }
+  12%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-game-pop { animation: none !important; }
+}
+.ac-mini .ac-game-lines,
+.ac-mini .ac-game-pop-agent { display: none; }

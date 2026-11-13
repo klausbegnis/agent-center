@@ -132,6 +132,23 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     for (const view of views.values()) view.tickEmotes(now)
   }
 
+  /**
+   * Plays the game's new events in the rooms on screen.
+   *
+   * @param {import('./game-effects.js').Effect[]} effects
+   * @param {number} now
+   */
+  function playGame(effects, now) {
+    for (const [roomId, view] of views) {
+      const own = effects.filter((effect) => effect.roomId === roomId)
+      if (own.length) view.playGame(own, now)
+    }
+  }
+
+  function tickGame(now) {
+    for (const view of views.values()) view.tickGame(now)
+  }
+
   function stopEmotes() {
     for (const view of views.values()) view.stopEmotes()
   }
@@ -148,6 +165,8 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     overlay,
     tickEmotes,
     stopEmotes,
+    playGame,
+    tickGame,
     has: (roomId) => views.has(roomId),
     gap: GALLERY_GAP
   }
