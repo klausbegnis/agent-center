@@ -4,10 +4,11 @@
 //
 // With the history, agents on this computer get a session each, found by their conversation
 // title the way a real history is matched. Now and then an agent's session closes (its
-// character retires) and a new one opens under the same title. With the estimate, there is no
-// history: each agent on this computer gets a made-up work meter (working time and tool calls in
-// game time), as an Orca without session totals would. Agents on the paired machines join as
-// guests either way.
+// character retires) and a new one opens under the same title; agents on the paired machines
+// join as guests. With the estimate, there is no history: each agent gets a made-up work meter
+// (working time in game time, and tool calls on this computer only, as no hook reaches the
+// plugin from a paired machine), as an Orca without session totals would, and agents on the
+// paired machines are characters like the others.
 import { createGameMode } from '../src/game-mode.mjs'
 import { createGameSave } from '../src/game-save.mjs'
 import { hashOf } from '../src/game/hash.mjs'
@@ -35,7 +36,7 @@ const MINUTE_MS = 60_000
 /** A swing between 0.5 and 1.5, from a hash. */
 const swingOf = (key) => 0.5 + (hashOf(key) % 1000) / 1000
 
-/** Made-up work meters for the local agents, the estimate's stand-in for the store's. */
+/** Made-up work meters for every agent, the estimate's stand-in for the store's. */
 function createMeters(store) {
   const meters = new Map()
   let round = 0
@@ -44,13 +45,14 @@ function createMeters(store) {
   function step(now, minutes) {
     round += 1
     for (const room of store.snapshot().rooms) {
-      if ((room.host ?? LOCAL) !== LOCAL) continue
+      const isPaired = (room.host ?? LOCAL) !== LOCAL
       for (const agent of room.agents) {
         if (agent.parentId) continue
         if (!meters.has(agent.id)) meters.set(agent.id, { startedAt: now, workedMs: {}, toolCalls: 0, calls: 0 })
         const meter = meters.get(agent.id)
         if (agent.state !== 'working') continue
         meter.workedMs[agent.activity] = (meter.workedMs[agent.activity] ?? 0) + minutes * MINUTE_MS
+        if (isPaired) continue
         // Fractions of a call carry over, so a slow agent still makes one now and then.
         meter.calls += TOOL_CALLS_PER_MINUTE * minutes * swingOf(`${agent.id}|${round}`)
         meter.toolCalls = Math.floor(meter.calls)
