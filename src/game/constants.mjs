@@ -78,8 +78,6 @@ export const HASTE_PER_AGILITY = 0.01
 export const CLASS_POINTS_PER_LEVEL = 1
 export const ACTIVITY_POINTS_PER_LEVEL = 1
 export const FORTUNE_POINTS_PER_LEVEL = 1
-export const ATTRIBUTE_POINTS_PER_LEVEL =
-  CLASS_POINTS_PER_LEVEL + ACTIVITY_POINTS_PER_LEVEL + FORTUNE_POINTS_PER_LEVEL
 /** A new character's luck is 1 plus a hash of its session id modulo this: 1 to 4. */
 export const STARTING_LUCK_SPREAD = 4
 
