@@ -400,3 +400,33 @@ test('over a long sequence nothing is ever lost except materials spent on purcha
     assertNothingLost(before, progressOf(save), { spent })
   }
 })
+
+test('a project whose party works meets its monster before any time passes, and records its states', () => {
+  const joined = tokensFor(emptySave(), { sessionId: 'first' })
+  assert.equal(project(joined).monster, null)
+  const ready = engine.prepareFights(joined, { sessions: [working('first')] })
+  const { monster } = project(ready)
+  assert.equal(monster.level, project(joined).wave)
+  assert.equal(monster.hp, monster.maxHp)
+  assert.equal(project(ready).characters.first.state, 'working')
+  // The fight that follows goes on with that monster rather than another.
+  const fought = engine.advance(ready, { from: 0, to: TICK_SECONDS * 1000, sessions: [working('first')] })
+  assert.equal(project(fought).monster.id, monster.id)
+})
+
+test('a party with nobody working meets no monster, and one that has a monster keeps it', () => {
+  const joined = tokensFor(emptySave(), { sessionId: 'first' })
+  const idle = engine.prepareFights(joined, { sessions: [{ ...working('first'), state: 'idle' }] })
+  assert.equal(project(idle).monster, null)
+  assert.equal(project(idle).characters.first.state, 'idle')
+  const ready = engine.prepareFights(joined, { sessions: [working('first')] })
+  assert.equal(engine.prepareFights(ready, { sessions: [working('first')] }), ready)
+})
+
+test('a session with no character yet does not bring a monster, a working guest does', () => {
+  const joined = tokensFor(emptySave(), { sessionId: 'first' })
+  const stranger = engine.prepareFights(joined, { sessions: [{ ...working('first'), state: 'idle' }, working('later')] })
+  assert.equal(project(stranger).monster, null)
+  const guest = engine.prepareFights(joined, { sessions: [working('guest:pane-9', 'rumble-banana', { guest: true })] })
+  assert.ok(project(guest).monster)
+})

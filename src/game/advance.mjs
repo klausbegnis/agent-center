@@ -1,9 +1,10 @@
 // Real time passing for the projects that have sessions: each reported session's state is
-// recorded, idle characters gather, and the working party of a project fights.
+// recorded, idle characters gather, and the working party of a project fights. Also gets a
+// project ready for the next stretch of time: a party that works has a monster to face.
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
-import { playFight, partyOf } from './fight.mjs'
+import { playFight, partyOf, spawnMonster } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel } from './progression.mjs'
@@ -136,4 +137,51 @@ export function advanceWithEvents(save, { from, to, sessions = [] }, context) {
     events.push(...moved.events.map((event) => ({ ...event, worldId })))
   }
   return { save: next, events }
+}
+
+/** Records each reported character's state, with no time passing: nothing is gathered. */
+function recordStates(world, projectId, readings) {
+  let project = world.projects[projectId]
+  for (const reading of readings) {
+    const character = project.characters[reading.sessionId]
+    if (!character || reading.guest || character.state === reading.state) continue
+    project = withCharacter(project, { ...character, state: reading.state })
+  }
+  return project
+}
+
+/**
+ * Gets the projects ready for the time to come, without moving time: each reported character's
+ * state is recorded, and a project whose party has a working member and no monster yet meets
+ * one now, measured against that party. A project that just joined (its first tokens were
+ * counted after this round's advance) so shows its first foe at once, instead of a round later.
+ *
+ * @param {object} save
+ * @param {{ sessions: SessionReading[] }} readings the states read this round
+ * @param {{ content: object, referencePartyHit: (level: number) => object }} context
+ * @returns {object}
+ */
+export function prepareFights(save, { sessions = [] }, context) {
+  const byProject = new Map()
+  for (const reading of sessions) {
+    if (!byProject.has(reading.projectId)) byProject.set(reading.projectId, [])
+    byProject.get(reading.projectId).push(reading)
+  }
+  let next = save
+  for (const projectId of [...byProject.keys()].sort()) {
+    const worldId = worldIdOf(next, projectId)
+    const world = worldId === null ? null : next.worlds[worldId]
+    if (!world?.projects[projectId]) continue
+    const readings = byProject.get(projectId)
+    let project = recordStates(world, projectId, readings)
+    const partySize = readings.filter((reading) =>
+      reading.state === 'working' && (reading.guest || project.characters[reading.sessionId])).length
+    if (!project.monster && partySize > 0) {
+      const where = { worldId, projectId, project, world, content: context.content }
+      project = { ...project, monster: spawnMonster({ ...where, referencePartyHit: context.referencePartyHit, partySize }) }
+    }
+    if (project === world.projects[projectId]) continue
+    next = { ...next, worlds: { ...next.worlds, [worldId]: withProjectIn(world, projectId, project) } }
+  }
+  return next
 }

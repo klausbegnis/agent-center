@@ -475,3 +475,19 @@ test('a character follows its agent between rounds, and so does its party', asyn
   assert.equal(game.getView().characters['pane-1'].state, 'idle')
   assert.equal(game.getView().rooms[BANANA].party, 'idle')
 })
+
+test('a room that joins with a working agent has its monster in the same state, and its party fights', async () => {
+  const setupResult = setup({ access: { supported: false, granted: true } })
+  const { game, store, tick } = setupResult
+  store.status({ workspaceId: 'w-banana', paneKey: 'pane-2', terminalId: 'term-2', state: 'working' })
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  const room = game.getView().rooms[BANANA]
+  assert.equal(room.joined, true)
+  assert.ok(room.monster)
+  assert.equal(room.monster.healthShare, 1)
+  assert.equal(room.party, 'fighting')
+  assert.equal(room.pausedBy, null)
+})

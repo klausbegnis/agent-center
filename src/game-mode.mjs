@@ -239,7 +239,7 @@ export function createGameMode(dependencies) {
     return closed.closing
   }
 
-  /** One round of a running game: read, match, advance, count, close, spend, keep. */
+  /** One round of a running game: read, match, advance, count, ready the fights, close, spend, keep. */
   async function playRound() {
     const source = tokenSource
     const bridge = bridgeFor(source)
@@ -253,7 +253,10 @@ export function createGameMode(dependencies) {
     let save = syncKeepTitles(data().save)
     const advanced = advance(save, readings.states, at)
     const counted = countTokens(advanced.save, readings.tokens, agentOf, at)
-    const closed = closeSessions(counted.save, charactersToClose(source, counted.save, reading, at), at)
+    // A room that just joined, or a party that just started working, meets its monster now, so
+    // the state published with it already shows the fight.
+    const ready = engine.prepareFights(counted.save, { sessions: readings.states })
+    const closed = closeSessions(ready, charactersToClose(source, ready, reading, at), at)
     const spent = spendIfAsked(closed.save, bridge.autoSpend)
     save = spent.save
 

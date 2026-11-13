@@ -1,7 +1,7 @@
 // The game engine: one pure reducer over the save. Tokens become experience, time becomes fights
 // and gathering, closed sessions retire, and materials buy upgrades. Never mutates, no I/O, no
 // clock and no randomness: the same save and the same calls always give the same result.
-import { advanceWithEvents } from './advance.mjs'
+import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
@@ -120,6 +120,7 @@ export function createEngine({ content }) {
     applyTokens: (save, reading) => applyTokens(save, reading, content),
     advance: (save, interval) => advanceWithEvents(save, interval, context).save,
     advanceWithEvents: (save, interval) => advanceWithEvents(save, interval, context),
+    prepareFights: (save, readings) => prepareFights(save, readings, context),
     closeSession,
     prestige,
     upgradeItem,

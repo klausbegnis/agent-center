@@ -74,8 +74,13 @@ export function partyAgainst(party, level) {
 /**
  * The project's next monster, measured against a party of the working party's size, with the
  * rune circle's head start taken off its health.
+ *
+ * @param {{ worldId: string, projectId: string, project: object, world: object,
+ *   content: { monsters: object }, referencePartyHit: (level: number) => object,
+ *   partySize: number }} where
+ * @returns {object} the monster, at full health less the rune circle's cut
  */
-function spawn({ worldId, projectId, project, world, content, referencePartyHit, partySize }) {
+export function spawnMonster({ worldId, projectId, project, world, content, referencePartyHit, partySize }) {
   const monster = monsterFor({
     worldId,
     projectId,
@@ -121,7 +126,7 @@ function settleKill(state, context) {
   state.fightRested = false
   const { referencePartyHit } = context
   const partySize = party.size
-  state.monster = spawn({ worldId, projectId, project: state, world, content, referencePartyHit, partySize })
+  state.monster = spawnMonster({ worldId, projectId, project: state, world, content, referencePartyHit, partySize })
 }
 
 /** One tick: rest if resting, otherwise strike and be struck. */
@@ -179,7 +184,7 @@ export function playFight(options) {
   }
   if (!state.monster) {
     const where = { worldId, projectId, project: state, world, content }
-    state.monster = spawn({ ...where, referencePartyHit, partySize: party.size })
+    state.monster = spawnMonster({ ...where, referencePartyHit, partySize: party.size })
   }
   for (let tick = 0; tick < ticks; tick++) playTick(state, context)
   const { materials, ...next } = state

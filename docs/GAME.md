@@ -17,6 +17,7 @@ milliseconds the caller passes.
 | `applyTokens(save, { projectId, sessionId, tokens, activity, now, themeId?, title?, guest? })` | Counts the tokens a session spent since the last reading. Creates the world, the project (wave at the world level, starter chest) and the character when missing; a session found among the project's retirees comes back instead. Grants experience to the activity's work skill and to the character, and records `lastTokenAt`. A guest or an excluded project changes nothing. |
 | `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest? }` with `state` one of `working`, `waiting`, `blocked`, `idle`. See "Time". |
 | `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, affix, ticks, whether the party rested, materials and dropped item. |
+| `prepareFights(save, { sessions })` | Moves no time. Records each reported character's state, and gives a project whose party has a working member (a character or a guest) and no monster its monster now, measured against that party. |
 | `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
 | `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
@@ -342,8 +343,8 @@ totals:
    the default; none under Random, where the UI picks) is the engine's `themeId`.
 4. Match sessions to the agents on screen (below) and build the readings.
 5. `advance` the engine from the last round to now with the sessions' states, then
-   `applyTokens` for the tokens read, then `closeSession` for the sessions that are over, then
-   `autoSpend` when it is on.
+   `applyTokens` for the tokens read, then `prepareFights` with the same states, then
+   `closeSession` for the sessions that are over, then `autoSpend` when it is on.
 6. Keep the baselines and the time of this reading with the save.
 
 On the estimate, steps 1 to 4 are instead: read every agent's work meter from the store, make
@@ -354,7 +355,10 @@ meters' baselines stay in memory.
 Why advance before counting: the tokens read now were spent during the interval that just
 passed, while the party fought with the power it had at its start. Counting first would let a
 character born from those tokens, or a level they paid for, fight time that was already over.
-A new session's character therefore joins the fight from the next round.
+A new session's character therefore joins the fight from the next round. `prepareFights` still
+records its state and, in a room that has just joined, brings out the first monster at once:
+otherwise the room would show its wave with no foe and its new characters idle until the next
+round.
 
 One round moves the engine at most `MAX_ROUND_GAP_MS` (five minutes): a round that comes late
 does not fight through time nobody saw with the states read now. The first round after the
