@@ -56,10 +56,20 @@ Knowing this helps judge whether something is a vulnerability.
 
 ## Game mode
 
-Game mode is off by default. With it on, and only when Orca offers the Agent Session History to
-plugins and you granted the session history permission (`history:read`), the worker calls
-`agent.listSessions` every 30 seconds. This version of the plugin does not ask for that
-permission yet, so the call is never made until it does.
+Game mode is off by default. It asks for no permission of its own.
+
+- **On Orca releases without session token totals** (every release today), progress is
+  estimated, not measured: from how long each agent on this computer works and how many tool
+  calls it starts, which the plugin already sees through the events and hooks above. The tool
+  name is used only to count the call and pick its activity; its input and result are never
+  read. Nothing new is read from Orca, and the session history is never called.
+- **Once Orca provides them**, and only when Orca offers the Agent Session History to plugins
+  and you granted the session history permission (`history:read`), the game uses the real
+  totals: the worker calls `agent.listSessions` every 30 seconds. This version of the plugin
+  does not ask for that permission yet, so the call is never made until it does.
+
+The rest of this section is about what happens once real totals are read, except where it says
+otherwise.
 
 - **What it reads:** for the 200 newest sessions, each session's id, token total, workspace id,
   creation time, whether it runs, and its title. It never reads a conversation; Orca does not
@@ -69,11 +79,13 @@ permission yet, so the call is never made until it does.
   and none in a room you put out of the game (a project with no world); it still reads them.
 - **What it stores**, in the plugin's own storage under the key `game`: the game's progress
   (worlds, rooms by their id, which contains the project's folder path, characters by session
-  id), and per session its id, its last token total and when it was read. Titles are stored
+  id), and per session its id, its last token total and when it was read. On the estimate a
+  character's id is `estimated:` followed by Orca's pane id for the agent's terminal, and no
+  per-session totals are stored; the working time and tool call counts stay in memory. Titles are stored
   only while **Game mode: keep conversation titles** is on, on the characters of finished
   sessions; turning that setting off deletes them.
 - **What it shows:** the view state, served on the local page like everything else, gains the
-  game: session ids of the characters on screen, levels, the room's fight, and the stored titles
+  game: where its tokens come from, session ids of the characters on screen, levels, the room's fight, and the stored titles
   when kept.
 - The local page's API can play the game: prestige, upgrade, move a room to another world, reset
   a world, turn auto-spend and keeping titles on or off. Like the other settings it is open to
