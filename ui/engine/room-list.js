@@ -145,8 +145,9 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     }
   }
 
-  function tickGame(now) {
-    for (const view of views.values()) view.tickGame(now)
+  /** @param {boolean} isMoving false while the page is hidden or motion is unwanted */
+  function tickGame(now, isMoving) {
+    for (const view of views.values()) view.tickGame(now, isMoving)
   }
 
   function stopEmotes() {

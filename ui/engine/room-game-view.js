@@ -1,35 +1,45 @@
-// The game drawn over one room: a band along the top with the wave, the monster and the party,
-// and a mark on each character with its level and class. Draws what game-model.js picks out.
-import { el, svgIcon } from './dom.js'
+// The game drawn in one room: the monster standing on the floor with the characters, the blows
+// of the fight, a band along the top with the wave, the monster's name, level and health in
+// words and the party's state, and a mark on each character with its class or trade and level.
+// Draws what game-model.js, foe-phases.js and fight-schedule.js work out.
+import { el } from './dom.js'
+import { createFightSchedule, fightPeriodMs } from './fight-schedule.js'
+import { createFightView } from './fight-view.js'
+import { createFoePhases } from './foe-phases.js'
 import { bandHeight } from './game-band.js'
 import { meter } from './game-controls.js'
-import { formatShare } from './game-format.js'
-import { characterBadge, roomFight } from './game-model.js'
+import { formatAmount, formatShare } from './game-format.js'
+import { characterBadge, roomFight, roomFighters, standingMonsterKey } from './game-model.js'
+import { gameIcon } from './icon-view.js'
 import {
   badgeDescription,
   classLabel,
+  foeState,
+  foeTag,
   GUEST_MARK,
   HEALTH_NAME,
+  healthText,
   levelShort,
   monsterDescription,
   monsterTag,
   noMonsterLabel,
   partyLabel,
   partyReason,
+  skillLabel,
   STAMINA_NAME,
   waveKillsLabel,
   waveLabel
 } from './labels.js'
+import { monsterSpot } from './monster-place.js'
 import { createMonsterView } from './monster-view.js'
-import { CLASS_MARKS, pixelPath, TRADE_MARKS } from './pixel-art.js'
 
-/** The grid the class and trade marks are drawn on. */
-const MARK_GRID = 8
 /** How long an event stays over the room; the CSS animation lasts as long. */
 const EFFECT_MS = 2600
 
-/** @param {{ scene: HTMLElement, theme: object }} options */
-export function createRoomGame({ scene, theme }) {
+/**
+ * @param {{ scene: HTMLElement, theme: object, roomId: string, mirrored: boolean }} options
+ */
+export function createRoomGame({ scene, theme, roomId, mirrored }) {
   const band = el('div', 'ac-game-band')
   band.style.height = `${bandHeight(theme) * 100}%`
 
@@ -38,26 +48,36 @@ export function createRoomGame({ scene, theme }) {
   const waveKills = el('span', 'ac-game-wave-kills')
   wave.append(waveNumber, waveKills)
 
-  const foe = el('div', 'ac-game-foe')
-  const monster = createMonsterView()
   const foeInfo = el('div', 'ac-game-pill ac-game-foe-info')
   const foeTitle = el('span', 'ac-game-foe-title')
-  const foeTag = el('span', 'ac-game-foe-tag')
+  const foeTagNode = el('span', 'ac-game-foe-tag')
   const foeName = el('span', 'ac-game-foe-name')
-  foeTitle.append(foeTag, foeName)
+  foeTitle.append(foeTagNode, foeName)
   const health = meter('ac-game-health', HEALTH_NAME)
   const foeLevel = el('span', 'ac-game-foe-level')
   const healthRow = el('span', 'ac-game-foe-row')
   healthRow.append(foeLevel, health.element)
   foeInfo.append(foeTitle, healthRow)
-  foe.append(monster.element, foeInfo)
 
   const party = el('div', 'ac-game-pill ac-game-party')
   const partyState = el('span', 'ac-game-party-state')
   const stamina = meter('ac-game-stamina', STAMINA_NAME)
   party.append(partyState, stamina.element)
 
-  band.append(wave, foe, party)
+  band.append(wave, foeInfo, party)
+
+  const foe = createMonsterView({ theme, spot: monsterSpot(theme), mirrored })
+  foe.setPhase('gone')
+  const phases = createFoePhases()
+  /** The monsters seen, by key, so the one falling is still drawn while the next one waits. */
+  let monsters = new Map()
+  let lastFight = null
+  /** What the last update was given, to tell the schedule again when the monster's phase moves. */
+  let lastInputs = null
+  let lastPhase = 'gone'
+
+  const schedule = createFightSchedule(roomId)
+  const fightView = createFightView({ scene, theme })
   /** Agent ids whose character carries a mark now. */
   const marked = new Set()
 
@@ -68,26 +88,24 @@ export function createRoomGame({ scene, theme }) {
   /** Every effect on screen, with the time it is taken away. */
   const playing = new Map()
 
-  function drawFight(fight) {
+  function drawBand(fight) {
     waveNumber.textContent = waveLabel(fight.wave)
     const kills = waveKillsLabel(fight)
     waveKills.textContent = kills.short
     wave.title = kills.full
     wave.setAttribute('aria-label', `${waveLabel(fight.wave)}: ${kills.full}`)
 
-    const healthText = formatShare(fight.health)
-    monster.draw(fight.monster, fight.monster ? monsterDescription(fight.monster, healthText) : '')
     foeName.textContent = fight.monster ? fight.monster.name : noMonsterLabel(fight.party)
     const tag = monsterTag(fight.monster)
-    foeTag.textContent = tag ?? ''
-    foeTag.hidden = !tag
+    foeTagNode.textContent = tag ?? ''
+    foeTagNode.hidden = !tag
     foeInfo.classList.toggle('ac-game-foe-boss', fight.isBoss)
     foeInfo.classList.toggle('ac-game-foe-elite', fight.isElite && !fight.isBoss)
     healthRow.hidden = !fight.monster
     foeInfo.classList.toggle('ac-game-foe-none', !fight.monster)
     if (fight.monster) {
       foeLevel.textContent = levelShort(fight.monster.level)
-      health.set(fight.health, healthText)
+      health.set(fight.health, healthText(fight, formatAmount, formatShare))
     }
 
     partyState.textContent = partyLabel(fight.party)
@@ -96,13 +114,69 @@ export function createRoomGame({ scene, theme }) {
     stamina.set(fight.stamina, formatShare(fight.stamina))
   }
 
+  /** Draws the monster that stands in the room, which may be the one falling to its kill. */
+  function drawFoe(fight, shownKey) {
+    const monster = monsters.get(shownKey)
+    if (!monster) return
+    const isCurrent = standingMonsterKey(fight) === shownKey
+    const facts = isCurrent ? fight : { hp: 0, maxHp: monster.maxHp ?? null, health: 0 }
+    foe.draw(monster, {
+      health: facts.health,
+      tag: foeTag(monster),
+      state: isCurrent ? foeState(fight.party) : '',
+      description: monsterDescription(monster, healthText(facts, formatAmount, formatShare))
+    })
+  }
+
+  /** Moves the monster's phase on and draws it; returns what is shown. */
+  function updateFoe(fight, now) {
+    const key = standingMonsterKey(fight)
+    if (key) monsters.set(key, fight.monster)
+    phases.observe(key, now)
+    const shown = phases.tick(now)
+    // Only the monster on screen and the one coming next are worth keeping.
+    monsters = new Map([...monsters].filter(([known]) => known === shown.key || known === key))
+    foe.setPhase(shown.phase)
+    if (shown.key) drawFoe(fight, shown.key)
+    if (shown.phase === 'gone') foe.element.remove()
+    else if (!foe.element.isConnected) scene.append(foe.element)
+    return shown
+  }
+
+  /**
+   * Tells the fight schedule who fights, how fast and against what.
+   *
+   * @returns {Set<string>} the agents whose characters fight now
+   */
+  function observeFight(room, game, fight, shown, placeOf, now) {
+    const fighters = fight && shown.phase === 'present' ? roomFighters(room, game, fight) : []
+    if (!fighters.length) {
+      schedule.observe(null, now)
+      fightView.stopAll()
+      return new Set()
+    }
+    const world = game.worlds?.find((item) => item.id === game.rooms?.[room.id]?.worldId)
+    schedule.observe({
+      members: fighters.map((fighter) => ({ ...fighter, place: placeOf(fighter.id) ?? '' })),
+      periodMs: fightPeriodMs(game.tickSeconds, world?.attackSpeed),
+      monsterKey: shown.key,
+      affix: fight.monster.affix ?? null,
+      hp: fight.hp,
+      maxHp: fight.maxHp
+    }, now)
+    return new Set(fighters.map((fighter) => fighter.id))
+  }
+
   function markFor(badge) {
     if (badge.kind === 'guest') return [el('span', 'ac-game-badge-text', GUEST_MARK)]
-    const rows = badge.isGathering ? TRADE_MARKS[badge.trade] : CLASS_MARKS[badge.classId]
-    const parts = []
-    if (rows) parts.push(svgIcon('ac-game-badge-icon', MARK_GRID, pixelPath(rows, '#')))
-    parts.push(el('span', 'ac-game-badge-text', String(badge.level)))
-    return parts
+    const iconId = badge.isGathering ? badge.trade : badge.classId
+    return [gameIcon(iconId, 'ac-game-badge-icon'), el('span', 'ac-game-badge-text', String(badge.level))]
+  }
+
+  function badgeTitle(badge) {
+    if (badge.kind !== 'member') return GUEST_MARK
+    const base = `${levelShort(badge.level)} ${classLabel(badge.classId)}`
+    return badge.isGathering ? `${base}, gathering ${skillLabel(badge.trade)}` : base
   }
 
   /** Puts a character's mark on it, or takes it off. The mark sits on the sprite's lower corner. */
@@ -123,9 +197,7 @@ export function createRoomGame({ scene, theme }) {
       node.replaceChildren(...markFor(badge))
       node.classList.toggle('ac-game-badge-guest', badge.kind === 'guest')
       node.classList.toggle('ac-game-badge-gathering', badge.kind === 'member' && badge.isGathering)
-      node.title = badge.kind === 'member'
-        ? `${levelShort(badge.level)} ${classLabel(badge.classId)}`
-        : GUEST_MARK
+      node.title = badgeTitle(badge)
     }
     // drawActor wrote the character's description in this same update; the mark adds to it.
     const note = badgeDescription(badge)
@@ -154,7 +226,12 @@ export function createRoomGame({ scene, theme }) {
 
   /** Where an effect plays, or null when that part is not on screen. */
   function placeFor(effect, actorOf) {
-    if (effect.target === 'monster') return band.isConnected ? foe : null
+    if (effect.target === 'monster') {
+      // The health lost since the last round sits by the health written in the band; a kill
+      // plays over the monster as it falls.
+      if (effect.tone !== 'hit' && foe.element.isConnected) return foe.marks
+      return band.isConnected ? foeInfo : null
+    }
     if (effect.target === 'agent') return actorOf(effect.agentId) ?? null
     if (!lines.isConnected) scene.append(lines)
     return lines
@@ -179,29 +256,61 @@ export function createRoomGame({ scene, theme }) {
         playing.set(node, now + EFFECT_MS)
       }
     },
-    /** Takes away the effects whose time is up. */
-    tick(now) {
+    /**
+     * Moves the monster's phase and the fight on to `now` and takes away what is over.
+     *
+     * @param {number} now
+     * @param {(agentId: string) => HTMLElement | undefined} actorOf
+     * @param {boolean} isMoving false while the page is hidden or motion is unwanted: no blows
+     * @returns {Set<string> | null} the agents whose characters fight now, when that changed
+     */
+    tick(now, actorOf, isMoving) {
       for (const [node, until] of playing) {
         if (now < until) continue
         node.remove()
         playing.delete(node)
       }
       if (playing.size === 0) lines.remove()
+      const shown = updateFoe(lastFight, now)
+      // A monster that has just walked in starts the fight; one that falls or leaves ends it.
+      let fighting = null
+      if (shown.phase !== lastPhase && lastInputs) {
+        const { room, game, placeOf } = lastInputs
+        fighting = observeFight(room, game, lastFight, shown, placeOf, now)
+      }
+      lastPhase = shown.phase
+      fightView.tick(now)
+      if (!isMoving) {
+        schedule.stopAll()
+        fightView.stopAll()
+        return fighting
+      }
+      const beats = schedule.tick(now)
+      if (beats.length) fightView.play(beats, { foe: foe.element.isConnected ? foe : null, actorOf, now })
+      return fighting
     },
     /**
      * @param {{ id: string, agents: object[] }} room the room as it is now
      * @param {object | null} game the view state's `game` while it runs, otherwise null
      * @param {(agentId: string) => HTMLElement | undefined} actorOf the character of an agent
+     * @param {(agentId: string) => string | undefined} placeOf where a character stands, as text
+     * @param {number} now
+     * @returns {Set<string>} the agents whose characters fight now
      */
-    update(room, game, actorOf) {
+    update(room, game, actorOf, placeOf, now) {
       const fight = game ? roomFight(game, room.id) : null
+      lastFight = fight
       if (fight) {
-        drawFight(fight)
+        drawBand(fight)
         if (!band.isConnected) scene.append(band)
       } else {
         band.remove()
       }
+      const shown = updateFoe(fight, now)
+      lastPhase = shown.phase
+      lastInputs = { room, game, placeOf }
       drawBadges(room.agents, game, actorOf)
+      return observeFight(room, game, fight, shown, placeOf, now)
     }
   }
 }

@@ -81,9 +81,50 @@ export function roomFight(game, roomId) {
     stamina: clampShare(room.stamina),
     monster,
     health: clampShare(monster?.healthShare),
+    hp: Number.isFinite(monster?.hp) ? monster.hp : null,
+    maxHp: Number.isFinite(monster?.maxHp) ? monster.maxHp : null,
     isElite: Boolean(monster?.affix),
     isBoss: monster?.kind === 'boss'
   }
+}
+
+/** Party states in which the monster stands in the room: it fights, or waits with the party. */
+const MONSTER_STAYS = new Set(['fighting', 'resting', 'waiting', 'blocked'])
+
+/**
+ * What identifies the monster that should stand in a room now, or null when none should: there
+ * is none yet, or nobody in the room works. A new key is a new monster.
+ *
+ * @param {ReturnType<typeof roomFight>} fight
+ */
+export function standingMonsterKey(fight) {
+  if (!fight?.monster || !MONSTER_STAYS.has(fight.party)) return null
+  const { monster } = fight
+  return `${fight.wave}|${fight.waveKills}|${monster.id}|${monster.level}`
+}
+
+/** Activities of an agent that is working, for a guest, whose character has no state. */
+const WORKING_ACTIVITIES = new Set(['write', 'read', 'run', 'think', 'delegate'])
+
+/**
+ * The characters of a room that fight now: the working ones, while the party fights a monster.
+ * A guest fights too; it has no class and strikes like a Fighter.
+ *
+ * @param {{ agents: { id: string, activity: string }[] }} room
+ * @param {object} game the view state's `game`
+ * @param {ReturnType<typeof roomFight>} fight
+ * @returns {{ id: string, classId: string | null }[]}
+ */
+export function roomFighters(room, game, fight) {
+  if (!fight?.monster || fight.party !== 'fighting') return []
+  const fighters = []
+  for (const agent of room.agents) {
+    const character = game.characters?.[agent.id]
+    if (!character) continue
+    const isWorking = character.state ? character.state === 'working' : WORKING_ACTIVITIES.has(agent.activity)
+    if (isWorking) fighters.push({ id: agent.id, classId: character.class ?? null })
+  }
+  return fighters
 }
 
 /**

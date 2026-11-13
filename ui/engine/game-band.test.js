@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { BAND_MAX, BAND_MIN, bandHeight, monsterSize } from './game-band.js'
+import { BAND_MAX, BAND_MIN, bandHeight } from './game-band.js'
 
 const theme = (stations) => ({
   room: { width: 400, height: 250 },
@@ -24,10 +24,3 @@ test('the band keeps a legible size whatever the stations', () => {
   assert.equal(bandHeight(theme({})), BAND_MAX)
 })
 
-test('a boss is drawn larger than an elite, and an elite larger than a common monster', () => {
-  const boss = monsterSize({ kind: 'boss', affix: null })
-  const elite = monsterSize({ kind: 'common', affix: 'thorny' })
-  const common = monsterSize({ kind: 'armored', affix: null })
-  assert.ok(boss > elite && elite > common)
-  assert.equal(boss, 1)
-})

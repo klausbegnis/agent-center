@@ -6,6 +6,8 @@ import {
   holderName,
   joinedRooms,
   roomCharacters,
+  roomFighters,
+  standingMonsterKey,
   worldById,
   GAME_TABS,
   gameModeOf,
@@ -211,4 +213,28 @@ test('every room the game knows of is listed with its world, a room out of the g
   }
   const listed = roomWorlds(state).map(({ room, worldId }) => [room.id, worldId])
   assert.deepEqual(listed, [['a', 'main'], ['b', null]])
+})
+
+test('a monster stands in the room while its party fights, rests or waits, and not while it is idle', () => {
+  const game = (party) => ({ rooms: { room: { joined: true, wave: 4, waveKills: 1, killsToPass: 3, party,
+    pausedBy: null, stamina: 1, monster: { id: 'blob', level: 4, healthShare: 0.5, hp: 50, maxHp: 100 } } } })
+  const fight = roomFight(game('fighting'), 'room')
+  assert.equal(standingMonsterKey(fight), '4|1|blob|4')
+  assert.equal(fight.hp, 50)
+  assert.equal(standingMonsterKey(roomFight(game('resting'), 'room')), '4|1|blob|4')
+  assert.equal(standingMonsterKey(roomFight(game('idle'), 'room')), null)
+})
+
+test('only working characters fight, and only while the party fights a monster', () => {
+  const room = {
+    agents: [{ id: 'a', activity: 'write' }, { id: 'b', activity: 'idle' }, { id: 'g', activity: 'read' }]
+  }
+  const game = {
+    characters: { a: { class: 'magical', state: 'working' }, b: { class: 'physical', state: 'idle' },
+      g: { guest: true, level: 1 } }
+  }
+  const fighting = { party: 'fighting', monster: { id: 'blob' } }
+  const fighters = roomFighters(room, game, fighting)
+  assert.deepEqual(fighters, [{ id: 'a', classId: 'magical' }, { id: 'g', classId: null }])
+  assert.deepEqual(roomFighters(room, game, { ...fighting, party: 'resting' }), [])
 })

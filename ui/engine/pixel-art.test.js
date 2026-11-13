@@ -1,14 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  CLASS_MARKS,
-  MONSTER_INKS,
-  MONSTER_SHAPES,
-  monsterShape,
-  pixelPath,
-  TRADE_MARKS,
-  viewBoxOf
-} from './pixel-art.js'
+import { MONSTER_INKS, MONSTER_SHAPES, monsterShape, pixelPath, viewBoxOf } from './pixel-art.js'
 
 const isRectangular = (rows) => rows.every((row) => row.length === rows[0].length)
 
@@ -17,10 +9,9 @@ test('every monster body named by the game content has a drawing', () => {
 })
 
 test('every drawing is a full rectangle on its grid', () => {
-  for (const rows of Object.values(MONSTER_SHAPES)) assert.equal(viewBoxOf(rows), '0 0 12 12')
-  for (const rows of [...Object.values(CLASS_MARKS), ...Object.values(TRADE_MARKS)]) {
+  for (const rows of Object.values(MONSTER_SHAPES)) {
     assert.ok(isRectangular(rows))
-    assert.equal(viewBoxOf(rows), '0 0 8 8')
+    assert.equal(viewBoxOf(rows), '0 0 12 12')
   }
 })
 
@@ -32,11 +23,6 @@ test('monsters use only their own inks, and every one has an outline and eyes', 
   }
 })
 
-test('every class and every gathering trade has a mark', () => {
-  assert.deepEqual(Object.keys(CLASS_MARKS).sort(), ['defense', 'magical', 'physical', 'support'])
-  const trades = ['farming', 'fishing', 'hunting', 'mining', 'runecraft', 'woodcutting']
-  assert.deepEqual(Object.keys(TRADE_MARKS).sort(), trades)
-})
 
 test('a run of pixels along a row becomes one rectangle', () => {
   assert.equal(pixelPath(['.##.', '#..#'], '#'), 'M1 0h2v1h-2zM0 1h1v1h-1zM3 1h1v1h-1z')

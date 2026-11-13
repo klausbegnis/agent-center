@@ -78,7 +78,9 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   /** @type {Map<string, HTMLElement>} "+N" markers by the id of the agent they belong to */
   const markers = new Map()
   const emoteSchedule = emotePace ? createEmoteSchedule(theme, emotePace) : null
-  const game = createRoomGame({ scene, theme })
+  const game = createRoomGame({ scene, theme, roomId: room.id, mirrored: variant.flip })
+  /** The characters last told to the emote schedule, to tell it again when a fight starts or ends. */
+  let lastCast = []
 
   function updateThemePicker(state) {
     if (!themePicker) return
@@ -137,7 +139,8 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
 
   /** What the emote schedule needs to know of a character that is in the room. */
   function castMember(agent, point, isFamiliar) {
-    return { id: agent.id, activity: agent.activity, place: `${point.x},${point.y}`, isFamiliar }
+    const place = `${point.x},${point.y}`
+    return { id: agent.id, activity: agent.activity, place, isFamiliar, isFighting: false }
   }
 
   function stopEmoteOf(agentId) {
@@ -179,6 +182,12 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
     return cast
   }
 
+  /** Tells the emote schedule who is in the room; a character that fights plays no emote. */
+  function observeEmotes(cast, fighting, now) {
+    lastCast = cast.map((member) => ({ ...member, isFighting: fighting.has(member.id) }))
+    emoteSchedule?.observe(lastCast, now).forEach(stopEmoteOf)
+  }
+
   return {
     section,
     stage,
@@ -194,16 +203,24 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
       section.classList.toggle('ac-room-pinned', isPinned)
       updateThemePicker(state)
       const cast = updateActors(current.agents, selectedAgentId)
-      game.update(current, gameModeOf(state.game) === 'running' ? state.game : null, (id) => actors.get(id))
-      emoteSchedule?.observe([...cast.values()], now).forEach(stopEmoteOf)
+      const running = gameModeOf(state.game) === 'running' ? state.game : null
+      const placeOf = (id) => cast.get(id)?.place
+      const fighting = game.update(current, running, (id) => actors.get(id), placeOf, now)
+      observeEmotes([...cast.values()], fighting, now)
     },
     /** Plays the game's new events in this room. */
     playGame(effects, now) {
       game.play(effects, now, (id) => actors.get(id))
     },
-    /** Takes away the game's events whose time is up. */
-    tickGame(now) {
-      game.tick(now)
+    /**
+     * Moves the game in this room on to `now`: the monster's coming and going, the fight's blows
+     * and the events whose time is up.
+     *
+     * @param {boolean} isMoving false while the page is hidden or motion is unwanted
+     */
+    tickGame(now, isMoving) {
+      const fighting = game.tick(now, (id) => actors.get(id), isMoving)
+      if (fighting) observeEmotes(lastCast, fighting, now)
     },
     /** Starts the emotes that are due at `now` and ends the ones that are over. */
     tickEmotes(now) {

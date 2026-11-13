@@ -253,6 +253,29 @@ export function monsterTag(monster) {
   return null
 }
 
+/** The word a monster in a room wears over its health bar: "Boss", its affix, or null. */
+export function foeTag(monster) {
+  if (!monster) return null
+  if (monster.kind === 'boss') return MONSTER_KIND_LABEL.boss
+  return monster.affix ? labelOf(AFFIX_LABEL, monster.affix) : null
+}
+
+/** What a monster in a room says under its health bar when its fight does not go on. */
+const FOE_STATE = { resting: 'Party resting', waiting: 'On hold', blocked: 'On hold' }
+export const foeState = (party) => FOE_STATE[party] ?? ''
+
+/**
+ * A monster's health as written: "412 / 3,430" when the worker sends the points, "12%" when it
+ * sends only the share.
+ *
+ * @param {{ hp: number | null, maxHp: number | null, health: number }} fight
+ * @param {(amount: number) => string} formatAmount
+ * @param {(share: number) => string} formatShare
+ */
+export function healthText({ hp, maxHp, health }, formatAmount, formatShare) {
+  return hp !== null && maxHp ? `${formatAmount(hp)} / ${formatAmount(maxHp)}` : formatShare(health)
+}
+
 /** "Lv 15". */
 export const levelShort = (level) => `Lv ${level}`
 
@@ -514,6 +537,8 @@ export const worldChoice = (world) => `${world.id} · level ${world.level}`
 /** What the game's events say as they play over a room. */
 export const EFFECT = {
   hit: (share) => `−${share}`,
+  damage: (amount) => `−${amount}`,
+  mend: '+',
   defeated: (count) => (count > 1 ? `Defeated ×${count}` : 'Defeated!'),
   loot: (text) => `+ ${text}`,
   level: (level) => `Level ${level}!`,

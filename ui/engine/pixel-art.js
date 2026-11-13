@@ -1,6 +1,6 @@
-// The game's little pixel drawings: five monster bodies and the marks for classes and gathering
-// trades. Each is a grid of characters, one per pixel, turned into SVG path data here so the
-// drawing modules only lay paths down. Original drawings, neutral to every room theme.
+// The game's monster bodies and the settings cog, in pixels. Each is a grid of characters, one per
+// pixel, turned into SVG path data here so the drawing modules only lay paths down. The icons of
+// skills, materials and classes are in game-icons.js. Original drawings, neutral to every theme.
 
 /**
  * Monster bodies on a 12 × 12 grid. Inks: `o` outline, `b` body (the monster's accent colour),
@@ -81,124 +81,6 @@ export const MONSTER_SHAPES = {
 
 /** The inks of a monster, back to front. */
 export const MONSTER_INKS = ['o', 'b', 'h', 's', 'e', 'p']
-
-/** Marks for the four classes on an 8 × 8 grid, drawn in one colour. */
-export const CLASS_MARKS = {
-  // A sword.
-  physical: [
-    '......##',
-    '.....###',
-    '....###.',
-    '#..###..',
-    '.####...',
-    '..##....',
-    '.#.##...',
-    '#...#...'
-  ],
-  // A four-pointed spark.
-  magical: [
-    '...#....',
-    '...#....',
-    '..###...',
-    '#######.',
-    '..###...',
-    '...#....',
-    '...#....',
-    '........'
-  ],
-  // A shield.
-  defense: [
-    '########',
-    '########',
-    '##.##.##',
-    '########',
-    '.######.',
-    '.######.',
-    '..####..',
-    '...##...'
-  ],
-  // A heart.
-  support: [
-    '........',
-    '.##..##.',
-    '########',
-    '########',
-    '.######.',
-    '..####..',
-    '...##...',
-    '........'
-  ]
-}
-
-/** Marks for the six gathering trades, on the same grid. */
-export const TRADE_MARKS = {
-  // A pickaxe.
-  mining: [
-    '.######.',
-    '#..##..#',
-    '...##...',
-    '...##...',
-    '...##...',
-    '...##...',
-    '...##...',
-    '........'
-  ],
-  // A fish.
-  fishing: [
-    '........',
-    '..###...',
-    '.#####.#',
-    '########',
-    '.#####.#',
-    '..###...',
-    '........',
-    '........'
-  ],
-  // A sprout.
-  farming: [
-    '##....##',
-    '###..###',
-    '.##..##.',
-    '..####..',
-    '...##...',
-    '...##...',
-    '...##...',
-    '........'
-  ],
-  // An axe.
-  woodcutting: [
-    '.##.....',
-    '####....',
-    '#####...',
-    '.##.#...',
-    '....##..',
-    '.....##.',
-    '......##',
-    '........'
-  ],
-  // An arrow.
-  hunting: [
-    '....####',
-    '......##',
-    '.....#.#',
-    '....#..#',
-    '...#....',
-    '#.#.....',
-    '.##.....',
-    '###.....'
-  ],
-  // A rune stone.
-  runecraft: [
-    '...##...',
-    '..####..',
-    '.##..##.',
-    '##.##.##',
-    '.##..##.',
-    '..####..',
-    '...##...',
-    '........'
-  ]
-}
 
 /**
  * SVG path data covering every pixel of one ink, one rectangle per run along a row.

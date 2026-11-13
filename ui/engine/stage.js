@@ -191,14 +191,17 @@ export async function mountStage(root, transport, options = {}) {
     if (state && selectedAgentId) showSelectedAgent()
   }, DETAIL_REFRESH_MS)
 
-  // Emotes rest while nobody can see them and for people who asked for less motion. The page
-  // is looked up each time because the mini view moves the root to another window.
+  // Emotes and the game's blows rest while nobody can see them and for people who asked for less
+  // motion. The page is looked up each time because the mini view moves the root to another
+  // window.
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   setInterval(() => {
-    game.tick(Date.now())
-    roomList.tickGame(Date.now())
-    if (root.ownerDocument.hidden || reducedMotion.matches) roomList.stopEmotes()
-    else roomList.tickEmotes(Date.now())
+    const now = Date.now()
+    const isMoving = !root.ownerDocument.hidden && !reducedMotion.matches
+    game.tick(now)
+    roomList.tickGame(now, isMoving)
+    if (isMoving) roomList.tickEmotes(now)
+    else roomList.stopEmotes()
   }, EMOTE_TICK_MS)
 
   return { root, refresh: async () => enqueue(await transport.getState()) }
