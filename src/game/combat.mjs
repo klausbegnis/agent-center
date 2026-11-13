@@ -1,40 +1,26 @@
 // One combat tick between a project's working party and its monster, and the reward for a kill.
 // Pure: every function returns new objects and leaves its inputs alone.
-import { POWER_GROWTH, REWARD_BASE, REWARD_GROWTH, STAMINA_TICKS } from './constants.mjs'
+import {
+  ELITE_ITEM_DROP_FACTOR,
+  ENRAGED_MAX_BONUS,
+  HEAL_CAP_SHARE,
+  HEAL_HALF_MEDICINE,
+  ITEM_DROP_BASE,
+  ITEM_DROP_MAX,
+  ITEM_DROP_PER_LUCK,
+  MITIGATION_CAP,
+  MITIGATION_HALF_RESILIENCE,
+  POWER_GROWTH,
+  REGENERATING_SHARE,
+  REWARD_BASE,
+  REWARD_GROWTH,
+  STAMINA_BASE,
+  STAMINA_TICKS,
+  SWIFT_ATTACK,
+  THORNY_SHARE
+} from './constants.mjs'
 import { chanceOf } from './hash.mjs'
 
-/**
- * A reference party's stamina at level 0. Drain and healing are both shares of the pool, so
- * this only sets the scale of the numbers shown; 1000 keeps them readable at low levels.
- */
-const STAMINA_BASE = 1000
-/**
- * Mitigation is MITIGATION_CAP * R / (R + MITIGATION_HALF_RESILIENCE) for a total resilience R:
- * one point blocks 16%, eleven (a level 20 defender) 59%, and it never passes 80%, so a party
- * of defenders alone cannot make a monster harmless.
- */
-const MITIGATION_CAP = 0.8
-const MITIGATION_HALF_RESILIENCE = 4
-/**
- * Healing per tick is HEAL_CAP_SHARE * M / (M + HEAL_HALF_MEDICINE) of the stamina pool for a
- * total medicine M: one point heals 2.4%, just above the 2.1% a common monster still drains
- * through one point of resilience, so a level 1 reference party holds. Never above 6%.
- */
-const HEAL_CAP_SHARE = 0.06
-const HEAL_HALF_MEDICINE = 1.5
-/** A regenerating monster heals this share of its health each tick it survives (about +56% ticks). */
-const REGENERATING_SHARE = 0.01
-/** An enraged monster's attack rises with the health it lost, up to this much more near death. */
-const ENRAGED_MAX_BONUS = 1
-/** A thorny monster turns this share of the health it loses into the same share of lost stamina. */
-const THORNY_SHARE = 0.5
-/** A swift monster strikes this much harder. */
-const SWIFT_ATTACK = 1.5
-/** The chance of an item drop: a base, a bonus per point of luck, a cap, and the elite factor. */
-const ITEM_DROP_BASE = 0.05
-const ITEM_DROP_PER_LUCK = 0.005
-const ITEM_DROP_MAX = 0.5
-const ELITE_ITEM_DROP_FACTOR = 3
 /** Floating point leaves crumbs; less than this share of the whole counts as nothing left. */
 const SETTLE_SHARE = 1e-9
 

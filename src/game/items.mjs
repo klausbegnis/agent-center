@@ -1,17 +1,13 @@
 // Owned items: what a tier and an upgrade level are worth, what an upgrade costs and paying for
 // it. Stats are computed here; the item entries in game/items.json carry no numbers.
-import { GEAR_LEVEL_BONUS, UPGRADE_COST_BASE, UPGRADE_COST_GROWTH } from './constants.mjs'
-
-/**
- * Each tier is worth this much more than the one below it. Geometric so that a tier step stays
- * a noticeable gain at every height: tier 5 is 1.75x, tier 10 is 3.52x tier 1. One tier step is
- * worth about three upgrade levels (1 + 3 * GEAR_LEVEL_BONUS = 1.15).
- */
-const TIER_GROWTH = 1.15
-/** Each workbench level takes this share off an upgrade's cost. */
-const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
-/** However high the workbench, an upgrade still costs at least this share of its full price. */
-const WORKBENCH_COST_FLOOR = 0.5
+import {
+  GEAR_LEVEL_BONUS,
+  TIER_GROWTH,
+  UPGRADE_COST_BASE,
+  UPGRADE_COST_GROWTH,
+  WORKBENCH_COST_FLOOR,
+  WORKBENCH_DISCOUNT_PER_LEVEL
+} from './constants.mjs'
 
 /**
  * What an item's tier multiplies its effect by: `TIER_GROWTH ** (tier - 1)`, so tier 1 gives 1.

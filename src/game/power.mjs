@@ -15,6 +15,7 @@ import {
   PACE_MAX,
   PACE_MIN,
   POWER_GROWTH,
+  REFERENCE_LEVELS_PER_WEAPON_LEVEL,
   REFERENCE_TOKENS_PER_MINUTE,
   SEASONED_LEVEL,
   SKILL_CAP,
@@ -23,9 +24,6 @@ import {
 import { seasoning, startingAttributes } from './characters.mjs'
 import { effectiveLevel, emptySkill } from './progression.mjs'
 import { CLASSES, attributeOfClass, skillOfClass } from './skills.mjs'
-
-/** The reference party's weapon gains one upgrade level every this many monster levels. */
-const REFERENCE_LEVELS_PER_WEAPON_LEVEL = 5
 
 /**
  * @typedef {import('./characters.mjs').Character} Character

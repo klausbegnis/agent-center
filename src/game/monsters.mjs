@@ -1,14 +1,19 @@
 // Which monster a project meets on a wave: its kind, whether it is an elite, and its numbers.
 // Everything comes from a hash of world, project and wave, so the same wave is always the same fight.
-import { BOSS_EVERY, ELITE, ELITE_ONE_IN, HITS_TO_KILL, MONSTER_KINDS } from './constants.mjs'
+import {
+  ARMORED_SHARE,
+  BOSS_EVERY,
+  COMMON_SHARE,
+  ELITE,
+  ELITE_ONE_IN,
+  HITS_TO_KILL,
+  MONSTER_KINDS
+} from './constants.mjs'
 import { monstersFor } from './content.mjs'
 import { chanceOf, hashOf } from './hash.mjs'
 
 /** The affixes an elite can carry. The last two swap the monster's resistances for that kind's. */
 export const AFFIXES = ['regenerating', 'enraged', 'thorny', 'swift', 'armored', 'ethereal']
-/** Off boss waves, a common monster about half the time; the rest split between the two resistant kinds. */
-const COMMON_SHARE = 0.5
-const ARMORED_SHARE = 0.25
 
 /** One text per wave and purpose, so each roll is independent of the others. */
 const rollText = ({ worldId, projectId, wave }, purpose) => `${worldId}|${projectId}|${wave}|${purpose}`

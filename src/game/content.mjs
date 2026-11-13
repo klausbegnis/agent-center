@@ -1,11 +1,8 @@
 // Checks the game's content files (monsters and items, already parsed) and picks the monster
 // entries that fit a room's theme. Pure: problems come back as text, nothing is thrown.
-import { MONSTER_KINDS } from './constants.mjs'
+import { ITEM_MAX_TIER, MONSTER_KINDS } from './constants.mjs'
+import { MATERIALS } from './skills.mjs'
 
-/** Every material id, as docs/GAME.md lists them: work skills' yields, then gathering's. */
-const MATERIALS = [
-  'bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish', 'crops', 'logs', 'hides', 'runes'
-]
 /** The body shapes the scene can draw a monster with. */
 const MONSTER_BODIES = ['blob', 'tall', 'wide', 'swarm', 'floating']
 const MONSTER_KEYS = ['id', 'name', 'kind', 'loot', 'sprite', 'themes']
@@ -13,8 +10,6 @@ const SPRITE_KEYS = ['body', 'accent']
 const ITEM_SLOTS = ['weapon', 'outfit', 'tool']
 const DAMAGE_TYPES = ['physical', 'magical']
 const ITEM_KEYS = ['id', 'name', 'slot', 'damageType', 'tier', 'recipe', 'themes']
-/** Item tiers run from 1 to this. */
-const MAX_TIER = 10
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const HEX_COLOUR = /^#[0-9A-Fa-f]{6}$/
 
@@ -137,8 +132,8 @@ function checkItem(entry, index, seenIds) {
   if (entry.slot !== 'weapon' && entry.damageType !== undefined) {
     problems.push(`${name}: only a weapon has a "damageType"`)
   }
-  if (!Number.isInteger(entry.tier) || entry.tier < 1 || entry.tier > MAX_TIER) {
-    problems.push(`${name}: "tier" must be a whole number from 1 to ${MAX_TIER}`)
+  if (!Number.isInteger(entry.tier) || entry.tier < 1 || entry.tier > ITEM_MAX_TIER) {
+    problems.push(`${name}: "tier" must be a whole number from 1 to ${ITEM_MAX_TIER}`)
   }
   return [...problems, ...checkRecipe(name, entry.recipe)]
 }

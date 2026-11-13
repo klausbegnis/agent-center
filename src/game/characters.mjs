@@ -2,6 +2,7 @@
 // from ids and experience so the same save always gives the same character.
 import {
   ATTRIBUTE_POINTS_PER_LEVEL,
+  CLASS_POINTS_PER_LEVEL,
   NEWCOMER_SHARE,
   SEASONED_LEVEL,
   VETERAN_BONUS_PER_LEVEL
@@ -17,8 +18,6 @@ import {
   skillOfClass
 } from './skills.mjs'
 
-/** Of the points a level gives, this many go to the class attribute; the rest to the activity's. */
-const CLASS_POINTS_PER_LEVEL = 2
 const ACTIVITY_POINTS_PER_LEVEL = ATTRIBUTE_POINTS_PER_LEVEL - CLASS_POINTS_PER_LEVEL
 /**
  * Salt for the class tie-break, so it is not the same number as the trade's `hash mod 6`.
