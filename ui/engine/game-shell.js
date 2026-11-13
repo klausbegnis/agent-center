@@ -1,5 +1,6 @@
 // The game's frame around the rooms: the tabs, the Arsenal and Skills panels and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
+import { createArsenalView } from './arsenal-view.js'
 import { el } from './dom.js'
 import { createGameActions } from './game-actions.js'
 import { card } from './game-controls.js'
@@ -34,18 +35,26 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const notice = el('p', 'ac-game-notice')
   notice.setAttribute('role', 'status')
 
+  // Each panel holds what its view draws while the game runs, and a card for when it cannot.
   const panels = {}
+  const contents = {}
+  const unavailableCards = {}
   for (const name of ['arsenal', 'skills']) {
     const panel = el('section', `ac-game-panel ac-game-panel-${name}`)
     panel.id = panelId(name)
     panel.setAttribute('role', 'tabpanel')
     panel.setAttribute('aria-labelledby', tabId(name))
+    contents[name] = el('div', 'ac-game-panel-content')
+    unavailableCards[name] = el('div', 'ac-game-panel-content')
+    panel.append(contents[name], unavailableCards[name])
     panels[name] = panel
   }
 
   const actions = createGameActions(transport, showNotice)
-  /** What draws each panel while the game runs. Filled in by the parts that own them. */
-  const views = {}
+  /** What draws each panel while the game runs. */
+  const views = {
+    arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs })
+  }
 
   function showNotice(message) {
     notice.textContent = message
@@ -61,14 +70,16 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
 
   /** Draws the open panel; the hidden one is drawn when it is opened. */
   function drawPanel() {
-    const panel = panels[tab]
-    if (!panel || !state) return
-    if (mode === 'unavailable') {
-      const { title, lines } = gameUnavailable(state.game?.status)
-      panel.replaceChildren(card(title, lines))
+    if (!panels[tab] || !state) return
+    const isRunning = mode === 'running'
+    contents[tab].hidden = !isRunning
+    unavailableCards[tab].hidden = isRunning
+    if (isRunning) {
+      views[tab]?.update(state)
       return
     }
-    views[tab]?.update(state)
+    const { title, lines } = gameUnavailable(state.game?.status)
+    unavailableCards[tab].replaceChildren(card(title, lines))
   }
 
   function show() {
@@ -99,8 +110,6 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     bar,
     notice,
     panels: Object.values(panels),
-    actions,
-    views,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {

@@ -94,3 +94,53 @@ export function monsterAccent(monster) {
   const accent = monster?.sprite?.accent
   return typeof accent === 'string' && HEX_COLOUR.test(accent) ? accent : DEFAULT_ACCENT
 }
+
+/** The world with this id in the view state, or null. */
+export function worldById(game, worldId) {
+  return game?.worlds?.find((world) => world.id === worldId) ?? null
+}
+
+/**
+ * The rooms that have joined the game, in the order the rooms are listed.
+ *
+ * @param {{ rooms: { id: string }[], game: object }} state
+ * @returns {{ id: string, name: string, host: string | null }[]}
+ */
+export function joinedRooms(state) {
+  return state.rooms.filter((room) => state.game?.rooms?.[room.id]?.joined)
+}
+
+/** The room asked for when it has joined, otherwise the first that has, or null. */
+export function chosenRoomId(state, wanted) {
+  const rooms = joinedRooms(state)
+  return (rooms.find((room) => room.id === wanted) ?? rooms[0])?.id ?? null
+}
+
+/**
+ * The characters of a room's agents, with the agent each belongs to. Guests are counted, not
+ * listed: they keep nothing.
+ *
+ * @returns {{ members: { agent: object, character: object }[], guests: number }}
+ */
+export function roomCharacters(state, roomId) {
+  const room = state.rooms.find((item) => item.id === roomId)
+  const members = []
+  let guests = 0
+  for (const agent of room?.agents ?? []) {
+    const character = state.game?.characters?.[agent.id]
+    if (!character) continue
+    if (character.guest) guests += 1
+    else members.push({ agent, character })
+  }
+  return { members, guests }
+}
+
+/**
+ * The name of the agent whose character holds an item, null for a free item, or '' for one held
+ * by a character not on screen.
+ */
+export function holderName(item, state, roomId) {
+  if (!item.heldBy) return null
+  const { members } = roomCharacters(state, roomId)
+  return members.find(({ character }) => character.sessionId === item.heldBy)?.agent.name ?? ''
+}

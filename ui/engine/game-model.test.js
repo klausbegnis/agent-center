@@ -2,6 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   characterBadge,
+  chosenRoomId,
+  holderName,
+  joinedRooms,
+  roomCharacters,
+  worldById,
   GAME_TABS,
   gameModeOf,
   isEstimated,
@@ -102,4 +107,53 @@ test('a monster is drawn in its own colour only when that is a plain hex colour'
   assert.equal(monsterAccent({ sprite: { accent: '#7D8590' } }), '#7D8590')
   assert.equal(monsterAccent({ sprite: { accent: 'red; background: url(x)' } }), '#8a8f99')
   assert.equal(monsterAccent(null), '#8a8f99')
+})
+
+function arsenalState() {
+  return {
+    rooms: [
+      { id: 'out', name: 'turbo-waffle', agents: [{ id: 'pane-5', name: 'Webhook retries' }] },
+      { id: 'in', name: 'rumble-banana', agents: [
+        { id: 'pane-1', name: 'Fix checkout rounding' },
+        { id: 'pane-2', name: 'Search filters' },
+        { id: 'pane-3', name: 'Cart drawer polish' }
+      ] }
+    ],
+    game: {
+      status: 'running',
+      rooms: { out: { worldId: 'main', joined: false }, in: { worldId: 'main', joined: true } },
+      characters: {
+        'pane-1': { sessionId: 's-1', guest: false, class: 'physical', level: 4 },
+        'pane-2': { sessionId: null, guest: true, level: 1 },
+        'pane-5': { sessionId: null, guest: true, level: 1 }
+      }
+    }
+  }
+}
+
+test('only rooms that have joined can be chosen, the first one by default', () => {
+  const state = arsenalState()
+  assert.deepEqual(joinedRooms(state).map((room) => room.id), ['in'])
+  assert.equal(chosenRoomId(state, 'out'), 'in')
+  assert.equal(chosenRoomId(state, null), 'in')
+  assert.equal(chosenRoomId({ ...state, game: { rooms: {} } }, 'in'), null)
+})
+
+test('a room lists its characters with their agents and only counts its guests', () => {
+  const { members, guests } = roomCharacters(arsenalState(), 'in')
+  assert.deepEqual(members.map(({ agent }) => agent.name), ['Fix checkout rounding'])
+  assert.equal(guests, 1)
+})
+
+test('an item names the agent whose character holds it', () => {
+  const state = arsenalState()
+  assert.equal(holderName({ heldBy: 's-1' }, state, 'in'), 'Fix checkout rounding')
+  assert.equal(holderName({ heldBy: null }, state, 'in'), null)
+  assert.equal(holderName({ heldBy: 's-gone' }, state, 'in'), '')
+})
+
+test('a world is found by its id', () => {
+  const game = { worlds: [{ id: 'main' }, { id: 'side-projects' }] }
+  assert.equal(worldById(game, 'side-projects').id, 'side-projects')
+  assert.equal(worldById(game, 'nowhere'), null)
 })

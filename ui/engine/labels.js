@@ -139,8 +139,8 @@ export function gameUnavailable(status) {
   }
   if (status === 'unsupported') {
     return {
-      title: 'This Orca cannot run the game',
-      lines: ['This version of Orca does not offer the session history the game counts tokens from.', rooms]
+      title: 'The game could not start',
+      lines: ['Its content files did not load. Reinstalling the plugin should bring them back.', rooms]
     }
   }
   if (status === 'newer-save') {
@@ -149,7 +149,7 @@ export function gameUnavailable(status) {
       lines: ['Update Agent Center to carry on. Nothing in the save was changed.', rooms]
     }
   }
-  return { title: 'The game is not available', lines: [rooms] }
+  return { title: 'The game is not running', lines: ['Game mode is on, but the game cannot run right now.', rooms] }
 }
 
 const ACTION_NAMES = {
@@ -261,4 +261,125 @@ export function badgeDescription(badge) {
   if (badge.kind === 'guest') return 'guest, keeps no progress'
   const base = `level ${badge.level} ${classLabel(badge.classId)}`
   return badge.isGathering ? `${base}, gathering ${skillLabel(badge.trade)}` : base
+}
+
+/** Materials, the work ones first, then the gathering ones. */
+export const MATERIAL_LABEL = {
+  bars: 'Bars',
+  pages: 'Pages',
+  gears: 'Gears',
+  crystals: 'Crystals',
+  seals: 'Seals',
+  ore: 'Ore',
+  fish: 'Fish',
+  crops: 'Crops',
+  logs: 'Logs',
+  hides: 'Hides',
+  runes: 'Runes'
+}
+export const materialLabel = (id) => labelOf(MATERIAL_LABEL, id)
+
+export const SLOT_LABEL = { weapon: 'Weapon', outfit: 'Outfit', tool: 'Tool' }
+export const ATTRIBUTE_LABEL = {
+  strength: 'Strength',
+  arcane: 'Arcane',
+  agility: 'Agility',
+  precision: 'Precision',
+  resilience: 'Resilience',
+  medicine: 'Medicine',
+  luck: 'Luck'
+}
+const DAMAGE_LABEL = { physical: 'physical', magical: 'magical' }
+export const UPGRADE_LABEL = { campfire: 'Campfire', workbench: 'Workbench', runeCircle: 'Rune circle' }
+
+/**
+ * "120 Bars, 40 Logs".
+ *
+ * @param {{ id: string, amount: number }[]} entries
+ * @param {(amount: number) => string} format
+ */
+export function materialsText(entries, format) {
+  return entries.map(({ id, amount }) => `${format(amount)} ${materialLabel(id)}`).join(', ')
+}
+
+/** "Needs 115 more Bars, 12 more Hides". */
+export function missingText(entries, format) {
+  return `Needs ${entries.map(({ id, amount }) => `${format(amount)} more ${materialLabel(id)}`).join(', ')}`
+}
+
+/** "Weapon · magical · Tier 2 · Lv 3". */
+export function itemFacts(item) {
+  return [labelOf(SLOT_LABEL, item.slot), DAMAGE_LABEL[item.damageType], `Tier ${item.tier}`, levelShort(item.level)]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** Who holds an item: "Held by Fix checkout rounding", "In use", or "Free: the next arrival takes it". */
+export function holderText(name) {
+  if (name === null) return 'Free: the next arrival takes it'
+  return name ? `Held by ${name}` : 'In use'
+}
+
+/** "Whittled Cudgel, Tier 1 · Lv 0", or "nothing" for an empty slot. */
+export function equipmentText(item) {
+  return item ? `${item.name}, Tier ${item.tier} · ${levelShort(item.level)}` : 'nothing'
+}
+
+/** What a group upgrade does now, from its effect in the view state. */
+export function upgradeEffectText(upgrade, formatShare) {
+  const effect = upgrade.effect ?? {}
+  if (upgrade.id === 'campfire') {
+    return upgrade.level ? `Restores ${formatShare(effect.staminaAfterKill)} of missing stamina after each kill`
+      : 'Once built, restores stamina after each kill'
+  }
+  if (upgrade.id === 'workbench') {
+    return upgrade.level ? `Item upgrades cost ${formatShare(effect.upgradeCostFactor)} of their price`
+      : 'Once built, makes item upgrades cheaper'
+  }
+  if (upgrade.id === 'runeCircle') {
+    return upgrade.level ? `Monsters arrive with ${formatShare(effect.monsterHealthCut)} less health`
+      : 'Once built, takes health off every new monster'
+  }
+  return ''
+}
+
+/** "Retirees add +10% to gathering (20 retired in all)". */
+export function retireeBonusText(bonus, count, formatShare) {
+  return `Retirees add +${formatShare(bonus)} to gathering (${count} retired in all)`
+}
+
+/** "Mage · Lv 10 · mostly Command". */
+export function retireeFacts(retiree) {
+  return [classLabel(retiree.class), levelShort(retiree.level), retiree.mainSkill ? `mostly ${skillLabel(retiree.mainSkill)}` : null]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+export const ARSENAL = {
+  room: 'Room',
+  noRooms: 'No room has joined the game yet. A room joins with its first tokens.',
+  autoSpend: 'Auto-spend',
+  autoSpendHint: 'Buys the cheapest useful upgrade whenever the world can pay for it.',
+  materials: (worldId, level) => `Materials · world ${worldId}, level ${level}`,
+  characters: 'Characters',
+  noCharacters: 'No character in this room right now.',
+  guests: (count) => `${plural(count, 'guest')}: they help fight but keep nothing.`,
+  attributes: 'Attributes',
+  equipment: 'Equipment',
+  chest: (shown, size) => (shown < size ? `Chest · ${shown} of ${size} items` : `Chest · ${size} items`),
+  upgrade: 'Upgrade',
+  upgradeItem: (name) => `Upgrade ${name}`,
+  upgradeCost: (text) => `Next level: ${text}`,
+  groupUpgrades: (worldId) => `Group upgrades · world ${worldId}`,
+  buy: 'Build',
+  buyUpgrade: (name, level) => `Build ${name} level ${level}`,
+  retirees: 'Retirees',
+  noRetirees: 'No character has retired here yet.',
+  moreRetirees: (count) => `and ${plural(count, 'older retiree')}`,
+  title: (title) => `was "${title}"`
+}
+
+/** "Fighter · Lv 9", the class and level of a living character. */
+export function characterFacts(character) {
+  return `${classLabel(character.class)} · ${levelShort(character.level)}`
 }

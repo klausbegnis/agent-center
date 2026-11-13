@@ -126,3 +126,35 @@ test('a character\'s mark adds its level and class, or that it is a guest', asyn
   )
   assert.equal(badgeDescription({ kind: 'guest' }), 'guest, keeps no progress')
 })
+
+test('what is missing for a purchase is said in words', async () => {
+  const { missingText, materialsText } = await import('./labels.js')
+  const entries = [{ id: 'bars', amount: 115 }, { id: 'hides', amount: 12 }]
+  assert.equal(missingText(entries, String), 'Needs 115 more Bars, 12 more Hides')
+  assert.equal(materialsText(entries, String), '115 Bars, 12 Hides')
+})
+
+test('an item says its slot, damage type, tier and level, and who holds it', async () => {
+  const { holderText, itemFacts } = await import('./labels.js')
+  assert.equal(itemFacts({ slot: 'weapon', damageType: 'magical', tier: 2, level: 3 }), 'Weapon · magical · Tier 2 · Lv 3')
+  assert.equal(itemFacts({ slot: 'tool', damageType: null, tier: 1, level: 0 }), 'Tool · Tier 1 · Lv 0')
+  assert.equal(holderText('Search filters'), 'Held by Search filters')
+  assert.equal(holderText(null), 'Free: the next arrival takes it')
+  assert.equal(holderText(''), 'In use')
+})
+
+test('a group upgrade says what it does now, or what it will do once built', async () => {
+  const { upgradeEffectText } = await import('./labels.js')
+  const percent = (share) => `${Math.round(share * 100)}%`
+  assert.equal(
+    upgradeEffectText({ id: 'campfire', level: 3, effect: { staminaAfterKill: 0.12 } }, percent),
+    'Restores 12% of missing stamina after each kill'
+  )
+  assert.equal(upgradeEffectText({ id: 'runeCircle', level: 0, effect: {} }, percent), 'Once built, takes health off every new monster')
+})
+
+test('a retiree shows its class, level and main skill', async () => {
+  const { retireeFacts } = await import('./labels.js')
+  assert.equal(retireeFacts({ class: 'magical', level: 10, mainSkill: 'command' }), 'Mage · Lv 10 · mostly Command')
+  assert.equal(retireeFacts({ class: 'defense', level: 2, mainSkill: null }), 'Guardian · Lv 2')
+})

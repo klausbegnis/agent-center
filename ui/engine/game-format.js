@@ -58,3 +58,26 @@ export function formatShare(share) {
 export function formatFactor(factor) {
   return `×${(Number(factor) || 0).toFixed(2)}`
 }
+
+/**
+ * The materials a price asks for, in the order the game gives them.
+ *
+ * @param {Record<string, number> | null | undefined} cost
+ * @returns {{ id: string, amount: number }[]}
+ */
+export function costEntries(cost) {
+  return Object.entries(cost ?? {}).map(([id, amount]) => ({ id, amount }))
+}
+
+/**
+ * What is still missing to pay a price: each material short, with how much more is needed.
+ *
+ * @param {Record<string, number> | null | undefined} cost
+ * @param {Record<string, number>} materials what the world has
+ * @returns {{ id: string, amount: number }[]} empty when the price can be paid
+ */
+export function missingMaterials(cost, materials) {
+  return costEntries(cost)
+    .map(({ id, amount }) => ({ id, amount: Math.ceil(amount - (materials?.[id] ?? 0)) }))
+    .filter(({ amount }) => amount > 0)
+}

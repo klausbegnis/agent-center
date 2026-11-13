@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { clampShare, formatAmount, formatFactor, formatShare } from './game-format.js'
+import { clampShare, costEntries, formatAmount, formatFactor, formatShare, missingMaterials } from './game-format.js'
 
 test('small amounts are written in full, with a comma from a thousand', () => {
   assert.equal(formatAmount(86), '86')
@@ -39,4 +39,18 @@ test('a share is kept between 0 and 1', () => {
 
 test('a factor is written with two decimals', () => {
   assert.equal(formatFactor(1.1146653), '×1.11')
+})
+
+test('nothing is missing when the world can pay the whole price', () => {
+  assert.deepEqual(missingMaterials({ logs: 213, bars: 213 }, { logs: 300, bars: 213 }), [])
+})
+
+test('each material short is listed with how much more is needed, rounded up', () => {
+  assert.deepEqual(missingMaterials({ logs: 213, bars: 213.4 }, { logs: 218, bars: 98 }), [{ id: 'bars', amount: 116 }])
+  assert.deepEqual(missingMaterials({ fish: 258 }, {}), [{ id: 'fish', amount: 258 }])
+})
+
+test('a price is listed in the order the game gives it', () => {
+  assert.deepEqual(costEntries({ logs: 1, bars: 2 }), [{ id: 'logs', amount: 1 }, { id: 'bars', amount: 2 }])
+  assert.deepEqual(costEntries(null), [])
 })
