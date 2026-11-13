@@ -4,28 +4,28 @@
       "id": "ink-slime",
       "name": "Ink Slime",
       "kind": "common",
-      "loot": { "pages": 2, "crops": 1 },
+      "loot": { "pages": 2, "seals": 1 },
       "sprite": { "body": "blob", "accent": "#3B4A8C" }
     },
     {
       "id": "gnat-cloud",
       "name": "Gnat Cloud",
       "kind": "common",
-      "loot": { "hides": 1, "crops": 1 },
+      "loot": { "hides": 2, "logs": 1 },
       "sprite": { "body": "swarm", "accent": "#7A8B3C" }
     },
     {
       "id": "mossback-toad",
       "name": "Mossback Toad",
       "kind": "common",
-      "loot": { "fish": 2, "crops": 1 },
+      "loot": { "fish": 1, "crops": 1, "logs": 1 },
       "sprite": { "body": "wide", "accent": "#4F7A3A" }
     },
     {
       "id": "rust-shell-beetle",
       "name": "Rust-Shell Beetle",
       "kind": "armored",
-      "loot": { "ore": 3, "gears": 1 },
+      "loot": { "ore": 2, "gears": 1, "bars": 1 },
       "sprite": { "body": "wide", "accent": "#A0522D" }
     },
     {
@@ -39,7 +39,7 @@
       "id": "thornroot-colossus",
       "name": "Thornroot Colossus",
       "kind": "boss",
-      "loot": { "logs": 3, "crops": 2, "seals": 1 },
+      "loot": { "logs": 2, "seals": 2, "bars": 1 },
       "sprite": { "body": "tall", "accent": "#5C3A21" }
     },
     {
@@ -54,7 +54,7 @@
       "id": "flaky-test-swarm",
       "name": "Flaky Test Swarm",
       "kind": "common",
-      "loot": { "gears": 2, "crystals": 1 },
+      "loot": { "gears": 2, "crystals": 1, "bars": 1 },
       "sprite": { "body": "swarm", "accent": "#E05D5D" },
       "themes": ["pixel-dark"]
     },
@@ -62,7 +62,7 @@
       "id": "stale-ticket",
       "name": "Stale Ticket",
       "kind": "common",
-      "loot": { "pages": 2, "gears": 1 },
+      "loot": { "pages": 2, "gears": 1, "seals": 1 },
       "sprite": { "body": "tall", "accent": "#E8D45A" },
       "themes": ["pixel-dark"]
     },
@@ -94,7 +94,7 @@
       "id": "straw-sparring-dummy",
       "name": "Straw Sparring Dummy",
       "kind": "common",
-      "loot": { "crops": 3, "logs": 1 },
+      "loot": { "crops": 2, "logs": 2 },
       "sprite": { "body": "tall", "accent": "#D9B45A" },
       "themes": ["guild-hall"]
     },
@@ -102,7 +102,7 @@
       "id": "pantry-rat-pack",
       "name": "Pantry Rat Pack",
       "kind": "common",
-      "loot": { "hides": 2, "crops": 1 },
+      "loot": { "hides": 2, "seals": 1 },
       "sprite": { "body": "swarm", "accent": "#8A7560" },
       "themes": ["guild-hall"]
     },
@@ -134,7 +134,7 @@
       "id": "restless-bone-heap",
       "name": "Restless Bone Heap",
       "kind": "common",
-      "loot": { "hides": 2, "ore": 1 },
+      "loot": { "hides": 2, "ore": 1, "seals": 1 },
       "sprite": { "body": "blob", "accent": "#E6DFC8" },
       "themes": ["gothic-dungeon"]
     },

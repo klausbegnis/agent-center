@@ -55,9 +55,13 @@ export const VETERAN_BONUS_PER_LEVEL = 0.005
 /** Tokens per minute that count as a normal working pace, and the limits of the pace factor. */
 export const REFERENCE_TOKENS_PER_MINUTE = 20_000
 export const PACE_MIN = 0.25
-export const PACE_MAX = 2
+export const PACE_MAX = 1.5
 
-export const CLASS_HIT = { physical: 1.3, magical: 1.3, defense: 0.6, support: 0.5 }
+/**
+ * How hard each class hits. Most projects have one or two sessions at a time, so a lone
+ * defender or supporter must still kill at a reasonable pace.
+ */
+export const CLASS_HIT = { physical: 1.2, magical: 1.2, defense: 0.8, support: 0.7 }
 export const SUPPORT_AURA = 0.15
 export const FULL_PARTY_BONUS = 0.1
 export const FULL_PARTY_CLASSES = 3
@@ -161,17 +165,17 @@ export const ELITE = { hp: 1.5, reward: 3 }
  * Units an idle character gathers per hour before bonuses, at world level 0. The rate grows by
  * REWARD_GROWTH per world level, like kill rewards, so gathering stays a steady share of income.
  */
-export const GATHER_PER_HOUR = 20
-export const GATHER_SKILL_BONUS = 0.04
+export const GATHER_PER_HOUR = 7
+export const GATHER_SKILL_BONUS = 0.01
 /** Experience an hour of gathering gives the trade's skill. */
 export const GATHER_XP_PER_HOUR = 300
 export const GATHER_STOPS_AFTER_HOURS = 8
 export const REWARD_BASE = 10
 export const REWARD_GROWTH = 1.03
 /** The chance of an item drop: a base, a bonus per point of luck, a cap, and the elite factor. */
-export const ITEM_DROP_BASE = 0.05
-export const ITEM_DROP_PER_LUCK = 0.005
-export const ITEM_DROP_MAX = 0.5
+export const ITEM_DROP_BASE = 0.005
+export const ITEM_DROP_PER_LUCK = 0.0003
+export const ITEM_DROP_MAX = 0.05
 export const ELITE_ITEM_DROP_FACTOR = 3
 /** A drop is a weapon this many times as often as an outfit or a tool. */
 export const DROP_SLOT_WEIGHTS = { weapon: 2, outfit: 1, tool: 1 }
@@ -209,7 +213,7 @@ export const RUNE_CIRCLE_HALF = 10
  * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded.
  */
 export const GROUP_UPGRADES = {
-  campfire: { recipe: ['logs', 'crops'] },
+  campfire: { recipe: ['fish', 'crops'] },
   workbench: { recipe: ['ore', 'gears'] },
   runeCircle: { recipe: ['runes', 'crystals'] }
 }
