@@ -25,7 +25,8 @@ export function emptyWorld() {
 }
 
 /**
- * A project before its first fight. `stamina` is a share of the party's pool, `restTicks` the
+ * A project before its first fight. `kills` counts every monster it ever killed (only a world
+ * reset starts it over), `stamina` is a share of the party's pool, `restTicks` the
  * fight ticks of rest left, `fightMs` fight time not yet worth a whole tick, and `fightTicks` and
  * `fightRested` describe the fight under way.
  *
@@ -35,6 +36,7 @@ export function emptyProject({ wave = FIRST_WAVE } = {}) {
   return {
     wave,
     waveKills: 0,
+    kills: 0,
     monster: null,
     stamina: 1,
     restTicks: 0,
@@ -193,6 +195,8 @@ function normalizeProject(value) {
     ...project,
     wave: isNumber(project.wave) ? project.wave : FIRST_WAVE,
     waveKills: isNumber(project.waveKills) ? project.waveKills : 0,
+    // Saves from before the kill count start it at 0.
+    kills: Number.isInteger(project.kills) && project.kills > 0 ? project.kills : 0,
     stamina: isNumber(project.stamina) ? Math.min(1, Math.max(0, project.stamina)) : 1,
     restTicks: isNumber(project.restTicks) ? project.restTicks : 0,
     fightMs: isNumber(project.fightMs) ? project.fightMs : 0,

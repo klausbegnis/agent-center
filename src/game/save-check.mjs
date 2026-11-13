@@ -253,6 +253,7 @@ function project(value, path) {
   return {
     wave: whole(source.wave, `${path}.wave`, { min: 1 }),
     waveKills: whole(source.waveKills, `${path}.waveKills`),
+    kills: whole(source.kills ?? 0, `${path}.kills`),
     monster: monster(source.monster, `${path}.monster`),
     stamina: number(source.stamina, `${path}.stamina`, { max: 1 }),
     restTicks: whole(source.restTicks, `${path}.restTicks`),

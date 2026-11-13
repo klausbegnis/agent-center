@@ -103,6 +103,7 @@ function projectView(projectId, project, world, names) {
     id: projectId,
     wave: project.wave,
     waveKills: project.waveKills,
+    kills: project.kills ?? 0,
     killsToPass: killsToPass(project.wave, worldLevel(world.skills)),
     monster: monsterView(project.monster),
     stamina: project.stamina,

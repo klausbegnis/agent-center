@@ -7,6 +7,7 @@ import { addDrop, droppedEntry } from './drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import { killsToPass, monsterFor, rankOf } from './monsters.mjs'
 import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
+import { inScene } from './scenes.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
 import { addMaterials } from './worlds.mjs'
 
@@ -97,7 +98,10 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
   return { ...monster, hp }
 }
 
-/** What a kill changes: reward, drop, campfire, the wave's count, and the next monster. */
+/**
+ * What a kill changes: reward, drop, campfire, the wave's and the room's counts, the scene of a
+ * travelling room, and the next monster, which fits that scene.
+ */
 function settleKill(state, context) {
   const { worldId, projectId, world, content, party, worldLevel, events } = context
   const { monster } = state
@@ -120,6 +124,8 @@ function settleKill(state, context) {
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
   state.waveKills += 1
+  state.kills = (state.kills ?? 0) + 1
+  if (context.scenes) state.themeId = inScene(state, projectId, context.scenes).themeId
   if (state.waveKills >= killsToPass(state.wave, worldLevel)) {
     state.wave += 1
     state.waveKills = 0
@@ -170,10 +176,12 @@ function playTick(state, context) {
  * @param {number} options.ticks
  * @param {{ monsters: object, items: object }} options.content
  * @param {(level: number) => object} options.referencePartyHit
+ * @param {string[] | null} [options.scenes] the themes a travelling project moves through
  * @returns {{ project: object, materials: Record<string, number>, events: object[] }}
  */
 export function playFight(options) {
   const { worldId, projectId, project, world, worldLevel, party, ticks, content, referencePartyHit } = options
+  const scenes = options.scenes ?? null
   const events = []
   const cache = new Map()
   const against = (level) => {
@@ -182,7 +190,7 @@ export function playFight(options) {
   }
   const state = { ...project, materials: {} }
   const context = {
-    worldId, projectId, world, content, party, worldLevel, events, against, referencePartyHit
+    worldId, projectId, world, content, party, worldLevel, events, against, referencePartyHit, scenes
   }
   if (!state.monster) {
     const where = { worldId, projectId, project: state, world, content }

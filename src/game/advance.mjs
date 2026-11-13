@@ -9,6 +9,7 @@ import { activeHours, gather, gatherRate } from './gathering.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
+import { inScene, scenesOf } from './scenes.mjs'
 import { materialOfSkill } from './skills.mjs'
 import { addMaterials, withCharacter, withProjectIn, worldIdOf } from './worlds.mjs'
 
@@ -18,7 +19,9 @@ const PAUSING_STATES = new Set(['waiting', 'blocked'])
 
 /**
  * @typedef {{ projectId: string, sessionId: string, state: 'working' | 'waiting' | 'blocked' | 'idle',
- *   activity?: string, tokensPerMinute?: number, themeId?: string | null, guest?: boolean }} SessionReading
+ *   activity?: string, tokensPerMinute?: number, themeId?: string | null, guest?: boolean,
+ *   scenes?: string[] | null }} SessionReading `scenes` are the themes a travelling project moves
+ *   through, one per kill (see scenes.mjs); its `themeId` then follows its kill count instead
  */
 
 /** An idle character gathers its trade for the hours gathering still runs. */
@@ -85,6 +88,8 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
   let project = current.projects[projectId]
   const themed = readings.find((reading) => reading.themeId)
   if (themed) project = { ...project, themeId: themed.themeId }
+  const scenes = scenesOf(readings)
+  project = inScene(project, projectId, scenes)
   if (readings.some((reading) => PAUSING_STATES.has(reading.state))) {
     return { world: withProjectIn(current, projectId, project), events: [] }
   }
@@ -103,7 +108,8 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
     party: partyOf(members, current, project),
     ticks,
     content,
-    referencePartyHit
+    referencePartyHit,
+    scenes
   })
   current = { ...current, materials: addMaterials(current.materials, fight.materials) }
   return { world: withProjectIn(current, projectId, fight.project), events: fight.events }
@@ -173,7 +179,7 @@ export function prepareFights(save, { sessions = [] }, context) {
     const world = worldId === null ? null : next.worlds[worldId]
     if (!world?.projects[projectId]) continue
     const readings = byProject.get(projectId)
-    let project = recordStates(world, projectId, readings)
+    let project = inScene(recordStates(world, projectId, readings), projectId, scenesOf(readings))
     const partySize = readings.filter((reading) =>
       reading.state === 'working' && (reading.guest || project.characters[reading.sessionId])).length
     if (!project.monster && partySize > 0) {

@@ -93,7 +93,7 @@ test('materials add up by id', () => {
 
 test('a new project starts at the wave it is given with nothing else', () => {
   assert.deepEqual(emptyProject({ wave: 9 }), {
-    wave: 9, waveKills: 0, monster: null, stamina: 1, restTicks: 0, fightMs: 0, fightTicks: 0,
+    wave: 9, waveKills: 0, kills: 0, monster: null, stamina: 1, restTicks: 0, fightMs: 0, fightTicks: 0,
     fightRested: false, themeId: null, chest: [], characters: {}, retirees: [], retiredCount: 0
   })
 })
