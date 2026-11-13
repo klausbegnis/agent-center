@@ -512,6 +512,7 @@ running; `keepTitles` writes the setting, and the save follows.
       worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
       monster: { id, name, kind, affix, level, healthShare: 0.12, sprite: { body, accent } },
       party: 'fighting',            // fighting | resting | paused | idle
+      pausedBy: null,               // blocked | waiting while paused, otherwise null
       stamina: 0.8,                 // share of the party's pool
       chest: [{ id, name, slot, damageType, tier, level, power, heldBy, upgradeCost, affordable }],
       chestSize: 6,
@@ -544,8 +545,14 @@ running; `keepTitles` writes the setting, and the save follows.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
   chest shows the items in use and the strongest free ones, 12 at most (`chestSize` is the
   whole count); retirees show the newest 8 (`retiredCount` counts all).
-- The game part is rebuilt only after a round or an action; between them every publish sends
-  the same object.
+- A character's `state` and its room's `party` and `pausedBy` come from the store's agents at
+  the moment the view is built, not from the last round, so they always match the room drawn
+  next to them: `working`, `waiting` and `blocked` as the agent is, `idle` for one that is done.
+  A paused party says why: `blocked` when an agent is blocked, otherwise `waiting`. Sessions no
+  agent on screen runs keep the state their last round read. A character whose agent left the
+  room is not sent.
+- The game part is rebuilt only after a round, an action, or a change in the state of an agent
+  that has a character; between them every publish sends the same object.
 
 ## Simulation
 

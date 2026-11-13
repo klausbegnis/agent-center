@@ -83,11 +83,14 @@ export function createGameMode(dependencies) {
   let isDenied = false
   let lastRoundAt = null
   let links = new Map()
-  let statesByRoom = {}
+  /** By room, the last round's states of the sessions no agent on screen runs. */
+  let agentlessStates = {}
   let recent = []
   let debug = {}
   let eventId = 0
   let cachedView = null
+  /** The agents' states the cached view was built with: it is rebuilt when one changes. */
+  let cachedStates = null
   let isRoundRunning = false
   let failedReads = 0
 
@@ -129,7 +132,7 @@ export function createGameMode(dependencies) {
   function stopWatching() {
     lastRoundAt = null
     links = new Map()
-    statesByRoom = {}
+    agentlessStates = {}
     forgetMeters()
     const { save, bridge } = data()
     if (bridge.watchedUntil === null || gameSave.isFromNewerVersion()) return
@@ -259,10 +262,10 @@ export function createGameMode(dependencies) {
     for (const [sessionId, agentId] of agentOf) {
       links.set(agentId, { sessionId, roomId: roomOfAgent.get(agentId), how: how.get(sessionId) })
     }
-    statesByRoom = {}
+    agentlessStates = {}
     for (const state of readings.states) {
       if (state.guest) links.set(state.agentId, { sessionId: null, roomId: state.projectId, how: 'guest' })
-      ;(statesByRoom[state.projectId] ??= []).push({ state: state.state })
+      if (!state.agentId) (agentlessStates[state.projectId] ??= []).push({ state: state.state })
     }
     const events = [...advanced.events, ...counted.events, ...closed.events, ...spent.events]
     recent = keepRecent(recent, stamp(events, at))
@@ -292,11 +295,19 @@ export function createGameMode(dependencies) {
     }
   }
 
-  /** The game part of the view state, rebuilt only after something changed. */
+  /**
+   * The game part of the view state, rebuilt only after a round, an action, or a change in the
+   * state of an agent that has a character. A character's state and its party's are the store's
+   * now, not the last round's, so they always match the room drawn next to them.
+   */
   function getView() {
-    if (cachedView) return cachedView
+    const { rooms } = store.snapshot()
+    const agentStates = new Map(mainAgents(rooms).map((agent) => [agent.id, agent.state]))
+    const states = [...links.keys()].map((agentId) => `${agentId}=${agentStates.get(agentId) ?? ''}`).join('|')
+    if (cachedView && states === cachedStates) return cachedView
     const running = status === 'running'
     const { save, bridge } = data()
+    cachedStates = states
     cachedView = buildGameView({
       status,
       tokenSource: running ? tokenSource : null,
@@ -304,9 +315,10 @@ export function createGameMode(dependencies) {
       keepTitles,
       engineView: running ? engine.view(save) : null,
       defaultWorldId: DEFAULT_WORLD,
-      roomIds: store.snapshot().rooms.map((room) => room.id).filter((id) => id !== 'no-project'),
+      roomIds: rooms.map((room) => room.id).filter((id) => id !== 'no-project'),
       links,
-      statesByRoom,
+      agentStates,
+      agentlessStates,
       recent,
       debug
     })

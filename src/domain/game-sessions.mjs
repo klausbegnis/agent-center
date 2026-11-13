@@ -33,6 +33,17 @@ const isLocalHost = (hostId) => hostId === null || hostId === undefined || hostI
  */
 
 /**
+ * What an agent's state means to its character: `working`, `waiting` and `blocked` as they are, a
+ * finished agent (`done`) is `idle` and gathers.
+ *
+ * @param {string} agentState the store's state
+ * @returns {'working' | 'waiting' | 'blocked' | 'idle'}
+ */
+export function gameStateOf(agentState) {
+  return GAME_STATE_OF_AGENT[agentState] ?? 'idle'
+}
+
+/**
  * @param {string} activity an activity from the store, such as 'write' or 'wait'
  * @returns {string} the activity the tokens are counted as
  */
@@ -163,6 +174,7 @@ export function matchSessions({ sessions, places, agents, links }) {
  * @returns {{
  *   states: { projectId: string, sessionId: string, state: string, activity: string,
  *     tokensPerMinute: number, themeId: string | null, guest?: boolean, agentId?: string }[],
+ *   `agentId` is set for every session an agent on screen runs, guests included
  *   tokens: { projectId: string, sessionId: string, tokens: number, activity: string,
  *     title: string | null, themeId: string | null }[],
  *   counters: { unmatched: number, unplaced: number, guests: number }
@@ -190,14 +202,15 @@ export function buildReadings({ sessions, places, agentOf, agents, deltas, theme
     const { sessionId } = session
     if (delta) tokens.push({ projectId, sessionId, tokens: delta.tokens, activity, title: session.title, themeId })
     if (!agent && !session.running) continue
-    const state = agent ? GAME_STATE_OF_AGENT[agent.state] ?? 'idle' : (delta ? 'working' : 'idle')
+    const state = agent ? gameStateOf(agent.state) : (delta ? 'working' : 'idle')
     const tokensPerMinute = delta && delta.minutes > 0 ? delta.tokens / delta.minutes : 0
-    states.push({ projectId, sessionId, state, activity, tokensPerMinute, themeId })
+    const reading = { projectId, sessionId, state, activity, tokensPerMinute, themeId }
+    states.push(agent ? { ...reading, agentId: agent.id } : reading)
   }
   const matched = new Set(agentOf.values())
   for (const agent of agents) {
     if (agent.isLocal || matched.has(agent.id)) continue
-    const state = GAME_STATE_OF_AGENT[agent.state] ?? 'idle'
+    const state = gameStateOf(agent.state)
     const tokensPerMinute = state === 'working' ? GUEST_TOKENS_PER_MINUTE : 0
     states.push({
       projectId: agent.roomId,

@@ -8,6 +8,7 @@ import {
   gameStatus,
   keepRecent,
   partyStateOf,
+  pauseReasonOf,
   tokenSourceOf
 } from './game-view.mjs'
 
@@ -54,7 +55,7 @@ function engineView({ chest = [], retirees = [] } = {}) {
 
 const input = (view, extra = {}) => ({
   status: 'running', tokenSource: 'estimated', autoSpend: false, keepTitles: false, engineView: view, defaultWorldId: 'main',
-  roomIds: [BANANA], links: new Map(), statesByRoom: {}, recent: [], debug: {}, ...extra
+  roomIds: [BANANA], links: new Map(), agentStates: new Map(), agentlessStates: {}, recent: [], debug: {}, ...extra
 })
 
 test('a game that is not running sends only its status and settings', () => {
@@ -94,4 +95,40 @@ test('a room out of the game or not playing yet says so', () => {
   assert.deepEqual(excluded, { worldId: null, joined: false })
   const fresh = buildGameView(input({ worlds: [], projectWorld: {} })).rooms[BANANA]
   assert.deepEqual(fresh, { worldId: 'main', joined: false })
+})
+
+test('a blocked agent comes before a waiting one as the reason a party waits', () => {
+  assert.equal(pauseReasonOf([{ state: 'waiting' }, { state: 'blocked' }]), 'blocked')
+  assert.equal(pauseReasonOf([{ state: 'working' }, { state: 'waiting' }]), 'waiting')
+  assert.equal(pauseReasonOf([{ state: 'working' }, { state: 'idle' }]), null)
+})
+
+function partyView() {
+  const member = {
+    sessionId: 'estimated:pane-1', class: 'physical', level: 2, levelProgress: 0, attributes: {}, equipment: {},
+    trade: 'mining', state: 'idle'
+  }
+  const view = engineView()
+  view.worlds[0].projects[0].party = [member]
+  return view
+}
+
+test('a character and its party take the state its agent has now, not the one saved at the last round', () => {
+  const links = new Map([['pane-1', { sessionId: 'estimated:pane-1', roomId: BANANA, how: 'agent' }]])
+  const view = buildGameView(input(partyView(), { links, agentStates: new Map([['pane-1', 'working']]) }))
+  assert.equal(view.characters['pane-1'].state, 'working')
+  assert.equal(view.rooms[BANANA].party, 'fighting')
+  assert.equal(view.rooms[BANANA].pausedBy, null)
+  const waiting = buildGameView(input(partyView(), { links, agentStates: new Map([['pane-1', 'waiting']]) }))
+  assert.equal(waiting.characters['pane-1'].state, 'waiting')
+  assert.equal(waiting.rooms[BANANA].party, 'paused')
+  assert.equal(waiting.rooms[BANANA].pausedBy, 'waiting')
+})
+
+test('a character whose agent left the room is not sent, and a session without an agent keeps its round state', () => {
+  const links = new Map([['pane-1', { sessionId: 'estimated:pane-1', roomId: BANANA, how: 'agent' }]])
+  const agentlessStates = { [BANANA]: [{ state: 'working' }] }
+  const view = buildGameView(input(partyView(), { links, agentStates: new Map(), agentlessStates }))
+  assert.deepEqual(view.characters, {})
+  assert.equal(view.rooms[BANANA].party, 'fighting')
 })

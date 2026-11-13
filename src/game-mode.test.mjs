@@ -424,3 +424,54 @@ test('an agent on another computer is a guest of the estimate too', async () => 
   assert.deepEqual(game.getView().characters['pane-9'], { sessionId: null, link: 'guest', guest: true, level: 1 })
   assert.equal(game.getView().debug.guests, 1)
 })
+
+/** A snapshot row of the banana room with one agent, as `orca worktree ps` and untracked-sessions.mjs give it. */
+const bananaRow = (paneKey, state, extra = {}) =>
+  [{ workspaceId: 'w-banana', agents: [{ paneKey, state, hasLivePty: true, ...extra }] }]
+
+test('a character born this round shows its agent working in the same view', async () => {
+  const setupResult = setup({ access: { supported: false, granted: true } })
+  const { game, store, tick } = setupResult
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  assert.equal(store.snapshot().rooms.find((room) => room.id === BANANA).agents[0].state, 'working')
+  assert.equal(game.getView().characters['pane-1'].state, 'working')
+  assert.equal(game.getView().rooms[BANANA].party, 'fighting')
+})
+
+test('an agent known only from the snapshot earns its estimate and shows the state the store has', async () => {
+  const setupResult = setup({ access: { supported: false, granted: true } })
+  const { game, store, tick } = setupResult
+  await game.round()
+  tick(1)
+  // A session Orca lost track of: no event or hook ever names it, only its terminal.
+  store.sync('local', bananaRow('pane-7', 'working', { conversationName: 'Release notes' }))
+  tick(MINUTE / 2)
+  store.sync('local', bananaRow('pane-7', 'working', { conversationName: 'Release notes' }))
+  tick(MINUTE / 2)
+  await game.round()
+  const expected = estimateTokens({ workedMs: { think: MINUTE }, toolCalls: 0, minutes: 1 })
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-7'), expected)
+  assert.equal(game.getView().characters['pane-7'].state, 'working')
+})
+
+test('a character follows its agent between rounds, and so does its party', async () => {
+  const setupResult = setup({ access: { supported: false, granted: true } })
+  const { game, store, tick } = setupResult
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  const before = game.getView()
+  store.status({ ...PANE, state: 'blocked' })
+  const blocked = game.getView()
+  assert.notEqual(blocked, before)
+  assert.equal(blocked.characters['pane-1'].state, 'blocked')
+  assert.equal(blocked.rooms[BANANA].party, 'paused')
+  assert.equal(blocked.rooms[BANANA].pausedBy, 'blocked')
+  store.status({ ...PANE, state: 'done' })
+  assert.equal(game.getView().characters['pane-1'].state, 'idle')
+  assert.equal(game.getView().rooms[BANANA].party, 'idle')
+})

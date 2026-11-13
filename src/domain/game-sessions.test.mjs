@@ -136,7 +136,8 @@ test('a matched session fights with its agent\'s state and counts tokens as its 
     themeOf: () => 'guild-hall'
   })
   assert.deepEqual(states, [{
-    projectId: BANANA, sessionId: 's1', state: 'working', activity: 'run', tokensPerMinute: 60_000, themeId: 'guild-hall'
+    projectId: BANANA, sessionId: 's1', state: 'working', activity: 'run', tokensPerMinute: 60_000, themeId: 'guild-hall',
+    agentId: 'pane-1'
   }])
   assert.deepEqual(tokens, [{
     projectId: BANANA, sessionId: 's1', tokens: 30_000, activity: 'run', title: null, themeId: 'guild-hall'

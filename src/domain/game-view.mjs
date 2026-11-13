@@ -1,5 +1,6 @@
 // The game part of the view state: why the game is off, or the worlds, rooms and characters a
 // UI draws, reshaped from the engine's view and kept small enough for a panel post. Pure.
+import { gameStateOf } from './game-sessions.mjs'
 
 /** Items of a room's chest sent to the UI: the ones in use, then the strongest free ones. */
 export const CHEST_ITEMS_SHOWN = 12
@@ -55,6 +56,18 @@ export function partyStateOf(readings, resting) {
 }
 
 /**
+ * Why a paused party waits: an agent `blocked` comes first, then one `waiting` for the person.
+ *
+ * @param {{ state: string }[]} readings the room's session states
+ * @returns {'blocked' | 'waiting' | null} null when nobody pauses the party
+ */
+export function pauseReasonOf(readings) {
+  if (readings.some((reading) => reading.state === 'blocked')) return 'blocked'
+  if (readings.some((reading) => reading.state === 'waiting')) return 'waiting'
+  return null
+}
+
+/**
  * Adds events to the kept list, newest last, keeping RECENT_EVENTS_KEPT.
  *
  * @param {object[]} recent
@@ -99,7 +112,7 @@ function shownRetirees(retirees, keepTitles) {
     }))
 }
 
-function roomView(project, worldId, partyState, keepTitles) {
+function roomView(project, worldId, readings, keepTitles) {
   return {
     worldId,
     joined: true,
@@ -107,7 +120,8 @@ function roomView(project, worldId, partyState, keepTitles) {
     waveKills: project.waveKills,
     killsToPass: project.killsToPass,
     monster: project.monster,
-    party: partyState,
+    party: partyStateOf(readings, project.resting),
+    pausedBy: pauseReasonOf(readings),
     stamina: project.stamina,
     chest: shownChest(project.chest),
     chestSize: project.chest.length,
@@ -117,7 +131,7 @@ function roomView(project, worldId, partyState, keepTitles) {
   }
 }
 
-function characterView(member, link) {
+function characterView(member, link, state) {
   const equipment = Object.fromEntries(Object.entries(member.equipment)
     .map(([slot, item]) => [slot, item ? { id: item.id, name: item.name, tier: item.tier, level: item.level } : null]))
   return {
@@ -130,8 +144,22 @@ function characterView(member, link) {
     attributes: member.attributes,
     equipment,
     trade: member.trade,
-    state: member.state
+    state
   }
+}
+
+/**
+ * Each room's session states as they are now: those of the agents on screen from the store, the
+ * others (sessions no agent runs) from the last round.
+ */
+function currentStatesByRoom({ links, agentStates, agentlessStates }) {
+  const byRoom = {}
+  for (const [roomId, readings] of Object.entries(agentlessStates)) byRoom[roomId] = [...readings]
+  for (const [agentId, link] of links) {
+    if (!agentStates.has(agentId)) continue
+    ;(byRoom[link.roomId] ??= []).push({ state: gameStateOf(agentStates.get(agentId)) })
+  }
+  return byRoom
 }
 
 /**
@@ -149,13 +177,17 @@ function characterView(member, link) {
  * @param {Map<string, { sessionId: string | null, roomId: string, how: string }>} input.links by agent
  *   id: the session each character on screen runs, `how` the way it was matched ('session',
  *   'title', 'only', 'agent' for the estimate) or 'guest'
- * @param {Record<string, { state: string }[]>} input.statesByRoom the last round's session states
+ * @param {Map<string, string>} input.agentStates the store's state of each agent on screen now. A
+ *   character's state and its party's come from here, so they never lag behind the rooms; a
+ *   character whose agent is not on screen is left out.
+ * @param {Record<string, { state: string }[]>} input.agentlessStates by room, the last round's
+ *   states of the sessions no agent on screen runs
  * @param {object[]} input.recent
  * @param {object} input.debug counters from the last round
  * @returns {object}
  */
 export function buildGameView(input) {
-  const { status, autoSpend, keepTitles, engineView, defaultWorldId, roomIds, links, statesByRoom, recent, debug } = input
+  const { status, autoSpend, keepTitles, engineView, defaultWorldId, roomIds, links, agentStates, recent, debug } = input
   if (status !== 'running' || !engineView) return { status, tokenSource: null, autoSpend, keepTitles }
   const { tokenSource } = input
   const projects = new Map()
@@ -164,6 +196,7 @@ export function buildGameView(input) {
   }
   const worldOf = (roomId) =>
     (Object.hasOwn(engineView.projectWorld, roomId) ? engineView.projectWorld[roomId] : defaultWorldId)
+  const statesByRoom = currentStatesByRoom({ links, agentStates, agentlessStates: input.agentlessStates })
   const rooms = {}
   for (const roomId of roomIds) {
     const worldId = worldOf(roomId)
@@ -172,17 +205,17 @@ export function buildGameView(input) {
       rooms[roomId] = { worldId, joined: false }
       continue
     }
-    const partyState = partyStateOf(statesByRoom[roomId] ?? [], found.project.resting)
-    rooms[roomId] = roomView(found.project, worldId, partyState, keepTitles)
+    rooms[roomId] = roomView(found.project, worldId, statesByRoom[roomId] ?? [], keepTitles)
   }
   const characters = {}
   for (const [agentId, link] of links) {
+    if (!agentStates.has(agentId)) continue
     if (link.how === 'guest') {
       characters[agentId] = { sessionId: null, link: 'guest', guest: true, level: 1 }
       continue
     }
     const member = projects.get(link.roomId)?.project.party.find((item) => item.sessionId === link.sessionId)
-    if (member) characters[agentId] = characterView(member, link)
+    if (member) characters[agentId] = characterView(member, link, gameStateOf(agentStates.get(agentId)))
   }
   const worlds = engineView.worlds.map(({ projects: worldProjects, ...world }) => ({
     ...world,
