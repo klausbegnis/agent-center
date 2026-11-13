@@ -16,6 +16,7 @@ All notable changes to this project are recorded here. The format follows
   conversation titles** keeps a finished session's title on its retired character.
 - The view state carries a `game` part for a UI to draw (see `docs/GAME.md`), and the panel and
   the local page take the game's actions.
+- `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens; `FREEZE=1` shows a fixed save.
 
 ## 0.1.0 - 2026-11-12
 

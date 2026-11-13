@@ -7,6 +7,8 @@
 //   node scripts/demo.mjs _template    the theme template, which no picker offers otherwise
 //   PORT=47700    port to serve on
 //   FREEZE=1      keep the scene still instead of looping the script
+//   GAME=1        turn game mode on, with a made-up stream of tokens (see demo-game.mjs); with
+//                 FREEZE=1 the game is a fixed save after a day of play
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
 // for them; the demo prints that address too.
@@ -16,10 +18,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createController } from '../src/controller.mjs'
 import { createAgentStore } from '../src/domain/agent-store.mjs'
+import { loadGameEngine } from '../src/game-files.mjs'
 import { createUnavailableGame } from '../src/game-mode.mjs'
 import { RANDOM_THEME } from '../src/preferences.mjs'
 import { startServer } from '../src/server/http-server.mjs'
 import { listThemes, TEMPLATE_THEME } from '../src/themes.mjs'
+import { createDemoGame } from './demo-game.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const store = createAgentStore()
@@ -147,9 +151,15 @@ const preferences = {
 }
 
 let server = null
-const publish = () => server?.broadcast(controller.getState())
-const game = createUnavailableGame('off')
-const controller = createController({
+let controller = null
+const publish = () => {
+  if (controller) server?.broadcast(controller.getState())
+}
+const engine = process.env.GAME ? loadGameEngine(ROOT, console.error) : null
+const game = engine
+  ? await createDemoGame({ engine, store, preferences, onChange: publish, frozen: Boolean(process.env.FREEZE) })
+  : createUnavailableGame('off')
+controller = createController({
   store,
   preferences,
   snapshotSync: { sync: async () => {} },

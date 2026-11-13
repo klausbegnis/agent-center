@@ -152,6 +152,13 @@ Opens the external view with a set of made-up projects and agents that keep work
 and finishing. It is also the fastest way to see a theme while you draw it. The screenshots on
 this page come from it.
 
+```bash
+GAME=1 node scripts/demo.mjs
+```
+
+Turns game mode on with a made-up stream of tokens. Add `FREEZE=1` for a fixed save after a day
+of play.
+
 ## How it works
 
 Two small programs that share one object, the view state:
