@@ -4,8 +4,8 @@
 // across the settings' redraws, so a pasted text or an open question survives a state update.
 import { button, el } from './dom.js'
 import { confirmButton, section } from './game-controls.js'
-import { SAVE_FILE } from './labels.js'
 import { readSaveText, saveFileName, saveFileText } from './save-file.js'
+import { SAVE_FILE } from './settings-labels.js'
 
 /** How long the Blob URL of a download is kept before it is let go. */
 const DOWNLOAD_URL_MS = 60_000

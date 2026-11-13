@@ -4,8 +4,9 @@
 import { button, el, select, setOptions } from './dom.js'
 import { confirmButton, replaceKeepingFocus, section, settingSwitch } from './game-controls.js'
 import { isEstimated, MAX_WORLDS, newWorldId, roomWorlds } from './game-model.js'
-import { ARSENAL, ESTIMATED_NOTE, roomTitle, SETTINGS, worldChoice } from './labels.js'
+import { ARSENAL, ESTIMATED_NOTE, roomTitle } from './labels.js'
 import { createSaveFileCard } from './save-file-view.js'
+import { SETTINGS, worldChoice } from './settings-labels.js'
 
 /** The value of the "out of the game" and "new world" choices; world ids are never empty. */
 const OUT_OF_GAME = ''

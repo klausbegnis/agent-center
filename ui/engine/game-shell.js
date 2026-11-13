@@ -7,8 +7,9 @@ import { card } from './game-controls.js'
 import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
 import { createSkillsView } from './skills-view.js'
-import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable, SETTINGS } from './labels.js'
+import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
 import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
+import { SETTINGS } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
