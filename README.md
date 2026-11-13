@@ -63,9 +63,10 @@ Where the tokens come from:
 
 - **Estimated, on today's Orca.** Released Orca versions do not give plugins the tokens a
   session spent. There, progress is estimated from how long each agent works and how many tool
-  calls it makes; it is not measured. Each agent on this computer is one character for as long
-  as its terminal is open. No new permission is asked for: the estimate uses only what the
-  plugin already sees.
+  calls it makes; it is not measured. Each agent is one character for as long as its terminal is
+  open, on this computer and on paired machines alike. A paired machine's agents are estimated
+  from its snapshots alone, so more coarsely, and earn nothing while the machine cannot be
+  reached. No new permission is asked for: the estimate uses only what the plugin already sees.
 - **Real totals, once Orca provides them.** When Orca offers its Agent Session History to
   plugins and the session history permission (`history:read`) is granted, the game switches by
   itself to the real token totals. This version of the plugin does not ask for that permission
@@ -219,10 +220,14 @@ Contributions are welcome.
 - Game mode's progress is an estimate on every released Orca: working time and tool calls stand
   in for tokens, and a conversation cleared in the same terminal goes on as the same character.
   See [docs/GAME.md](docs/GAME.md#the-estimate).
-- Game mode counts only sessions on this computer: Orca's session history does not cover paired
-  machines, and leaves subagents out. Agents on paired machines join their room's fight as
-  guests with no token count, and a room whose only agents are guests does not join the game.
-  Under the Random theme the game uses its generic monsters.
+- On the estimate, an agent on a paired machine is seen only through its machine's snapshot
+  every 15 seconds and no tool call of it is counted: its working time is sampled, and each
+  working minute is paid at an assumed pace of tool calls. A long-running command there is
+  overpaid like anywhere else.
+- With real token totals, game mode counts only sessions on this computer: Orca's session
+  history does not cover paired machines, and leaves subagents out. Agents on paired machines
+  then join their room's fight as guests with no token count, and a room whose only agents are
+  guests does not join the game. Under the Random theme the game uses its generic monsters.
 - macOS and Linux are what it is tested on. On Windows the plugin loads, but it does not find
   the Orca CLI yet, so agents that were already running, paired machines, the bell and "Open
   workspace" on a terminal are missing.

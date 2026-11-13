@@ -1,6 +1,6 @@
-// The game's characters and readings when Orca gives no session token totals: each agent on this
-// computer is a character for as long as it is in the room, and what its work meter counted
-// stands in for the tokens. Pure: the caller keeps the baselines and passes the clock.
+// The game's characters and readings when Orca gives no session token totals: each agent, on this
+// computer or a paired one, is a character for as long as it is in the room, and what its work
+// meter counted stands in for the tokens. Pure: the caller keeps the baselines and passes the clock.
 
 const ESTIMATED_PREFIX = 'estimated:'
 /**
@@ -19,15 +19,19 @@ const MS_PER_MINUTE = 60_000
  * @typedef {import('./game-sessions.mjs').RoomAgent} RoomAgent
  */
 
+const LOCAL_HOST = 'local'
+
 /**
  * The game session id of an agent's character when there are no real session ids. It is stable
- * for as long as the agent keeps its id, its terminal pane, so a restart finds it again.
+ * for as long as the agent keeps its id, its terminal pane, so a restart finds it again. An agent
+ * on a paired machine has its machine's name in it too, so two machines never share one.
  *
  * @param {string} agentId
+ * @param {string} [hostId] 'local' (the default) for this computer, or the paired machine's name
  * @returns {string}
  */
-export function estimatedSessionId(agentId) {
-  return `${ESTIMATED_PREFIX}${agentId}`
+export function estimatedSessionId(agentId, hostId = LOCAL_HOST) {
+  return hostId === LOCAL_HOST ? `${ESTIMATED_PREFIX}${agentId}` : `${ESTIMATED_PREFIX}${hostId}/${agentId}`
 }
 
 /**
@@ -95,25 +99,28 @@ export function readMeterDeltas(baselines, meters, { now, watchedUntil }) {
 }
 
 /**
- * The agents on this computer as game sessions, one each, in the form the session history
- * gives, with their room and their agent. Agents on paired machines are left out: they are
- * guests. An agent with no meter is left out too.
+ * The agents as game sessions, one each, in the form the session history gives, with their room
+ * and their agent. Agents on paired machines are sessions too: the store knows their state from
+ * the snapshot. An agent with no meter is left out.
  *
  * @param {RoomAgent[]} agents
  * @param {Record<string, MeterReading>} meters by agent id
  * @returns {{ sessions: import('./game-sessions.mjs').HistorySession[],
  *   places: Map<string, import('./game-sessions.mjs').Place>, agentOf: Map<string, string>,
- *   how: Map<string, 'agent'> }} maps by session id
+ *   how: Map<string, 'agent'>, paired: Set<string> }} maps by session id; `paired` holds the
+ *   sessions of agents on paired machines
  */
 export function estimatedSessions(agents, meters) {
   const sessions = []
   const places = new Map()
   const agentOf = new Map()
   const how = new Map()
+  const paired = new Set()
   for (const agent of agents) {
     const meter = meters[agent.id]
-    if (!agent.isLocal || !meter) continue
-    const sessionId = estimatedSessionId(agent.id)
+    if (!meter) continue
+    const sessionId = estimatedSessionId(agent.id, agent.isLocal ? LOCAL_HOST : agent.hostId)
+    if (!agent.isLocal) paired.add(sessionId)
     sessions.push({
       sessionId,
       title: agent.title,
@@ -126,7 +133,7 @@ export function estimatedSessions(agents, meters) {
     agentOf.set(sessionId, agent.id)
     how.set(sessionId, 'agent')
   }
-  return { sessions, places, agentOf, how }
+  return { sessions, places, agentOf, how, paired }
 }
 
 /**

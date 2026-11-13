@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { createAgentStore } from './domain/agent-store.mjs'
 import { loadGameEngine } from './game-files.mjs'
 import { createGameMode } from './game-mode.mjs'
-import { estimateTokens } from './game/estimate.mjs'
+import { estimateTokens, estimateTokensFromTime } from './game/estimate.mjs'
 import { GAME_STORAGE_KEY, createGameSave } from './game-save.mjs'
 import { SAVE_VERSION, migrate } from './game/worlds.mjs'
 
@@ -19,7 +19,11 @@ const WORKSPACES = [
 ]
 
 /** A game with a fake Orca around it: storage, settings, history and a clock the test moves. */
-function setup({ storage = new Map(), settings = { gameMode: true }, access = { supported: true, granted: true } } = {}) {
+function setup(options = {}) {
+  const { storage = new Map(), settings = { gameMode: true } } = options
+  const givenAccess = options.access ?? { supported: true, granted: true }
+  // A copy: a test that changes the access must not change it for the tests after it.
+  const access = { ...givenAccess }
   let clock = 1_000 * MINUTE
   const store = createAgentStore({ now: () => clock })
   store.setWorkspaces(WORKSPACES)
@@ -417,12 +421,62 @@ test('when real totals go away, the estimate starts from nothing and history cha
   assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), MINUTE_OF_WRITING)
 })
 
-test('an agent on another computer is a guest of the estimate too', async () => {
-  const { game, store } = setup({ access: ESTIMATED })
-  store.status({ workspaceId: 'w-waffle', paneKey: 'pane-9', state: 'working' })
+const WAFFLE = 'build-box:/srv/turbo-waffle'
+/** What `orca worktree ps --environment build-box` gives for one agent of the waffle room. */
+const waffleRow = (state, extra = {}) =>
+  [{ workspaceId: 'w-waffle', agents: [{ paneKey: 'pane-9', state, hasLivePty: true, ...extra }] }]
+
+/** The saved character of the waffle room, or undefined when it has none. */
+async function savedWaffleCharacter({ game, storage }, sessionId) {
+  await game.flush()
+  return storage.get(GAME_STORAGE_KEY)?.save.worlds.main?.projects[WAFFLE]?.characters[sessionId]
+}
+
+test('an agent on a paired machine is a character of the estimate, paid for its working time', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, tick } = setupResult
   await game.round()
-  assert.deepEqual(game.getView().characters['pane-9'], { sessionId: null, link: 'guest', guest: true, level: 1 })
-  assert.equal(game.getView().debug.guests, 1)
+  tick(1)
+  store.sync('build-box', waffleRow('working', { toolName: 'Edit' }))
+  tick(MINUTE / 2)
+  store.sync('build-box', waffleRow('working', { toolName: 'Edit' }))
+  tick(MINUTE / 2)
+  await game.round()
+  const view = game.getView()
+  assert.equal(view.rooms[WAFFLE].joined, true)
+  assert.ok(view.rooms[WAFFLE].monster)
+  assert.equal(view.characters['pane-9'].sessionId, 'estimated:build-box/pane-9')
+  assert.equal(view.characters['pane-9'].guest, false)
+  assert.equal(view.characters['pane-9'].state, 'working')
+  assert.equal(view.debug.guests, 0)
+  const character = await savedWaffleCharacter(setupResult, 'estimated:build-box/pane-9')
+  assert.equal(character.tokens, estimateTokensFromTime({ workedMs: { write: MINUTE } }))
+})
+
+test('a paired machine that cannot be read earns nothing and keeps its characters meanwhile', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, tick } = setupResult
+  await game.round()
+  tick(1)
+  store.sync('build-box', waffleRow('working'))
+  tick(MINUTE)
+  await game.round()
+  const sessionId = 'estimated:build-box/pane-9'
+  const paid = (await savedWaffleCharacter(setupResult, sessionId)).tokens
+  store.setUnreachableHosts(['build-box'])
+  for (let round = 0; round < 4; round++) {
+    // The snapshot keeps the machine's last rows through a few failed reads.
+    store.sync('build-box', waffleRow('working'))
+    tick(MINUTE / 2)
+    await game.round()
+  }
+  assert.equal((await savedWaffleCharacter(setupResult, sessionId)).tokens, paid)
+  assert.equal(game.getView().rooms[WAFFLE].retirees.length, 0)
+  store.setUnreachableHosts([])
+  store.sync('build-box', waffleRow('working'))
+  tick(MINUTE)
+  await game.round()
+  assert.ok((await savedWaffleCharacter(setupResult, sessionId)).tokens > paid)
 })
 
 /** A snapshot row of the banana room with one agent, as `orca worktree ps` and untracked-sessions.mjs give it. */
@@ -430,7 +484,7 @@ const bananaRow = (paneKey, state, extra = {}) =>
   [{ workspaceId: 'w-banana', agents: [{ paneKey, state, hasLivePty: true, ...extra }] }]
 
 test('a character born this round shows its agent working in the same view', async () => {
-  const setupResult = setup({ access: { supported: false, granted: true } })
+  const setupResult = setup({ access: ESTIMATED })
   const { game, store, tick } = setupResult
   await game.round()
   tick(1)
@@ -442,7 +496,7 @@ test('a character born this round shows its agent working in the same view', asy
 })
 
 test('an agent known only from the snapshot earns its estimate and shows the state the store has', async () => {
-  const setupResult = setup({ access: { supported: false, granted: true } })
+  const setupResult = setup({ access: ESTIMATED })
   const { game, store, tick } = setupResult
   await game.round()
   tick(1)
@@ -458,7 +512,7 @@ test('an agent known only from the snapshot earns its estimate and shows the sta
 })
 
 test('a character follows its agent between rounds, and so does its party', async () => {
-  const setupResult = setup({ access: { supported: false, granted: true } })
+  const setupResult = setup({ access: ESTIMATED })
   const { game, store, tick } = setupResult
   await game.round()
   tick(1)
@@ -477,7 +531,7 @@ test('a character follows its agent between rounds, and so does its party', asyn
 })
 
 test('a room that joins with a working agent has its monster in the same state, and its party fights', async () => {
-  const setupResult = setup({ access: { supported: false, granted: true } })
+  const setupResult = setup({ access: ESTIMATED })
   const { game, store, tick } = setupResult
   store.status({ workspaceId: 'w-banana', paneKey: 'pane-2', terminalId: 'term-2', state: 'working' })
   await game.round()

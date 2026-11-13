@@ -59,8 +59,9 @@ Knowing this helps judge whether something is a vulnerability.
 Game mode is off by default. It asks for no permission of its own.
 
 - **On Orca releases without session token totals** (every release today), progress is
-  estimated, not measured: from how long each agent on this computer works and how many tool
-  calls it starts, which the plugin already sees through the events and hooks above. The tool
+  estimated, not measured: from how long each agent works and how many tool calls it starts,
+  which the plugin already sees through the events and hooks above, and for agents on paired
+  machines from the state and tool name the snapshot of that machine already gives. The tool
   name is used only to count the call and pick its activity; its input and result are never
   read. Nothing new is read from Orca, and the session history is never called.
 - **Once Orca provides them**, and only when Orca offers the Agent Session History to plugins
@@ -80,7 +81,9 @@ otherwise.
 - **What it stores**, in the plugin's own storage under the key `game`: the game's progress
   (worlds, rooms by their id, which contains the project's folder path, characters by session
   id), and per session its id, its last token total and when it was read. On the estimate a
-  character's id is `estimated:` followed by Orca's pane id for the agent's terminal, and no
+  character's id is `estimated:` followed by Orca's pane id for the agent's terminal, with the
+  paired machine's name in front of the pane id (`estimated:build-box/…`) for an agent on a
+  paired machine, so the save holds the names of paired machines whose agents played. No
   per-session totals are stored; the working time and tool call counts stay in memory. Titles are stored
   only while **Game mode: keep conversation titles** is on, on the characters of finished
   sessions; turning that setting off deletes them.

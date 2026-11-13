@@ -14,8 +14,10 @@ All notable changes to this project are recorded here. The format follows
   title on its retired character.
 - On Orca releases without session token totals (every release so far), game mode runs on an
   estimate: progress comes from each agent's working time and tool calls, not from measured
-  tokens, and each agent on this computer is one character while its terminal is open. No new
-  permission is asked for. The game uses real totals from Orca's Agent Session History by
+  tokens, and each agent is one character while its terminal is open. Agents on paired machines
+  are characters too, and their rooms join the game: their work is estimated from the paired
+  machine's snapshots (working time and the tool named, no tool calls), and a machine that
+  cannot be reached earns nothing meanwhile. No new permission is asked for. The game uses real totals from Orca's Agent Session History by
   itself once Orca provides them and the `history:read` permission is granted; this release
   does not ask for that permission yet. The view state's `game.tokenSource` says which.
 - The view state carries a `game` part for a UI to draw (see `docs/GAME.md`), and the panel and

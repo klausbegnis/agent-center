@@ -262,9 +262,9 @@ project id:
 
 - Progress is kept per world. Each project belongs to one world or to none (out of the game).
   Skills, materials and group upgrades are per world; wave, chest and retirees per project.
-- Characters on a host without session history are guests: they fight as a level 1 character
-  of the world with no gear, and leave nothing behind: no character, retiree or experience.
-  Kills they help with still pay the project.
+- A guest (an agent on a paired machine while the game reads real totals, which cover this
+  computer only) fights as a level 1 character of the world with no gear, and leaves nothing
+  behind: no character, retiree or experience. Kills it helps with still pay the project.
 
 ## Content
 
@@ -348,8 +348,8 @@ totals:
 6. Keep the baselines and the time of this reading with the save.
 
 On the estimate, steps 1 to 4 are instead: read every agent's work meter from the store, make
-each agent on this computer a session in its own room, and turn what its meter counted since
-the last round into tokens (see "The estimate"). Steps 5 and 6 are the same, except that the
+each agent, on this computer or a paired one, a session in its own room, and turn what its meter
+counted since the last round into tokens (see "The estimate"). Steps 5 and 6 are the same, except that the
 meters' baselines stay in memory.
 
 Why advance before counting: the tokens read now were spent during the interval that just
@@ -399,7 +399,8 @@ place of totals, except across restarts (below).
 Without real totals, the store's work meter (`src/domain/work-meter.mjs`) counts for every
 agent the time it spent working at each activity and the tool calls it started (from the
 `agent.tool.before` hook; a subagent's calls count for its agent). Time spent waiting, blocked
-or done is not working time. Over one round, an agent is estimated to have spent:
+or done is not working time. Over one round, an agent on this computer is estimated to have
+spent:
 
 ```
 tokens = sum over activities (working minutes × ESTIMATE_ACTIVITY_WEIGHTS[activity])
@@ -421,19 +422,50 @@ An agent thinking for a minute at 3.75 calls is estimated at exactly 25,000 toke
 are then bounded like real ones (`MAX_TOKENS_PER_MINUTE` over at most `MAX_CATCH_UP_MS`) and
 feed `applyTokens` and the pace exactly like real ones.
 
-Who is a character: each agent on this computer, by the agent id the store knows (its terminal
-pane), under the session id `estimated:<agent id>`. It lives as long as that agent is in the
+An agent on a paired machine is known only from the snapshot of that machine (`orca worktree
+ps --environment <name>`, every 15 seconds): no event or hook reaches the plugin from there.
+Its meter counts the time between two snapshots as working when the earlier one saw it
+working, at the activity of the tool the snapshot names (`toolName`), or thinking when it names
+none. Its tool calls cannot be counted: a snapshot names the tool running at that moment, and
+two snapshots 15 seconds apart cannot tell one call from ten. So it has no tool-call part, and
+each working minute is worth the whole assumed working minute instead
+(`estimateTokensFromTime` in `src/game/estimate.mjs`):
+
+```
+tokens = sum over activities (working minutes × ESTIMATE_ACTIVITY_WEIGHTS[activity])
+           × ESTIMATE_TOKENS_PER_WORKING_MINUTE
+```
+
+That pays a paired agent as a local one working at the assumed pace of 3.75 calls a minute,
+whatever pace it really keeps. It is coarser than the local estimate: state changes shorter
+than a snapshot apart are missed or stretched to the next snapshot, the activity is sampled
+four times a minute rather than followed call by call, and the pace of calls is assumed.
+
+While a paired machine cannot be read (its last read failed, or the machines could not be
+listed), its agents count no working time, whatever state they were last seen in: an
+unreachable machine earns nothing. Its rooms and agents stay as long as the room shows them
+(three failed reads in a row, then two snapshots without them), and its characters retire like
+any other once their agent has left the room for `ESTIMATED_ABSENCE_MS`.
+
+Who is a character: each agent, by the agent id the store knows (its terminal pane), under the
+session id `estimated:<agent id>` on this computer and `estimated:<machine>/<agent id>` on a
+paired machine, so two machines never share one. It lives as long as that agent is in the
 room. When the agent leaves the room (its terminal closed), its character retires once it has
 been missing for `ESTIMATED_ABSENCE_MS` (a minute, two rounds; this also covers a first round
-that comes before the first snapshot after a restart). Agents on paired machines stay guests.
-Limits of this mode:
+that comes before the first snapshot after a restart). Rooms on paired machines join the game
+like the others. Limits of this mode:
 
 - A conversation cleared or replaced in the same terminal is not seen: the character goes on.
 - An agent first seen only through a tool hook, before its pane is known, can start a second
-  character that retires a minute later; the work it counted moves to the pane's character.
+  character that retires a minute later. The work counted under the hook's entry since the
+  last round is usually not paid: merging the two meters reads as a new meter, which earns
+  nothing in its first round.
 - The numbers are assumptions, not measurements: a terminal that sits in "working" without
   spending (a long command) is overpaid, and a model that reads a large context in few calls is
   underpaid.
+- An agent on a paired machine is paid at the assumed pace of tool calls, since its calls cannot
+  be counted, and its working time is sampled every 15 seconds: it is coarser than a local
+  agent's estimate, in both directions.
 
 ### Matching a session to a character
 
@@ -450,9 +482,10 @@ on this computer only:
 
 A running session with no agent still counts: its tokens count as `think`, it works while it
 spends and is idle otherwise, and `game.debug.unmatched` counts it. A session with no room is
-not counted, and `game.debug.unplaced` counts it. Agents on paired machines have no history:
-they fight in their room as guests at a normal pace while working, and leave nothing behind. A
-room whose only agents are guests does not join the game: guests never create a project.
+not counted, and `game.debug.unplaced` counts it. With real totals, agents on paired machines
+have no history: they fight in their room as guests at a normal pace while working, and leave
+nothing behind. A room whose only agents are guests does not join the game: guests never
+create a project. (On the estimate they are characters; see "The estimate".)
 
 ### Closing
 
@@ -542,7 +575,8 @@ running; `keepTitles` writes the setting, and the save follows.
   progress is estimated.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
   right character. `link` is how it was matched: `session`, `title`, `only`, `agent` (the
-  estimate: one character per agent) or `guest`.
+  estimate: one character per agent, on this computer or a paired one) or `guest` (a paired
+  machine's agent while the game reads real totals).
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
   kind, affix, ticks, rested, materials, item), `drop` (item), `level` (agentId, level), `retire`
   (sessionId, nameId, level) and `purchase` (worldId, kind and what was bought).

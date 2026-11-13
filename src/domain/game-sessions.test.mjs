@@ -242,14 +242,15 @@ test('a character missing from a truncated history is kept for a day', () => {
   assert.equal(sessionsToClose({ ...input, now: UNLISTED_CHARACTER_KEPT_MS + 1 }).length, 1)
 })
 
-test('only main agents of a known room are considered, with whether they are on this computer', () => {
+test('only main agents of a known room are considered, with whether they are on this computer and which machine', () => {
   const rooms = [
     { id: BANANA, host: 'local', agents: [{ id: 'pane-1', workspaceId: 'w', title: 't', state: 'working', activity: 'write', parentId: null },
       { id: 'pane-1/sub', parentId: 'pane-1', state: 'working', activity: 'read' }] },
     { id: 'build-box:/srv/turbo-waffle', host: 'build-box', agents: [{ id: 'pane-2', state: 'done', activity: 'sleep', parentId: null }] },
     { id: 'no-project', host: null, agents: [{ id: 'pane-3', state: 'working', activity: 'think', parentId: null }] }
   ]
-  assert.deepEqual(mainAgents(rooms).map((item) => [item.id, item.isLocal]), [['pane-1', true], ['pane-2', false]])
+  const found = mainAgents(rooms).map((item) => [item.id, item.isLocal, item.hostId])
+  assert.deepEqual(found, [['pane-1', true, 'local'], ['pane-2', false, 'build-box']])
 })
 
 test('activities without a work skill count as thinking', () => {

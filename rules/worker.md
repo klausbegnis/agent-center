@@ -61,6 +61,11 @@ paths:
   `history:read` is granted. Otherwise it runs on the estimate (`'estimated'`), from the work
   meters the store keeps, and never calls the history. The estimate's numbers live in
   `src/game/constants.mjs`; never present an estimate as measured.
+- On the estimate, agents on paired machines are characters too, paid for their working time
+  alone (no hook reaches the plugin from there, so their tool calls are never counted). Real
+  totals cover this computer only, so with them those agents stay guests. A paired machine that
+  cannot be read counts no working time: `src/orca/snapshot.mjs` tells the store with
+  `setUnreachableHosts`.
 - A session or meter seen for the first time earns nothing, a total or meter that goes down
   earns nothing, and every award, estimated or real, is bounded (`src/domain/game-tokens.mjs`).
   Never pay out history. A change of source forgets the baselines, so nothing is counted twice.

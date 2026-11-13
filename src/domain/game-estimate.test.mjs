@@ -15,7 +15,8 @@ const MINUTE = 60_000
 const meter = (startedAt, workedMs = {}, toolCalls = 0) => ({ startedAt, workedMs, toolCalls })
 
 function agent(id, extra = {}) {
-  return { id, roomId: BANANA, workspaceId: 'w-banana', title: null, state: 'working', activity: 'write', isLocal: true, ...extra }
+  const fields = { roomId: BANANA, workspaceId: 'w-banana', title: null, state: 'working', activity: 'write' }
+  return { id, ...fields, isLocal: true, hostId: 'local', ...extra }
 }
 
 test('an agent id becomes a game session id that is recognised as estimated', () => {
@@ -70,10 +71,25 @@ test('baselines are kept only for the agents read now', () => {
   assert.deepEqual(Object.keys(read.baselines), ['pane-1'])
 })
 
-test('each local agent with a meter becomes one running session in its room', () => {
-  const agents = [agent('pane-1', { title: 'Fix checkout rounding' }), agent('pane-2', { isLocal: false }), agent('pane-3')]
-  const { sessions, places, agentOf, how } = estimatedSessions(agents, { 'pane-1': meter(7), 'pane-2': meter(7) })
-  assert.deepEqual(sessions, [{
+test('an agent on a paired machine has its machine in its session id, so two machines never share one', () => {
+  assert.equal(estimatedSessionId('pane-1', 'build-box'), 'estimated:build-box/pane-1')
+  assert.notEqual(estimatedSessionId('pane-1', 'build-box'), estimatedSessionId('pane-1', 'gpu-rig'))
+  assert.equal(estimatedSessionId('pane-1', 'local'), 'estimated:pane-1')
+  assert.equal(isEstimatedSessionId('estimated:build-box/pane-1'), true)
+})
+
+test('each agent with a meter becomes one running session in its room, a paired one marked as such', () => {
+  const agents = [
+    agent('pane-1', { title: 'Fix checkout rounding' }),
+    agent('pane-2', { isLocal: false, hostId: 'build-box', roomId: 'build-box:/srv/turbo-waffle', workspaceId: 'w-waffle' }),
+    agent('pane-3')
+  ]
+  const { sessions, places, agentOf, how, paired } = estimatedSessions(agents, { 'pane-1': meter(7), 'pane-2': meter(7) })
+  assert.deepEqual(sessions.map((session) => session.sessionId), ['estimated:pane-1', 'estimated:build-box/pane-2'])
+  assert.deepEqual([...paired], ['estimated:build-box/pane-2'])
+  assert.deepEqual(places.get('estimated:build-box/pane-2'), { workspaceId: 'w-waffle', roomId: 'build-box:/srv/turbo-waffle' })
+  assert.equal(agentOf.get('estimated:build-box/pane-2'), 'pane-2')
+  assert.deepEqual(sessions.slice(0, 1), [{
     sessionId: 'estimated:pane-1',
     title: 'Fix checkout rounding',
     workspaceId: 'w-banana',

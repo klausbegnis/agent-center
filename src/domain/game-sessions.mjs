@@ -28,7 +28,8 @@ const isLocalHost = (hostId) => hostId === null || hostId === undefined || hostI
  * @typedef {{ sessionId: string, title: string | null, workspaceId: string | null,
  *   totalTokens: number, createdAt: number | null, running: boolean }} HistorySession
  * @typedef {{ id: string, roomId: string, workspaceId: string | null, title: string | null,
- *   state: string, activity: string, isLocal: boolean }} RoomAgent
+ *   state: string, activity: string, isLocal: boolean, hostId: string }} RoomAgent `hostId` is
+ *   'local' for this computer, otherwise the paired machine's name
  * @typedef {{ workspaceId: string, roomId: string }} Place
  */
 
@@ -70,7 +71,8 @@ export function mainAgents(rooms) {
         title: agent.title ?? null,
         state: agent.state,
         activity: agent.activity,
-        isLocal: isLocalHost(room.host)
+        isLocal: isLocalHost(room.host),
+        hostId: isLocalHost(room.host) ? LOCAL_HOST : room.host
       })
     }
   }
@@ -162,7 +164,9 @@ export function matchSessions({ sessions, places, agents, links }) {
  *   idle otherwise; `unmatched` counts those that spent tokens.
  * - A session with no room cannot be counted; `unplaced` counts those that spent tokens. One
  *   linked to an agent is in the agent's room.
- * - An agent on another computer has no history: it joins its room's fight as a guest.
+ * - An agent on another computer that no session is matched to (the history covers this computer
+ *   only) joins its room's fight as a guest. The estimate makes every agent a session, so there
+ *   it is a character like any other.
  *
  * @param {object} input
  * @param {HistorySession[]} input.sessions

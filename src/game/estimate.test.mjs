@@ -5,7 +5,7 @@ import {
   ESTIMATE_TOKENS_PER_WORKING_MINUTE,
   ESTIMATE_TOOL_CALLS_PER_MINUTE
 } from './constants.mjs'
-import { estimateTokens } from './estimate.mjs'
+import { estimateTokens, estimateTokensFromTime } from './estimate.mjs'
 
 const MINUTE = 60_000
 
@@ -56,4 +56,11 @@ test('the activity weights keep the simulator mixes close to the reference worki
     const average = Object.entries(mix).reduce((sum, [activity, share]) => sum + share * ESTIMATE_ACTIVITY_WEIGHTS[activity], 0)
     assert.ok(average > 0.9 && average < 1.05, `${average}`)
   }
+})
+
+test('an agent whose calls cannot be counted is paid a whole working minute per minute of work', () => {
+  assert.equal(estimateTokensFromTime({ workedMs: { think: 2 * MINUTE } }), 2 * ESTIMATE_TOKENS_PER_WORKING_MINUTE)
+  const writing = estimateTokensFromTime({ workedMs: { write: MINUTE } })
+  assert.equal(writing, Math.round(ESTIMATE_ACTIVITY_WEIGHTS.write * ESTIMATE_TOKENS_PER_WORKING_MINUTE))
+  assert.equal(estimateTokensFromTime({ workedMs: {} }), 0)
 })

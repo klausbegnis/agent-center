@@ -4,7 +4,7 @@
 import { estimatedSessions, readMeterDeltas } from './domain/game-estimate.mjs'
 import { matchSessions, placeSessions } from './domain/game-sessions.mjs'
 import { boundTokens, readTokenDeltas } from './domain/game-tokens.mjs'
-import { estimateTokens } from './game/estimate.mjs'
+import { estimateTokens, estimateTokensFromTime } from './game/estimate.mjs'
 
 /**
  * @typedef {import('./domain/game-sessions.mjs').HistorySession} HistorySession
@@ -40,8 +40,10 @@ export function readFromHistory({ history, listed, workspaces, links, agents, br
 }
 
 /**
- * One reading of the estimate: every agent on this computer is a session, and the work its meter
- * counted since the last round becomes tokens, bounded like real ones.
+ * One reading of the estimate: every agent is a session, and the work its meter counted since the
+ * last round becomes tokens, bounded like real ones. An agent on a paired machine is paid for its
+ * working time alone (estimateTokensFromTime): no hook reaches the plugin from there, so its tool
+ * calls are not counted.
  *
  * @param {object} input
  * @param {Record<string, import('./domain/work-meter.mjs').MeterReading>} input.meters by agent id
@@ -52,14 +54,16 @@ export function readFromHistory({ history, listed, workspaces, links, agents, br
  * @returns {SourceReading}
  */
 export function readFromEstimate({ meters, agents, baselines, watchedUntil, at }) {
-  const { sessions, places, agentOf, how } = estimatedSessions(agents, meters)
+  const { sessions, places, agentOf, how, paired } = estimatedSessions(agents, meters)
   const counted = Object.fromEntries([...agentOf.values()].map((agentId) => [agentId, meters[agentId]]))
   const read = readMeterDeltas(baselines, counted, { now: at, watchedUntil })
   const sessionOf = new Map([...agentOf].map(([sessionId, agentId]) => [agentId, sessionId]))
   const deltas = new Map()
   for (const delta of read.deltas) {
-    const tokens = boundTokens(estimateTokens(delta), delta.since, at)
-    if (tokens > 0) deltas.set(sessionOf.get(delta.agentId), { tokens, minutes: delta.minutes })
+    const sessionId = sessionOf.get(delta.agentId)
+    const estimate = paired.has(sessionId) ? estimateTokensFromTime(delta) : estimateTokens(delta)
+    const tokens = boundTokens(estimate, delta.since, at)
+    if (tokens > 0) deltas.set(sessionId, { tokens, minutes: delta.minutes })
   }
   return { sessions, truncated: false, places, agentOf, how, deltas, resets: read.resets, baselines: read.baselines }
 }
