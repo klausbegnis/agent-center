@@ -10,6 +10,9 @@
 //   GAME=1        turn game mode on, with a made-up stream of tokens (see demo-game.mjs); with
 //                 FREEZE=1 the game is a fixed save after a day of play
 //   GAME=estimated  the same through the token estimate, as on an Orca without session totals
+//   TRAVEL=1      with GAME, turn on "new scene after each monster": every room without a theme
+//                 of its own (all of them with `random` or a theme id) moves on to another
+//                 theme each time its monster dies
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
 // for them; the demo prints that address too. The monster contact sheet (every race, rank and
@@ -166,7 +169,9 @@ const game = engine
     preferences,
     onChange: publish,
     frozen: Boolean(process.env.FREEZE),
-    estimated: process.env.GAME === 'estimated'
+    estimated: process.env.GAME === 'estimated',
+    travel: Boolean(process.env.TRAVEL),
+    listThemeIds: () => demoThemes().map((listed) => listed.id)
   })
   : createUnavailableGame('off')
 controller = createController({

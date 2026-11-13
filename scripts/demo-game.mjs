@@ -40,8 +40,11 @@ const MINUTE_MS = 60_000
  */
 const LEFT_BEHIND = 'local:/work/fuzzy-anvil'
 
-/** The stored game the demo starts from: empty but for the room left behind. */
-function startingSave() {
+/**
+ * The stored game the demo starts from: empty but for the room left behind, with "new scene after
+ * each monster" on when asked, so even the first monsters fit their rooms' scenes.
+ */
+function startingSave(travel) {
   const item = (id, slot, tier, recipe, level, extra = {}) =>
     ({ id, entryId: id, slot, ...extra, tier, recipe, level, heldBy: null })
   const save = emptySave()
@@ -60,7 +63,7 @@ function startingSave() {
       }
     }
   }
-  return { version: 1, save, bridge: {} }
+  return { version: 1, save, bridge: { travel } }
 }
 
 /** A swing between 0.5 and 1.5, from a hash. */
@@ -146,14 +149,18 @@ function createHistory(store) {
  * The demo's game: a game mode over an in-memory storage and the made-up history.
  *
  * @param {{ engine: object, store: object, preferences: object, onChange: () => void, frozen: boolean,
- *   estimated?: boolean }} options `estimated` plays without a session history, on the estimate
+ *   estimated?: boolean, travel?: boolean, listThemeIds?: () => string[] }} options `estimated`
+ *   plays without a session history, on the estimate; `travel` turns on "new scene after each
+ *   monster" over the themes `listThemeIds` lists
  * @returns {Promise<ReturnType<typeof createGameMode>>}
  */
-export async function createDemoGame({ engine, store, preferences, onChange, frozen, estimated = false }) {
+export async function createDemoGame(options) {
+  const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
+  let { store } = options
   const startedAt = Date.now()
   let frozenClock = EPOCH
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
-  const values = new Map([['game', startingSave()]])
+  const values = new Map([['game', startingSave(travel)]])
   const settings = { gameMode: true, gameKeepTitles: true }
   // The frozen scene never changes, so an agent that waits or is blocked in it would have kept
   // its room's party on hold for the whole made-up day. Until the last rounds those agents
@@ -197,6 +204,7 @@ export async function createDemoGame({ engine, store, preferences, onChange, fro
     readWorkMeters: () => step(meters),
     store,
     preferences,
+    listThemeIds,
     now,
     log: console.error,
     onChange
