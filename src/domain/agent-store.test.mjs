@@ -435,3 +435,43 @@ test('tool calls counted before the pane was known stay with the agent once it i
   assert.equal(meters.p9.toolCalls, 1)
   assert.deepEqual(meters.p9.workedMs, { run: 4_000 })
 })
+
+/** One agent row of a snapshot, as `orca worktree ps` gives it. */
+const psAgent = (paneKey, state, extra = {}) => ({ paneKey, state, hasLivePty: true, ...extra })
+
+test('an agent known only from the snapshot counts the time the snapshots saw it working', () => {
+  const { store, tick } = setup()
+  store.sync('build-box', [{ workspaceId: 'w-front', agents: [psAgent('p5', 'working', { toolName: 'Edit' })] }])
+  tick(15_000)
+  store.sync('build-box', [{ workspaceId: 'w-front', agents: [psAgent('p5', 'done')] }])
+  tick(15_000)
+  const meter = store.workMeters().p5
+  assert.deepEqual(meter.workedMs, { write: 15_000 })
+  assert.equal(meter.toolCalls, 0)
+})
+
+test('a session orca lost track of counts its working time like any other agent', () => {
+  const { store, tick } = setup()
+  // What untracked-sessions.mjs adds for a terminal that printed a moment ago.
+  const untracked = psAgent('p6', 'working', { conversationName: 'Fix checkout rounding', stateStartedAt: 900 })
+  store.sync('local', [{ workspaceId: 'w-base', agents: [untracked] }])
+  tick(20_000)
+  assert.deepEqual(store.workMeters().p6.workedMs, { think: 20_000 })
+})
+
+test('an agent on a paired machine that cannot be read stays in the room but counts no work', () => {
+  const { store, tick } = setup()
+  const rows = [{ workspaceId: 'w-front', agents: [psAgent('p5', 'working')] }]
+  store.sync('build-box', rows)
+  tick(10_000)
+  store.setUnreachableHosts(['build-box'])
+  // The snapshot keeps the machine's last rows through a few failed reads.
+  store.sync('build-box', rows)
+  tick(60_000)
+  store.sync('build-box', rows)
+  assert.deepEqual(store.workMeters().p5.workedMs, { think: 10_000 })
+  assert.equal(store.snapshot().rooms.find((room) => room.host === 'build-box').agents[0].state, 'working')
+  store.setUnreachableHosts([])
+  tick(5_000)
+  assert.deepEqual(store.workMeters().p5.workedMs, { think: 15_000 })
+})

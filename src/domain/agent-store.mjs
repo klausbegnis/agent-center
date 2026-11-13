@@ -66,6 +66,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   /** terminal id -> when its link was last confirmed, to drop the links of closed terminals. */
   const terminalSeenAt = new Map()
   const workspaces = new Map()
+  /** Paired machines whose last read failed: what the store knows of them is not current. */
+  let unreachableHosts = new Set()
   let rooms = new Map()
   let options = { sleepMs }
 
@@ -131,14 +133,14 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     if (!stray || terminalId === paneKey) return
     agents.delete(terminalId)
     const known = agents.get(paneKey)
-    settleWorkMeter(stray.meter, stray, now())
+    settleMeter(stray)
     if (!known) {
       stray.id = paneKey
       agents.set(paneKey, stray)
       return
     }
     known.kind ??= stray.kind
-    settleWorkMeter(known.meter, known, now())
+    settleMeter(known)
     mergeWorkMeters(known.meter, stray.meter)
     // The stray was fed by tool events, so whichever of the two changed last is the truth.
     if (stray.since >= known.since) {
@@ -166,6 +168,27 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
 
   function hostOf(entry) {
     return entry.host ?? workspaces.get(entry.workspaceId)?.hostId ?? null
+  }
+
+  /**
+   * Adds the time since the agent's meter was last settled. An agent on a machine that cannot be
+   * read is not known to have worked meanwhile, whatever its last state was, so that time counts
+   * as no work.
+   */
+  function settleMeter(entry) {
+    const isUnreachable = unreachableHosts.has(hostOf(entry))
+    settleWorkMeter(entry.meter, { state: isUnreachable ? 'unreachable' : entry.state, activity: entry.activity }, now())
+  }
+
+  /**
+   * Tells the store which paired machines could not be read. Their agents stay in the room (the
+   * snapshot decides when they leave) but their meters stop counting until they are read again.
+   *
+   * @param {string[]} hostIds
+   */
+  function setUnreachableHosts(hostIds) {
+    for (const entry of agents.values()) settleMeter(entry)
+    unreachableHosts = new Set(hostIds ?? [])
   }
 
   /**
@@ -209,7 +232,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
       agents.set(key, entry)
     }
     // Whatever changes next, the time until now was spent in the state the agent had.
-    settleWorkMeter(entry.meter, entry, now())
+    settleMeter(entry)
     // An event can name the workspace in a form the snapshot does not know (a paired machine's,
     // for one). Keep the known one, or the agent would jump to the "No project" room and back.
     if (ref.workspaceId && (!entry.workspaceId || workspaces.has(ref.workspaceId))) {
@@ -496,14 +519,16 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
 
   /**
    * What each agent's meter counted since the agent was first seen: working time by activity and
-   * tool calls started, a subagent's calls included in its agent's.
+   * tool calls started, a subagent's calls included in its agent's. On a paired machine working
+   * time is the time the snapshots saw it working, and no time while the machine could not be
+   * read; no hook reaches the plugin from there, so its tool calls stay at zero.
    *
    * @returns {Record<string, import('./work-meter.mjs').MeterReading>} by agent id
    */
   function workMeters() {
     const meters = {}
     for (const entry of agents.values()) {
-      settleWorkMeter(entry.meter, entry, now())
+      settleMeter(entry)
       meters[entry.id] = readWorkMeter(entry.meter)
     }
     return meters
@@ -511,6 +536,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
 
   return {
     setWorkspaces,
+    setUnreachableHosts,
     linkTerminals,
     terminalOf,
     status,

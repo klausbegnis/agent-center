@@ -8,9 +8,11 @@ const row = (hostId, name) => ({ workspace: { id: `${hostId}/${name}`, hostId },
 function setup(hosts, environments) {
   const synced = []
   const calls = []
+  const unreachable = { value: [] }
   const store = {
     setWorkspaces: () => {},
     linkTerminals: () => {},
+    setUnreachableHosts: (hostIds) => (unreachable.value = hostIds),
     sync: (hostId, rows) => synced.push([hostId, rows.length])
   }
   const reader = {
@@ -34,7 +36,7 @@ function setup(hosts, environments) {
     reader
   })
   const lastSync = () => Object.fromEntries(synced.splice(0))
-  return { snapshotSync, lastSync, calls }
+  return { snapshotSync, lastSync, calls, unreachable }
 }
 
 test('a paired machine keeps its rooms through two failed reads and loses them on the third', async () => {
@@ -101,4 +103,22 @@ test('a round for reachable machines skips one whose last read failed, and a ful
   calls.length = 0
   await snapshotSync.sync()
   assert.deepEqual(calls.sort(), ['build-box', 'gpu-rig', 'local'])
+})
+
+test('the store is told which paired machines could not be read, until they are read again', async () => {
+  const hosts = { local: [row('local', 'a')], 'build-box': [row('build-box', 'b')], 'gpu-rig': [row('gpu-rig', 'c')] }
+  const environments = { value: ['build-box', 'gpu-rig'] }
+  const { snapshotSync, unreachable } = setup(hosts, environments)
+  await snapshotSync.sync()
+  assert.deepEqual(unreachable.value, [])
+  hosts['build-box'] = new Error('unreachable')
+  await snapshotSync.sync()
+  assert.deepEqual(unreachable.value, ['build-box'])
+  environments.value = new Error('cli failed')
+  await snapshotSync.sync()
+  assert.deepEqual(unreachable.value, ['build-box', 'gpu-rig'])
+  environments.value = ['build-box', 'gpu-rig']
+  hosts['build-box'] = [row('build-box', 'b')]
+  await snapshotSync.sync()
+  assert.deepEqual(unreachable.value, [])
 })
