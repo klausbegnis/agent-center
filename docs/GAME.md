@@ -103,11 +103,18 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
   among `common`, `armored`, `ethereal`. One wave in `ELITE_ONE_IN`, by the same hash, is an
   elite with one affix: `regenerating`, `enraged`, `thorny`, `swift`, or one of the two
   resistances. Each affix has one clear counter among the classes.
-- Stamina: a party has `referenceStamina(worldLevel)`. The monster drains it each tick so that
-  a reference party with no defence and no healing lasts `STAMINA_TICKS`. Defence characters
-  mitigate by resilience, support characters heal by medicine; a reference party with one of
-  each must hold its stamina against a common monster of its level. At zero the party rests
-  `REST_SECONDS` and the wave does not advance; the monster keeps its remaining health.
+- Stamina: the monster drains `referenceStamina(level) / STAMINA_TICKS * kind.attack` a tick,
+  so a reference party with no defence and no healing lasts `STAMINA_TICKS` ticks, fewer than
+  `HITS_TO_KILL`: it rests during its first kill.
+- Defence and healing are level-relative: each defender's resilience and each supporter's
+  medicine is divided by the reference character's at the monster's level, giving ratios that
+  add up to `r` and `m`. Mitigation is `MITIGATION_CAP * r / (r + MITIGATION_HALF)`; healing per
+  tick is `HEAL_CAP_SHARE * m / (m + HEAL_HALF)` of the stamina pool. A reference party with
+  one defender and one supporter holds its stamina against a common monster of its level, at
+  every level. At zero stamina the party rests `REST_SECONDS` of fight time; the monster keeps
+  its remaining health.
+- A regenerating elite heals `REGENERATING_SHARE` of its health a tick, never more than
+  `REGENERATING_DAMAGE_SHARE` of the damage it took that tick, so every fight can be won.
 - Reward for a kill: `REWARD_BASE * REWARD_GROWTH ** level * kind.reward` materials, split by
   the monster's loot table, times `ELITE.reward` for an elite, with an item drop whose chance
   grows with the party's luck.

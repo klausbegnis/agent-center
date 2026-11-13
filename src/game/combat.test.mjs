@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { HITS_TO_KILL, MONSTER_KINDS, STAMINA_TICKS } from './constants.mjs'
+import { HITS_TO_KILL, MITIGATION_CAP, MONSTER_KINDS, STAMINA_TICKS } from './constants.mjs'
 import { fightTick, healing, mitigation, monsterAttack, referenceStamina, rewardFor } from './combat.mjs'
 
 const referencePartyHit = (level) => ({
@@ -21,14 +21,16 @@ function monsterOf(kind, level, affix = null) {
   }
 }
 
-/** The reference party of a level: the stub's hits, one defender and one supporter. */
+/**
+ * The reference party of a level: the stub's hits, one defender and one supporter, whose
+ * attributes are those of the reference at the monster's level (a ratio of 1).
+ */
 function referenceParty(level) {
-  const trained = 1 + Math.floor(level / 2)
   const { physical, magical } = referencePartyHit(level)
   return {
     hits: { physical, magical },
-    defenders: [{ resilience: trained }],
-    supporters: [{ medicine: trained }]
+    defenders: [{ resilience: 1 }],
+    supporters: [{ medicine: 1 }]
   }
 }
 
@@ -74,11 +76,11 @@ test('without a defender or a supporter a party lasts STAMINA_TICKS ticks agains
   }
 })
 
-test('without a defender or a supporter a reference party is exhausted before its second kill', () => {
+test('without a defender or a supporter a reference party is exhausted before its first kill', () => {
   for (const level of BALANCE_LEVELS) {
     const party = { ...referenceParty(level), defenders: [], supporters: [] }
-    const result = fight({ party, makeMonster: () => monsterOf('common', level), level, kills: 2 })
-    assert.deepEqual([result.exhausted, result.killed], [true, 1], `level ${level}`)
+    const result = fight({ party, makeMonster: () => monsterOf('common', level), level })
+    assert.deepEqual([result.exhausted, result.killed], [true, 0], `level ${level}`)
   }
 })
 
@@ -120,12 +122,16 @@ test('the monster drains a fortieth of the reference stamina of its level per ti
   assert.ok(Math.abs(monsterAttack({ attack: 1.5 }, 20) - 1.5 * monsterAttack({ attack: 1 }, 20)) < 1e-9)
 })
 
-test('mitigation grows with resilience, with diminishing returns, and stays below one', () => {
+test('mitigation grows with resilience, with diminishing returns, and stays below its cap', () => {
   const at = (resilience) => mitigation([{ resilience }])
   assert.equal(mitigation([]), 0)
   assert.ok(at(2) - at(1) > at(11) - at(10))
-  assert.ok(at(1_000_000) < 1)
-  assert.equal(mitigation([{ resilience: 3 }, { resilience: 4 }]), at(7))
+  assert.ok(at(1_000_000) < MITIGATION_CAP)
+  assert.equal(mitigation([{ resilience: 0.5 }, { resilience: 0.75 }]), at(1.25))
+})
+
+test('a reference defender blocks half of a monster\'s attack', () => {
+  assert.ok(Math.abs(mitigation([{ resilience: 1 }]) - 0.5) < 1e-9)
 })
 
 test('healing grows with medicine and with the stamina pool', () => {
@@ -162,6 +168,13 @@ test('a regenerating monster heals after it is hit, but not past its full health
   const plain = staminaLost(null).result
   assert.ok(result.monster.hp > plain.monster.hp)
   assert.ok(result.monster.hp <= result.monster.maxHp)
+})
+
+test('a regenerating monster always loses health to a weak party, so it can be beaten', () => {
+  const monster = monsterOf('common', 10, 'regenerating')
+  const weak = { physical: monster.maxHp * 0.002, magical: 0 }
+  const result = fightTick({ monster, hits: weak, defenders: [], supporters: [], stamina: 100, maxStamina: 100 })
+  assert.ok(result.monster.hp < monster.maxHp)
 })
 
 test('a kill gives whole materials split by the loot weights that add up to the reward', () => {

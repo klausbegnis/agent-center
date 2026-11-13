@@ -72,8 +72,11 @@ export const STARTING_LUCK_SPREAD = 4
 /** One combat tick is this much working time. A reference party kills in HITS_TO_KILL ticks. */
 export const TICK_SECONDS = 10
 export const HITS_TO_KILL = 24
-/** Without defence or healing, a reference party's stamina lasts this many ticks. */
-export const STAMINA_TICKS = 40
+/**
+ * Without defence or healing, a reference party's stamina lasts this many ticks: fewer than
+ * HITS_TO_KILL, so such a party rests during its first kill.
+ */
+export const STAMINA_TICKS = 16
 export const REST_SECONDS = 60
 export const BOSS_EVERY = 10
 export const ELITE_ONE_IN = 8
@@ -86,19 +89,26 @@ export const ARMORED_SHARE = 0.25
  */
 export const STAMINA_BASE = 1000
 /**
- * Mitigation is MITIGATION_CAP * R / (R + MITIGATION_HALF_RESILIENCE) for a total resilience R:
- * one point blocks 16%, eleven (a level 20 defender) 59%, and it never passes 80%.
+ * Defence and healing compare each character's attribute with the reference character's at the
+ * monster's level, so they matter as much at level 200 as at level 1. For the sum r of those
+ * ratios, mitigation is MITIGATION_CAP * r / (r + MITIGATION_HALF): a reference defender blocks
+ * half, and nothing blocks MITIGATION_CAP or more.
  */
-export const MITIGATION_CAP = 0.8
-export const MITIGATION_HALF_RESILIENCE = 4
+export const MITIGATION_CAP = 0.75
+export const MITIGATION_HALF = 0.5
 /**
- * Healing per tick is HEAL_CAP_SHARE * M / (M + HEAL_HALF_MEDICINE) of the stamina pool for a
- * total medicine M: one point heals 2.4%. Never above 6%.
+ * Healing per tick is HEAL_CAP_SHARE * m / (m + HEAL_HALF) of the stamina pool for the sum m of
+ * medicine ratios: a reference supporter heals a little more than a common monster drains
+ * through a reference defender, so a balanced party holds against common monsters.
  */
-export const HEAL_CAP_SHARE = 0.06
-export const HEAL_HALF_MEDICINE = 1.5
-/** A regenerating monster heals this share of its health each tick it survives. */
+export const HEAL_CAP_SHARE = 0.065
+export const HEAL_HALF = 1
+/**
+ * A regenerating monster heals this share of its health each tick it survives, but never more
+ * than REGENERATING_DAMAGE_SHARE of the damage it took that tick, so any party can beat it.
+ */
 export const REGENERATING_SHARE = 0.01
+export const REGENERATING_DAMAGE_SHARE = 0.5
 /** An enraged monster's attack rises with the health it lost, up to this much more near death. */
 export const ENRAGED_MAX_BONUS = 1
 /** A thorny monster turns this share of the health it loses into the same share of lost stamina. */

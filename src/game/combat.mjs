@@ -4,13 +4,14 @@ import {
   ELITE_ITEM_DROP_FACTOR,
   ENRAGED_MAX_BONUS,
   HEAL_CAP_SHARE,
-  HEAL_HALF_MEDICINE,
+  HEAL_HALF,
   ITEM_DROP_BASE,
   ITEM_DROP_MAX,
   ITEM_DROP_PER_LUCK,
   MITIGATION_CAP,
-  MITIGATION_HALF_RESILIENCE,
+  MITIGATION_HALF,
   POWER_GROWTH,
+  REGENERATING_DAMAGE_SHARE,
   REGENERATING_SHARE,
   REWARD_BASE,
   REWARD_GROWTH,
@@ -49,24 +50,26 @@ export const monsterAttack = (monster, level) => (referenceStamina(level) / STAM
 /**
  * The share of a monster's attack the defenders block, from 0 up to (never reaching) MITIGATION_CAP.
  *
- * @param {{ resilience: number }[]} defenders
+ * @param {{ resilience: number }[]} defenders each defender's resilience as a ratio of the
+ *   reference defender's at the monster's level (1 for a reference defender)
  * @returns {number}
  */
 export function mitigation(defenders) {
   const resilience = sumOf(defenders, 'resilience')
-  return resilience <= 0 ? 0 : (MITIGATION_CAP * resilience) / (resilience + MITIGATION_HALF_RESILIENCE)
+  return resilience <= 0 ? 0 : (MITIGATION_CAP * resilience) / (resilience + MITIGATION_HALF)
 }
 
 /**
  * The stamina the supporters restore per tick.
  *
- * @param {{ medicine: number }[]} supporters
+ * @param {{ medicine: number }[]} supporters each supporter's medicine as a ratio of the reference
+ *   supporter's at the monster's level
  * @param {number} maxStamina
  * @returns {number}
  */
 export function healing(supporters, maxStamina) {
   const medicine = sumOf(supporters, 'medicine')
-  return medicine <= 0 ? 0 : (maxStamina * HEAL_CAP_SHARE * medicine) / (medicine + HEAL_HALF_MEDICINE)
+  return medicine <= 0 ? 0 : (maxStamina * HEAL_CAP_SHARE * medicine) / (medicine + HEAL_HALF)
 }
 
 /** How much harder the monster's affix makes it strike, at the health it has left. */
@@ -76,13 +79,17 @@ function affixAttackFactor(monster, hp) {
   return 1
 }
 
-/** The monster's health after the party's hits and its own regeneration, and the damage taken. */
+/**
+ * The monster's health after the party's hits and its own regeneration, and the damage taken.
+ * Regeneration never undoes more than part of the damage, so every fight moves forward.
+ */
 function strikeMonster(monster, hits) {
   const dealt = hits.physical * monster.physical + hits.magical * monster.magical
   const damage = Math.min(monster.hp, dealt)
   const hp = settle(monster.hp - damage, monster.maxHp)
   if (hp === 0 || monster.affix !== 'regenerating') return { hp, damage }
-  return { hp: Math.min(monster.maxHp, hp + REGENERATING_SHARE * monster.maxHp), damage }
+  const regenerated = Math.min(REGENERATING_SHARE * monster.maxHp, REGENERATING_DAMAGE_SHARE * damage)
+  return { hp: Math.min(monster.maxHp, hp + regenerated), damage }
 }
 
 /**
