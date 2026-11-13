@@ -51,14 +51,21 @@ paths:
 ## The game bridge
 
 - `src/game-mode.mjs` is the only place that drives the engine. It gets every Orca call as a
-  function (`readHistory`, `readSettings`, ...), so the demo and the tests run it without Orca.
-  The rules it applies live in `src/domain/game-*.mjs`, with tests; `src/orca/session-history.mjs`
-  is the only module that calls `agent.listSessions`.
-- The game runs only when the `gameMode` setting is on, `agent.listSessions` is offered and
-  `history:read` is granted. In every other case nothing of the game is read or stored beyond
-  forgetting the baselines, and the view state's `game.status` says why.
-- A session seen for the first time earns nothing, a total that goes down earns nothing, and
-  every award is bounded (`src/domain/game-tokens.mjs`). Never pay out history.
+  function (`readHistory`, `readWorkMeters`, `readSettings`, ...), so the demo and the tests run
+  it without Orca. The rules it applies live in `src/domain/game-*.mjs` and
+  `src/domain/work-meter.mjs`, with tests; `src/orca/session-history.mjs` is the only module
+  that calls `agent.listSessions`.
+- The game runs only when the `gameMode` setting is on; otherwise nothing of the game is read or
+  stored beyond forgetting the baselines, and the view state's `game.status` says why.
+- It reads real totals (`tokenSource: 'history'`) only when `agent.listSessions` is offered and
+  `history:read` is granted. Otherwise it runs on the estimate (`'estimated'`), from the work
+  meters the store keeps, and never calls the history. The estimate's numbers live in
+  `src/game/constants.mjs`; never present an estimate as measured.
+- A session or meter seen for the first time earns nothing, a total or meter that goes down
+  earns nothing, and every award, estimated or real, is bounded (`src/domain/game-tokens.mjs`).
+  Never pay out history. A change of source forgets the baselines, so nothing is counted twice.
+- The work meters start again with the worker and are never saved: the time the worker was down
+  earns nothing on the estimate. The hooks only bump a counter; that keeps them instant.
 - Keep from a session only what `docs/GAME.md` lists: id, token total, workspace, creation time,
   whether it runs, and its title, which reaches the save only through the engine and only while
   `gameKeepTitles` is on.

@@ -91,6 +91,8 @@ export default async function activate(orca) {
       access: () => historyAccess(orca),
       readHistory: () => readSessionHistory(orca),
       readWorkspaces: () => readListedWorkspaces(orca),
+      // Without session totals from Orca, the game estimates tokens from these.
+      readWorkMeters: () => store.workMeters(),
       store,
       preferences,
       log,

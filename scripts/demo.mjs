@@ -9,6 +9,7 @@
 //   FREEZE=1      keep the scene still instead of looping the script
 //   GAME=1        turn game mode on, with a made-up stream of tokens (see demo-game.mjs); with
 //                 FREEZE=1 the game is a fixed save after a day of play
+//   GAME=estimated  the same through the token estimate, as on an Orca without session totals
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
 // for them; the demo prints that address too.
@@ -157,7 +158,14 @@ const publish = () => {
 }
 const engine = process.env.GAME ? loadGameEngine(ROOT, console.error) : null
 const game = engine
-  ? await createDemoGame({ engine, store, preferences, onChange: publish, frozen: Boolean(process.env.FREEZE) })
+  ? await createDemoGame({
+    engine,
+    store,
+    preferences,
+    onChange: publish,
+    frozen: Boolean(process.env.FREEZE),
+    estimated: process.env.GAME === 'estimated'
+  })
   : createUnavailableGame('off')
 controller = createController({
   store,

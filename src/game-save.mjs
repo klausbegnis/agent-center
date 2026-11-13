@@ -22,21 +22,28 @@ const RETIREES_KEPT_WHEN_LARGE = [25, 10, 0]
 
 /**
  * @typedef {{ baselines: Record<string, { total: number, at: number }>, watchedUntil: number | null,
- *   autoSpend: boolean }} Bridge what the worker keeps beside the engine's save
+ *   autoSpend: boolean, tokenSource: 'history' | 'estimated' | null }} Bridge what the worker keeps
+ *   beside the engine's save; `baselines` and `watchedUntil` belong to `tokenSource`
  * @typedef {{ save: object, bridge: Bridge }} GameData
  */
 
 /** @returns {Bridge} */
 export function emptyBridge() {
-  return { baselines: {}, watchedUntil: null, autoSpend: false }
+  return { baselines: {}, watchedUntil: null, autoSpend: false, tokenSource: null }
 }
+
+const TOKEN_SOURCES = new Set(['history', 'estimated'])
 
 function normalizeBridge(value) {
   const bridge = value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  const watchedUntil = Number.isFinite(bridge.watchedUntil) ? bridge.watchedUntil : null
+  // A save from before the estimate existed was watched through the session history.
+  const formerSource = watchedUntil === null ? null : 'history'
   return {
     baselines: normalizeBaselines(bridge.baselines),
-    watchedUntil: Number.isFinite(bridge.watchedUntil) ? bridge.watchedUntil : null,
-    autoSpend: bridge.autoSpend === true
+    watchedUntil,
+    autoSpend: bridge.autoSpend === true,
+    tokenSource: TOKEN_SOURCES.has(bridge.tokenSource) ? bridge.tokenSource : formerSource
   }
 }
 

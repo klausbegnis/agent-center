@@ -299,29 +299,40 @@ a character's experience by work skill, for the retiree's main skill.
 ## The bridge
 
 `src/game-mode.mjs` connects the engine to the plugin. The rules it follows are pure modules in
-`src/domain/` (`game-tokens.mjs`, `game-sessions.mjs`, `game-view.mjs`); the Orca calls are in
-`src/orca/session-history.mjs`; the save is `src/game-save.mjs`; the actions are
-`src/game-actions.mjs`.
+`src/domain/` (`game-tokens.mjs`, `game-sessions.mjs`, `game-estimate.mjs`, `work-meter.mjs`,
+`game-view.mjs`) and the estimate in `src/game/estimate.mjs`; `src/game-sources.mjs` turns
+either source into one reading; the Orca calls are in `src/orca/session-history.mjs`; the save
+is `src/game-save.mjs`; the actions are `src/game-actions.mjs`.
 
 ### When it runs
 
-The game runs only when all of these hold; otherwise the plugin behaves as without it and the
-view state's `game.status` says why:
+The game runs when the `gameMode` setting is on; otherwise the plugin behaves as without it and
+the view state's `game.status` says why:
 
 | `status` | Meaning |
 |---|---|
 | `off` | The `gameMode` setting is off (the default). |
-| `unsupported` | This Orca does not offer `agent.listSessions` to the worker (`orca.host.has`). |
-| `needs-permission` | The `history:read` capability is not granted (`orca.grantedCapabilities`), or a read was refused with `capability_denied` or `consent_required`. |
 | `newer-save` | The stored save was written by a newer plugin; it is left untouched. |
+| `unsupported` | The game cannot run here at all: its content files did not load. |
 | `running` | Playing. |
 
-The settings are read every round, so turning `gameMode` or `gameKeepTitles` on or off takes
-effect within one round, without a restart.
+While it runs, `game.tokenSource` says where the tokens come from:
+
+| `tokenSource` | When | What it is |
+|---|---|---|
+| `history` | This Orca offers `agent.listSessions` to the worker (`orca.host.has`) and the `history:read` capability is granted (`orca.grantedCapabilities`). | Real token totals from Orca's Agent Session History. |
+| `estimated` | Any other case: the method is missing (every Orca release at host API 1.6, such as 1.4.258), the capability is not granted, or a read was refused with `capability_denied` or `consent_required`. | An estimate from each agent's working time and tool calls (see "The estimate"). It is not a measurement. |
+
+The plugin does not ask for `history:read` yet, so today the game runs on the estimate.
+It switches to real totals by itself once Orca offers them and the permission is granted; the
+history is never read while the source is `estimated`. The settings and the source are read
+every round, so turning `gameMode` or `gameKeepTitles` on or off takes effect within one
+round, without a restart.
 
 ### A round
 
-Every 30 seconds (`GAME_ROUND_MS` in `src/worker.mjs`, twice the snapshot interval):
+Every 30 seconds (`GAME_ROUND_MS` in `src/worker.mjs`, twice the snapshot interval). With real
+totals:
 
 1. Read `agent.listSessions` (the 200 newest sessions) and `workspace.list`.
 2. Turn each session's `totalTokens` into the tokens spent since its baseline (below).
@@ -335,6 +346,11 @@ Every 30 seconds (`GAME_ROUND_MS` in `src/worker.mjs`, twice the snapshot interv
    `autoSpend` when it is on.
 6. Keep the baselines and the time of this reading with the save.
 
+On the estimate, steps 1 to 4 are instead: read every agent's work meter from the store, make
+each agent on this computer a session in its own room, and turn what its meter counted since
+the last round into tokens (see "The estimate"). Steps 5 and 6 are the same, except that the
+meters' baselines stay in memory.
+
 Why advance before counting: the tokens read now were spent during the interval that just
 passed, while the party fought with the power it had at its start. Counting first would let a
 character born from those tokens, or a level they paid for, fight time that was already over.
@@ -345,6 +361,9 @@ does not fight through time nobody saw with the states read now. The first round
 worker starts only counts tokens; it does not fight the time the worker was down.
 
 ### Tokens, baselines and restarts
+
+This section is about real totals; the estimate follows the same rules with its work meters in
+place of totals, except across restarts (below).
 
 - A session read for the first time sets its baseline to its current total and earns nothing,
   so turning the game on never pays out a session's history. The exception is a session that
@@ -361,10 +380,60 @@ worker starts only counts tokens; it does not fight the time the worker was down
   the time it was off is not paid.
 - At most `BASELINES_KEPT` (1000) baselines are kept, the sessions just read and the newest
   others.
+- On the estimate the meters start again with the worker and their baselines are never saved,
+  so the time the worker was down earns nothing. The saved `watchedUntil` still marks the last
+  reading: an agent the restarted worker sees counts from when it saw it, and the same agent in
+  the same terminal continues its character.
+- The source a baseline belongs to is saved with it (`tokenSource`). When the source changes,
+  the baselines and `watchedUntil` are forgotten, so the first reading of the new source earns
+  nothing and no token is counted by both. Characters of the other source retire at once; a
+  history session's character comes back with its level when it is read again. Estimated
+  characters are not moved to the real sessions.
+
+### The estimate
+
+Without real totals, the store's work meter (`src/domain/work-meter.mjs`) counts for every
+agent the time it spent working at each activity and the tool calls it started (from the
+`agent.tool.before` hook; a subagent's calls count for its agent). Time spent waiting, blocked
+or done is not working time. Over one round, an agent is estimated to have spent:
+
+```
+tokens = sum over activities (working minutes × ESTIMATE_ACTIVITY_WEIGHTS[activity])
+           × ESTIMATE_TOKENS_PER_MINUTE_WORKED
+       + min(tool calls, ESTIMATE_MAX_TOOL_CALLS_PER_MINUTE × minutes of the round)
+           × ESTIMATE_TOKENS_PER_TOOL_CALL
+```
+
+| Constant (`src/game/constants.mjs`) | Value | Why |
+|---|---|---|
+| `ESTIMATE_TOKENS_PER_WORKING_MINUTE` | 25,000 | What the simulator assumes an agent spends per working minute, so the balance it measures still holds. |
+| `ESTIMATE_TOOL_CALLS_PER_MINUTE` | 3.75 | The assumed pace of tool calls of a working agent. |
+| `ESTIMATE_TOKENS_PER_MINUTE_WORKED` | 10,000 | The share of a working minute that comes from time: the model writing. |
+| `ESTIMATE_TOKENS_PER_TOOL_CALL` | 4,000 | The rest, per call: each call is a model turn that reads the conversation back and takes in the tool's result, which is where most tokens go. |
+| `ESTIMATE_ACTIVITY_WEIGHTS` | think 1, write 1.3, read 0.9, run 0.6, delegate 0.8 | Writing generates text; a read's tokens are in its result, already counted per call; a command or a subagent leaves the agent mostly waiting. Any other activity counts as think. Over the simulator's three activity mixes the weights average 0.92 to 1.03. |
+| `ESTIMATE_MAX_TOOL_CALLS_PER_MINUTE` | 30 | A burst of parallel calls is real, a flood is not. |
+
+An agent thinking for a minute at 3.75 calls is estimated at exactly 25,000 tokens. The tokens
+are then bounded like real ones (`MAX_TOKENS_PER_MINUTE` over at most `MAX_CATCH_UP_MS`) and
+feed `applyTokens` and the pace exactly like real ones.
+
+Who is a character: each agent on this computer, by the agent id the store knows (its terminal
+pane), under the session id `estimated:<agent id>`. It lives as long as that agent is in the
+room. When the agent leaves the room (its terminal closed), its character retires once it has
+been missing for `ESTIMATED_ABSENCE_MS` (a minute, two rounds; this also covers a first round
+that comes before the first snapshot after a restart). Agents on paired machines stay guests.
+Limits of this mode:
+
+- A conversation cleared or replaced in the same terminal is not seen: the character goes on.
+- An agent first seen only through a tool hook, before its pane is known, can start a second
+  character that retires a minute later; the work it counted moves to the pane's character.
+- The numbers are assumptions, not measurements: a terminal that sits in "working" without
+  spending (a long command) is overpaid, and a model that reads a large context in few calls is
+  underpaid.
 
 ### Matching a session to a character
 
-A session's agent on screen gives its state (`working`, `waiting`, `blocked`; a `done` agent
+With real totals, a session's agent on screen gives its state (`working`, `waiting`, `blocked`; a `done` agent
 is `idle`), its activity (write, read, run, think, delegate; any other counts as think) and
 its pace (tokens per minute over the round). The match is tried in this order, among agents
 on this computer only:
@@ -392,7 +461,8 @@ forgets every title kept.
 ### Saving
 
 One storage key, `game`, holds `{ version, save, bridge }`: the engine's save and
-`{ baselines, watchedUntil, autoSpend }`. It is loaded once with the engine's `migrate`, written
+`{ baselines, watchedUntil, autoSpend, tokenSource }`. A stored bridge without `tokenSource`
+that has a `watchedUntil` was watched through the history. It is loaded once with the engine's `migrate`, written
 at most every 30 seconds after a change and when the plugin stops. It is never written when the
 stored value comes from a newer plugin (a newer wrapper `version` or a newer save `version`), or
 when it could not be read at all; then the game plays without saving. A failed write is logged
@@ -424,11 +494,11 @@ running; `keepTitles` writes the setting, and the save follows.
 ## View state
 
 `controller.getState().game`. While the game is not running it is only
-`{ status, autoSpend, keepTitles }`. While it runs:
+`{ status, tokenSource: null, autoSpend, keepTitles }`. While it runs:
 
 ```
 {
-  status: 'running', autoSpend: false, keepTitles: false,
+  status: 'running', tokenSource: 'estimated', autoSpend: false, keepTitles: false,
   worlds: [{
     id: 'main', level: 11, attackSpeed: 1.12,
     workSkills: [{ id: 'forge', level, stars, effectiveLevel, progress, canPrestige }, ...],
@@ -457,14 +527,17 @@ running; `keepTitles` writes the setting, and the save follows.
     'pane-5': { sessionId: null, link: 'guest', guest: true, level: 1 }
   },
   recent: [{ id: 570, at, type: 'level', roomId, sessionId, agentId, level: 9 }],
-  debug: { readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
+  debug: { tokenSource, readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
 }
 ```
 
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
+- `tokenSource` is `history` or `estimated` (see "When it runs"). A UI should say plainly when
+  progress is estimated.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
-  right character. `link` is how it was matched: `session`, `title`, `only` or `guest`.
+  right character. `link` is how it was matched: `session`, `title`, `only`, `agent` (the
+  estimate: one character per agent) or `guest`.
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
   kind, affix, ticks, rested, materials, item), `drop` (item), `level` (agentId, level), `retire`
   (sessionId, nameId, level) and `purchase` (worldId, kind and what was bought).

@@ -3,6 +3,7 @@
 import { activityForTool, isDelegateTool } from './activities.mjs'
 import { displayText } from './display-text.mjs'
 import { basename, groupRooms } from './rooms.mjs'
+import { countToolCall, createWorkMeter, mergeWorkMeters, readWorkMeter, settleWorkMeter } from './work-meter.mjs'
 
 const NO_PROJECT_ROOM = { id: 'no-project', name: 'No project', host: null }
 const SUBAGENT_NAME_LIMIT = 40
@@ -130,12 +131,15 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     if (!stray || terminalId === paneKey) return
     agents.delete(terminalId)
     const known = agents.get(paneKey)
+    settleWorkMeter(stray.meter, stray, now())
     if (!known) {
       stray.id = paneKey
       agents.set(paneKey, stray)
       return
     }
     known.kind ??= stray.kind
+    settleWorkMeter(known.meter, known, now())
+    mergeWorkMeters(known.meter, stray.meter)
     // The stray was fed by tool events, so whichever of the two changed last is the truth.
     if (stray.since >= known.since) {
       known.state = stray.state
@@ -198,10 +202,14 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
         activity: 'think',
         since: now(),
         seenAt: now(),
-        subs: new Map()
+        subs: new Map(),
+        // Working time and tool calls, for the game's token estimate.
+        meter: createWorkMeter(now())
       }
       agents.set(key, entry)
     }
+    // Whatever changes next, the time until now was spent in the state the agent had.
+    settleWorkMeter(entry.meter, entry, now())
     // An event can name the workspace in a form the snapshot does not know (a paired machine's,
     // for one). Keep the known one, or the agent would jump to the "No project" room and back.
     if (ref.workspaceId && (!entry.workspaceId || workspaces.has(ref.workspaceId))) {
@@ -253,6 +261,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   function toolBefore(event) {
     const entry = upsert(event)
     if (event.agent) entry.kind = event.agent
+    countToolCall(entry.meter)
     if (entry.state !== 'working') {
       entry.state = 'working'
       entry.since = now()
@@ -485,6 +494,21 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     }))
   }
 
+  /**
+   * What each agent's meter counted since the agent was first seen: working time by activity and
+   * tool calls started, a subagent's calls included in its agent's.
+   *
+   * @returns {Record<string, import('./work-meter.mjs').MeterReading>} by agent id
+   */
+  function workMeters() {
+    const meters = {}
+    for (const entry of agents.values()) {
+      settleWorkMeter(entry.meter, entry, now())
+      meters[entry.id] = readWorkMeter(entry.meter)
+    }
+    return meters
+  }
+
   return {
     setWorkspaces,
     linkTerminals,
@@ -497,6 +521,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     configure,
     snapshot,
     sessionLinks,
-    describeWorkspaces
+    describeWorkspaces,
+    workMeters
   }
 }

@@ -10,13 +10,18 @@ All notable changes to this project are recorded here. The format follows
 
 - Game mode, off by default (the **Game mode** setting): the tokens sessions on this computer
   spend become levels, fights, materials and upgrades for each room's party, with progress kept
-  per world across restarts. It reads token totals from Orca's Agent Session History, so it
-  needs an Orca that offers it and the `history:read` permission; this release does not ask for
-  that permission yet, and until then the game reports why it is off. **Game mode: keep
-  conversation titles** keeps a finished session's title on its retired character.
+  per world across restarts. **Game mode: keep conversation titles** keeps a finished session's
+  title on its retired character.
+- On Orca releases without session token totals (every release so far), game mode runs on an
+  estimate: progress comes from each agent's working time and tool calls, not from measured
+  tokens, and each agent on this computer is one character while its terminal is open. No new
+  permission is asked for. The game uses real totals from Orca's Agent Session History by
+  itself once Orca provides them and the `history:read` permission is granted; this release
+  does not ask for that permission yet. The view state's `game.tokenSource` says which.
 - The view state carries a `game` part for a UI to draw (see `docs/GAME.md`), and the panel and
   the local page take the game's actions.
-- `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens; `FREEZE=1` shows a fixed save.
+- `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
+  the estimate; `FREEZE=1` shows a fixed save.
 
 ## 0.1.0 - 2026-11-12
 

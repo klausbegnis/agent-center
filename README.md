@@ -56,12 +56,23 @@ materials buy upgrades. Progress is kept per world and survives restarts. The ru
 [docs/GAME.md](docs/GAME.md).
 
 To turn it on, open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**.
-It reads token totals from Orca's Agent Session History, so it needs an Orca that offers that
-history to plugins and the session history permission (`history:read`). This version of the
-plugin does not ask for that permission yet: until it does, the game reports that it is
-unsupported or needs permission, and the plugin works as without it. **Game mode: keep
-conversation titles** keeps a finished session's title on its retired character; it is off by
-default.
+**Game mode: keep conversation titles** keeps a finished session's title on its retired
+character; it is off by default.
+
+Where the tokens come from:
+
+- **Estimated, on today's Orca.** Released Orca versions do not give plugins the tokens a
+  session spent. There, progress is estimated from how long each agent works and how many tool
+  calls it makes; it is not measured. Each agent on this computer is one character for as long
+  as its terminal is open. No new permission is asked for: the estimate uses only what the
+  plugin already sees.
+- **Real totals, once Orca provides them.** When Orca offers its Agent Session History to
+  plugins and the session history permission (`history:read`) is granted, the game switches by
+  itself to the real token totals. This version of the plugin does not ask for that permission
+  yet.
+
+The game's state says which one it is using (`tokenSource`). How the estimate is computed is in
+[docs/GAME.md](docs/GAME.md#the-estimate).
 
 ## Themes
 
@@ -205,6 +216,9 @@ Contributions are welcome.
 - After Orca restarts, it stops tracking the sessions that were already running until they are
   started again. The plugin still shows them, recognised by their terminal title, but only as
   working or done: there is no per-tool activity, bell or familiar for them.
+- Game mode's progress is an estimate on every released Orca: working time and tool calls stand
+  in for tokens, and a conversation cleared in the same terminal goes on as the same character.
+  See [docs/GAME.md](docs/GAME.md#the-estimate).
 - Game mode counts only sessions on this computer: Orca's session history does not cover paired
   machines, and leaves subagents out. Agents on paired machines join their room's fight as
   guests with no token count, and a room whose only agents are guests does not join the game.

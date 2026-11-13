@@ -7,18 +7,22 @@ import {
   buildGameView,
   gameStatus,
   keepRecent,
-  partyStateOf
+  partyStateOf,
+  tokenSourceOf
 } from './game-view.mjs'
 
 const BANANA = 'local:/work/rumble-banana'
 
-test('the game runs only when it is on, offered, granted and its save is not from a newer plugin', () => {
-  const facts = { enabled: true, supported: true, granted: true, newerSave: false }
-  assert.equal(gameStatus(facts), 'running')
-  assert.equal(gameStatus({ ...facts, enabled: false, supported: false }), 'off')
-  assert.equal(gameStatus({ ...facts, supported: false, granted: false }), 'unsupported')
-  assert.equal(gameStatus({ ...facts, granted: false }), 'needs-permission')
-  assert.equal(gameStatus({ ...facts, newerSave: true }), 'newer-save')
+test('the game runs when it is on and its save is not from a newer plugin', () => {
+  assert.equal(gameStatus({ enabled: true, newerSave: false }), 'running')
+  assert.equal(gameStatus({ enabled: false, newerSave: true }), 'off')
+  assert.equal(gameStatus({ enabled: true, newerSave: true }), 'newer-save')
+})
+
+test('real session totals are used only when Orca offers them and the person granted them', () => {
+  assert.equal(tokenSourceOf({ supported: true, granted: true }), 'history')
+  assert.equal(tokenSourceOf({ supported: false, granted: true }), 'estimated')
+  assert.equal(tokenSourceOf({ supported: true, granted: false }), 'estimated')
 })
 
 test('a waiting or blocked session pauses the party, and a party with nobody working is idle', () => {
@@ -49,12 +53,18 @@ function engineView({ chest = [], retirees = [] } = {}) {
 }
 
 const input = (view, extra = {}) => ({
-  status: 'running', autoSpend: false, keepTitles: false, engineView: view, defaultWorldId: 'main',
+  status: 'running', tokenSource: 'estimated', autoSpend: false, keepTitles: false, engineView: view, defaultWorldId: 'main',
   roomIds: [BANANA], links: new Map(), statesByRoom: {}, recent: [], debug: {}, ...extra
 })
 
 test('a game that is not running sends only its status and settings', () => {
-  assert.deepEqual(buildGameView(input(null, { status: 'off' })), { status: 'off', autoSpend: false, keepTitles: false })
+  const view = buildGameView(input(null, { status: 'off' }))
+  assert.deepEqual(view, { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
+})
+
+test('a running game says where its tokens come from', () => {
+  assert.equal(buildGameView(input(engineView())).tokenSource, 'estimated')
+  assert.equal(buildGameView(input(engineView(), { tokenSource: 'history' })).tokenSource, 'history')
 })
 
 test('a room shows the items in use first, then the strongest, up to a limit', () => {

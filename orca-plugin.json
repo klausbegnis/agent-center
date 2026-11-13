@@ -126,7 +126,7 @@
       {
         "key": "gameMode",
         "title": "Game mode",
-        "description": "Turns the tokens your agent sessions spend into progress: levels, monsters to fight, materials and upgrades. Reads token totals and titles from Orca's Agent Session History on this computer; needs the session history permission.",
+        "description": "Turns the work your agents do into progress: levels, monsters to fight, materials and upgrades. On Orca releases without session token totals, progress is estimated from working time and tool calls. Uses real token totals from Orca's Agent Session History once Orca offers them and the session history permission is granted.",
         "type": "boolean",
         "default": false
       },

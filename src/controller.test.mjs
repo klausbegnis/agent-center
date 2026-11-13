@@ -66,7 +66,7 @@ function recordingGame() {
 
 test('the view state carries the game part', () => {
   const { controller } = setup()
-  assert.deepEqual(controller.getState().game, { status: 'off', autoSpend: false, keepTitles: false })
+  assert.deepEqual(controller.getState().game, { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
 })
 
 test('game actions reach the game with their fields and tell the surfaces', async () => {
