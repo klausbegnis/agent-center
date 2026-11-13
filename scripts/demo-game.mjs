@@ -2,9 +2,12 @@
 // built and looked at without Orca. Every token count comes from a hash of the session id and
 // the round, so a run always plays the same way.
 //
-// Agents on this computer get a session each, found by their conversation title the way a real
-// history is matched. Now and then an agent's session closes (its character retires) and a new
-// one opens under the same title. Agents on the paired machines join as guests.
+// With the history, agents on this computer get a session each, found by their conversation
+// title the way a real history is matched. Now and then an agent's session closes (its
+// character retires) and a new one opens under the same title. With the estimate, there is no
+// history: each agent on this computer gets a made-up work meter (working time and tool calls in
+// game time), as an Orca without session totals would. Agents on the paired machines join as
+// guests either way.
 import { createGameMode } from '../src/game-mode.mjs'
 import { createGameSave } from '../src/game-save.mjs'
 import { hashOf } from '../src/game/hash.mjs'
@@ -25,6 +28,42 @@ const EPOCH = Date.UTC(2026, 0, 5, 9)
 const LOCAL = 'local'
 /** Sessions listed per reading, like the worker asks Orca for. */
 const HISTORY_LIMIT = 200
+/** Tool calls a working agent starts per minute of game time, give or take half. */
+const TOOL_CALLS_PER_MINUTE = 3.75
+const MINUTE_MS = 60_000
+
+/** A swing between 0.5 and 1.5, from a hash. */
+const swingOf = (key) => 0.5 + (hashOf(key) % 1000) / 1000
+
+/** Made-up work meters for the local agents, the estimate's stand-in for the store's. */
+function createMeters(store) {
+  const meters = new Map()
+  let round = 0
+
+  /** Moves the meters one round forward with the agents' states as the store has them. */
+  function step(now, minutes) {
+    round += 1
+    for (const room of store.snapshot().rooms) {
+      if ((room.host ?? LOCAL) !== LOCAL) continue
+      for (const agent of room.agents) {
+        if (agent.parentId) continue
+        if (!meters.has(agent.id)) meters.set(agent.id, { startedAt: now, workedMs: {}, toolCalls: 0, calls: 0 })
+        const meter = meters.get(agent.id)
+        if (agent.state !== 'working') continue
+        meter.workedMs[agent.activity] = (meter.workedMs[agent.activity] ?? 0) + minutes * MINUTE_MS
+        // Fractions of a call carry over, so a slow agent still makes one now and then.
+        meter.calls += TOOL_CALLS_PER_MINUTE * minutes * swingOf(`${agent.id}|${round}`)
+        meter.toolCalls = Math.floor(meter.calls)
+      }
+    }
+  }
+
+  return {
+    step,
+    read: () => Object.fromEntries([...meters].map(([agentId, { startedAt, workedMs, toolCalls }]) =>
+      [agentId, { startedAt, workedMs: { ...workedMs }, toolCalls }]))
+  }
+}
 
 /** One made-up session per local agent, numbered by how many the agent had before. */
 function createHistory(store) {
@@ -55,8 +94,7 @@ function createHistory(store) {
           sessions.set(sessionId, session)
         }
         if (agent.state !== 'working') continue
-        const swing = 0.5 + (hashOf(`${sessionId}|${round}`) % 1000) / 1000
-        session.totalTokens += Math.round(TOKENS_PER_MINUTE * minutes * swing)
+        session.totalTokens += Math.round(TOKENS_PER_MINUTE * minutes * swingOf(`${sessionId}|${round}`))
       }
     }
   }
@@ -75,17 +113,26 @@ function createHistory(store) {
 /**
  * The demo's game: a game mode over an in-memory storage and the made-up history.
  *
- * @param {{ engine: object, store: object, preferences: object, onChange: () => void, frozen: boolean }} options
+ * @param {{ engine: object, store: object, preferences: object, onChange: () => void, frozen: boolean,
+ *   estimated?: boolean }} options `estimated` plays without a session history, on the estimate
  * @returns {Promise<ReturnType<typeof createGameMode>>}
  */
-export async function createDemoGame({ engine, store, preferences, onChange, frozen }) {
+export async function createDemoGame({ engine, store, preferences, onChange, frozen, estimated = false }) {
   const startedAt = Date.now()
   let frozenClock = EPOCH
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
   const values = new Map()
   const settings = { gameMode: true, gameKeepTitles: true }
   const history = createHistory(store)
+  const meters = createMeters(store)
   let lastStepAt = now()
+  /** Moves the made-up history or meters to now. */
+  const step = (source) => {
+    const at = now()
+    source.step(at, (at - lastStepAt) / 60_000)
+    lastStepAt = at
+    return source.read()
+  }
   const game = createGameMode({
     engine,
     gameSave: createGameSave({
@@ -98,14 +145,10 @@ export async function createDemoGame({ engine, store, preferences, onChange, fro
     writeSetting: async (key, value) => {
       settings[key] = value
     },
-    access: () => ({ supported: true, granted: true }),
-    readHistory: async () => {
-      const at = now()
-      history.step(at, (at - lastStepAt) / 60_000)
-      lastStepAt = at
-      return history.read()
-    },
+    access: () => ({ supported: !estimated, granted: !estimated }),
+    readHistory: async () => step(history),
     readWorkspaces: async () => [],
+    readWorkMeters: () => step(meters),
     store,
     preferences,
     now,
