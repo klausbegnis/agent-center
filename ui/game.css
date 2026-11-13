@@ -1289,3 +1289,50 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   .ac-fight-regen { display: none; }
 }
 .ac-mini .ac-foe-damage { display: none; }
+
+/* The selected agent's card, while the game runs: its character in two short rows under the
+   agent's facts. The card lies over the room, so it may grow without moving anything. */
+.ac-detail-game {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--orca-border, #333a47);
+  font-size: 11px;
+}
+.ac-detail-hero { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ac-detail-facts { flex: none; font-size: 12px; }
+.ac-detail-progress { flex: 1 1 60px; max-width: 120px; }
+.ac-detail-trade { flex: none; white-space: nowrap; }
+.ac-detail-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ac-detail-attribute { display: flex; gap: 3px; }
+.ac-detail-attribute dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-detail-attribute dd { margin: 0; font-weight: 700; }
+.ac-detail-attribute abbr { text-decoration: none; }
+.ac-detail-equipment {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-detail-slot { display: flex; flex: 0 1 auto; align-items: center; gap: 3px; min-width: 0; }
+.ac-detail-slot-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-detail-slot-level { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ac-detail-icon { width: 12px; height: 12px; }
+/* A card over a small Gallery cell keeps the class and level; the Arsenal has the rest. */
+.ac-detail { container-type: inline-size; }
+@container (max-width: 300px) {
+  .ac-detail-attributes,
+  .ac-detail-equipment,
+  .ac-detail-trade { display: none; }
+}

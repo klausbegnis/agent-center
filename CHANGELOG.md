@@ -34,6 +34,10 @@ All notable changes to this project are recorded here. The format follows
   and retirees in the save. The Arsenal's Items section lists them under **Chests left behind**,
   and **Move here** moves them into the room chosen there, in the same world, after asking;
   copies of an item past what a chest keeps are salvaged into materials.
+- While the game runs, the selected agent's card also shows its character: class and level with
+  the progress to the next one, its seven attributes, its equipment with upgrade levels, and the
+  trade it gathers while its agent is done. A guest's card says it keeps no progress; over a
+  small Gallery cell the card keeps only the class and level.
 - Arsenal and Skills are built around original pixel icons for skills, materials, classes, item
   slots, group upgrades and stars; the character marks in the rooms use the same icons.
 - The view state's game part adds the monster's `hp` and `maxHp`, `tickSeconds`, and names and

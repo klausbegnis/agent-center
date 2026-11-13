@@ -148,7 +148,7 @@ export async function mountStage(root, transport, options = {}) {
     // The card sits over the bottom of the agent's own room, so selecting moves nothing.
     const room = agent && state.rooms.find((item) => item.agents.includes(agent))
     if (room) roomList.overlay(room.id, detail.element)
-    detail.show(agent, agent?.parentId ? agents.find((item) => item.id === agent.parentId) : null)
+    detail.show(agent, agent?.parentId ? agents.find((item) => item.id === agent.parentId) : null, state)
   }
 
   /** Whether a theme loaded for the rooms that have not picked their own. */

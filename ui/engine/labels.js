@@ -325,6 +325,9 @@ export function badgeDescription(badge) {
   return badge.isGathering ? `${base}, gathering ${skillLabel(badge.trade)}` : base
 }
 
+/** "Gathering Fishing", what a character does while its agent is done. */
+export const gatheringTrade = (trade) => `Gathering ${skillLabel(trade)}`
+
 /** Materials, the work ones first, then the gathering ones. */
 export const MATERIAL_LABEL = {
   bars: 'Bars',
