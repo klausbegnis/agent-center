@@ -14,6 +14,7 @@ import {
 } from './constants.mjs'
 import { monstersFor } from './content.mjs'
 import { chanceOf, hashOf } from './hash.mjs'
+import { bossFor, generateMonster, HANDMADE_SHARE } from './races.mjs'
 
 /** The affixes an elite can carry. The last two swap the monster's resistances for that kind's. */
 export const AFFIXES = ['regenerating', 'enraged', 'thorny', 'swift', 'armored', 'ethereal']
@@ -67,7 +68,9 @@ const WAVE_RANKS = ['champion', 'elite', 'veteran', 'normal']
  * @returns {'normal' | 'veteran' | 'elite' | 'champion' | 'boss' | 'legendary'}
  */
 export function rankFor(where) {
-  if (isBoss(where)) return chanceOf(rollText(where, 'legendary')) < 1 / LEGENDARY_ONE_IN ? 'legendary' : 'boss'
+  if (isBoss(where)) {
+    return chanceOf(rollText(where, 'legendary')) < 1 / LEGENDARY_ONE_IN ? 'legendary' : 'boss'
+  }
   const roll = chanceOf(rollText(where, 'elite'))
   let below = 0
   for (const rank of WAVE_RANKS) {
@@ -107,6 +110,26 @@ function resistancesFor(kind, affix) {
 }
 
 /**
+ * What a monster looks like and is called. A themed hand-made entry shows as itself
+ * HANDMADE_SHARE of the time; otherwise a boss wave brings the project's next boss of the roster
+ * and any other wave a generated monster. Without races (older content) every entry shows as
+ * itself. The entry's loot is kept either way.
+ */
+function appearanceFor({ where, entry, kind, rank, themeId, races, bosses }) {
+  const handmade = { id: entry.id, name: entry.name, sprite: { ...entry.sprite } }
+  if (!races) return handmade
+  if (entry.themes && chanceOf(rollText(where, 'handmade')) < HANDMADE_SHARE) return handmade
+  if (kind === 'boss') {
+    if (!bosses) return handmade
+    const bossNumber = Math.floor(where.wave / BOSS_EVERY)
+    const boss = bossFor(bosses, races, { worldId: where.worldId, projectId: where.projectId, bossNumber })
+    return { id: boss.id, name: boss.name, race: boss.race, look: boss.look }
+  }
+  const generated = generateMonster(races, { seed: rollText(where, 'look'), themeId, rank })
+  return { id: generated.race, name: generated.name, race: generated.race, look: generated.look }
+}
+
+/**
  * The monster a project meets on a wave, at full health. Its level is the wave.
  *
  * @param {object} options
@@ -118,14 +141,18 @@ function resistancesFor(kind, affix) {
  *   when left out
  * @param {string | null} options.themeId the room's theme, for picking the entry
  * @param {{ monsters: object[] }} options.content a valid monsters file
+ * @param {{ palettes: object, races: object[] }} [options.races] a valid races file; without it
+ *   every monster is a hand-made entry
+ * @param {{ bosses: object[] }} [options.bosses] a valid bosses file
  * @param {(level: number) => { physical: number, magical: number, total: number }} options.referencePartyHit
  * @returns {{ id: string, name: string, kind: string, rank: string, affix: string | null,
  *   level: number, maxHp: number, hp: number, physical: number, magical: number, attack: number,
- *   reward: number, dropFactor: number,
- *   loot: Record<string, number>, sprite: { body: string, accent: string } }}
+ *   reward: number, dropFactor: number, loot: Record<string, number>, race?: string,
+ *   look?: { rig: string, parts: object, colours: object }, sprite?: { body: string, accent: string } }}
+ *   a hand-made entry has `sprite`, a generated monster or a boss of the roster `race` and `look`
  */
 export function monsterFor(options) {
-  const { worldId, projectId, wave, kill = 0, themeId, content, referencePartyHit } = options
+  const { worldId, projectId, wave, kill = 0, themeId, content, races, bosses, referencePartyHit } = options
   const partySize = Math.min(options.partySize ?? REFERENCE_PARTY_SIZE, REFERENCE_PARTY_SIZE)
   const partyShare = partySize / REFERENCE_PARTY_SIZE
   const where = { worldId, projectId, wave, kill }
@@ -138,8 +165,7 @@ export function monsterFor(options) {
   const factors = MONSTER_KINDS[kind]
   const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * partyShare * factors.hp * ranked.hp
   return {
-    id: entry.id,
-    name: entry.name,
+    ...appearanceFor({ where, entry, kind, rank, themeId, races, bosses }),
     kind,
     rank,
     affix,
@@ -150,7 +176,6 @@ export function monsterFor(options) {
     attack: factors.attack,
     reward: factors.reward * ranked.reward,
     dropFactor: ranked.drop,
-    loot: { ...entry.loot },
-    sprite: { ...entry.sprite }
+    loot: { ...entry.loot }
   }
 }

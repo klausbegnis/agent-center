@@ -7,8 +7,9 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items } })` takes the parsed `game/monsters.json` and
-`game/items.json` and returns functions that each take a save and return a new one. None of
+`createEngine({ content: { monsters, items, races, bosses } })` takes the parsed
+`game/monsters.json`, `game/items.json`, `game/races.json` and `game/bosses.json` and returns
+functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
 
@@ -299,10 +300,63 @@ project id:
 - `game/items.json` and `game/monsters.json` are data. An item entry is id, slot, damage type,
   tier, recipe and an optional list of themes. A monster entry is id, kind, loot table, sprite
   hints and an optional list of themes. No entry holds a balance number.
-- A theme may later bring its own monster parts and names; until then the default set is split
-  between the shipped themes, with a generic set for any other theme.
-- A monster is picked by hash among the entries of its kind that match the room's theme,
-  falling back to the generic ones. The room's theme is the last `themeId` a reading gave.
+- A monster entry is picked by hash among the entries of its kind that match the room's theme,
+  falling back to the generic ones. The room's theme is the last `themeId` a reading gave. The
+  entry gives the monster its loot table, whatever it looks like.
+- `game/races.json` describes 20 races of generated monsters, `game/bosses.json` the fixed
+  roster of named bosses. Both are looks and names only: health, attack, reward and loot never
+  depend on them, and `npm run simulate` gives the same result with or without them. They are
+  checked by `src/game/content-races.mjs`; the part ids they name are the UI's, and a test
+  (`ui/engine/monster-content.test.js`) checks every one exists.
+
+### Races
+
+A race is `{ id, noun, rig, build, descriptor?, themes?, palettes, parts, always?, roles, marks }`:
+
+- `rig` is the skeleton it is drawn on: `humanoid` (shared by orc, goblin, troll, ogre, human,
+  skeleton, zombie, vampire, werewolf, demon, lizard and minotaur) or a rig of its own
+  (`dragon`, `spider`, `insect`, `slime`, `elemental`, `golem`, `ghost`, `treant`). `build`
+  (`small`, `medium`, `large`) picks the humanoid build; for the others it only says the size.
+- `parts` lists, for every slot of the rig, the part ids the race may pick: a humanoid's
+  `head`, `torso`, `legs`, `outfit`, `headgear` and `held`; a dragon's `body`, `head`, `wings`
+  and `tail`; and so on (`RIG_SLOTS` in `src/game/races.mjs`), plus `extras` (horns, wings,
+  tails, markings, glows). `none` draws nothing; listing an id twice makes it likelier. `always`
+  lists extras every monster of the race has (a lizard's tail).
+- `palettes.skin` (and any other colour role the race wants its own of) lists colours with an
+  `id` and, for the role that names it, a `word`. The other roles come from the shared
+  `palettes` at the top of the file: `cloth`, `metal`, `leather`, `accent`, `bone`, `hair`,
+  `eye`. `descriptor` says which role's word leads the name (`skin` unless said otherwise).
+- `roles` are what the monster does, each `{ id, word, noun?, descriptor?, palettes?, <slot>? }`.
+  A role narrows the race's lists so the name agrees with the drawing: an archer holds a bow, a
+  shaman a staff, a wasp has a stinger, a fire elemental burns.
+- `marks` are words a champion's name leads with ("Elder", "Dread").
+
+A generated monster is made from a hash of world, project, wave and kill (`generateMonster`):
+the race (a race whose `themes` list the room's theme is `PREFERRED_RACE_WEIGHT` times as
+likely), the role, a part for every slot within the role's choices, up to `EXTRAS_MAX` extras
+besides `always`, and a colour for every role. One humanoid in `CHIMERA_ONE_IN` is a chimera:
+its head or its legs come from another race of the same build, and its name says
+`Chimeric`. The name is the champion's mark, the descriptor word, the noun and the role word,
+the empty ones left out: "Bog Troll Brute", "Ashen Skeleton Archer", "Elder Ember Elemental",
+"Chimeric Orc Raider".
+
+### Bosses
+
+A boss is `{ id, name, epithet, race, parts, colours }`: a fixed look (a part for every slot of
+its race's rig, its extras, and all eight colours, boss-only parts allowed) that never varies,
+shown as "Morvash, the Bog Tyrant". Each project meets the roster in an order of its own (the
+bosses sorted by a hash of world, project and boss id); the boss of a boss wave is the
+`wave / BOSS_EVERY`-th of that order, wrapping round. Waves never go down, so a project meets
+every boss once before any comes back: with 55 bosses, after 550 waves.
+
+### Which look a monster gets
+
+1. A themed entry (one with `themes`) picked for the room shows as itself `HANDMADE_SHARE` (30%)
+   of the time, with its own name and sprite, so a room keeps its local flavour.
+2. Otherwise a boss wave brings the project's next boss of the roster, and any other wave a
+   generated monster.
+3. Generic entries never show as themselves while races are loaded; they lend their loot.
+   Content without races (older tests) shows every entry as itself.
 
 ## Save shape
 
@@ -319,7 +373,13 @@ Project   { wave, waveKills, monster, stamina, restTicks, fightMs, fightTicks, f
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
+Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
+            dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
 ```
+
+A monster keeps the part ids and colours it was given, not a seed, so it never changes looks
+when parts or races are added later; a look is about 300 bytes. A monster saved before ranks and
+looks has neither `rank` nor `look`: it keeps its `sprite` and is drawn and fought as before.
 
 `stamina` is a share of the party's pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
@@ -605,7 +665,9 @@ by the usual closing rules.
     'local:/work/sneaky-pancake': {
       worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
       monster: { id, name, kind, rank, affix, level, healthShare: 0.12, hp: 412, maxHp: 3430,
-        sprite: { body, accent } }, // hp rounded up, so a monster still standing never reads 0
+        race, look: { rig, parts, colours } }, // hp rounded up, so a standing monster never reads 0
+                                    // a hand-made entry, or a monster saved before looks, sends
+                                    // sprite: { body, accent } instead of race and look
       party: 'fighting',            // fighting | resting | paused | idle
       pausedBy: null,               // blocked | waiting while paused, otherwise null
       stamina: 0.8,                 // share of the party's pool

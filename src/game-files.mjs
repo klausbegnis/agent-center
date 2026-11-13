@@ -3,6 +3,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateItems, validateMonsters } from './game/content.mjs'
+import { validateBosses, validateRaces } from './game/content-races.mjs'
 import { createEngine } from './game/engine.mjs'
 
 /**
@@ -13,8 +14,18 @@ import { createEngine } from './game/engine.mjs'
 export function loadGameEngine(root, log) {
   try {
     const readJson = (name) => JSON.parse(fs.readFileSync(path.join(root, 'game', name), 'utf8'))
-    const content = { monsters: readJson('monsters.json'), items: readJson('items.json') }
-    const problems = [...validateMonsters(content.monsters), ...validateItems(content.items)]
+    const content = {
+      monsters: readJson('monsters.json'),
+      items: readJson('items.json'),
+      races: readJson('races.json'),
+      bosses: readJson('bosses.json')
+    }
+    const problems = [
+      ...validateMonsters(content.monsters),
+      ...validateItems(content.items),
+      ...validateRaces(content.races),
+      ...validateBosses(content.bosses, content.races)
+    ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)
       return null

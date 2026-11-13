@@ -88,6 +88,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     kill: project.waveKills,
     themeId: project.themeId,
     content: content.monsters,
+    races: content.races,
+    bosses: content.bosses,
     referencePartyHit,
     partySize
   })

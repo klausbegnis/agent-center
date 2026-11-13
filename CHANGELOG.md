@@ -46,6 +46,13 @@ All notable changes to this project are recorded here. The format follows
   with an affix). Rarer ranks have more health and pay more per minute; the odds and factors are
   in `MONSTER_RANKS` and keep kills and rewards per hour where they were. Kill events and the
   view state's monster carry the `rank`; monsters saved before keep working.
+- Monsters come from 20 races (orc, goblin, troll, ogre, human, skeleton, zombie, vampire,
+  werewolf, demon, lizard, minotaur, dragon, giant spider, giant insect, slime, elemental, golem,
+  ghost, tree warden), each in thousands of looks put together from parts, outfits, gear and
+  colours, with a name that says what is drawn ("Bog Troll Brute"). Boss waves bring a fixed
+  roster of 55 named bosses ("Morvash, the Bog Tyrant") that a project meets one by one. The
+  hand-made monsters of the shipped themes still turn up in their rooms. Looks and names only:
+  health, reward and loot are as before.
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 

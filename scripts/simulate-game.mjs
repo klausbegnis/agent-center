@@ -21,7 +21,12 @@ import {
 } from './game-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
-const content = { monsters: readJson('../game/monsters.json'), items: readJson('../game/items.json') }
+const content = {
+  monsters: readJson('../game/monsters.json'),
+  items: readJson('../game/items.json'),
+  races: readJson('../game/races.json'),
+  bosses: readJson('../game/bosses.json')
+}
 const engine = createEngine({ content })
 
 const MINUTE = 60_000

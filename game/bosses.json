@@ -1,0 +1,1442 @@
+{
+  "bosses": [
+    {
+      "id": "skrix",
+      "name": "Skrix",
+      "epithet": "the Lantern Thief",
+      "race": "goblin",
+      "parts": {
+        "head": "goblin-grin",
+        "torso": "small-scrawny",
+        "legs": "small-bowed",
+        "outfit": "leather",
+        "headgear": "hood",
+        "held": "torch",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#8f9a62",
+        "cloth": "#3b4a8c",
+        "metal": "#8e959e",
+        "leather": "#4a3426",
+        "accent": "#d8742a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f49a34"
+      }
+    },
+    {
+      "id": "grubbin",
+      "name": "Grubbin",
+      "epithet": "the Pit King",
+      "race": "goblin",
+      "parts": {
+        "head": "goblin-warty",
+        "torso": "small-potbelly",
+        "legs": "small-short",
+        "outfit": "furs",
+        "headgear": "great-crown",
+        "held": "club",
+        "extras": [
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#6f8f3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#8a3a20",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "vessa",
+      "name": "Vessa",
+      "epithet": "the Rooftop Knife",
+      "race": "goblin",
+      "parts": {
+        "head": "goblin-pointy",
+        "torso": "small-hunched",
+        "legs": "small-short",
+        "outfit": "rags",
+        "headgear": "bandana",
+        "held": "dagger",
+        "extras": [
+          "warpaint"
+        ]
+      },
+      "colours": {
+        "skin": "#a8a84e",
+        "cloth": "#34303a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#7ae05a"
+      }
+    },
+    {
+      "id": "gorvak",
+      "name": "Gorvak",
+      "epithet": "the Ash Banner",
+      "race": "orc",
+      "parts": {
+        "head": "orc-tusked",
+        "torso": "medium-broad",
+        "legs": "medium-stance",
+        "outfit": "plate",
+        "headgear": "horned-helm",
+        "held": "greataxe",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#6f7a66",
+        "cloth": "#5a3a5a",
+        "metal": "#5c616b",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "thruska",
+      "name": "Thruska",
+      "epithet": "the Bone Singer",
+      "race": "orc",
+      "parts": {
+        "head": "orc-topknot",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "bone-armour",
+        "headgear": "skull-mask",
+        "held": "skull-staff",
+        "extras": [
+          "warpaint",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#5f8a35",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#8a4ab8",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#c47cf4"
+      }
+    },
+    {
+      "id": "brakkus",
+      "name": "Brakkus",
+      "epithet": "the Red Axe",
+      "race": "orc",
+      "parts": {
+        "head": "orc-scarred",
+        "torso": "medium-hunched",
+        "legs": "medium-stance",
+        "outfit": "chain",
+        "headgear": "helm",
+        "held": "axe",
+        "extras": [
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#8a5038",
+        "cloth": "#5a3a5a",
+        "metal": "#b07a3c",
+        "leather": "#4a3426",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "morvash",
+      "name": "Morvash",
+      "epithet": "the Bog Tyrant",
+      "race": "troll",
+      "parts": {
+        "head": "troll-tusked",
+        "torso": "large-hulking",
+        "legs": "large-thick",
+        "outfit": "furs",
+        "headgear": "great-crown",
+        "held": "hammer",
+        "extras": [
+          "moss"
+        ]
+      },
+      "colours": {
+        "skin": "#4f7a5a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#3a4a2a",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "grumlaw",
+      "name": "Grumlaw",
+      "epithet": "the Bridge Warden",
+      "race": "troll",
+      "parts": {
+        "head": "troll-long-nose",
+        "torso": "large-stooped",
+        "legs": "large-stance",
+        "outfit": "rags",
+        "headgear": "none",
+        "held": "club",
+        "extras": [
+          "blotches",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#7a7468",
+        "cloth": "#4f6b3a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#5a3a24",
+        "eye": "#f49a34"
+      }
+    },
+    {
+      "id": "old-hessa",
+      "name": "Old Hessa",
+      "epithet": "the Frost Crone",
+      "race": "troll",
+      "parts": {
+        "head": "troll-shaggy",
+        "torso": "large-potbelly",
+        "legs": "large-thick",
+        "outfit": "bone-armour",
+        "headgear": "skull-mask",
+        "held": "skull-staff",
+        "extras": [
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#8ab0b8",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#f2eee2",
+        "hair": "#e0dcd0",
+        "eye": "#64c8f4"
+      }
+    },
+    {
+      "id": "bulgo",
+      "name": "Bulgo",
+      "epithet": "the Glutton King",
+      "race": "ogre",
+      "parts": {
+        "head": "ogre-underbite",
+        "torso": "large-potbelly",
+        "legs": "large-thick",
+        "outfit": "leather",
+        "headgear": "great-crown",
+        "held": "club",
+        "extras": [
+          "blotches"
+        ]
+      },
+      "colours": {
+        "skin": "#b0906a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#7a6a4a",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#5a3a24",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "marrowmaw",
+      "name": "Marrowmaw",
+      "epithet": "the Cauldron Lord",
+      "race": "ogre",
+      "parts": {
+        "head": "ogre-dull",
+        "torso": "large-hulking",
+        "legs": "large-stance",
+        "outfit": "chain",
+        "headgear": "helm",
+        "held": "greataxe",
+        "extras": [
+          "chains",
+          "warpaint"
+        ]
+      },
+      "colours": {
+        "skin": "#8a8478",
+        "cloth": "#5a3a5a",
+        "metal": "#5c616b",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "corwen-ashby",
+      "name": "Sir Corwen Ashby",
+      "epithet": "the Faithless Knight",
+      "race": "human",
+      "parts": {
+        "head": "human-bearded",
+        "torso": "medium-broad",
+        "legs": "medium-straight",
+        "outfit": "plate",
+        "headgear": "helm",
+        "held": "sword",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#d0a070",
+        "cloth": "#34303a",
+        "metal": "#5c616b",
+        "leather": "#6b4a2b",
+        "accent": "#8c2f39",
+        "bone": "#e8dcc0",
+        "hair": "#8a8a86",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "mother-ilse",
+      "name": "Mother Ilse",
+      "epithet": "the Candle Witch",
+      "race": "human",
+      "parts": {
+        "head": "human-long-hair",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "cultist-robe",
+        "headgear": "cowl",
+        "held": "torch",
+        "extras": [
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#f0c8a0",
+        "cloth": "#6a3d6e",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#e0dcd0",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "rook-hallow",
+      "name": "Rook Hallow",
+      "epithet": "the Highway King",
+      "race": "human",
+      "parts": {
+        "head": "human-shaven",
+        "torso": "medium-lean",
+        "legs": "medium-stance",
+        "outfit": "leather",
+        "headgear": "great-crown",
+        "held": "bow",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#7a4a30",
+        "cloth": "#2f7a78",
+        "metal": "#8e959e",
+        "leather": "#4a3426",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "ossric",
+      "name": "Ossric",
+      "epithet": "the Ossuary Lord",
+      "race": "skeleton",
+      "parts": {
+        "head": "skull-horned",
+        "torso": "medium-ribcage",
+        "legs": "medium-bony",
+        "outfit": "tabard",
+        "headgear": "great-crown",
+        "held": "sword",
+        "extras": [
+          "glowing-eyes",
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#d8d0b8",
+        "cloth": "#3b4a8c",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#64c8f4"
+      }
+    },
+    {
+      "id": "dregmoor",
+      "name": "Captain Dregmoor",
+      "epithet": "of the Sunken Deck",
+      "race": "skeleton",
+      "parts": {
+        "head": "skull-cracked",
+        "torso": "medium-ribcage",
+        "legs": "medium-bony",
+        "outfit": "rags",
+        "headgear": "bandana",
+        "held": "scythe",
+        "extras": [
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#b4b6a6",
+        "cloth": "#2f7a78",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#7ae05a"
+      }
+    },
+    {
+      "id": "wenna-greyrib",
+      "name": "Wenna Greyrib",
+      "epithet": "the Last Archer",
+      "race": "skeleton",
+      "parts": {
+        "head": "skull-plain",
+        "torso": "medium-ribcage",
+        "legs": "medium-bony",
+        "outfit": "chain",
+        "headgear": "hood",
+        "held": "bow",
+        "extras": [
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#d0bf86",
+        "cloth": "#4f6b3a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "old-mattock",
+      "name": "Old Mattock",
+      "epithet": "the Gravedigger",
+      "race": "zombie",
+      "parts": {
+        "head": "zombie-slack",
+        "torso": "medium-hunched",
+        "legs": "medium-stance",
+        "outfit": "rags",
+        "headgear": "hood",
+        "held": "hammer",
+        "extras": [
+          "blotches"
+        ]
+      },
+      "colours": {
+        "skin": "#8a9a6a",
+        "cloth": "#7a6a4a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#7ae05a"
+      }
+    },
+    {
+      "id": "lady-pell",
+      "name": "Lady Pell",
+      "epithet": "the Rotting Bride",
+      "race": "zombie",
+      "parts": {
+        "head": "zombie-stitched",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "robe",
+        "headgear": "great-crown",
+        "held": "none",
+        "extras": [
+          "glowing-eyes",
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#b0b8a0",
+        "cloth": "#cfc6ae",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#6a3d6e",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#c47cf4"
+      }
+    },
+    {
+      "id": "varesh",
+      "name": "Count Varesh",
+      "epithet": "the Velvet Thirst",
+      "race": "vampire",
+      "parts": {
+        "head": "vampire-widows-peak",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "noble-coat",
+        "headgear": "none",
+        "held": "sword",
+        "extras": [
+          "cape",
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#d8d4d0",
+        "cloth": "#34303a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#262028",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "ysolde-marrin",
+      "name": "Ysolde Marrin",
+      "epithet": "the Moon Countess",
+      "race": "vampire",
+      "parts": {
+        "head": "vampire-fanged",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "robe",
+        "headgear": "great-crown",
+        "held": "skull-staff",
+        "extras": [
+          "bat-wings"
+        ]
+      },
+      "colours": {
+        "skin": "#c0c8d8",
+        "cloth": "#3b4a8c",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e6e0d0",
+        "bone": "#e8dcc0",
+        "hair": "#e8e4e0",
+        "eye": "#f0c040"
+      }
+    },
+    {
+      "id": "severin-holt",
+      "name": "Severin Holt",
+      "epithet": "the Pale Duelist",
+      "race": "vampire",
+      "parts": {
+        "head": "vampire-fanged",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "noble-coat",
+        "headgear": "none",
+        "held": "dagger",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#e0d8d0",
+        "cloth": "#8c2f39",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#7a2a2a",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "greyhide",
+      "name": "Greyhide",
+      "epithet": "the Moon Hunter",
+      "race": "werewolf",
+      "parts": {
+        "head": "wolf-grizzled",
+        "torso": "large-wolf",
+        "legs": "large-wolf-legs",
+        "outfit": "none",
+        "headgear": "none",
+        "held": "none",
+        "extras": [
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#d0c4b4",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#b8b8c0",
+        "eye": "#64c8f4"
+      }
+    },
+    {
+      "id": "old-rusk",
+      "name": "Old Rusk",
+      "epithet": "the Hollow Howl",
+      "race": "werewolf",
+      "parts": {
+        "head": "wolf-snarl",
+        "torso": "large-wolf",
+        "legs": "large-wolf-legs",
+        "outfit": "rags",
+        "headgear": "none",
+        "held": "greataxe",
+        "extras": [
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#b8a088",
+        "cloth": "#4f6b3a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#8a4a2a",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "vorzhaal",
+      "name": "Vorzhaal",
+      "epithet": "the Ember Prince",
+      "race": "demon",
+      "parts": {
+        "head": "demon-horned",
+        "torso": "medium-broad",
+        "legs": "medium-digitigrade",
+        "outfit": "plate",
+        "headgear": "great-crown",
+        "held": "sword",
+        "extras": [
+          "demon-wings",
+          "demon-tail"
+        ]
+      },
+      "colours": {
+        "skin": "#a8342a",
+        "cloth": "#5a3a5a",
+        "metal": "#34303a",
+        "leather": "#6b4a2b",
+        "accent": "#d8742a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f49a34"
+      }
+    },
+    {
+      "id": "malgrith",
+      "name": "Malgrith",
+      "epithet": "the Chain Warden",
+      "race": "demon",
+      "parts": {
+        "head": "demon-ram",
+        "torso": "medium-broad",
+        "legs": "medium-stance",
+        "outfit": "bone-armour",
+        "headgear": "none",
+        "held": "scythe",
+        "extras": [
+          "chains",
+          "demon-tail"
+        ]
+      },
+      "colours": {
+        "skin": "#5e4e5e",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#d6c38e",
+        "hair": "#2e2622",
+        "eye": "#f4f1e8"
+      }
+    },
+    {
+      "id": "krelloth",
+      "name": "Krelloth",
+      "epithet": "the Brimstone Reaper",
+      "race": "demon",
+      "parts": {
+        "head": "demon-horned",
+        "torso": "medium-lean",
+        "legs": "medium-digitigrade",
+        "outfit": "cultist-robe",
+        "headgear": "none",
+        "held": "skull-staff",
+        "extras": [
+          "demon-wings",
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#b86a2a",
+        "cloth": "#34303a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#b8322f",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "ssarrak",
+      "name": "Ssarrak",
+      "epithet": "the Marsh Queen",
+      "race": "lizardfolk",
+      "parts": {
+        "head": "lizard-frilled",
+        "torso": "medium-scaled",
+        "legs": "medium-digitigrade",
+        "outfit": "bone-armour",
+        "headgear": "great-crown",
+        "held": "spear",
+        "extras": [
+          "lizard-tail",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#3a9a7a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "tethra",
+      "name": "Tethra Coldscale",
+      "epithet": "the Reed Hunter",
+      "race": "lizardfolk",
+      "parts": {
+        "head": "lizard-crested",
+        "torso": "medium-scaled",
+        "legs": "medium-digitigrade",
+        "outfit": "leather",
+        "headgear": "feathers",
+        "held": "bow",
+        "extras": [
+          "lizard-tail",
+          "warpaint"
+        ]
+      },
+      "colours": {
+        "skin": "#b0a05a",
+        "cloth": "#b8322f",
+        "metal": "#8e959e",
+        "leather": "#4a3426",
+        "accent": "#3f6fc0",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "gorrath",
+      "name": "Gorrath",
+      "epithet": "the Maze Breaker",
+      "race": "minotaur",
+      "parts": {
+        "head": "bull-horned",
+        "torso": "large-hulking",
+        "legs": "large-hooves",
+        "outfit": "plate",
+        "headgear": "none",
+        "held": "greataxe",
+        "extras": [
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#4a3e3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#f2eee2",
+        "hair": "#2e2622",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "bessa-ironhoof",
+      "name": "Bessa Ironhoof",
+      "epithet": "the Herd Mother",
+      "race": "minotaur",
+      "parts": {
+        "head": "bull-ringed",
+        "torso": "large-furred",
+        "legs": "large-hooves",
+        "outfit": "leather",
+        "headgear": "none",
+        "held": "hammer",
+        "extras": [
+          "warpaint",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#a08060",
+        "cloth": "#5a3a5a",
+        "metal": "#cfae4a",
+        "leather": "#6b4a2b",
+        "accent": "#4f9a4a",
+        "bone": "#e8dcc0",
+        "hair": "#5a3a24",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "vyrthax",
+      "name": "Vyrthax",
+      "epithet": "the Cinder Queen",
+      "race": "dragon",
+      "parts": {
+        "body": "dragon-body-rearing",
+        "head": "dragon-head-horned",
+        "wings": "dragon-wings-bat",
+        "tail": "dragon-tail-spade",
+        "extras": [
+          "dragon-spines",
+          "dragon-smoke"
+        ]
+      },
+      "colours": {
+        "skin": "#b03a2a",
+        "cloth": "#8a8a86",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d8a03a",
+        "bone": "#f2eee2",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "glimmerdeep",
+      "name": "Glimmerdeep",
+      "epithet": "the Hoard Sleeper",
+      "race": "dragon",
+      "parts": {
+        "body": "dragon-body-stout",
+        "head": "dragon-head-blunt",
+        "wings": "dragon-wings-folded",
+        "tail": "dragon-tail-spiked",
+        "extras": [
+          "dragon-scales"
+        ]
+      },
+      "colours": {
+        "skin": "#c0a040",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#3aa8a0",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#64c8f4"
+      }
+    },
+    {
+      "id": "azhrenn",
+      "name": "Azhrenn",
+      "epithet": "the Storm Wing",
+      "race": "dragon",
+      "parts": {
+        "body": "dragon-body-crouched",
+        "head": "dragon-head-frilled",
+        "wings": "dragon-wings-tattered",
+        "tail": "dragon-tail-spiked",
+        "extras": [
+          "dragon-belly-glow"
+        ]
+      },
+      "colours": {
+        "skin": "#3a5aa8",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e6e0d0",
+        "bone": "#c8d4e0",
+        "hair": "#2e2622",
+        "eye": "#f4f1e8"
+      }
+    },
+    {
+      "id": "mother-skein",
+      "name": "Mother Skein",
+      "epithet": "the Silk Widow",
+      "race": "spider",
+      "parts": {
+        "legs": "spider-legs-long",
+        "abdomen": "spider-abdomen-round",
+        "head": "spider-head-crowned",
+        "extras": [
+          "spider-web",
+          "spider-mark-skull"
+        ]
+      },
+      "colours": {
+        "skin": "#2e2a36",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#c83a30",
+        "bone": "#e8e4dc",
+        "hair": "#2e2622",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "ixtil",
+      "name": "Ixtil",
+      "epithet": "the Many-Eyed",
+      "race": "spider",
+      "parts": {
+        "legs": "spider-legs-hairy",
+        "abdomen": "spider-abdomen-spiked",
+        "head": "spider-head-eyed",
+        "extras": [
+          "spider-glow-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#5a6a3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e0c040",
+        "bone": "#e8dcc0",
+        "hair": "#3a4a2a",
+        "eye": "#7ae05a"
+      }
+    },
+    {
+      "id": "nettlewick",
+      "name": "Nettlewick",
+      "epithet": "the Cellar Queen",
+      "race": "spider",
+      "parts": {
+        "legs": "spider-legs-long",
+        "abdomen": "spider-abdomen-striped",
+        "head": "spider-head-fanged",
+        "extras": [
+          "spider-bristles"
+        ]
+      },
+      "colours": {
+        "skin": "#7a5a2a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e8e4dc",
+        "bone": "#e8dcc0",
+        "hair": "#4a3426",
+        "eye": "#f49a34"
+      }
+    },
+    {
+      "id": "queen-zarra",
+      "name": "Queen Zarra",
+      "epithet": "of the Golden Hive",
+      "race": "insect",
+      "parts": {
+        "head": "insect-head-wasp",
+        "thorax": "insect-thorax-slender",
+        "abdomen": "insect-abdomen-stinger",
+        "wings": "insect-wings-twin",
+        "extras": [
+          "insect-glow"
+        ]
+      },
+      "colours": {
+        "skin": "#3a2a1a",
+        "cloth": "#e8d8a8",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e8c030",
+        "bone": "#f2eee2",
+        "hair": "#2e2622",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "korrikk",
+      "name": "Korrikk",
+      "epithet": "the Iron Shell",
+      "race": "insect",
+      "parts": {
+        "head": "insect-head-beetle",
+        "thorax": "insect-thorax-plated",
+        "abdomen": "insect-abdomen-shell",
+        "wings": "insect-wings-shell-open",
+        "extras": [
+          "insect-sheen"
+        ]
+      },
+      "colours": {
+        "skin": "#3a3e4a",
+        "cloth": "#a8b0b8",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#8e959e",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f49a34"
+      }
+    },
+    {
+      "id": "praxa",
+      "name": "Praxa",
+      "epithet": "the Silent Blade",
+      "race": "insect",
+      "parts": {
+        "head": "insect-head-mantis",
+        "thorax": "insect-thorax-raptor",
+        "abdomen": "insect-abdomen-long",
+        "wings": "insect-wings-clear",
+        "extras": []
+      },
+      "colours": {
+        "skin": "#6aa83a",
+        "cloth": "#d4e4ec",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#c8e070",
+        "bone": "#f2eee2",
+        "hair": "#3a5a2a",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "gloam",
+      "name": "Gloam",
+      "epithet": "the Endless Puddle",
+      "race": "slime",
+      "parts": {
+        "body": "slime-drippy",
+        "face": "slime-face-grin",
+        "extras": [
+          "slime-bones",
+          "slime-bubbles"
+        ]
+      },
+      "colours": {
+        "skin": "#545478",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#c47cf4"
+      }
+    },
+    {
+      "id": "sir-wobbleton",
+      "name": "Sir Wobbleton",
+      "epithet": "the Jelly Knight",
+      "race": "slime",
+      "parts": {
+        "body": "slime-stack",
+        "face": "slime-face-scowl",
+        "extras": [
+          "slime-core",
+          "great-crown-slime"
+        ]
+      },
+      "colours": {
+        "skin": "#c04a8a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#f2eee2",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "pyrrhax",
+      "name": "Pyrrhax",
+      "epithet": "the Living Pyre",
+      "race": "elemental",
+      "parts": {
+        "body": "elemental-flame",
+        "face": "elemental-face-maw",
+        "extras": [
+          "elemental-sparks",
+          "elemental-crackle"
+        ]
+      },
+      "colours": {
+        "skin": "#e05a20",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#ffe060"
+      }
+    },
+    {
+      "id": "brinnath",
+      "name": "Brinnath",
+      "epithet": "the Drowning Tide",
+      "race": "elemental",
+      "parts": {
+        "body": "elemental-column",
+        "face": "elemental-face-brow",
+        "extras": [
+          "elemental-drops",
+          "elemental-core"
+        ]
+      },
+      "colours": {
+        "skin": "#2f6ab8",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f4fbff"
+      }
+    },
+    {
+      "id": "goruund",
+      "name": "Goruund",
+      "epithet": "the Walking Hill",
+      "race": "elemental",
+      "parts": {
+        "body": "elemental-hulk",
+        "face": "elemental-face-eyes",
+        "extras": [
+          "elemental-stones",
+          "moss"
+        ]
+      },
+      "colours": {
+        "skin": "#7a6248",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0c040"
+      }
+    },
+    {
+      "id": "sirocca",
+      "name": "Sirocca",
+      "epithet": "the Endless Gale",
+      "race": "elemental",
+      "parts": {
+        "body": "elemental-vortex",
+        "face": "elemental-face-eyes",
+        "extras": [
+          "elemental-gusts"
+        ]
+      },
+      "colours": {
+        "skin": "#a8d8e4",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f4fbff"
+      }
+    },
+    {
+      "id": "warden-seventeen",
+      "name": "Warden Seventeen",
+      "epithet": "the Last Sentry",
+      "race": "golem",
+      "parts": {
+        "legs": "golem-legs-pillars",
+        "torso": "golem-torso-barrel",
+        "arms": "golem-arms-slabs",
+        "head": "golem-head-dome",
+        "extras": [
+          "golem-runes"
+        ]
+      },
+      "colours": {
+        "skin": "#5e6474",
+        "cloth": "#5a3a5a",
+        "metal": "#b3bcc6",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#cfae4a",
+        "hair": "#2e2622",
+        "eye": "#60e0f0"
+      }
+    },
+    {
+      "id": "grael",
+      "name": "Grael",
+      "epithet": "the Rune Colossus",
+      "race": "golem",
+      "parts": {
+        "legs": "golem-legs-stumps",
+        "torso": "golem-torso-hunched",
+        "arms": "golem-arms-fists",
+        "head": "golem-head-horned",
+        "extras": [
+          "golem-runes",
+          "golem-cracks"
+        ]
+      },
+      "colours": {
+        "skin": "#40384a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#c47cf4",
+        "hair": "#2e2622",
+        "eye": "#c47cf4"
+      }
+    },
+    {
+      "id": "mudlark",
+      "name": "Mudlark",
+      "epithet": "the Clay Giant",
+      "race": "golem",
+      "parts": {
+        "legs": "golem-legs-stumps",
+        "torso": "golem-torso-block",
+        "arms": "golem-arms-fists",
+        "head": "golem-head-slab",
+        "extras": [
+          "moss",
+          "golem-chains"
+        ]
+      },
+      "colours": {
+        "skin": "#a06a4a",
+        "cloth": "#5a3a5a",
+        "metal": "#5c616b",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0a030"
+      }
+    },
+    {
+      "id": "lady-annick",
+      "name": "Lady Annick",
+      "epithet": "the Grey Lady",
+      "race": "ghost",
+      "parts": {
+        "body": "ghost-sheet",
+        "face": "ghost-face-wail",
+        "extras": [
+          "ghost-motes",
+          "great-crown-ghost"
+        ]
+      },
+      "colours": {
+        "skin": "#d0c8e8",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#e6e0d0",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#c47cf4"
+      }
+    },
+    {
+      "id": "brother-hollis",
+      "name": "Brother Hollis",
+      "epithet": "the Lantern Monk",
+      "race": "ghost",
+      "parts": {
+        "body": "ghost-wraith",
+        "face": "ghost-face-hooded",
+        "extras": [
+          "ghost-lantern"
+        ]
+      },
+      "colours": {
+        "skin": "#a8aea4",
+        "cloth": "#4a3a2a",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "morrow",
+      "name": "Morrow",
+      "epithet": "the Wraith of Chains",
+      "race": "ghost",
+      "parts": {
+        "body": "ghost-wraith",
+        "face": "ghost-face-hooded",
+        "extras": [
+          "ghost-chains",
+          "ghost-tatters"
+        ]
+      },
+      "colours": {
+        "skin": "#a8c8b8",
+        "cloth": "#2a2630",
+        "metal": "#8e959e",
+        "leather": "#6b4a2b",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#7ae05a"
+      }
+    },
+    {
+      "id": "barrowbark",
+      "name": "Old Barrowbark",
+      "epithet": "the Oak Father",
+      "race": "treant",
+      "parts": {
+        "roots": "treant-roots-spread",
+        "trunk": "treant-trunk-stout",
+        "crown": "treant-crown-leafy",
+        "face": "treant-face-sleepy",
+        "extras": [
+          "treant-moss",
+          "treant-fireflies"
+        ]
+      },
+      "colours": {
+        "skin": "#7a5a3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#6a4a2a",
+        "accent": "#d4a73a",
+        "bone": "#e8dcc0",
+        "hair": "#3f7a32",
+        "eye": "#f0e060"
+      }
+    },
+    {
+      "id": "thistlewrath",
+      "name": "Thistlewrath",
+      "epithet": "the Bramble Queen",
+      "race": "treant",
+      "parts": {
+        "roots": "treant-roots-gnarled",
+        "trunk": "treant-trunk-twisted",
+        "crown": "treant-crown-leafy",
+        "face": "treant-face-scowl",
+        "extras": [
+          "treant-blossoms"
+        ]
+      },
+      "colours": {
+        "skin": "#7a5a3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#5a4a3a",
+        "accent": "#e8a0c0",
+        "bone": "#e8dcc0",
+        "hair": "#7a3a5a",
+        "eye": "#e8463c"
+      }
+    },
+    {
+      "id": "rotroot",
+      "name": "Rotroot",
+      "epithet": "the Withered Warden",
+      "race": "treant",
+      "parts": {
+        "roots": "treant-roots-gnarled",
+        "trunk": "treant-trunk-hollow",
+        "crown": "treant-crown-bare",
+        "face": "treant-face-knots",
+        "extras": [
+          "treant-mushrooms"
+        ]
+      },
+      "colours": {
+        "skin": "#5a4a3a",
+        "cloth": "#5a3a5a",
+        "metal": "#8e959e",
+        "leather": "#4a4038",
+        "accent": "#c84030",
+        "bone": "#e8dcc0",
+        "hair": "#8a7a4a",
+        "eye": "#7ae05a"
+      }
+    }
+  ]
+}

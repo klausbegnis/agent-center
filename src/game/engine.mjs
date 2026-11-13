@@ -15,8 +15,10 @@ import { viewOf } from './view.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
 /**
- * @typedef {{ monsters: { monsters: object[] }, items: { items: object[] } }} Content the parsed
- *   game/monsters.json and game/items.json
+ * @typedef {{ monsters: { monsters: object[] }, items: { items: object[] },
+ *   races?: { palettes: object, races: object[] }, bosses?: { bosses: object[] } }} Content the
+ *   parsed game/monsters.json, game/items.json, game/races.json and game/bosses.json; without
+ *   races every monster is a hand-made entry
  */
 
 /**

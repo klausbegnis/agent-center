@@ -89,7 +89,7 @@ function monsterView(monster) {
     // Whole points: rounded up, so a monster still standing never reads 0.
     hp: Math.ceil(monster.hp),
     maxHp: Math.ceil(monster.maxHp),
-    sprite: { ...monster.sprite }
+    ...(monster.look ? { race: monster.race, look: monster.look } : { sprite: { ...monster.sprite } })
   }
 }
 
