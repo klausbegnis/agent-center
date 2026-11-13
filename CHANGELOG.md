@@ -22,6 +22,14 @@ All notable changes to this project are recorded here. The format follows
   does not ask for that permission yet. The view state's `game.tokenSource` says which.
 - The view state carries a `game` part for a UI to draw (see `docs/GAME.md`), and the panel and
   the local page take the game's actions.
+- The monster stands in the room with the characters, at a theme's optional `monster` station
+  or at a free spot the engine picks, with its own health bar; an elite glows and wears its
+  affix, a boss is larger. Working characters fight it, each class in its own way, in a rhythm
+  taken from the fight's tick; nothing moves under reduced motion.
+- Arsenal and Skills are built around original pixel icons for skills, materials, classes, item
+  slots, group upgrades and stars; the character marks in the rooms use the same icons.
+- The view state's game part adds the monster's `hp` and `maxHp`, `tickSeconds`, and names and
+  levels on kill, drop and purchase events.
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 
