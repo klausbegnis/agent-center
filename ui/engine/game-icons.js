@@ -214,3 +214,8 @@ export function iconPaths(id) {
     .filter((path) => path.d)
   return { viewBox: `0 0 ${ICON_GRID} ${ICON_GRID}`, paths }
 }
+
+/** An icon's main colour, for a bar or a tile that goes with it; null for an id with no icon. */
+export function iconColor(id) {
+  return Object.hasOwn(ICONS, id) ? ICONS[id].colors.a : null
+}

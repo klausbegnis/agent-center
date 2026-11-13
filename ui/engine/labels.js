@@ -328,6 +328,16 @@ export const MATERIAL_LABEL = {
 export const materialLabel = (id) => labelOf(MATERIAL_LABEL, id)
 
 export const SLOT_LABEL = { weapon: 'Weapon', outfit: 'Outfit', tool: 'Tool' }
+/** Attributes as they fit a narrow card; the full name is given with each. */
+export const ATTRIBUTE_SHORT = {
+  strength: 'Str',
+  arcane: 'Arc',
+  agility: 'Agi',
+  precision: 'Pre',
+  resilience: 'Res',
+  medicine: 'Med',
+  luck: 'Luck'
+}
 export const ATTRIBUTE_LABEL = {
   strength: 'Strength',
   arcane: 'Arcane',
@@ -361,6 +371,15 @@ export function itemFacts(item) {
   return [slot, DAMAGE_LABEL[item.damageType], `Tier ${item.tier}`, levelShort(item.level)]
     .filter(Boolean)
     .join(' · ')
+}
+
+/** "Tier 2 · Lv 3". */
+export const tierLevel = (item) => `Tier ${item.tier} · ${levelShort(item.level)}`
+
+/** "Weapon, magical" or "Outfit": an item's slot as a word beside its icon. */
+export function slotText(item) {
+  const slot = labelOf(SLOT_LABEL, item.slot)
+  return DAMAGE_LABEL[item.damageType] ? `${slot}, ${DAMAGE_LABEL[item.damageType]}` : slot
 }
 
 /** Who holds an item: "Held by Fix checkout rounding", "In use", or "Free: the next arrival takes it". */
@@ -421,6 +440,10 @@ export const ARSENAL = {
   upgrade: 'Upgrade',
   upgradeItem: (name) => `Upgrade ${name}`,
   upgradeCost: (text) => `Next level: ${text}`,
+  nextLevel: 'Next level',
+  short: (amount) => `needs ${amount} more`,
+  attributesShort: (character) => `Attributes of ${character}`,
+  emptySlot: 'nothing',
   groupUpgrades: (worldId) => `Group upgrades · world ${worldId}`,
   buy: 'Build',
   buyUpgrade: (name, level) => `Build ${name} level ${level}`,
@@ -435,12 +458,12 @@ export function characterFacts(character) {
   return `${classLabel(character.class)} · ${levelShort(character.level)}`
 }
 
-/** What each skill is grown by and what it does. Engineering's factor is filled in. */
+/** What each skill is grown by and what it does, in one line. Engineering's factor is filled in. */
 const WORK_SKILL_EFFECT = {
-  forge: 'Grows while agents write code. Strengthens physical attacks.',
-  arcana: 'Grows while agents think. Strengthens magical attacks.',
-  lore: 'Grows while agents read. Strengthens the Guardians\' defence.',
-  command: 'Grows while agents delegate. Strengthens the Healers\' support.'
+  forge: 'Grows while agents write code; stronger physical attacks',
+  arcana: 'Grows while agents think; stronger magical attacks',
+  lore: 'Grows while agents read; stronger Guardians',
+  command: 'Grows while agents delegate; stronger Healers'
 }
 const TRADE_MATERIAL = {
   mining: 'ore',
@@ -452,18 +475,16 @@ const TRADE_MATERIAL = {
 }
 
 /**
- * What a skill does: "Grows while agents write code. Strengthens physical attacks."
+ * What a skill does, in one line: "Grows while agents write code; stronger physical attacks".
  *
  * @param {string} skillId
  * @param {string} attackSpeed the party's attack speed as written, for Engineering: "×1.11"
  */
 export function skillEffect(skillId, attackSpeed) {
-  if (skillId === 'engineering') {
-    return `Grows while agents run commands. Sets the party's attack speed, now ${attackSpeed}.`
-  }
+  if (skillId === 'engineering') return `Grows while agents run commands; attack speed, now ${attackSpeed}`
   if (WORK_SKILL_EFFECT[skillId]) return WORK_SKILL_EFFECT[skillId]
   const material = TRADE_MATERIAL[skillId]
-  return material ? `Idle characters with this trade gather ${material}, and it grows as they do.` : ''
+  return material ? `Idle characters with this trade gather ${material}` : ''
 }
 
 /** Stars as shown, "★★", or "★×7" when there are many, with the words for screen readers. */
@@ -471,6 +492,9 @@ export function starsLabel(stars) {
   if (!stars) return { short: '', full: '' }
   return { short: stars > 5 ? `★×${stars}` : '★'.repeat(stars), full: plural(stars, 'star') }
 }
+
+/** "effective 102" for a skill with stars, whose level alone undersells it; '' otherwise. */
+export const effectiveText = (skill) => (skill.stars ? `effective ${skill.effectiveLevel}` : '')
 
 /** "Lv 27", or "Lv 3 · effective 102" once a skill has stars. */
 export function skillLevelText(skill) {
@@ -489,6 +513,7 @@ export function prestigeQuestion(skill) {
 export const SKILLS = {
   world: 'World',
   worldLevel: (level) => `World level ${level}`,
+  worldLevelName: 'World level',
   worldNote: 'The mean of the five work skills. Monsters and prices follow it.',
   attackSpeed: (speed) => `Attack speed ${speed}`,
   work: 'Work skills',
@@ -496,6 +521,8 @@ export const SKILLS = {
   gathering: 'Gathering skills',
   gatheringNote: 'They grow while idle characters gather.',
   progress: (name) => `${name} progress to the next level`,
+  attackSpeedName: 'Attack speed',
+  attackSpeedNote: 'Set by Engineering: how often the party strikes.',
   atCap: 'At the cap',
   prestige: 'Prestige',
   prestigeSkill: (skillId) => `Prestige ${skillLabel(skillId)}`,

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { ICON_GRID, ICON_INKS, ICONS, iconPaths, slotIconId } from './game-icons.js'
+import { ICON_GRID, ICON_INKS, iconColor, ICONS, iconPaths, slotIconId } from './game-icons.js'
 
 const WORK = ['forge', 'lore', 'engineering', 'arcana', 'command']
 const GATHERING = ['mining', 'fishing', 'farming', 'woodcutting', 'hunting', 'runecraft']
@@ -54,4 +54,9 @@ test('an icon becomes one coloured path per ink, and an unknown id draws nothing
   assert.equal(drawn.viewBox, '0 0 10 10')
   assert.deepEqual(drawn.paths.map((path) => path.color), ['#F8D56B', '#C96A42'])
   assert.equal(iconPaths('constructor'), null)
+})
+
+test('an icon gives its main colour to what goes with it', () => {
+  assert.equal(iconColor('forge'), '#F8D56B')
+  assert.equal(iconColor('constructor'), null)
 })
