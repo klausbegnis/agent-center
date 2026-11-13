@@ -372,3 +372,30 @@ test('a snapshot read before the agent finished does not clear its bell', () => 
   store.sync('local', unreadRow(false, 'working'))
   assert.equal(activityOf(store, 'p1'), 'done')
 })
+
+test('an agent keeps the session id its status event names, and a later event without one keeps it', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'working', receivedAt: 1, sessionId: 'session-1' })
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'waiting', receivedAt: 2 })
+  assert.deepEqual(store.sessionLinks(), { p1: 'session-1' })
+})
+
+test('the snapshot can name an agent\'s session too', () => {
+  const { store } = setup()
+  const agent = { paneKey: 'p9', state: 'working', hasLivePty: true, sessionId: 'session-9' }
+  store.sync('local', [{ workspaceId: 'w-base', agents: [agent] }])
+  assert.deepEqual(store.sessionLinks(), { p9: 'session-9' })
+})
+
+test('a session id that is not text is ignored', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-api', paneKey: 'p1', state: 'working', receivedAt: 1, sessionId: 42 })
+  assert.deepEqual(store.sessionLinks(), {})
+})
+
+test('known workspaces are described with their folder, host and room', () => {
+  const { store } = setup()
+  const described = store.describeWorkspaces()
+  const feature = described.find((workspace) => workspace.id === 'w-feature')
+  assert.deepEqual(feature, { id: 'w-feature', path: '/p/base/worktrees/feature', hostId: 'local', roomId: 'local:/p/base' })
+})

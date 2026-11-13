@@ -130,6 +130,8 @@ export async function readHost(cli, environment = null) {
         parentPaneKey: agent.parentPaneKey ?? null,
         state: agent.state,
         agentType: agent.agentType ?? null,
+        // Not documented for `worktree ps`; kept when present so the game can link the session.
+        sessionId: textOrNull(agent.sessionId),
         conversationName: textOrNull(agent.conversationName),
         taskTitle: textOrNull(agent.taskTitle),
         displayName: textOrNull(agent.displayName),
