@@ -104,6 +104,7 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
     foeTagNode.hidden = !tag
     foeInfo.classList.toggle('ac-game-foe-boss', fight.isBoss)
     foeInfo.classList.toggle('ac-game-foe-elite', fight.isElite && !fight.isBoss)
+    foeInfo.dataset.rank = fight.rank ?? ''
     healthRow.hidden = !fight.monster
     foeInfo.classList.toggle('ac-game-foe-none', !fight.monster)
     if (fight.monster) {

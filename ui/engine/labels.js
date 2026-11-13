@@ -1,4 +1,5 @@
 // Every piece of text the engine shows. Kept in one place so wording stays consistent.
+import { monsterRank } from './monster-rank.js'
 import { RANDOM_THEME } from './room-themes.js'
 
 export const ACTIVITY_LABEL = {
@@ -259,19 +260,37 @@ export function waveKillsLabel({ wave, waveKills, killsToPass }) {
   }
 }
 
-/** The tag a monster wears when it is not a common one: "Boss", "Elite · Thorny", or null. */
-export function monsterTag(monster) {
-  if (!monster) return null
-  if (monster.kind === 'boss') return MONSTER_KIND_LABEL.boss
-  if (monster.affix) return `Elite · ${labelOf(AFFIX_LABEL, monster.affix)}`
-  return null
+/** The word for each rank above a normal monster. */
+const RANK_LABEL = {
+  veteran: 'Veteran',
+  elite: 'Elite',
+  champion: 'Champion',
+  boss: 'Boss',
+  legendary: 'Legendary'
 }
 
-/** The word a monster in a room wears over its health bar: "Boss", its affix, or null. */
+/** The rank word with the affix after it when there is one: "Champion · Thorny". */
+function rankWithAffix(monster, rank) {
+  const word = RANK_LABEL[rank]
+  return monster.affix ? `${word} · ${labelOf(AFFIX_LABEL, monster.affix)}` : word
+}
+
+/** The tag a monster wears above a normal one: "Veteran", "Elite · Thorny", "Boss", or null. */
+export function monsterTag(monster) {
+  const rank = monsterRank(monster)
+  if (!monster || rank === 'normal') return null
+  return rankWithAffix(monster, rank)
+}
+
+/**
+ * The word a monster in a room wears over its health bar: its rank, or for an elite its affix
+ * alone (the glow already says elite), or null for a normal monster.
+ */
 export function foeTag(monster) {
-  if (!monster) return null
-  if (monster.kind === 'boss') return MONSTER_KIND_LABEL.boss
-  return monster.affix ? labelOf(AFFIX_LABEL, monster.affix) : null
+  const rank = monsterRank(monster)
+  if (!monster || rank === 'normal') return null
+  if (rank === 'elite') return labelOf(AFFIX_LABEL, monster.affix)
+  return rankWithAffix(monster, rank)
 }
 
 /** What a monster in a room says under its health bar when its fight does not go on. */
@@ -296,13 +315,12 @@ export const levelShort = (level) => `Lv ${level}`
 /** What a screen reader says for a monster: "Iron-Bound Practice Dummy, level 15, armored, 12% health". */
 export function monsterDescription(monster, healthText) {
   const parts = [monster.name, `level ${monster.level}`]
-  if (monster.kind === 'boss') parts.push('boss')
-  else if (monster.kind && monster.kind !== 'common') {
+  if (monster.kind && monster.kind !== 'common' && monster.kind !== 'boss') {
     parts.push(labelOf(MONSTER_KIND_LABEL, monster.kind).toLowerCase())
   }
-  if (monster.affix && monster.kind !== 'boss') {
-    parts.push(`elite, ${labelOf(AFFIX_LABEL, monster.affix).toLowerCase()}`)
-  }
+  const rank = monsterRank(monster)
+  if (rank !== 'normal') parts.push(RANK_LABEL[rank].toLowerCase())
+  if (monster.affix) parts.push(labelOf(AFFIX_LABEL, monster.affix).toLowerCase())
   parts.push(`${healthText} health`)
   return parts.join(', ')
 }

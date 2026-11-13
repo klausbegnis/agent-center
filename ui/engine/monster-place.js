@@ -2,9 +2,13 @@
 // `monster` station; otherwise the spot is the free stretch of floor with the most room around
 // it, away from the entrance and from every station. Never touches the DOM.
 import { bandHeight } from './game-band.js'
+import { monsterRank } from './monster-rank.js'
 
-/** How tall a monster is drawn, in character heights: a boss is clearly larger than the rest. */
-const MONSTER_HEIGHT = { common: 1.5, elite: 1.6, boss: 1.9 }
+/**
+ * How tall a monster is drawn, in character heights, by rank: each step of the ladder a little
+ * larger, a boss clearly larger than the rest. Normal monsters keep the size they always had.
+ */
+const MONSTER_HEIGHT = { normal: 1.5, veteran: 1.55, elite: 1.6, champion: 1.7, boss: 1.9, legendary: 2 }
 
 /** Room kept above a character's head for its bubble, in character heights. */
 const BUBBLE_ROOM = 0.45
@@ -27,11 +31,7 @@ const SIDE_MARGIN = 0.02
  * @typedef {{ left: number, right: number, top: number, bottom: number }} Box
  */
 
-/** The size class of a monster: `boss`, `elite` for one with an affix, otherwise `common`. */
-export function monsterRank(monster) {
-  if (monster?.kind === 'boss') return 'boss'
-  return monster?.affix ? 'elite' : 'common'
-}
+export { monsterRank }
 
 /**
  * How tall, and as wide, a monster is drawn, in the theme's room units.

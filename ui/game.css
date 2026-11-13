@@ -192,6 +192,10 @@
 }
 .ac-game-foe-tag[hidden] { display: none; }
 .ac-game-foe-boss .ac-game-foe-tag { background: var(--ac-game-bad); }
+.ac-game-foe-info[data-rank='veteran'] .ac-game-foe-tag { background: #e6e0cf; }
+.ac-game-foe-info[data-rank='legendary'] .ac-game-foe-tag {
+  background: linear-gradient(90deg, var(--ac-game-bad), var(--ac-game-gold));
+}
 .ac-game-foe-row {
   display: flex;
   align-items: center;
@@ -1027,7 +1031,11 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   white-space: nowrap;
 }
 .ac-foe-tag { background: var(--ac-game-gold); color: #171a21; }
+.ac-foe-plate[data-rank='veteran'] .ac-foe-tag { background: #e6e0cf; }
 .ac-foe-plate[data-rank='boss'] .ac-foe-tag { background: var(--ac-game-bad); }
+.ac-foe-plate[data-rank='legendary'] .ac-foe-tag {
+  background: linear-gradient(90deg, var(--ac-game-bad), var(--ac-game-gold));
+}
 .ac-foe-state { background: var(--ac-label-shadow); color: var(--ac-label); font-weight: 600; }
 .ac-foe-tag[hidden],
 .ac-foe-state[hidden] { display: none; }
@@ -1061,33 +1069,73 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   shape-rendering: crispEdges;
   filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.5));
 }
-/* An elite stands in a pulsing golden glow, a boss in a red one; the tag over the health bar says
-   which in words. An enraged elite's glow is red and quick. */
+/* The rank ladder reads by its glow, the tag over the health bar says it in words:
+   veteran   a faint pale outline, still;
+   elite     an outline and a slow pulsing halo in the colour of its affix;
+   champion  a double outline (affix colour inside, gold outside) and a larger, quicker halo;
+   boss      a deep red outline and a slow red halo;
+   legendary a gold outline, the affix's glow and a turning ring of light.
+   An affix tints the glow and never repaints the monster. Without motion the glows stay. */
+.ac-foe { --ac-foe-glow: #f2d36b; --ac-foe-gold: #ffd75e; --ac-foe-blood: #e0362c; }
+.ac-foe[data-affix='regenerating'] { --ac-foe-glow: #6fe07a; }
+.ac-foe[data-affix='enraged'] { --ac-foe-glow: #ff5a4a; }
+.ac-foe[data-affix='thorny'] { --ac-foe-glow: #c8d84a; }
+.ac-foe[data-affix='swift'] { --ac-foe-glow: #5ad8f5; }
+.ac-foe[data-affix='armored'] { --ac-foe-glow: #c9d3e3; }
+.ac-foe[data-affix='ethereal'] { --ac-foe-glow: #b98bff; }
 .ac-foe-aura {
   position: absolute;
   inset: -14%;
   display: none;
   border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-game-gold) 60%, transparent), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 60%, transparent), transparent);
   pointer-events: none;
 }
+.ac-foe[data-rank='veteran'] .ac-monster-art {
+  filter: drop-shadow(0 0 0.6px #f6f1e2) drop-shadow(0 0 1.5px rgb(246 241 226 / 0.75));
+}
 .ac-foe[data-rank='elite'] .ac-foe-aura { display: block; animation: ac-foe-aura 1.8s ease-in-out infinite; }
-/* The glow round an elite's outline stays when nothing moves. */
 .ac-foe[data-rank='elite'] .ac-monster-art {
-  filter: drop-shadow(0 0 1px var(--ac-game-gold)) drop-shadow(0 0 3px var(--ac-game-gold));
+  filter: drop-shadow(0 0 1px var(--ac-foe-glow)) drop-shadow(0 0 3px var(--ac-foe-glow));
+}
+.ac-foe[data-rank='champion'] .ac-foe-aura {
+  display: block;
+  inset: -24%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 70%, transparent) 45%,
+    color-mix(in srgb, var(--ac-foe-gold) 45%, transparent) 70%, transparent);
+  animation: ac-foe-aura 1.1s ease-in-out infinite;
+}
+.ac-foe[data-rank='champion'] .ac-monster-art {
+  filter: drop-shadow(1px 0 0 var(--ac-foe-glow)) drop-shadow(-1px 0 0 var(--ac-foe-glow))
+    drop-shadow(0 1px 0 var(--ac-foe-glow)) drop-shadow(0 -1px 0 var(--ac-foe-glow))
+    drop-shadow(0 0 1.5px var(--ac-foe-gold)) drop-shadow(0 0 3px var(--ac-foe-gold));
 }
 .ac-foe[data-rank='boss'] .ac-monster-art {
-  filter: drop-shadow(0 0 1px var(--ac-game-bad)) drop-shadow(0 0 3px var(--ac-game-bad));
+  filter: drop-shadow(0 0 1px var(--ac-foe-blood)) drop-shadow(0 0 4px #9c1a22);
 }
 .ac-foe[data-rank='boss'] .ac-foe-aura {
   display: block;
-  inset: -10%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-game-bad) 55%, transparent), transparent);
+  inset: -12%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-blood) 55%, transparent), transparent);
+  animation: ac-foe-aura 2.6s ease-in-out infinite;
 }
-.ac-foe[data-affix='enraged'] .ac-foe-aura {
-  background: radial-gradient(closest-side, color-mix(in srgb, #ff5a4a 70%, transparent), transparent);
-  animation-duration: 0.7s;
+.ac-foe[data-rank='legendary'] .ac-monster-art {
+  filter: drop-shadow(1px 0 0 var(--ac-foe-gold)) drop-shadow(-1px 0 0 var(--ac-foe-gold))
+    drop-shadow(0 1px 0 var(--ac-foe-gold)) drop-shadow(0 -1px 0 var(--ac-foe-gold))
+    drop-shadow(0 0 4px var(--ac-foe-glow));
 }
+.ac-foe[data-rank='legendary'] .ac-foe-aura {
+  display: block;
+  inset: -26%;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 65%, transparent) 40%, transparent 72%),
+    repeating-conic-gradient(color-mix(in srgb, var(--ac-foe-gold) 55%, transparent) 0deg 10deg, transparent 10deg 30deg);
+  -webkit-mask: radial-gradient(closest-side, #000 60%, transparent);
+  mask: radial-gradient(closest-side, #000 60%, transparent);
+  animation: ac-foe-spin 7s linear infinite;
+}
+.ac-foe[data-affix='enraged'] .ac-foe-aura { animation-duration: 0.7s; }
+.ac-foe[data-rank='legendary'][data-affix='enraged'] .ac-foe-aura { animation-duration: 3s; }
 .ac-foe-name {
   position: absolute;
   top: 100%;
@@ -1215,6 +1263,7 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 }
 @keyframes ac-foe-breathe { 50% { transform: translateY(-2%) scaleY(1.02); } }
 @keyframes ac-foe-aura { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes ac-foe-spin { to { transform: rotate(1turn); } }
 @keyframes ac-foe-arrive {
   0% { opacity: 0; transform: translate(-10%, -100%); }
   100% { opacity: 1; transform: translate(-50%, -100%); }

@@ -1,6 +1,7 @@
 // What the game part of the view state means for the screen: whether the game shows, which tab
 // is open, and the facts each part draws, picked out of the state. Never touches the DOM.
 import { clampShare } from './game-format.js'
+import { monsterRank } from './monster-rank.js'
 
 /** The game's tabs, in the order they are shown. */
 export const GAME_TABS = /** @type {const} */ (['rooms', 'arsenal', 'skills'])
@@ -67,7 +68,7 @@ export function partyStatusOf(room) {
  * @param {string} roomId
  * @returns {null | { wave: number, waveKills: number, killsToPass: number,
  *   party: ReturnType<typeof partyStatusOf>, stamina: number, monster: object | null,
- *   health: number, isElite: boolean, isBoss: boolean }}
+ *   health: number, rank: string | null, isElite: boolean, isBoss: boolean }}
  */
 export function roomFight(game, roomId) {
   const room = game?.rooms?.[roomId]
@@ -83,6 +84,7 @@ export function roomFight(game, roomId) {
     health: clampShare(monster?.healthShare),
     hp: Number.isFinite(monster?.hp) ? monster.hp : null,
     maxHp: Number.isFinite(monster?.maxHp) ? monster.maxHp : null,
+    rank: monster ? monsterRank(monster) : null,
     isElite: Boolean(monster?.affix),
     isBoss: monster?.kind === 'boss'
   }
@@ -152,9 +154,9 @@ export function characterBadge(character) {
 const HEX_COLOUR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 const DEFAULT_ACCENT = '#8a8f99'
 
-/** The accent colour to draw a monster with. */
+/** The accent colour to draw a monster with: a hand-made one's accent, a generated one's skin. */
 export function monsterAccent(monster) {
-  const accent = monster?.sprite?.accent
+  const accent = monster?.sprite?.accent ?? monster?.look?.colours?.skin
   return typeof accent === 'string' && HEX_COLOUR.test(accent) ? accent : DEFAULT_ACCENT
 }
 

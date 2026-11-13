@@ -37,6 +37,18 @@ test('a boss is drawn larger than an elite, and an elite larger than a common mo
   assert.equal(monsterRank({ kind: 'boss', affix: null }), 'boss')
 })
 
+test('each step of the rank ladder is drawn a little larger than the one below it', () => {
+  const ladder = ['normal', 'veteran', 'elite', 'champion', 'boss', 'legendary']
+  const heights = ladder.map((rank) => monsterHeight(theme({}), { kind: 'common', rank }))
+  for (let index = 1; index < heights.length; index += 1) assert.ok(heights[index] > heights[index - 1])
+})
+
+test('a monster sent before ranks gets its rank from its kind and affix', () => {
+  assert.equal(monsterRank({ kind: 'common', affix: 'swift' }), 'elite')
+  assert.equal(monsterRank({ kind: 'armored', affix: null }), 'normal')
+  assert.equal(monsterRank({ kind: 'common', rank: 'champion', affix: 'swift' }), 'champion')
+})
+
 test('boxes that overlap have a negative gap, and boxes apart a positive one', () => {
   const box = { left: 0, right: 10, top: 0, bottom: 10 }
   assert.equal(boxGap(box, { left: 15, right: 20, top: 0, bottom: 10 }), 5)

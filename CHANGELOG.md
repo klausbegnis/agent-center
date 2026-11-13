@@ -45,7 +45,10 @@ All notable changes to this project are recorded here. The format follows
 - Monsters climb a rank ladder: normal, veteran, elite, champion, boss and legendary (a boss
   with an affix). Rarer ranks have more health and pay more per minute; the odds and factors are
   in `MONSTER_RANKS` and keep kills and rewards per hour where they were. Kill events and the
-  view state's monster carry the `rank`; monsters saved before keep working.
+  view state's monster carry the `rank`; monsters saved before keep working. In a room each rank
+  reads by its glow (a faint outline, a pulsing halo in the affix's colour, a double outline, a
+  red aura, a turning ring of light) and its word over the health bar; the glows stay still
+  under reduced motion.
 - Monsters come from 20 races (orc, goblin, troll, ogre, human, skeleton, zombie, vampire,
   werewolf, demon, lizard, minotaur, dragon, giant spider, giant insect, slime, elemental, golem,
   ghost, tree warden), each in thousands of looks put together from parts, outfits, gear and

@@ -108,18 +108,31 @@ test('kills towards the next wave are short on screen and spelled out for screen
   assert.equal(waveKillsLabel({ wave: 3, waveKills: 0, killsToPass: 1 }).full, '0 of 1 kill to pass wave 3')
 })
 
-test('only a boss or an elite wears a tag, and an elite names its affix', async () => {
+test('every rank above normal wears a tag, and an affixed one names its affix', async () => {
   const { monsterTag } = await import('./labels.js')
   assert.equal(monsterTag({ kind: 'common', affix: null }), null)
   assert.equal(monsterTag({ kind: 'boss', affix: null }), 'Boss')
   assert.equal(monsterTag({ kind: 'armored', affix: 'thorny' }), 'Elite · Thorny')
+  assert.equal(monsterTag({ kind: 'common', rank: 'veteran', affix: null }), 'Veteran')
+  assert.equal(monsterTag({ kind: 'common', rank: 'champion', affix: 'swift' }), 'Champion · Swift')
+  assert.equal(monsterTag({ kind: 'boss', rank: 'legendary', affix: 'enraged' }), 'Legendary · Enraged')
 })
 
-test('a monster is described with its level, kind and health', async () => {
+test('over its health bar an elite wears its affix, the other ranks their word', async () => {
+  const { foeTag } = await import('./labels.js')
+  assert.equal(foeTag({ kind: 'common', rank: 'normal', affix: null }), null)
+  assert.equal(foeTag({ kind: 'common', rank: 'elite', affix: 'thorny' }), 'Thorny')
+  assert.equal(foeTag({ kind: 'common', rank: 'veteran', affix: null }), 'Veteran')
+  assert.equal(foeTag({ kind: 'boss', rank: 'boss', affix: null }), 'Boss')
+})
+
+test('a monster is described with its level, kind, rank, affix and health', async () => {
   const { monsterDescription } = await import('./labels.js')
   const monster = { name: 'Practice Dummy', kind: 'armored', affix: 'swift', level: 15 }
   const expected = 'Practice Dummy, level 15, armored, elite, swift, 12% health'
   assert.equal(monsterDescription(monster, '12%'), expected)
+  const boss = { name: 'Morvash, the Bog Tyrant', kind: 'boss', rank: 'legendary', affix: 'thorny', level: 30 }
+  assert.equal(monsterDescription(boss, '80%'), 'Morvash, the Bog Tyrant, level 30, legendary, thorny, 80% health')
 })
 
 test('a character\'s mark adds its level and class, or that it is a guest', async () => {
