@@ -1,9 +1,10 @@
 <div align="center">
 
-# Agent Center & Auto-Battler
+# Agent Center: Tavern & Auto-Battler
 
-**A live room for every project in [Orca](https://github.com/stablyai/orca), where your coding
-agents are characters acting out their work, and an idle auto-battler that runs on what they do.**
+**A tavern for every project in [Orca](https://github.com/stablyai/orca), where your coding
+agents hang out as characters acting out their work, and an idle auto-battler that runs on what
+they do.**
 
 ![Six project rooms in game mode: each room's party of agents fights its monster](docs/screenshots/game-gallery.png)
 
@@ -207,7 +208,7 @@ names and change the themes. [SECURITY.md](SECURITY.md) lists everything the pag
 
 ## Install
 
-Find **Agent Center & Auto-Battler** in Orca's plugin directory, or open its page:
+Find **Agent Center** in Orca's plugin directory, or open its page:
 <https://orca.dev/plugins/klausbegnis/agent-center>.
 
 To run it from a checkout instead:

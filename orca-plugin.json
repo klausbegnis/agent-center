@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
   "manifestVersion": 2,
   "id": "agent-center",
-  "name": "Agent Center & Auto-Battler",
+  "name": "Agent Center: Tavern & Auto-Battler",
   "version": "0.1.0",
-  "description": "A live room per project where your agents are characters acting out their work. Just watch, or turn on the idle auto-battler: their work becomes levels, loot and fights against 20 monster races and 55 named bosses.",
+  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: their work becomes levels, loot and fights against 20 monster races and 55 named bosses.",
   "license": "MIT",
   "author": {
     "name": "klausbegnis",
