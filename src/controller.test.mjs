@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createController } from './controller.mjs'
+import { createUnavailableGame } from './game-mode.mjs'
 
-function setup() {
+function setup({ game = createUnavailableGame('off') } = {}) {
   const saved = []
+  let changes = 0
   const controller = createController({
     store: { snapshot: () => ({ rooms: [{ id: 'local:/work/rumble-banana', agents: [] }] }) },
     preferences: {
@@ -15,9 +17,10 @@ function setup() {
     listThemes: () => [],
     externalView: () => null,
     openWorkspace: async () => {},
-    onChange: () => {}
+    game,
+    onChange: () => (changes += 1)
   })
-  return { controller, saved }
+  return { controller, saved, changes: () => changes }
 }
 
 test('a setting is saved for a room that exists', async () => {
@@ -39,4 +42,58 @@ test('a setting can be cleared for a room that is gone', async () => {
   await controller.setRoomTheme('gone', null)
   await controller.setRoomHidden('gone', false)
   assert.equal(saved.length, 2)
+})
+
+/** A game that records the actions it is asked for and changes something every time. */
+function recordingGame() {
+  const calls = []
+  const record = (name) => async (input) => {
+    calls.push([name, input])
+    return { changed: true }
+  }
+  const game = {
+    getView: () => ({ status: 'running' }),
+    prestigeSkill: record('prestige'),
+    upgradeItem: record('upgrade'),
+    buyGroupUpgrade: record('buy'),
+    assignRoom: record('assign'),
+    resetWorld: record('reset'),
+    setAutoSpend: record('autoSpend'),
+    setKeepTitles: record('keepTitles')
+  }
+  return { game, calls }
+}
+
+test('the view state carries the game part', () => {
+  const { controller } = setup()
+  assert.deepEqual(controller.getState().game, { status: 'off', autoSpend: false, keepTitles: false })
+})
+
+test('game actions reach the game with their fields and tell the surfaces', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  await controller.gamePrestige('main', 'forge')
+  await controller.gameAssignRoom('local:/work/rumble-banana', null)
+  await controller.gameSetAutoSpend(true)
+  assert.deepEqual(calls, [
+    ['prestige', { worldId: 'main', skillId: 'forge' }],
+    ['assign', { roomId: 'local:/work/rumble-banana', worldId: null }],
+    ['autoSpend', true]
+  ])
+  assert.equal(changes(), 3)
+})
+
+test('game actions with values of the wrong kind are refused before they reach the game', async () => {
+  const { game, calls } = recordingGame()
+  const { controller } = setup({ game })
+  await assert.rejects(controller.gamePrestige(undefined, 'forge'), /invalid world/)
+  await assert.rejects(controller.gameUpgradeItem('room', { id: 1 }), /invalid item/)
+  await assert.rejects(controller.gameSetAutoSpend('yes'), /invalid auto-spend/)
+  await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
+  assert.equal(calls.length, 0)
+})
+
+test('a game that cannot run refuses its actions', async () => {
+  const { controller } = setup()
+  await assert.rejects(controller.gameBuyUpgrade('main', 'campfire'), /not available/)
 })

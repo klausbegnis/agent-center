@@ -110,7 +110,15 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
       if ('theme' in input) await controller.setRoomTheme(String(input.id), input.theme)
       else await controller.setRoomHidden(String(input.id), input.hidden !== false)
       return { ok: true }
-    }
+    },
+    // The game. The controller checks every value; these only pick the fields out.
+    '/api/game/prestige': (input) => controller.gamePrestige(input.worldId, input.skillId),
+    '/api/game/upgrade-item': (input) => controller.gameUpgradeItem(input.roomId, input.itemId),
+    '/api/game/buy-upgrade': (input) => controller.gameBuyUpgrade(input.worldId, input.upgradeId),
+    '/api/game/assign-room': (input) => controller.gameAssignRoom(input.roomId, input.worldId ?? null),
+    '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
+    '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
+    '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on)
   }
 
   async function handlePost(pathname, request, response) {

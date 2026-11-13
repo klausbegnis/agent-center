@@ -1,8 +1,9 @@
 # Game mode: engine
 
 An optional layer on top of the rooms. The tokens a session spends become progress. This page
-is the contract for the engine in `src/game/`. The engine is pure: no I/O, no timers, no Orca
-API, no DOM. Nothing here is wired to the worker or the UI yet.
+is the contract for the engine in `src/game/`, for the bridge that feeds it from the worker
+("The bridge") and for what a UI receives ("View state"). The engine is pure: no I/O, no
+timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
@@ -294,6 +295,184 @@ Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
 `stamina` is a share of the party's pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
 a character's experience by work skill, for the retiree's main skill.
+
+## The bridge
+
+`src/game-mode.mjs` connects the engine to the plugin. The rules it follows are pure modules in
+`src/domain/` (`game-tokens.mjs`, `game-sessions.mjs`, `game-view.mjs`); the Orca calls are in
+`src/orca/session-history.mjs`; the save is `src/game-save.mjs`; the actions are
+`src/game-actions.mjs`.
+
+### When it runs
+
+The game runs only when all of these hold; otherwise the plugin behaves as without it and the
+view state's `game.status` says why:
+
+| `status` | Meaning |
+|---|---|
+| `off` | The `gameMode` setting is off (the default). |
+| `unsupported` | This Orca does not offer `agent.listSessions` to the worker (`orca.host.has`). |
+| `needs-permission` | The `history:read` capability is not granted (`orca.grantedCapabilities`), or a read was refused with `capability_denied` or `consent_required`. |
+| `newer-save` | The stored save was written by a newer plugin; it is left untouched. |
+| `running` | Playing. |
+
+The settings are read every round, so turning `gameMode` or `gameKeepTitles` on or off takes
+effect within one round, without a restart.
+
+### A round
+
+Every 30 seconds (`GAME_ROUND_MS` in `src/worker.mjs`, twice the snapshot interval):
+
+1. Read `agent.listSessions` (the 200 newest sessions) and `workspace.list`.
+2. Turn each session's `totalTokens` into the tokens spent since its baseline (below).
+3. Place each session in a room: its `workspaceId` is looked up among the workspaces the store
+   knows, then by folder through `workspace.list` when the history names the workspace in
+   another form of id. The room's id is the engine's `projectId`; the room's theme (its own, or
+   the default; none under Random, where the UI picks) is the engine's `themeId`.
+4. Match sessions to the agents on screen (below) and build the readings.
+5. `advance` the engine from the last round to now with the sessions' states, then
+   `applyTokens` for the tokens read, then `closeSession` for the sessions that are over, then
+   `autoSpend` when it is on.
+6. Keep the baselines and the time of this reading with the save.
+
+Why advance before counting: the tokens read now were spent during the interval that just
+passed, while the party fought with the power it had at its start. Counting first would let a
+character born from those tokens, or a level they paid for, fight time that was already over.
+A new session's character therefore joins the fight from the next round.
+
+One round moves the engine at most `MAX_ROUND_GAP_MS` (five minutes): a round that comes late
+does not fight through time nobody saw with the states read now. The first round after the
+worker starts only counts tokens; it does not fight the time the worker was down.
+
+### Tokens, baselines and restarts
+
+- A session read for the first time sets its baseline to its current total and earns nothing,
+  so turning the game on never pays out a session's history. The exception is a session that
+  started after the last reading (`createdAt` later than the stored `watchedUntil`): it is new,
+  and everything it spent counts.
+- A known session earns `total - baseline`, at most `MAX_TOKENS_PER_MINUTE` (2,000,000) per
+  minute since the baseline was read, that time itself counted for at most `MAX_CATCH_UP_MS`
+  (eight hours, like the engine's fight time). The baseline then moves to the total.
+- A total that goes down (a session compacted or cleared) moves the baseline and earns nothing.
+- Baselines and `watchedUntil` are saved with the game. After a restart a known session earns
+  what it spent while the worker was down, once, within the bound above; the same tokens are
+  never counted twice because the baseline moved when they were counted.
+- Turning the game off forgets the baselines and `watchedUntil`: when it is turned on again,
+  the time it was off is not paid.
+- At most `BASELINES_KEPT` (1000) baselines are kept, the sessions just read and the newest
+  others.
+
+### Matching a session to a character
+
+A session's agent on screen gives its state (`working`, `waiting`, `blocked`; a `done` agent
+is `idle`), its activity (write, read, run, think, delegate; any other counts as think) and
+its pace (tokens per minute over the round). The match is tried in this order, among agents
+on this computer only:
+
+1. the session id an `agent.status.changed` event (`sessionId`, host API 1.8) or the snapshot
+   gave the agent;
+2. the conversation title, in the same workspace, when exactly one session has it (a running
+   one first);
+3. the only agent of the workspace, when exactly one running session there is left.
+
+A running session with no agent still counts: its tokens count as `think`, it works while it
+spends and is idle otherwise, and `game.debug.unmatched` counts it. A session with no room is
+not counted, and `game.debug.unplaced` counts it. Agents on paired machines have no history:
+they fight in their room as guests at a normal pace while working, and leave nothing behind. A
+room whose only agents are guests does not join the game: guests never create a project.
+
+### Closing
+
+A character's session is over when it is listed as not running and no agent on screen runs it,
+or when it is gone from a history that was not truncated (from a truncated one, after a day
+without tokens). Its character retires with the session's title, which the engine keeps only
+while `gameKeepTitles` is on. Turning `gameKeepTitles` off calls `setKeepTitles(false)`, which
+forgets every title kept.
+
+### Saving
+
+One storage key, `game`, holds `{ version, save, bridge }`: the engine's save and
+`{ baselines, watchedUntil, autoSpend }`. It is loaded once with the engine's `migrate`, written
+at most every 30 seconds after a change and when the plugin stops. It is never written when the
+stored value comes from a newer plugin (a newer wrapper `version` or a newer save `version`), or
+when it could not be read at all; then the game plays without saving. A failed write is logged
+once and tried again. Orca keeps at most 256 KiB under one key: a larger value first loses the
+baselines of old sessions, then folds old retiree records into each room's retiree count (the
+bonus is computed from that count, so it does not change); a value that still does not fit is
+not written, and the older stored one stays.
+
+### Actions
+
+Through the controller, the panel requests `game.*` and the HTTP routes `/api/game/*`:
+
+| Panel request | HTTP route | Input |
+|---|---|---|
+| `game.prestige` | `/api/game/prestige` | `{ worldId, skillId }` |
+| `game.upgradeItem` | `/api/game/upgrade-item` | `{ roomId, itemId }` |
+| `game.buyUpgrade` | `/api/game/buy-upgrade` | `{ worldId, upgradeId }` |
+| `game.assignRoom` | `/api/game/assign-room` | `{ roomId, worldId }`, `worldId` null for out of the game |
+| `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
+| `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
+| `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
+
+Each answers `{ changed }`. Ids must name something that exists: a world of the save, a room on
+screen or in the save, an item of that room's chest, a skill, a group upgrade. A new world is a
+kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
+refused with an error, and nothing is stored. Every action but `keepTitles` needs the game to be
+running; `keepTitles` writes the setting, and the save follows.
+
+## View state
+
+`controller.getState().game`. While the game is not running it is only
+`{ status, autoSpend, keepTitles }`. While it runs:
+
+```
+{
+  status: 'running', autoSpend: false, keepTitles: false,
+  worlds: [{
+    id: 'main', level: 11, attackSpeed: 1.12,
+    workSkills: [{ id: 'forge', level, stars, effectiveLevel, progress, canPrestige }, ...],
+    gatheringSkills: [...same shape],
+    materials: { bars: 98, ... },
+    upgrades: [{ id: 'campfire', level, cost: { fish: 520, crops: 520 }, affordable, effect }],
+    roomIds: ['local:/work/sneaky-pancake']
+  }],
+  rooms: {
+    'local:/work/sneaky-pancake': {
+      worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
+      monster: { id, name, kind, affix, level, healthShare: 0.12, sprite: { body, accent } },
+      party: 'fighting',            // fighting | resting | paused | idle
+      stamina: 0.8,                 // share of the party's pool
+      chest: [{ id, name, slot, damageType, tier, level, power, heldBy, upgradeCost, affordable }],
+      chestSize: 6,
+      retirees: [{ nameId, class, level, mainSkill, retiredAt, title }],
+      retiredCount: 9, bonus: 0.045
+    },
+    'build-box:/srv/turbo-waffle': { worldId: 'main', joined: false }
+  },
+  characters: {
+    'pane-13': { sessionId, link: 'title', guest: false, class: 'physical', level: 6,
+      levelProgress: 0.4, attributes: {...}, equipment: { weapon: { id, name, tier, level },
+      outfit, tool }, trade: 'mining', state: 'working' },
+    'pane-5': { sessionId: null, link: 'guest', guest: true, level: 1 }
+  },
+  recent: [{ id: 570, at, type: 'level', roomId, sessionId, agentId, level: 9 }],
+  debug: { readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
+}
+```
+
+- `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
+  out of the game, and `joined` is false until its first tokens.
+- `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
+  right character. `link` is how it was matched: `session`, `title`, `only` or `guest`.
+- `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
+  kind, affix, ticks, rested, materials, item), `drop` (item), `level` (agentId, level), `retire`
+  (sessionId, nameId, level) and `purchase` (worldId, kind and what was bought).
+- Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
+  chest shows the items in use and the strongest free ones, 12 at most (`chestSize` is the
+  whole count); retirees show the newest 8 (`retiredCount` counts all).
+- The game part is rebuilt only after a round or an action; between them every publish sends
+  the same object.
 
 ## Simulation
 

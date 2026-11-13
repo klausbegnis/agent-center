@@ -4,6 +4,8 @@ paths:
   - "**/*.test.mjs"
   - "**/*.test.js"
   - "src/domain/**"
+  - "src/game/**"
+  - "src/game-*.mjs"
   - "ui/engine/**"
   - "scripts/check.mjs"
   - "scripts/theme-contract.mjs"
@@ -16,6 +18,9 @@ paths:
 - Every module in `src/domain/` and every computing module in `ui/engine/` (`hash`, `variants`,
   `room-themes`, `stations`, `gallery`, `familiars`, `emotes`, `labels`). A change to their
   behaviour comes with a test that fails without it.
+- Every rule module of `src/game/`, and the game bridge: `src/game-mode.mjs`, `src/game-save.mjs`
+  and `src/game-actions.mjs`, tested with a fake storage and a clock the test moves. A balance
+  change is also judged by `npm run simulate`.
 - A bug fix starts with a test that reproduces the bug.
 - Modules that only do I/O or draw to the DOM are checked by hand in the demo and in Orca; say
   in the pull request what you looked at.

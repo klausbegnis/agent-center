@@ -122,6 +122,20 @@
         "default": 30,
         "minimum": 1,
         "maximum": 1440
+      },
+      {
+        "key": "gameMode",
+        "title": "Game mode",
+        "description": "Turns the tokens your agent sessions spend into progress: levels, monsters to fight, materials and upgrades. Reads token totals and titles from Orca's Agent Session History on this computer; needs the session history permission.",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "gameKeepTitles",
+        "title": "Game mode: keep conversation titles",
+        "description": "Keeps a finished session's conversation title on its retired character. Off: titles are never stored, and turning it off forgets the ones kept.",
+        "type": "boolean",
+        "default": false
       }
     ],
     "statusBarItems": [

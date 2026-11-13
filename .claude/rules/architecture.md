@@ -19,15 +19,22 @@ paths:
 ## Dependency direction
 
 ```
-worker.mjs ──> controller.mjs ──> domain/        (pure, no I/O)
+worker.mjs ──> controller.mjs ──> domain/          (pure, no I/O)
      │              │
-     ├──> orca/     └──> preferences.mjs
-     ├──> server/
-     └──> support/
+     ├──> orca/     ├──> preferences.mjs
+     ├──> server/   └──> game-mode.mjs ──> game/   (pure engine, no I/O)
+     └──> support/            │
+                              ├──> domain/
+                              └──> game-save.mjs
 ```
 
 - `src/domain/` imports nothing outside itself. No `node:` modules, no Orca API, no timers. It
   is where behaviour lives, and it is fully unit tested.
+- `src/game/` is the game engine. It imports nothing outside itself either, and on top of that
+  never reads the clock (`Date.now()`) or draws a random number (`Math.random()`): the caller
+  passes the time, and chance is a hash. Only the game bridge (`src/game-*.mjs`), `src/worker.mjs`
+  (for the save's version), the demo and the scripts import it. `src/domain/` does not: the
+  bridge's pure rules work on plain data.
 - `src/orca/` is the only place that knows Orca's CLI and host API shapes.
 - `src/server/` is the only place that knows HTTP.
 - `src/worker.mjs` and `ui/engine/stage.js` are composition roots: they create parts and connect

@@ -16,6 +16,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createController } from '../src/controller.mjs'
 import { createAgentStore } from '../src/domain/agent-store.mjs'
+import { createUnavailableGame } from '../src/game-mode.mjs'
 import { RANDOM_THEME } from '../src/preferences.mjs'
 import { startServer } from '../src/server/http-server.mjs'
 import { listThemes, TEMPLATE_THEME } from '../src/themes.mjs'
@@ -147,6 +148,7 @@ const preferences = {
 
 let server = null
 const publish = () => server?.broadcast(controller.getState())
+const game = createUnavailableGame('off')
 const controller = createController({
   store,
   preferences,
@@ -154,6 +156,7 @@ const controller = createController({
   listThemes: demoThemes,
   externalView: () => server,
   openWorkspace: async () => {},
+  game,
   onChange: publish
 })
 

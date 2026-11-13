@@ -51,7 +51,33 @@ Knowing this helps judge whether something is a vulnerability.
 - Whoever can reach that page can also keep it busy, for example by holding many connections
   open, so that it stops answering for a while. That is not treated as a vulnerability: it only
   affects the page, never Orca or the agents.
-- It stores only its own preferences: the chosen themes and the hidden rooms.
+- It stores its own preferences (the chosen themes and the hidden rooms) and, with game mode
+  on, the game's save. See below.
+
+## Game mode
+
+Game mode is off by default. With it on, and only when Orca offers the Agent Session History to
+plugins and you granted the session history permission (`history:read`), the worker calls
+`agent.listSessions` every 30 seconds. This version of the plugin does not ask for that
+permission yet, so the call is never made until it does.
+
+- **What it reads:** for the 200 newest sessions, each session's id, token total, workspace id,
+  creation time, whether it runs, and its title. It never reads a conversation; Orca does not
+  give one. Titles can be the start of a session's first message.
+- **What the permission covers:** every agent session in Orca's history on this computer, not
+  only the projects shown. The game counts only sessions whose workspace is a room on screen,
+  and none in a room you put out of the game (a project with no world); it still reads them.
+- **What it stores**, in the plugin's own storage under the key `game`: the game's progress
+  (worlds, rooms by their id, which contains the project's folder path, characters by session
+  id), and per session its id, its last token total and when it was read. Titles are stored
+  only while **Game mode: keep conversation titles** is on, on the characters of finished
+  sessions; turning that setting off deletes them.
+- **What it shows:** the view state, served on the local page like everything else, gains the
+  game: session ids of the characters on screen, levels, the room's fight, and the stored titles
+  when kept.
+- The local page's API can play the game: prestige, upgrade, move a room to another world, reset
+  a world, turn auto-spend and keeping titles on or off. Like the other settings it is open to
+  whoever can reach the page (see above). Resetting a world cannot be undone.
 
 It does not send anything to the internet, does not type into terminals, does not start
 agents, and does not block or rewrite tool calls.

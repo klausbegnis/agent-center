@@ -47,3 +47,23 @@ paths:
 - All agent logic belongs in `src/domain/agent-store.mjs`, behind events (`status`,
   `toolBefore`, `toolAfter`) and the snapshot (`sync`). The worker never edits agents itself.
 - A new tool name goes in `src/domain/activities.mjs` with a test.
+
+## The game bridge
+
+- `src/game-mode.mjs` is the only place that drives the engine. It gets every Orca call as a
+  function (`readHistory`, `readSettings`, ...), so the demo and the tests run it without Orca.
+  The rules it applies live in `src/domain/game-*.mjs`, with tests; `src/orca/session-history.mjs`
+  is the only module that calls `agent.listSessions`.
+- The game runs only when the `gameMode` setting is on, `agent.listSessions` is offered and
+  `history:read` is granted. In every other case nothing of the game is read or stored beyond
+  forgetting the baselines, and the view state's `game.status` says why.
+- A session seen for the first time earns nothing, a total that goes down earns nothing, and
+  every award is bounded (`src/domain/game-tokens.mjs`). Never pay out history.
+- Keep from a session only what `docs/GAME.md` lists: id, token total, workspace, creation time,
+  whether it runs, and its title, which reaches the save only through the engine and only while
+  `gameKeepTitles` is on.
+- The save goes through `src/game-save.mjs` alone: one storage key, loaded once, written after a
+  change and on `deactivate`, never over a save from a newer version or one that could not be
+  read, and never larger than Orca keeps under a key.
+- A game action is validated twice: the controller checks the kind of each value, the game
+  checks that every id names something that exists. Unknown ids are refused, never stored.

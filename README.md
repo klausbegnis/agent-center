@@ -45,6 +45,23 @@ gone quiet, across every machine Orca is connected to.
   folder with a few files.
 - **Anywhere on screen.** A sidebar panel, a tab next to your terminals, a detached window,
   fullscreen on a spare monitor or tablet, or a small always-on-top window.
+- **Game mode, off by default.** The tokens your sessions spend become levels, fights against
+  monsters, materials and upgrades for each room's party. See [Game mode](#game-mode).
+
+## Game mode
+
+Off by default. When it is on, each room's agents form a party: the tokens their sessions spend
+give experience, working agents fight the room's monsters, idle ones gather materials, and the
+materials buy upgrades. Progress is kept per world and survives restarts. The rules are in
+[docs/GAME.md](docs/GAME.md).
+
+To turn it on, open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**.
+It reads token totals from Orca's Agent Session History, so it needs an Orca that offers that
+history to plugins and the session history permission (`history:read`). This version of the
+plugin does not ask for that permission yet: until it does, the game reports that it is
+unsupported or needs permission, and the plugin works as without it. **Game mode: keep
+conversation titles** keeps a finished session's title on its retired character; it is off by
+default.
 
 ## Themes
 
@@ -181,6 +198,10 @@ Contributions are welcome.
 - After Orca restarts, it stops tracking the sessions that were already running until they are
   started again. The plugin still shows them, recognised by their terminal title, but only as
   working or done: there is no per-tool activity, bell or familiar for them.
+- Game mode counts only sessions on this computer: Orca's session history does not cover paired
+  machines, and leaves subagents out. Agents on paired machines join their room's fight as
+  guests with no token count, and a room whose only agents are guests does not join the game.
+  Under the Random theme the game uses its generic monsters.
 - macOS and Linux are what it is tested on. On Windows the plugin loads, but it does not find
   the Orca CLI yet, so agents that were already running, paired machines, the bell and "Open
   workspace" on a terminal are missing.

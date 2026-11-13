@@ -11,7 +11,28 @@
  * @property {(roomId: string, hidden: boolean) => Promise<void>} setRoomHidden
  * @property {(workspaceId: string, agentId?: string | null) => Promise<void>} openWorkspace opens
  *   the workspace and, when the agent is named and its terminal is known, shows that terminal
+ * @property {(worldId: string, skillId: string) => Promise<GameResult>} gamePrestige
+ * @property {(roomId: string, itemId: string) => Promise<GameResult>} gameUpgradeItem
+ * @property {(worldId: string, upgradeId: string) => Promise<GameResult>} gameBuyUpgrade
+ * @property {(roomId: string, worldId: string | null) => Promise<GameResult>} gameAssignRoom puts a
+ *   room in a world, or out of the game with null
+ * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
+ * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
+ * @property {(keepTitles: boolean) => Promise<GameResult>} gameSetKeepTitles
  */
+
+/** @typedef {{ changed: boolean }} GameResult whether the action changed the game */
+
+/** Text from a surface, or an error: ids are compared with what exists, never stored as given. */
+function requireText(value, what) {
+  if (typeof value !== 'string' || value === '' || value.length > 512) throw new Error(`invalid ${what}`)
+  return value
+}
+
+function requireBoolean(value, what) {
+  if (typeof value !== 'boolean') throw new Error(`invalid ${what}`)
+  return value
+}
 
 /**
  * @param {{
@@ -21,6 +42,7 @@
  *   listThemes: () => { id: string, name: string }[],
  *   externalView: () => { url: string, lan: boolean } | null,
  *   openWorkspace: (workspaceId: string, agentId: string | null) => Promise<unknown>,
+ *   game: ReturnType<typeof import('./game-mode.mjs').createGameMode>,
  *   onChange: () => void
  * }} dependencies
  * @returns {Controller}
@@ -32,6 +54,7 @@ export function createController({
   listThemes,
   externalView,
   openWorkspace,
+  game,
   onChange
 }) {
   function getState() {
@@ -41,7 +64,8 @@ export function createController({
       ...preferences.snapshot(),
       themes: listThemes(),
       webUrl: view?.url ?? null,
-      lan: view?.lan ?? false
+      lan: view?.lan ?? false,
+      game: game.getView()
     }
   }
 
@@ -52,6 +76,13 @@ export function createController({
   function requireRoom(roomId) {
     const exists = store.snapshot().rooms.some((room) => room.id === roomId)
     if (!exists) throw new Error(`unknown room: ${String(roomId).slice(0, 80)}`)
+  }
+
+  /** Runs a game action and tells the surfaces when it changed something. */
+  async function playAction(run) {
+    const result = await run()
+    if (result.changed) onChange()
+    return result
   }
 
   return {
@@ -77,6 +108,19 @@ export function createController({
     },
     async openWorkspace(workspaceId, agentId = null) {
       await openWorkspace(workspaceId, agentId)
-    }
+    },
+    gamePrestige: (worldId, skillId) => playAction(() =>
+      game.prestigeSkill({ worldId: requireText(worldId, 'world'), skillId: requireText(skillId, 'skill') })),
+    gameUpgradeItem: (roomId, itemId) => playAction(() =>
+      game.upgradeItem({ roomId: requireText(roomId, 'room'), itemId: requireText(itemId, 'item') })),
+    gameBuyUpgrade: (worldId, upgradeId) => playAction(() =>
+      game.buyGroupUpgrade({ worldId: requireText(worldId, 'world'), upgradeId: requireText(upgradeId, 'upgrade') })),
+    gameAssignRoom: (roomId, worldId) => playAction(() => game.assignRoom({
+      roomId: requireText(roomId, 'room'),
+      worldId: worldId === null ? null : requireText(worldId, 'world')
+    })),
+    gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
+    gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
+    gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles')))
   }
 }

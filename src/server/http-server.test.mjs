@@ -17,7 +17,15 @@ async function setup(t, { lan = false } = {}) {
     refresh: async () => ({ rooms: [] }),
     setTheme: async (id) => calls.push(['theme', id]),
     setRoomTheme: async () => {},
-    setRoomHidden: async () => {}
+    setRoomHidden: async () => {},
+    gameAssignRoom: async (roomId, worldId) => {
+      calls.push(['assign', roomId, worldId])
+      return { changed: true }
+    },
+    gameSetAutoSpend: async (on) => {
+      if (typeof on !== 'boolean') throw new Error('invalid auto-spend')
+      return { changed: true }
+    }
   }
   const server = await startServer({ root: ROOT, port: FIRST_PORT, lan, controller })
   t.after(() => server.close())
@@ -111,4 +119,15 @@ test('an unknown route or method is refused', async (t) => {
   const { server } = await setup(t)
   assert.equal((await request(server, '/api/nothing')).status, 404)
   assert.equal((await request(server, '/', { method: 'DELETE' })).status, 405)
+})
+
+test('a game action reaches the controller and its answer comes back', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body })
+  const assigned = await post('/api/game/assign-room', '{"roomId":"local:/work/rumble-banana","worldId":"side-projects"}')
+  assert.equal(assigned.status, 200)
+  assert.deepEqual(JSON.parse(assigned.text), { changed: true })
+  assert.deepEqual(calls, [['assign', 'local:/work/rumble-banana', 'side-projects']])
+  assert.equal((await post('/api/game/auto-spend', '{"on":"yes"}')).status, 400)
+  assert.equal((await post('/api/game/auto-spend', 'null')).status, 400)
 })

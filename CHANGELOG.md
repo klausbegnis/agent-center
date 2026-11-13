@@ -6,6 +6,17 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Game mode, off by default (the **Game mode** setting): the tokens sessions on this computer
+  spend become levels, fights, materials and upgrades for each room's party, with progress kept
+  per world across restarts. It reads token totals from Orca's Agent Session History, so it
+  needs an Orca that offers it and the `history:read` permission; this release does not ask for
+  that permission yet, and until then the game reports why it is off. **Game mode: keep
+  conversation titles** keeps a finished session's title on its retired character.
+- The view state carries a `game` part for a UI to draw (see `docs/GAME.md`), and the panel and
+  the local page take the game's actions.
+
 ## 0.1.0 - 2026-11-12
 
 First public version.
