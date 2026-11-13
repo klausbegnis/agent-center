@@ -3,10 +3,10 @@
 import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
-import { effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
+import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
 import { killsToPass } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
-import { canPrestige, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
+import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import {
@@ -36,7 +36,8 @@ function groupEffect(upgradeId, level) {
   return { upgradeCostFactor: 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * level) }
 }
 
-function itemView(item, names, { workbenchLevel, level }) {
+function itemView(item, names, { workbenchLevel, level, materials }) {
+  const cost = upgradeCost(item, { workbenchLevel, worldLevel: level })
   return {
     id: item.id,
     name: names.get(item.entryId ?? item.id) ?? item.id,
@@ -47,7 +48,8 @@ function itemView(item, names, { workbenchLevel, level }) {
     power: effectiveGearLevel(item),
     factor: itemFactor(item),
     heldBy: item.heldBy,
-    upgradeCost: upgradeCost(item, { workbenchLevel, worldLevel: level })
+    upgradeCost: cost,
+    affordable: canAfford(materials, cost)
   }
 }
 
@@ -60,6 +62,7 @@ function characterView(character, project, names, prices) {
     sessionId: character.sessionId,
     class: character.class,
     level: character.level,
+    levelProgress: Math.min(1, (character.xp ?? 0) / characterXpToNext(character.level)),
     seasoning: seasoning(character.level),
     attributes: { ...character.attributes },
     equipment: {
@@ -87,7 +90,11 @@ function monsterView(monster) {
 }
 
 function projectView(projectId, project, world, names) {
-  const prices = { workbenchLevel: groupLevel(world.upgrades, 'workbench'), level: worldLevel(world.skills) }
+  const prices = {
+    workbenchLevel: groupLevel(world.upgrades, 'workbench'),
+    level: worldLevel(world.skills),
+    materials: world.materials
+  }
   return {
     id: projectId,
     wave: project.wave,
@@ -116,7 +123,8 @@ function worldView(worldId, world, names) {
     upgrades: GROUP_UPGRADE_IDS.map((upgradeId) => {
       const level = groupLevel(world.upgrades, upgradeId)
       const cost = groupUpgradeCost(upgradeId, level, worldLevel(world.skills))
-      return { id: upgradeId, level, cost, effect: groupEffect(upgradeId, level) }
+      const affordable = canAfford(world.materials, cost)
+      return { id: upgradeId, level, cost, affordable, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()
       .map((projectId) => projectView(projectId, world.projects[projectId], world, names))

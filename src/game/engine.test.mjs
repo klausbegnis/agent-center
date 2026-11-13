@@ -321,6 +321,18 @@ test('training Engineering ahead of the other skills makes the party kill more o
   assert.ok(fightOf(fast) > fightOf(trained))
 })
 
+test('the view says which purchases the world can pay for and how far a character is to its next level', () => {
+  const save = partyOfFour()
+  const [world] = engine.view(save).worlds
+  assert.ok(world.upgrades.every((upgrade) => upgrade.affordable === false))
+  const rich = withMaterials(save, Object.fromEntries(Object.keys(world.materials).map((id) => [id, 1e12])))
+  const [richWorld] = engine.view(rich).worlds
+  assert.ok(richWorld.upgrades.every((upgrade) => upgrade.affordable))
+  assert.ok(richWorld.projects[0].chest.every((item) => item.affordable))
+  const progress = richWorld.projects[0].party.map((member) => member.levelProgress)
+  assert.ok(progress.every((share) => share >= 0 && share < 1))
+})
+
 /** Levels, waves and materials of a save, to compare before and after a step. */
 function progressOf(save) {
   const skills = {}
