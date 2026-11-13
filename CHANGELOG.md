@@ -30,6 +30,10 @@ All notable changes to this project are recorded here. The format follows
   `agent-center-save-YYYY-MM-DD.json` and shows it as text to copy (a download may be blocked in
   Orca's panel); **Import** takes a chosen or pasted file and, after a confirmation, replaces the
   whole game with it. Token counts are not in the file: after an import, counting starts again.
+- A room that is no longer on screen (its folder moved or its worktree removed) keeps its chest
+  and retirees in the save. The Arsenal's Items section lists them under **Chests left behind**,
+  and **Move here** moves them into the room chosen there, in the same world, after asking;
+  copies of an item past what a chest keeps are salvaged into materials.
 - Arsenal and Skills are built around original pixel icons for skills, materials, classes, item
   slots, group upgrades and stars; the character marks in the rooms use the same icons.
 - The view state's game part adds the monster's `hp` and `maxHp`, `tickSeconds`, and names and

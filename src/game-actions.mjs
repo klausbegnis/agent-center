@@ -118,6 +118,26 @@ export function createGameActions(dependencies) {
       })
     },
 
+    /**
+     * Moves the chest and retirees of a project left behind (in the save, not on screen) into a
+     * room on screen that plays in the same world.
+     *
+     * @param {{ fromRoomId: string, toRoomId: string }} input
+     */
+    async moveOrphanItems({ fromRoomId, toRoomId }) {
+      return change((save) => {
+        const onScreen = roomIds()
+        const sourceWorldId = typeof fromRoomId === 'string'
+          ? Object.keys(save.worlds).find((worldId) => Object.hasOwn(save.worlds[worldId].projects, fromRoomId))
+          : undefined
+        if (!sourceWorldId || onScreen.includes(fromRoomId)) throw refuse('not a room left behind', fromRoomId)
+        const plays = typeof toRoomId === 'string' && onScreen.includes(toRoomId) &&
+          worldIdOf(save, toRoomId) === sourceWorldId && Object.hasOwn(save.worlds[sourceWorldId].projects, toRoomId)
+        if (!plays) throw refuse('not a room on screen in the same world', toRoomId)
+        return engine.moveProjectItems(save, { fromProjectId: fromRoomId, toProjectId: toRoomId, now: now() })
+      })
+    },
+
     /** @param {boolean} autoSpend */
     async setAutoSpend(autoSpend) {
       requireRunning()

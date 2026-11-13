@@ -47,6 +47,7 @@ const transport = {
   setKeepTitles: (on) => postGame('keep-titles', { on }),
   exportSave: () => postGame('export-save', {}),
   importSave: (file) => postGame('import-save', { file }),
+  moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
   prefs: {
     get: (key) => params.get(key) ?? localStorage.getItem(`agent-center:${key}`),
     set: (key, value) => localStorage.setItem(`agent-center:${key}`, value)

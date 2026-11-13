@@ -35,4 +35,6 @@ export function registerPanelHandlers(orca, controller) {
   orca.panels.handle('game.keepTitles', (input) => controller.gameSetKeepTitles(input?.on))
   orca.panels.handle('game.exportSave', () => controller.gameExportSave())
   orca.panels.handle('game.importSave', (input) => controller.gameImportSave(input?.file))
+  orca.panels.handle('game.moveOrphanItems', (input) =>
+    controller.gameMoveOrphanItems(input?.fromRoomId, input?.toRoomId))
 }

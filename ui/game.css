@@ -670,6 +670,18 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 
 /* The chosen item's details, under the chest or beside it when wide. */
 .ac-game-item-detail { font-size: 12px; }
+/* Chests left behind: one row per room no longer on screen, its facts beside its move button. */
+.ac-game-orphans-card[hidden] { display: none; }
+.ac-game-orphans-card { margin-top: 10px; font-size: 12px; }
+.ac-game-orphan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.ac-game-orphan-what { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-orphan-name { font-weight: 700; overflow-wrap: anywhere; }
 .ac-game-item-detail .ac-game-slotbox { flex: none; width: 44px; }
 .ac-game-item-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ac-game-item-icon { width: 24px; height: 24px; }

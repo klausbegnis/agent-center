@@ -126,7 +126,8 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
     '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on),
     '/api/game/export-save': () => controller.gameExportSave(),
-    '/api/game/import-save': (input) => controller.gameImportSave(input.file)
+    '/api/game/import-save': (input) => controller.gameImportSave(input.file),
+    '/api/game/move-orphan-items': (input) => controller.gameMoveOrphanItems(input.fromRoomId, input.toRoomId)
   }
 
   async function handlePost(pathname, request, response) {

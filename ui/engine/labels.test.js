@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  ARSENAL,
   activityLabel,
   actorDescription,
   defaultThemeOptions,
@@ -239,4 +240,10 @@ test('a material tile says its amount, and how short the prices on screen are of
     materialTileLabel('logs', '12 k', { prices: 2, mostText: '4,000' }),
     'Logs 12 k, short: 2 prices need up to 4,000 more'
   )
+})
+
+test('a room left behind is described by its items and retirees, and the question names both rooms', () => {
+  const orphan = { roomId: 'local:/work/fuzzy-anvil', name: 'fuzzy-anvil', chestSize: 1, retiredCount: 7 }
+  assert.equal(ARSENAL.orphanFacts(orphan), '1 item · 7 retirees')
+  assert.match(ARSENAL.moveQuestion(orphan, 'cosmic-llama'), /from fuzzy-anvil into cosmic-llama\?/)
 })

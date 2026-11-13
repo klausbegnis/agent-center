@@ -163,6 +163,37 @@ function currentStatesByRoom({ links, agentStates, agentlessStates }) {
   return byRoom
 }
 
+/**
+ * A room's name from its id, the last segment of its folder: "local:/work/rumble-banana" is
+ * "rumble-banana". The whole path is never shown.
+ *
+ * @param {string} roomId
+ */
+export function roomNameOf(roomId) {
+  const segments = roomId.split(/[/\\]/).filter(Boolean)
+  const last = segments.at(-1) ?? roomId
+  return last.slice(last.lastIndexOf(':') + 1) || roomId
+}
+
+/**
+ * The world's projects left behind: not among the rooms on screen, with a chest item or a retiree
+ * to move. A room out of the game that is still on screen is not one.
+ *
+ * @param {object[]} projects the world's projects in the engine's view
+ * @param {string[]} roomIds the rooms on screen
+ */
+export function orphansOf(projects, roomIds) {
+  return projects
+    .filter((project) => !roomIds.includes(project.id))
+    .map((project) => ({
+      roomId: project.id,
+      name: roomNameOf(project.id),
+      chestSize: project.chest.length,
+      retiredCount: project.retirees.length + project.retiredCount
+    }))
+    .filter((orphan) => orphan.chestSize > 0 || orphan.retiredCount > 0)
+}
+
 /** How many purchases of the same thing come after the one at `index` in the kept events. */
 function laterPurchases(recent, index, isSame) {
   return recent.slice(index + 1).filter((event) => event.type === 'purchase' && isSame(event)).length
@@ -265,7 +296,8 @@ export function buildGameView(input) {
   }
   const worlds = engineView.worlds.map(({ projects: worldProjects, ...world }) => ({
     ...world,
-    roomIds: worldProjects.map((project) => project.id).filter((id) => roomIds.includes(id))
+    roomIds: worldProjects.map((project) => project.id).filter((id) => roomIds.includes(id)),
+    orphans: orphansOf(worldProjects, roomIds)
   }))
   const tickSeconds = engineView.tickSeconds ?? null
   const described = describeEvents(recent, { projects, worlds, itemEntries: engineView.itemEntries ?? {} })

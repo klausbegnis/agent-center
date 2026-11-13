@@ -81,6 +81,10 @@ copy, since Orca's panel may block the download; **Import** takes such a file, c
 and replaces the whole game on this computer after asking. Token counts are not in the file, so
 counting starts again from the import.
 
+A room that is no longer on screen keeps its chest and retirees. The Arsenal's Items section
+lists them under **Chests left behind** for the chosen room's world; **Move here** moves them
+into that room after asking. Nothing moves by itself.
+
 ## Themes
 
 Each room can use a different theme. The selector at the top sets the default, used by every

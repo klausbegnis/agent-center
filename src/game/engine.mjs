@@ -5,6 +5,7 @@ import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
+import { moveProjectItems } from './orphans.mjs'
 import { canPrestige, prestige as prestigeSkill, worldLevel } from './progression.mjs'
 import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
@@ -130,6 +131,7 @@ export function createEngine({ content }) {
     autoSpend: (save) => autoSpendWithPurchases(save).save,
     autoSpendWithPurchases,
     view: (save) => viewOf(save, content),
-    cleanSave
+    cleanSave,
+    moveProjectItems
   }
 }

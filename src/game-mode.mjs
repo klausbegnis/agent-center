@@ -400,6 +400,7 @@ export function createUnavailableGame(status) {
     setAutoSpend: refuse,
     setKeepTitles: refuse,
     exportSave: refuse,
-    importSave: refuse
+    importSave: refuse,
+    moveOrphanItems: refuse
   }
 }

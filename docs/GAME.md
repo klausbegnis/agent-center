@@ -24,6 +24,7 @@ milliseconds the caller passes.
 | `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
+| `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds). Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
@@ -525,6 +526,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
+| `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade. A new world is a
@@ -570,7 +572,8 @@ by the usual closing rules.
     gatheringSkills: [...same shape],
     materials: { bars: 98, ... },
     upgrades: [{ id: 'campfire', level, cost: { fish: 520, crops: 520 }, affordable, effect }],
-    roomIds: ['local:/work/sneaky-pancake']
+    roomIds: ['local:/work/sneaky-pancake'],
+    orphans: [{ roomId: 'local:/work/fuzzy-anvil', name: 'fuzzy-anvil', chestSize: 4, retiredCount: 7 }]
   }],
   rooms: {
     'local:/work/sneaky-pancake': {
@@ -600,6 +603,12 @@ by the usual closing rules.
 
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
+- A world's `orphans` are its projects left behind: in the save but not among the rooms the
+  store shows now, with at least one chest item or retiree (`retiredCount` counts kept records
+  and folded ones). `name` is the last segment of the room's folder, never its path. A room out
+  of the game that is still on screen is not one. Nothing moves by itself: `moveOrphanItems`
+  moves one into a room on screen of the same world (see `moveProjectItems`). A world no room on
+  screen plays in still lists its orphans, though nothing can take them.
 - `tokenSource` is `history` or `estimated` (see "When it runs"). A UI should say plainly when
   progress is estimated.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the

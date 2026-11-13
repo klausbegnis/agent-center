@@ -51,8 +51,13 @@ function ensureCharacter(project, { sessionId, skills, now }) {
   return withCharacter({ ...base, chest }, { ...character, equipment })
 }
 
-/** The work skill a character earned most experience in; ties go to the first in alphabetical order. */
-function mainSkillOf(character) {
+/**
+ * The work skill a character earned most experience in; ties go to the first in alphabetical order.
+ *
+ * @param {{ skillXp?: Record<string, number> }} character
+ * @returns {string | null}
+ */
+export function mainSkillOf(character) {
   let chosen = null
   for (const [skillId, xp] of Object.entries(character.skillXp ?? {}).sort()) {
     if (chosen === null || xp > character.skillXp[chosen]) chosen = skillId

@@ -21,6 +21,8 @@
  * @property {(keepTitles: boolean) => Promise<GameResult>} gameSetKeepTitles
  * @property {() => Promise<object>} gameExportSave the saved game as a file's content
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
+ * @property {(fromRoomId: string, toRoomId: string) => Promise<GameResult>} gameMoveOrphanItems
+ *   moves a room left behind's chest and retirees into a room on screen
  */
 
 /** @typedef {{ changed: boolean }} GameResult whether the action changed the game */
@@ -130,6 +132,10 @@ export function createController({
     gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
     gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles'))),
     gameExportSave: () => game.exportSave(),
-    gameImportSave: (file) => playAction(() => game.importSave(requireObject(file, 'save file')))
+    gameImportSave: (file) => playAction(() => game.importSave(requireObject(file, 'save file'))),
+    gameMoveOrphanItems: (fromRoomId, toRoomId) => playAction(() => game.moveOrphanItems({
+      fromRoomId: requireText(fromRoomId, 'room'),
+      toRoomId: requireText(toRoomId, 'room')
+    }))
   }
 }

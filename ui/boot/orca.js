@@ -24,6 +24,7 @@ const transport = {
   setKeepTitles: (on) => orca.plugin.request('game.keepTitles', { on }),
   exportSave: () => orca.plugin.request('game.exportSave'),
   importSave: (file) => orca.plugin.request('game.importSave', { file }),
+  moveOrphanItems: (fromRoomId, toRoomId) => orca.plugin.request('game.moveOrphanItems', { fromRoomId, toRoomId }),
   // The panel and the tab keep their own view choice.
   prefs: {
     get: (key) => orca.storage.get(`${key}:${isTab ? 'tab' : 'panel'}`),

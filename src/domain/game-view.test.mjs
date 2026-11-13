@@ -7,8 +7,10 @@ import {
   buildGameView,
   gameStatus,
   keepRecent,
+  orphansOf,
   partyStateOf,
   pauseReasonOf,
+  roomNameOf,
   tokenSourceOf
 } from './game-view.mjs'
 
@@ -167,4 +169,33 @@ test('a group upgrade says the level it reached and belongs to no single room', 
   const [purchase] = buildGameView(input(view, { recent })).recent
   assert.equal(purchase.level, 3)
   assert.equal(purchase.roomId, null)
+})
+
+const project = (id, { chest = [], retirees = [], retiredCount = 0 } = {}) => ({ id, chest, retirees, retiredCount })
+
+test('a project of the save that is not on screen and holds items or retirees is left behind', () => {
+  const anvil = 'local:/work/fuzzy-anvil'
+  const view = engineView({ chest: [item('club', 1)] })
+  view.worlds[0].projects.push(
+    project(anvil, { chest: [item('club', 1), item('wand', 2)], retirees: [{}], retiredCount: 4 }),
+    project('build-box:/srv/turbo-waffle')
+  )
+  const world = buildGameView(input(view)).worlds[0]
+  assert.deepEqual(world.orphans, [{ roomId: anvil, name: 'fuzzy-anvil', chestSize: 2, retiredCount: 5 }])
+  assert.deepEqual(world.roomIds, [BANANA])
+})
+
+test('a room still on screen is never left behind, even out of the game', () => {
+  const projects = [project(BANANA, { chest: [item('club', 1)] })]
+  assert.deepEqual(orphansOf(projects, [BANANA]), [])
+  const view = engineView({ chest: [item('club', 1)] })
+  view.projectWorld = { [BANANA]: null }
+  assert.deepEqual(buildGameView(input(view)).worlds[0].orphans, [])
+})
+
+test('a room is named by the last segment of its folder, never by its path', () => {
+  assert.equal(roomNameOf('local:/work/rumble-banana'), 'rumble-banana')
+  assert.equal(roomNameOf('build-box:/srv/turbo-waffle/'), 'turbo-waffle')
+  assert.equal(roomNameOf('gpu-rig:quantum-pickle'), 'quantum-pickle')
+  assert.equal(roomNameOf('local:C:\\work\\cosmic-llama'), 'cosmic-llama')
 })

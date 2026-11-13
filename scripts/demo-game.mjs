@@ -12,7 +12,7 @@
 import { createGameMode } from '../src/game-mode.mjs'
 import { createGameSave } from '../src/game-save.mjs'
 import { hashOf } from '../src/game/hash.mjs'
-import { SAVE_VERSION, migrate } from '../src/game/worlds.mjs'
+import { SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -32,6 +32,36 @@ const HISTORY_LIMIT = 200
 /** Tool calls a working agent starts per minute of game time, give or take half. */
 const TOOL_CALLS_PER_MINUTE = 3.75
 const MINUTE_MS = 60_000
+
+/**
+ * A room no longer on screen that left its chest and retirees in the main world, so the Arsenal's
+ * "Chests left behind" card has something to show. The demo's fuzzy-anvil room is on build-box;
+ * this one is an older checkout of it on this computer.
+ */
+const LEFT_BEHIND = 'local:/work/fuzzy-anvil'
+
+/** The stored game the demo starts from: empty but for the room left behind. */
+function startingSave() {
+  const item = (id, slot, tier, recipe, level, extra = {}) =>
+    ({ id, entryId: id, slot, ...extra, tier, recipe, level, heldBy: null })
+  const save = emptySave()
+  save.worlds.main = {
+    ...emptyWorld(),
+    projects: {
+      [LEFT_BEHIND]: {
+        ...emptyProject({ wave: 4 }),
+        chest: [
+          item('tempered-shortsword', 'weapon', 3, ['bars', 'hides'], 2, { damageType: 'physical' }),
+          item('inscribed-codex', 'weapon', 3, ['pages', 'runes'], 1, { damageType: 'magical' }),
+          item('padded-jerkin', 'outfit', 1, ['hides', 'crops'], 4),
+          item('trusty-pocketknife', 'tool', 1, ['ore', 'logs'], 3)
+        ],
+        retiredCount: 7
+      }
+    }
+  }
+  return { version: 1, save, bridge: {} }
+}
 
 /** A swing between 0.5 and 1.5, from a hash. */
 const swingOf = (key) => 0.5 + (hashOf(key) % 1000) / 1000
@@ -123,7 +153,7 @@ export async function createDemoGame({ engine, store, preferences, onChange, fro
   const startedAt = Date.now()
   let frozenClock = EPOCH
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
-  const values = new Map()
+  const values = new Map([['game', startingSave()]])
   const settings = { gameMode: true, gameKeepTitles: true }
   const history = createHistory(store)
   const meters = createMeters(store)

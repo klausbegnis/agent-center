@@ -14,8 +14,12 @@ function damageTypeOf(characterClass) {
 /**
  * Most powerful first (effective gear level), then highest tier, then highest level, then id,
  * so the order never depends on the chest's.
+ *
+ * @param {{ id: string, tier: number, level: number }} item
+ * @param {{ id: string, tier: number, level: number }} other
+ * @returns {boolean} whether `item` comes before `other`
  */
-function isBetter(item, other) {
+export function isBetter(item, other) {
   const power = effectiveGearLevel(item) - effectiveGearLevel(other)
   if (power !== 0) return power > 0
   if (item.tier !== other.tier) return item.tier > other.tier

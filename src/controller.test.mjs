@@ -61,7 +61,8 @@ function recordingGame() {
     setAutoSpend: record('autoSpend'),
     setKeepTitles: record('keepTitles'),
     exportSave: async () => ({ format: 'agent-center-game' }),
-    importSave: record('import')
+    importSave: record('import'),
+    moveOrphanItems: record('moveOrphan')
   }
   return { game, calls }
 }
@@ -112,4 +113,13 @@ test('an export answers the file and changes nothing; an import replaces the gam
   assert.equal(changes(), 1)
   const unavailable = setup()
   await assert.rejects(unavailable.controller.gameExportSave(), /not available/)
+})
+
+test('moving a left-behind room\'s items reaches the game with both rooms, which must be text', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  await assert.rejects(controller.gameMoveOrphanItems('local:/work/fuzzy-anvil', 7), /invalid room/)
+  await controller.gameMoveOrphanItems('local:/work/fuzzy-anvil', 'local:/work/rumble-banana')
+  assert.deepEqual(calls, [['moveOrphan', { fromRoomId: 'local:/work/fuzzy-anvil', toRoomId: 'local:/work/rumble-banana' }]])
+  assert.equal(changes(), 1)
 })

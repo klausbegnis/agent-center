@@ -164,7 +164,8 @@ const ACTION_NAMES = {
   setAutoSpend: 'Changing auto-spend',
   setKeepTitles: 'Changing the titles setting',
   exportSave: 'The export',
-  importSave: 'The import'
+  importSave: 'The import',
+  moveOrphanItems: 'Moving the items'
 }
 
 /**
@@ -477,6 +478,16 @@ export const ARSENAL = {
   retirees: 'Retirees',
   noRetirees: 'No character has retired here yet. A character retires at the level cap and leaves a bonus.',
   moreRetirees: (count) => `and ${plural(count, 'older retiree')}`,
+  orphans: 'Chests left behind',
+  orphansNote: 'Rooms no longer on screen keep their chest and retirees in this world. Move them into ' +
+    'this room to use them again.',
+  orphanFacts: (orphan) => `${plural(orphan.chestSize, 'item')} · ${plural(orphan.retiredCount, 'retiree')}`,
+  moveHere: 'Move here',
+  moveHereLabel: (name, room) => `Move what ${name} left behind into ${room}`,
+  moveQuestion: (orphan, room) => `Move ${plural(orphan.chestSize, 'item')} and ` +
+    `${plural(orphan.retiredCount, 'retiree')} from ${orphan.name} into ${room}? Copies of an item past ` +
+    `what a chest keeps are salvaged into materials, and ${orphan.name} leaves the game. This cannot be undone.`,
+  moveConfirm: (room) => `Move into ${room}`,
   title: (title) => `was "${title}"`
 }
 
