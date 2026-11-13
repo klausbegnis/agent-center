@@ -247,20 +247,25 @@
   display: flex;
   align-items: center;
   gap: 0.15em;
-  padding: 0.1em 0.25em;
-  border-radius: 2px;
-  background: var(--ac-label-shadow);
+  /* No plate behind it: an outline in the label's shadow colour keeps it readable on any
+     scenery without a box hanging off the character. */
   color: var(--ac-label);
   font-family: var(--ac-font);
   font-size: clamp(8px, 2.5cqw, 12px);
   font-weight: 700;
   line-height: 1;
+  text-shadow:
+    1px 0 0 var(--ac-label-shadow), -1px 0 0 var(--ac-label-shadow),
+    0 1px 0 var(--ac-label-shadow), 0 -1px 0 var(--ac-label-shadow);
   pointer-events: none;
 }
 .ac-game-badge-icon {
   width: 1.35em;
   height: 1.35em;
   shape-rendering: crispEdges;
+  filter:
+    drop-shadow(1px 0 0 var(--ac-label-shadow)) drop-shadow(-1px 0 0 var(--ac-label-shadow))
+    drop-shadow(0 1px 0 var(--ac-label-shadow)) drop-shadow(0 -1px 0 var(--ac-label-shadow));
 }
 .ac-game-badge-guest { font-weight: 400; font-style: italic; opacity: 0.9; }
 .ac-game-badge-gathering { color: var(--ac-game-gold); }
