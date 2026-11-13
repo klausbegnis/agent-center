@@ -85,6 +85,7 @@ export function createMonsterView({ theme, spot, mirrored }) {
     },
     /** @param {import('./foe-phases.js').FoePhase} phase */
     setPhase(phase) {
+      if (element.dataset.phase === phase) return
       element.dataset.phase = phase
       element.hidden = phase === 'gone'
       plate.dataset.phase = phase

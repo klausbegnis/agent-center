@@ -75,6 +75,9 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
   /** What the last update was given, to tell the schedule again when the monster's phase moves. */
   let lastInputs = null
   let lastPhase = 'gone'
+  /** What the monster was last drawn with, so the clock redraws it only when that changes. */
+  let drawnFight = null
+  let drawnFoe = ''
 
   const schedule = createFightSchedule(roomId)
   const fightView = createFightView({ scene, theme })
@@ -137,7 +140,11 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
     // Only the monster on screen and the one coming next are worth keeping.
     monsters = new Map([...monsters].filter(([known]) => known === shown.key || known === key))
     foe.setPhase(shown.phase)
-    if (shown.key) drawFoe(fight, shown.key)
+    // Drawn again only when the fight or what is shown changed, not on every tick of the clock.
+    const drawing = `${shown.key}|${shown.phase}`
+    if (shown.key && (fight !== drawnFight || drawing !== drawnFoe)) drawFoe(fight, shown.key)
+    drawnFight = fight
+    drawnFoe = drawing
     if (shown.phase === 'gone') {
       foe.element.remove()
       foe.plate.remove()
