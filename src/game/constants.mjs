@@ -84,6 +84,12 @@ export const ELITE_ONE_IN = 8
 export const COMMON_SHARE = 0.5
 export const ARMORED_SHARE = 0.25
 /**
+ * A wave at or below the world level passes with one kill; each level above it multiplies the
+ * kills it takes by this. Kills keep coming at any pace while the wave settles a few levels
+ * above the world.
+ */
+export const WAVE_KILLS_GROWTH = 2
+/**
  * A reference party's stamina at level 0. Drain and healing are both shares of the pool, so
  * this only sets the scale of the numbers shown; 1000 keeps them readable at low levels.
  */

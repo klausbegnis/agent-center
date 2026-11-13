@@ -89,8 +89,13 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
 
 ## Monsters and waves
 
-- A project's wave starts at the world level when the project first joins, and goes up by one
-  per kill. The monster's level is the wave.
+- A project's wave starts at the world level when the project first joins. A wave at or below
+  the world level passes with one kill; above it, a wave takes
+  `ceil(WAVE_KILLS_GROWTH ** (wave - worldLevel))` kills. The wave never goes down. Every
+  monster's level is its wave.
+- Why: the world level grows by about one level a working day while a party kills several
+  monsters an hour. With one kill per wave the wave would run far ahead of the world; with
+  this rule it settles a few levels above it and fights keep coming.
 - `referencePartyHit(level)` is the total hit of four reference characters, one per class,
   with `E = level` (with as many stars as that needs), character level `SEASONED_LEVEL`, the
   attributes a real character has at that level (starting attributes plus the class and
@@ -99,8 +104,9 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
   and full party bonus.
 - `monsterHp = HITS_TO_KILL * referencePartyHit(level) * kind.hp * (elite ? ELITE.hp : 1)`.
 - Damage taken is multiplied by `kind.physical` or `kind.magical` by type.
-- Kind: every `BOSS_EVERY` waves a `boss`; otherwise a hash of world, project and wave picks
-  among `common`, `armored`, `ethereal`. One wave in `ELITE_ONE_IN`, by the same hash, is an
+- Kind: the first monster of every `BOSS_EVERY`-th wave is a `boss`; otherwise a hash of
+  world, project, wave and kill picks `common` (`COMMON_SHARE`), `armored` (`ARMORED_SHARE`) or
+  `ethereal`. One monster in `ELITE_ONE_IN`, by the same hash and never a boss, is an
   elite with one affix: `regenerating`, `enraged`, `thorny`, `swift`, or one of the two
   resistances. Each affix has one clear counter among the classes.
 - Stamina: the monster drains `referenceStamina(level) / STAMINA_TICKS * kind.attack` a tick,

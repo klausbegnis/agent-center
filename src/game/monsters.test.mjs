@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { BOSS_EVERY, ELITE, ELITE_ONE_IN, HITS_TO_KILL, MONSTER_KINDS } from './constants.mjs'
-import { AFFIXES, eliteFor, kindForWave, monsterFor } from './monsters.mjs'
+import { BOSS_EVERY, ELITE, ELITE_ONE_IN, HITS_TO_KILL, MONSTER_KINDS, WAVE_KILLS_GROWTH } from './constants.mjs'
+import { AFFIXES, eliteFor, killsToPass, kindForWave, monsterFor } from './monsters.mjs'
 
 const referencePartyHit = (level) => ({
   physical: 60 * 1.04 ** level,
@@ -32,7 +32,7 @@ const firstWave = (matches) => wavesUpTo(5000).find(matches)
 const build = (wave, themeId = null) =>
   monsterFor({ ...where(wave), themeId, content: content(), referencePartyHit })
 
-test('every BOSS_EVERY-th wave is a boss and no other wave is', () => {
+test('the first monster of every BOSS_EVERY-th wave is a boss and no other wave opens with one', () => {
   for (const wave of wavesUpTo(100)) {
     assert.equal(kindForWave(where(wave)) === 'boss', wave % BOSS_EVERY === 0)
   }
@@ -117,4 +117,22 @@ test('a monster is picked among the theme\'s entries of its kind', () => {
 
 test('a theme without its own entry of a kind gets a generic one', () => {
   assert.equal(build(BOSS_EVERY, 'world-theme').id, 'plain-boss')
+})
+
+test('only the first monster of a boss wave is the boss', () => {
+  const kinds = [1, 2, 3, 4, 5].map((kill) => kindForWave({ worldId: 'main', projectId: 'cosmic-llama', wave: 20, kill }))
+  assert.ok(kinds.every((kind) => kind !== 'boss'))
+})
+
+test('the monsters of one wave differ from kill to kill', () => {
+  const where = { worldId: 'main', projectId: 'cosmic-llama', wave: 7 }
+  const kinds = new Set(Array.from({ length: 40 }, (_, kill) => kindForWave({ ...where, kill })))
+  assert.ok(kinds.size > 1)
+})
+
+test('a wave at or below the world level passes with one kill, and each level above doubles it', () => {
+  assert.equal(killsToPass(3, 10), 1)
+  assert.equal(killsToPass(10, 10), 1)
+  assert.equal(killsToPass(11, 10), WAVE_KILLS_GROWTH)
+  assert.equal(killsToPass(14, 10), WAVE_KILLS_GROWTH ** 4)
 })
