@@ -16,7 +16,7 @@ milliseconds the caller passes.
 | Function | What it does |
 |---|---|
 | `applyTokens(save, { projectId, sessionId, tokens, activity, now, themeId?, title?, guest? })` | Counts the tokens a session spent since the last reading. Creates the world, the project (wave at the world level, starter chest) and the character when missing; a session found among the project's retirees comes back instead. Grants experience to the activity's work skill and to the character, and records `lastTokenAt`. A guest or an excluded project changes nothing. |
-| `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest? }` with `state` one of `working`, `waiting`, `blocked`, `idle`. See "Time". |
+| `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest?, scenes? }` with `state` one of `working`, `waiting`, `blocked`, `idle`; `scenes` lists the themes a travelling project moves through (see "Scenes"). See "Time". |
 | `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, rank, affix, ticks, whether the party rested, materials and dropped item. |
 | `prepareFights(save, { sessions })` | Moves no time. Records each reported character's state, and gives a project whose party has a working member (a character or a guest) and no monster its monster now, measured against that party. |
 | `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
@@ -223,6 +223,7 @@ project id:
   at the end of it. Otherwise the party strikes and the monster strikes back (see "Monsters
   and waves"). On a kill the reward is added to the world, a drop goes into the chest, the
   campfire restores stamina, the wave's kill count goes up (and the wave when it is passed),
+  so does the project's `kills`, a travelling project moves to its next scene (see "Scenes"),
   and the next monster appears with the rune circle's cut taken off its health.
 - The party's stamina pool is `referenceStamina(level) * (outfit factor / GEAR_GROWTH **
   referenceGearLevel(level)) ** OUTFIT_STAMINA_WEIGHT`, with the mean outfit factor of the
@@ -286,6 +287,25 @@ project id:
   gathering, up to `RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT`. The last
   `RETIREES_KEPT` are kept; older ones fold into a counter. A session that comes back with the
   same id leaves retirement with its level and attributes and takes the best free items.
+
+## Scenes
+
+A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
+it over with the rest of the world, and a save from before it existed starts at 0.
+
+With "new scene after each monster" on, the bridge gives a travelling room's readings `scenes`:
+the theme ids the surfaces can draw. The engine then sets the project's `themeId` to
+`sceneThemeOf(projectId, scenes, kills)` (`src/game/scenes.mjs`) whenever it reads the project,
+in `advance` and `prepareFights`, and again right after each kill, before the next monster
+appears, so that monster comes from the scene the room moves to, even when several kills happen
+in one advance. The drop of the monster just killed is rolled before the move, in the scene it
+died in. `themeId` given in a reading is ignored while `scenes` is there.
+
+`sceneOrder(projectId, themeIds)` sorts the theme ids and shuffles them by hash of the project's
+id; `sceneThemeOf` steps through that order with the kill count. So the scene depends only on the
+room, its kills and the themes loaded: it is the same on every surface and after a restart, two
+kills in a row never share a scene while there are two themes or more, and every theme comes once
+before any comes again. Adding or removing a theme reshuffles the order.
 
 ## Worlds
 
@@ -367,7 +387,7 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles } }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt }
-Project   { wave, waveKills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
+Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
@@ -381,7 +401,8 @@ A monster keeps the part ids and colours it was given, not a seed, so it never c
 when parts or races are added later; a look is about 300 bytes. A monster saved before ranks and
 looks has neither `rank` nor `look`: it keeps its `sprite` and is drawn and fought as before.
 
-`stamina` is a share of the party's pool; `restTicks` the rest left; `fightMs` fight time not
+`kills` counts every kill of the project (see "Scenes"); `stamina` is a share of the party's
+pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
 a character's experience by work skill, for the retiree's main skill.
 
@@ -429,7 +450,8 @@ totals:
 3. Place each session in a room: its `workspaceId` is looked up among the workspaces the store
    knows, then by folder through `workspace.list` when the history names the workspace in
    another form of id. The room's id is the engine's `projectId`; the room's theme (its own, or
-   the default; none under Random, where the UI picks) is the engine's `themeId`.
+   the default; none under Random, where the UI picks) is the engine's `themeId`. A room that
+   travels (below) gets no `themeId` but `scenes`.
 4. Match sessions to the agents on screen (below) and build the readings.
 5. `advance` the engine from the last round to now with the sessions' states, then
    `applyTokens` for the tokens read, then `prepareFights` with the same states, then
@@ -448,6 +470,13 @@ A new session's character therefore joins the fight from the next round. `prepar
 records its state and, in a room that has just joined, brings out the first monster at once:
 otherwise the room would show its wave with no foe and its new characters idle until the next
 round.
+
+A room travels when `travel` ("new scene after each monster") is on, more than one theme is
+loaded (`listThemeIds`, the themes in `themes/`) and the room has no theme of its own; with any
+default theme, Random included. Its readings carry `scenes`, the loaded theme ids, so its
+monsters come from the scene it is in, which also gives it themed monsters under Random. A room
+that has not joined has no project to move. A monster standing when the setting is turned on
+keeps the look it was given; the next one fits the scene.
 
 One round moves the engine at most `MAX_ROUND_GAP_MS` (five minutes): a round that comes late
 does not fight through time nobody saw with the states read now. The first round after the
@@ -587,8 +616,9 @@ forgets every title kept.
 ### Saving
 
 One storage key, `game`, holds `{ version, save, bridge }`: the engine's save and
-`{ baselines, watchedUntil, autoSpend, tokenSource }`. A stored bridge without `tokenSource`
-that has a `watchedUntil` was watched through the history. It is loaded once with the engine's `migrate`, written
+`{ baselines, watchedUntil, autoSpend, travel, tokenSource }`. A stored bridge without
+`tokenSource` that has a `watchedUntil` was watched through the history; one without `travel`
+has it off. It is loaded once with the engine's `migrate`, written
 at most every 30 seconds after a change and when the plugin stops. It is never written when the
 stored value comes from a newer plugin (a newer wrapper `version` or a newer save `version`), or
 when it could not be read at all; then the game plays without saving. A failed write is logged
@@ -609,6 +639,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.assignRoom` | `/api/game/assign-room` | `{ roomId, worldId }`, `worldId` null for out of the game |
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
+| `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
@@ -623,7 +654,8 @@ the HTTP routes answer `{ ok: false, error }` with status 400.
 
 ### Save file
 
-`exportSave` answers `{ format: 'agent-center-game', version, exportedAt, save, autoSpend }`:
+`exportSave` answers `{ format: 'agent-center-game', version, exportedAt, save, autoSpend,
+travel }`:
 `version` is the stored wrapper's (`STORED_VERSION`), `exportedAt` an ISO time, `save` the
 engine's save as it is in memory, written or not. It never holds the baselines or
 `watchedUntil`: they describe this computer's sessions at the moment of the export. It works
@@ -635,7 +667,8 @@ changes, when the game is not running or the stored save is from a newer plugin,
 is not an object with that `format`, when its `version` or its save's `version` is newer than
 this plugin reads (the rule the storage uses), when its JSON is larger than the 240 KiB the
 storage keeps, or when its save, brought up to this version by `migrate`, does not pass
-`cleanSave`. Otherwise the save and `autoSpend` are taken from the file, the baselines and
+`cleanSave`. Otherwise the save, `autoSpend` and `travel` are taken from the file (a file
+without `travel` turns it off), the baselines and
 `watchedUntil` are forgotten as when the game is turned off, and the bridge forgets the last
 round, its links and the meters it read, so the next round counts from then and fights nothing,
 and nothing read before the import counts again. A round that was reading the sessions when the
@@ -646,11 +679,11 @@ by the usual closing rules.
 ## View state
 
 `controller.getState().game`. While the game is not running it is only
-`{ status, tokenSource: null, autoSpend, keepTitles }`. While it runs:
+`{ status, tokenSource: null, autoSpend, travel, keepTitles }`. While it runs:
 
 ```
 {
-  status: 'running', tokenSource: 'estimated', autoSpend: false, keepTitles: false,
+  status: 'running', tokenSource: 'estimated', autoSpend: false, travel: true, keepTitles: false,
   tickSeconds: 10,                  // the length of one tick of every fight, in game time
   worlds: [{
     id: 'main', level: 11, attackSpeed: 1.12,
@@ -664,6 +697,8 @@ by the usual closing rules.
   rooms: {
     'local:/work/sneaky-pancake': {
       worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
+      kills: 212,                   // every kill of the room; only a world reset lowers it
+      sceneTheme: 'guild-hall',     // only while the room travels: the theme to draw it in
       monster: { id, name, kind, rank, affix, level, healthShare: 0.12, hp: 412, maxHp: 3430,
         race, look: { rig, parts, colours } }, // hp rounded up, so a standing monster never reads 0
                                     // a hand-made entry, or a monster saved before looks, sends
@@ -691,6 +726,9 @@ by the usual closing rules.
 
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
+- `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw
+  the room in it instead of its usual theme; the next kill moves it on. The worker computes it,
+  so the panel, the tab and the external view agree.
 - A world's `orphans` are its projects left behind: in the save but not among the rooms the
   store shows now, with at least one chest item or retiree (`retiredCount` counts kept records
   and folded ones). `name` is the last segment of the room's folder, never its path. A room out
@@ -724,8 +762,9 @@ by the usual closing rules.
   A paused party says why: `blocked` when an agent is blocked, otherwise `waiting`. Sessions no
   agent on screen runs keep the state their last round read. A character whose agent left the
   room is not sent.
-- The game part is rebuilt only after a round, an action, or a change in the state of an agent
-  that has a character; between them every publish sends the same object.
+- The game part is rebuilt only after a round, an action, a change in the state of an agent
+  that has a character, or, while rooms travel, a change in the themes loaded or the rooms' own
+  themes; between them every publish sends the same object.
 
 ## Simulation
 

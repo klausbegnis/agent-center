@@ -30,6 +30,15 @@ All notable changes to this project are recorded here. The format follows
   `agent-center-save-YYYY-MM-DD.json` and shows it as text to copy (a download may be blocked in
   Orca's panel); **Import** takes a chosen or pasted file and, after a confirmation, replaces the
   whole game with it. Token counts are not in the file: after an import, counting starts again.
+- **New scene after each monster**, a game setting off by default: every room that plays and
+  has no theme of its own moves to another theme each time its monster dies, as if its party
+  travelled on. Each room walks through every theme before repeating one, in an order of its
+  own, so the panel, the tab and the external view agree and a restart keeps the scene. The
+  monsters come from the scene the room is in, under Random too. The old scene fades into the
+  new one while the party walks in; under reduced motion the change is immediate. The setting
+  is kept with the save and in an exported save file. Each room now counts all its kills
+  (`kills` in the save and the view state); older saves start the count at 0. The demo shows it
+  with `TRAVEL=1`.
 - A room that is no longer on screen (its folder moved or its worktree removed) keeps its chest
   and retirees in the save. The Arsenal's Items section lists them under **Chests left behind**,
   and **Move here** moves them into the room chosen there, in the same world, after asking;

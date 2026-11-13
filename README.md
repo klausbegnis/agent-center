@@ -104,6 +104,11 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   aura, and now and then a boss arrives legendary, in gold. The rarer the rank, the tougher the
   fight and the better the reward.
 - A room's theme adds a few monsters of its own on top.
+- **The party can travel.** Turn on **New scene after each monster** in the game's settings
+  and every room that plays without a theme of its own moves on to another theme each time its
+  monster dies, its party walking in as the old scene fades away. Each room goes through every
+  theme before it sees one again, its monsters come from the scene it is in, and every surface
+  shows the same scene. With only one theme installed it does nothing.
 
 ![The same monster as plain, veteran, elite and champion, and a boss as boss and legendary](docs/screenshots/game-ranks.png)
 
@@ -111,7 +116,8 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
 gains three tabs: **Rooms**, **Arsenal** (chest, party and camp) and **Skills**. The cog in the
-panel's header opens the game's own settings: worlds, auto-spend and the save file.
+panel's header opens the game's own settings: auto-spend, **New scene after each monster**
+(off by default; see "The party can travel" above), worlds and the save file.
 
 **Game mode: keep conversation titles** keeps a finished session's title on its retired
 character; it is off by default. Everything the game keeps stays on your computer. The full
@@ -151,7 +157,8 @@ Each room can use a different theme. The selector at the top sets the default, u
 room that has not picked its own; hover a room's title to give that room its own.
 
 Pick **Random** as the default to give each of those rooms a different theme instead of one
-shared look. The choice comes from the room itself, so a room keeps its theme across restarts
+shared look. In game mode, **New scene after each monster** moves those rooms (under Random or
+any other default) to a new theme with every kill instead. The choice comes from the room itself, so a room keeps its theme across restarts
 and looks the same in the panel, the tab and the external view. Rooms are spread over the
 themes as evenly as possible; opening a new project or adding a theme can move some of them.
 
@@ -241,6 +248,13 @@ GAME=1 node scripts/demo.mjs
 Turns game mode on with a made-up stream of tokens. Add `FREEZE=1` for a fixed save after a day
 of play.
 
+```bash
+GAME=1 TRAVEL=1 node scripts/demo.mjs random
+```
+
+Also turns on **New scene after each monster**, so each room changes scene with every kill. Name
+`random` or a theme: without one, every demo room has a theme of its own and stays put.
+
 ## How it works
 
 Two small programs that share one object, the view state:
@@ -297,7 +311,12 @@ Contributions are welcome.
 - With real token totals, game mode counts only sessions on this computer: Orca's session
   history does not cover paired machines, and leaves subagents out. Agents on paired machines
   then join their room's fight as guests with no token count, and a room whose only agents are
-  guests does not join the game. Under the Random theme the game uses its generic monsters.
+  guests does not join the game. Under the Random theme the game uses its generic monsters,
+  except in rooms that travel with **New scene after each monster**, whose monsters come from
+  their scene.
+- With **New scene after each monster**, adding or removing a theme changes the order the rooms
+  travel in, and the monster standing when the setting is turned on keeps its look until it
+  dies.
 - macOS and Linux are what it is tested on. On Windows the plugin loads, but it does not find
   the Orca CLI yet, so agents that were already running, paired machines, the bell and "Open
   workspace" on a terminal are missing.
