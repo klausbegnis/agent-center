@@ -96,18 +96,20 @@ export function setOptions(node, options) {
  *
  * @param {string} className
  * @param {string} viewBox
- * @param {{ className: string, d: string }[]} paths
+ * @param {{ className: string, d: string, fill?: string }[]} paths `fill` is a colour worked out
+ *   by the engine (never text from outside it), for drawings whose colours vary per monster
  */
 export function svgPaths(className, viewBox, paths) {
   const svg = document.createElementNS(SVG_NAMESPACE, 'svg')
   svg.setAttribute('class', className)
   svg.setAttribute('viewBox', viewBox)
   svg.setAttribute('aria-hidden', 'true')
-  for (const { className: pathClass, d } of paths) {
+  for (const { className: pathClass, d, fill } of paths) {
     if (!d) continue
     const path = document.createElementNS(SVG_NAMESPACE, 'path')
     path.setAttribute('class', pathClass)
     path.setAttribute('d', d)
+    if (fill) path.setAttribute('fill', fill)
     svg.append(path)
   }
   return svg
