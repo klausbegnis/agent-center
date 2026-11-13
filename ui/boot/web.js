@@ -10,6 +10,7 @@ const listeners = new Set()
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
 //   ?tab=rooms|arsenal|skills   open that tab of game mode
+//   ?section=items|party|camp   open that section of the Arsenal
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>

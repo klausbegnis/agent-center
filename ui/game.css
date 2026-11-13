@@ -428,42 +428,276 @@
 .ac-game-star { width: 11px; height: 11px; }
 .ac-game-stars-count { margin-left: 2px; font-size: 11px; font-weight: 700; }
 
-/* Arsenal: materials as tiles, characters as small cards, items with their price in icons. */
-.ac-game-materials {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+/* Arsenal: a head that stays in view (room, world, materials strip, section tabs) over the open
+   section. The head spans the panel and covers what scrolls under it. */
+.ac-game-arsenal-head[hidden],
+.ac-game-arsenal-section[hidden],
+.ac-game-arsenal-empty[hidden] { display: none; }
+.ac-game-arsenal-head {
+  grid-column: 1 / -1;
+  position: sticky;
+  /* The root's padding: the head sticks to the very top edge, so nothing shows above it. */
+  top: -12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  margin: 0 -12px;
+  padding: 6px 12px 0;
+  background: var(--orca-background, #171a21);
+  container: ac-arsenal-head / inline-size;
+}
+.ac-game-arsenal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ac-game-arsenal-row .ac-game-field { flex: 1 1 180px; min-width: 0; max-width: 420px; }
+.ac-game-arsenal-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
+
+/* The materials strip: icon and amount per tile, six to a row at 380 px, one row when wide. */
+.ac-game-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
+  border-radius: 4px;
 }
-.ac-game-material {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0 6px;
-  padding: 5px 7px;
-  border-radius: 6px;
-  border-left: 3px solid var(--ac-tile-color, transparent);
+.ac-game-strip:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+.ac-game-strip-tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 2px 3px;
+  border-radius: 4px;
+  border-bottom: 2px solid var(--ac-tile-color, transparent);
   background: var(--orca-secondary, #262b35);
+  font-size: 11px;
+  line-height: 1.3;
 }
-.ac-game-material-icon { grid-row: span 2; width: 20px; height: 20px; }
-.ac-game-material .ac-game-amount { font-size: 13px; }
-.ac-game-material-name {
+.ac-game-strip-shown { display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
+.ac-game-strip-icon { width: 13px; height: 13px; }
+.ac-game-strip-tile .ac-game-amount { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+/* All eleven in one row once they fit, never wider than a tile needs. */
+@container ac-arsenal-head (min-width: 620px) {
+  .ac-game-strip { grid-template-columns: repeat(11, minmax(0, 96px)); }
+}
+/* Names are written out while the strip has the focus; otherwise the tooltip carries them. */
+.ac-game-strip-name {
+  display: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--orca-muted-foreground, #9aa3b2);
 }
-.ac-game-heroes,
-.ac-game-items {
+.ac-game-strip:focus .ac-game-strip-name { display: block; }
+/* Short of a price on screen: a dashed frame and a "!", not only the colour. */
+.ac-game-strip-short { outline: 1px dashed var(--ac-game-warn); outline-offset: -1px; }
+.ac-game-strip-short .ac-game-amount { color: var(--ac-game-warn); }
+.ac-game-strip-mark { margin-left: auto; font-weight: 800; color: var(--ac-game-warn); }
+
+/* Section tabs: a smaller segmented row under the game's tabs. The open one is filled and
+   framed, not only coloured. */
+.ac-game-subtabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-subtab {
+  flex: 1 1 0;
+  max-width: 160px;
+  min-width: 0;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: none;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ac-game-subtab:hover { color: var(--orca-foreground, #e8eaf0); }
+.ac-game-subtab[aria-selected='true'] {
+  border-color: var(--orca-ring, #6fe0d2);
+  background: var(--orca-secondary, #262b35);
+  color: var(--orca-foreground, #e8eaf0);
+  box-shadow: inset 0 -2px 0 var(--orca-ring, #6fe0d2);
+}
+.ac-game-subtab:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+
+/* Sections span the panel and lay themselves out by their own width. */
+.ac-game-arsenal-section { grid-column: 1 / -1; min-width: 0; container-type: inline-size; }
+.ac-game-chest-section,
+.ac-game-party-section,
+.ac-game-camp-section { display: grid; gap: 10px; align-items: start; min-width: 0; }
+@container (min-width: 640px) {
+  .ac-game-chest-section { grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr); }
+  .ac-game-party-section { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
+}
+.ac-game-camp-upgrades {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 10px;
+}
+
+/* Item tiers, from common to rare: one ladder, used by every slot. The tier is also written in
+   the slot's corner, so it never rests on colour alone. */
+.ac-root {
+  --ac-tier-1: #7d8492;
+  --ac-tier-2: #c9ced8;
+  --ac-tier-3: #6fcf72;
+  --ac-tier-4: #3fc9b8;
+  --ac-tier-5: #5b9cff;
+  --ac-tier-6: #a77bff;
+  --ac-tier-7: #e46bd6;
+  --ac-tier-8: #f5953f;
+  --ac-tier-9: #f2c14e;
+  --ac-tier-10: #ff5f5f;
+}
+
+/* The chest: a framed box with a lid and a grid of square slots. */
+.ac-game-chest {
+  min-width: 0;
+  padding: 0 8px 8px;
+  border: 2px solid #5b4630;
+  border-radius: 8px;
+  background: #16130f;
+  box-shadow: inset 0 0 0 1px #000;
+}
+.ac-game-chest-lid {
+  position: relative;
+  margin: 0 -8px 8px;
+  padding: 6px 10px 7px;
+  border-bottom: 2px solid #5b4630;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(#4b3a28, #30251a);
+  font-size: 13px;
+  font-weight: 700;
+}
+/* The lock on the lid. */
+.ac-game-chest-lid::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  bottom: -6px;
+  width: 10px;
+  height: 12px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: var(--ac-game-gold);
+}
+.ac-game-chest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 4px;
+}
+.ac-game-chest-empty { margin-top: 6px; }
+.ac-game-chest-legend { margin: 6px 0 0; font-size: 10px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-chest-empty[hidden],
+.ac-game-item-detail[hidden] { display: none; }
+
+/* One slot: the item's icon in its own ink, the tier as the frame's colour and in the top left
+   corner, the level at the bottom right, "●" when held and "▲" when it can be upgraded now. */
+.ac-game-slotbox {
+  --ac-tier: var(--orca-border, #3a4150);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 2px solid var(--ac-tier);
+  border-radius: 4px;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--ac-tier) 24%, #1b1f27), #0f1116 78%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6);
+  color: #f4f1e8;
+  font: inherit;
+  line-height: 1;
+}
+button.ac-game-slotbox { cursor: pointer; }
+button.ac-game-slotbox:hover { filter: brightness(1.15); }
+.ac-game-slotbox[data-tier='1'] { --ac-tier: var(--ac-tier-1); }
+.ac-game-slotbox[data-tier='2'] { --ac-tier: var(--ac-tier-2); }
+.ac-game-slotbox[data-tier='3'] { --ac-tier: var(--ac-tier-3); }
+.ac-game-slotbox[data-tier='4'] { --ac-tier: var(--ac-tier-4); }
+.ac-game-slotbox[data-tier='5'] { --ac-tier: var(--ac-tier-5); }
+.ac-game-slotbox[data-tier='6'] { --ac-tier: var(--ac-tier-6); }
+.ac-game-slotbox[data-tier='7'] { --ac-tier: var(--ac-tier-7); }
+.ac-game-slotbox[data-tier='8'] { --ac-tier: var(--ac-tier-8); }
+.ac-game-slotbox[data-tier='9'] { --ac-tier: var(--ac-tier-9); }
+.ac-game-slotbox[data-tier='10'] { --ac-tier: var(--ac-tier-10); }
+.ac-game-slotbox-icon { width: 60%; height: 60%; filter: hue-rotate(var(--ac-item-turn, 0deg)); }
+.ac-game-slotbox-empty .ac-game-slotbox-icon { opacity: 0.25; filter: grayscale(1); }
+.ac-game-slotbox-free {
+  border: 1px dashed color-mix(in srgb, #5b4630 70%, transparent);
+  background: #0f0d0a;
+  box-shadow: none;
+}
+.ac-game-slotbox-tier,
+.ac-game-slotbox-level,
+.ac-game-slotbox-held,
+.ac-game-slotbox-ready-mark {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 800;
+  text-shadow: 0 1px 0 #000, 0 0 2px #000;
+}
+.ac-game-slotbox-tier { top: 2px; left: 3px; color: var(--ac-tier); }
+.ac-game-slotbox-level { right: 3px; bottom: 2px; font-size: 10px; }
+.ac-game-slotbox-held { bottom: 2px; left: 3px; }
+.ac-game-slotbox-ready-mark { top: 2px; right: 3px; color: var(--ac-game-good); }
+.ac-game-slotbox-ready { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 0 0 1px var(--ac-game-good); }
+/* The chosen slot is framed twice, and the focused one has the ring. */
+.ac-game-slotbox[aria-pressed='true'] { outline: 2px solid var(--orca-foreground, #e8eaf0); outline-offset: 1px; }
+.ac-game-slotbox:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+.ac-game-slotbox-small { flex: none; width: 30px; border-width: 1px; }
+.ac-game-slotbox-small .ac-game-slotbox-tier { top: 0; left: 1px; font-size: 8px; }
+.ac-game-slotbox-small .ac-game-slotbox-level { right: 1px; bottom: 0; font-size: 8px; }
+
+/* The chosen item's details, under the chest or beside it when wide. */
+.ac-game-item-detail { font-size: 12px; }
+.ac-game-item-detail .ac-game-slotbox { flex: none; width: 44px; }
+.ac-game-item-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ac-game-item-icon { width: 24px; height: 24px; }
+.ac-game-item-what { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-item-what-inline { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.ac-game-item-name { margin: 0; font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.ac-game-item-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+.ac-game-item-fact { display: contents; }
+.ac-game-item-fact dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-item-fact dd { margin: 0; }
+.ac-game-camp-upgrade { font-size: 12px; }
+/* A price in the Arsenal: its label, the materials stacked as they need, the button at the right. */
+.ac-game-arsenal-section .ac-game-buy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ac-game-arsenal-section .ac-game-buy-button { margin: 0; }
+
+/* Party: characters as small cards, then the retirees. */
+.ac-game-heroes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
   gap: 8px;
 }
-.ac-game-hero,
-.ac-game-item {
+.ac-game-hero {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -473,14 +707,11 @@
   background: var(--orca-secondary, #262b35);
   font-size: 12px;
 }
-.ac-game-hero-head,
-.ac-game-item-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ac-game-hero-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ac-game-hero-icon { width: 28px; height: 28px; }
-.ac-game-item-icon { width: 24px; height: 24px; }
-.ac-game-hero-who,
-.ac-game-item-what { display: flex; flex-direction: column; min-width: 0; }
-.ac-game-hero-who .ac-game-entry-name,
-.ac-game-item-what .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-game-hero-who { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-hero-who .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-game-hero-progress { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
 .ac-game-attributes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
@@ -499,10 +730,27 @@
 .ac-game-attribute dt { color: var(--orca-muted-foreground, #9aa3b2); }
 .ac-game-attribute abbr { text-decoration: none; }
 .ac-game-attribute dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
-.ac-game-slots { display: flex; flex-direction: column; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.ac-game-slot { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.ac-game-slot-icon { width: 16px; height: 16px; }
-.ac-game-slot-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A character's three slots side by side, each with its item's name beside it, cut short when
+   narrow; the slot's tooltip and label carry the whole name. */
+.ac-game-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-game-slot { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ac-game-slot-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: break-word;
+  font-size: 11px;
+  line-height: 1.2;
+}
 .ac-game-price {
   display: flex;
   flex-wrap: wrap;
@@ -512,8 +760,8 @@
   list-style: none;
 }
 .ac-game-price-entry { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.ac-game-price-short > span:nth-child(2) { color: var(--ac-game-warn); }
-.ac-game-item .ac-game-buy { margin-top: auto; }
+.ac-game-price-short .ac-game-amount { color: var(--ac-game-warn); }
+.ac-game-missing-mark { font-weight: 800; color: var(--ac-game-warn); }
 .ac-game-retiree { display: flex; align-items: flex-start; gap: 6px; }
 .ac-game-retiree-icon { width: 16px; height: 16px; margin-top: 1px; }
 .ac-game-retiree-facts { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
@@ -998,14 +1246,3 @@
   .ac-fight-regen { display: none; }
 }
 .ac-mini .ac-foe-damage { display: none; }
-/* An item's price beside its button: the label over the materials, the button at the right. */
-.ac-game-item .ac-game-buy {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 2px 8px;
-}
-.ac-game-item .ac-game-cost { grid-column: 1; font-size: 11px; }
-.ac-game-item .ac-game-price { grid-column: 1; flex-direction: column; gap: 1px; }
-.ac-game-item .ac-game-buy-button { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
-.ac-game-item { gap: 4px; }
