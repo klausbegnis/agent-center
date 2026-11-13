@@ -190,13 +190,32 @@ export const SKILL_LABEL = {
   runecraft: 'Runecraft'
 }
 
-/** What a room's party is doing, and the longer reason given on hover. */
-export const PARTY_LABEL = { fighting: 'Fighting', resting: 'Resting', paused: 'Paused', idle: 'Idle' }
+/**
+ * What a room's party is doing (see partyStatusOf in game-model.js), and the longer reason given
+ * on hover. A paused party says why in its label.
+ */
+export const PARTY_LABEL = {
+  fighting: 'Fighting',
+  resting: 'Resting',
+  idle: 'Idle',
+  starting: 'Getting ready',
+  waiting: 'Waits for you',
+  blocked: 'Agent blocked'
+}
 const PARTY_REASON = {
   fighting: 'The working agents are fighting.',
   resting: 'The party ran out of stamina and is resting before it fights on.',
-  paused: 'An agent is waiting for you, so this room\'s fight waits too.',
-  idle: 'No agent is working; idle characters gather materials.'
+  idle: 'No agent is working; idle characters gather materials.',
+  starting: 'The party has just formed; its first foe arrives in a moment.',
+  waiting: 'An agent is waiting for you, so this room\'s fight waits too.',
+  blocked: 'An agent is blocked and needs you, so this room\'s fight waits too.'
+}
+/** What the band says where the monster would be, when there is none, by the party's status. */
+const NO_MONSTER_LABEL = {
+  idle: 'Party idle, gathering',
+  starting: 'A foe approaches',
+  waiting: 'Fight on hold',
+  blocked: 'Fight on hold'
 }
 
 const MONSTER_KIND_LABEL = { common: 'Common', armored: 'Armored', ethereal: 'Ethereal', boss: 'Boss' }
@@ -251,8 +270,10 @@ export function monsterDescription(monster, healthText) {
   return parts.join(', ')
 }
 
+/** What stands in for the monster's name while there is none: "Party idle, gathering". */
+export const noMonsterLabel = (party) => NO_MONSTER_LABEL[party] ?? NO_MONSTER_LABEL.starting
+
 /** The labels of a room's fight that are not the monster's. */
-export const NO_MONSTER = 'No foe in sight'
 export const HEALTH_NAME = 'Health'
 export const STAMINA_NAME = 'Stamina'
 export const GUEST_MARK = 'guest'

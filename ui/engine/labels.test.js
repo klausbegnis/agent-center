@@ -5,7 +5,10 @@ import {
   actorDescription,
   defaultThemeOptions,
   hiddenSubagents,
+  noMonsterLabel,
   occupancy,
+  partyLabel,
+  partyReason,
   roomThemeOptions,
   roomTitle,
   since,
@@ -185,4 +188,22 @@ test('the prestige question says what is kept', async () => {
   assert.match(question, /level 1/)
   assert.match(question, /2 stars in all/)
   assert.match(question, /effective level stays 198/)
+})
+
+test('a paused party says why in a few words, and its reason in full', () => {
+  assert.equal(partyLabel('waiting'), 'Waits for you')
+  assert.equal(partyLabel('blocked'), 'Agent blocked')
+  assert.match(partyReason('blocked'), /blocked/)
+  assert.match(partyReason('waiting'), /waiting for you/)
+})
+
+test('with no monster the band says what the party does instead of a missing foe', () => {
+  assert.equal(noMonsterLabel('idle'), 'Party idle, gathering')
+  assert.equal(noMonsterLabel('starting'), 'A foe approaches')
+  assert.equal(noMonsterLabel('waiting'), 'Fight on hold')
+  assert.equal(noMonsterLabel('blocked'), 'Fight on hold')
+  for (const party of ['idle', 'starting', 'waiting', 'blocked', 'fighting', 'resting']) {
+    assert.notEqual(partyLabel(party), 'Paused')
+    assert.ok(partyLabel(party))
+  }
 })

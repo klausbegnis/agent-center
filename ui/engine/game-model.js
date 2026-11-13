@@ -41,12 +41,33 @@ export function isEstimated(game) {
 }
 
 /**
+ * What a room's party is doing, as the band says it. A paused party says why: an agent `blocked`
+ * or one `waiting` for the person. A party that works but has no monster yet is `starting`: it
+ * has just formed and its first foe comes with the next round. A worker that does not say why a
+ * party is paused, about a room that has no monster yet, is taken as starting too, so a room
+ * that has just joined never reads as paused.
+ *
+ * @param {{ party?: string, pausedBy?: string | null, monster?: object | null }} room
+ * @returns {'fighting' | 'resting' | 'idle' | 'starting' | 'waiting' | 'blocked'}
+ */
+export function partyStatusOf(room) {
+  const hasMonster = Boolean(room.monster)
+  if (room.party === 'paused') {
+    if (room.pausedBy === 'blocked' || room.pausedBy === 'waiting') return room.pausedBy
+    return hasMonster ? 'waiting' : 'starting'
+  }
+  if (room.party === 'fighting' || room.party === 'resting') return hasMonster ? room.party : 'starting'
+  return 'idle'
+}
+
+/**
  * The fight of a room that has joined the game, or null for a room that has not or is out of it.
  *
  * @param {object} game the view state's `game`
  * @param {string} roomId
- * @returns {null | { wave: number, waveKills: number, killsToPass: number, party: string,
- *   stamina: number, monster: object | null, health: number, isElite: boolean, isBoss: boolean }}
+ * @returns {null | { wave: number, waveKills: number, killsToPass: number,
+ *   party: ReturnType<typeof partyStatusOf>, stamina: number, monster: object | null,
+ *   health: number, isElite: boolean, isBoss: boolean }}
  */
 export function roomFight(game, roomId) {
   const room = game?.rooms?.[roomId]
@@ -56,7 +77,7 @@ export function roomFight(game, roomId) {
     wave: room.wave,
     waveKills: room.waveKills,
     killsToPass: room.killsToPass,
-    party: room.party,
+    party: partyStatusOf(room),
     stamina: clampShare(room.stamina),
     monster,
     health: clampShare(monster?.healthShare),

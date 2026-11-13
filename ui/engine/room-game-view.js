@@ -13,7 +13,7 @@ import {
   levelShort,
   monsterDescription,
   monsterTag,
-  NO_MONSTER,
+  noMonsterLabel,
   partyLabel,
   partyReason,
   STAMINA_NAME,
@@ -77,7 +77,7 @@ export function createRoomGame({ scene, theme }) {
 
     const healthText = formatShare(fight.health)
     monster.draw(fight.monster, fight.monster ? monsterDescription(fight.monster, healthText) : '')
-    foeName.textContent = fight.monster ? fight.monster.name : NO_MONSTER
+    foeName.textContent = fight.monster ? fight.monster.name : noMonsterLabel(fight.party)
     const tag = monsterTag(fight.monster)
     foeTag.textContent = tag ?? ''
     foeTag.hidden = !tag

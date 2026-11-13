@@ -197,7 +197,8 @@
   width: 21cqw;
 }
 .ac-game-party-state { font-weight: 700; white-space: nowrap; }
-.ac-game-party[data-party='paused'] .ac-game-party-state { color: var(--ac-bubble-wait); }
+.ac-game-party[data-party='waiting'] .ac-game-party-state { color: var(--ac-bubble-wait); }
+.ac-game-party[data-party='blocked'] .ac-game-party-state { color: var(--ac-bubble-blocked); }
 
 /* A monster stands on the band's floor; its size is a share of the band (a boss fills it). */
 .ac-monster {

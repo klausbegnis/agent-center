@@ -12,6 +12,7 @@ import {
   isEstimated,
   monsterAccent,
   newWorldId,
+  partyStatusOf,
   roomFight,
   roomWorlds,
   tabAfterKey,
@@ -96,9 +97,29 @@ test('a joined room shows its wave, its monster and its party', () => {
 })
 
 test('a joined room between monsters still shows its wave and party', () => {
-  const fight = roomFight({ rooms: { a: { ...fightingRoom, monster: null, party: 'paused' } } }, 'a')
+  const fight = roomFight({ rooms: { a: { ...fightingRoom, monster: null, party: 'idle' } } }, 'a')
   assert.equal(fight.monster, null)
   assert.equal(fight.health, 0)
+  assert.equal(fight.party, 'idle')
+})
+
+test('a paused party says whether an agent is blocked or waiting for the person', () => {
+  assert.equal(partyStatusOf({ ...fightingRoom, party: 'paused', pausedBy: 'blocked' }), 'blocked')
+  assert.equal(partyStatusOf({ ...fightingRoom, party: 'paused', pausedBy: 'waiting' }), 'waiting')
+  assert.equal(partyStatusOf({ ...fightingRoom, monster: null, party: 'paused', pausedBy: 'waiting' }), 'waiting')
+})
+
+test('a room that has just joined is getting ready, never paused', () => {
+  assert.equal(partyStatusOf({ ...fightingRoom, monster: null, party: 'fighting' }), 'starting')
+  // A worker that does not say why it paused, about a room with no monster yet.
+  assert.equal(partyStatusOf({ ...fightingRoom, monster: null, party: 'paused' }), 'starting')
+  assert.equal(partyStatusOf({ ...fightingRoom, party: 'paused' }), 'waiting')
+})
+
+test('a fighting, resting or idle party is shown as it is', () => {
+  assert.equal(partyStatusOf(fightingRoom), 'fighting')
+  assert.equal(partyStatusOf({ ...fightingRoom, party: 'resting' }), 'resting')
+  assert.equal(partyStatusOf({ ...fightingRoom, party: 'idle' }), 'idle')
 })
 
 test('a character is marked with its level and class, a guest only as a guest', () => {
