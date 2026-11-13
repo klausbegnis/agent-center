@@ -8,6 +8,7 @@ import {
   ELITE_ONE_IN,
   HITS_TO_KILL,
   MONSTER_KINDS,
+  REFERENCE_PARTY_SIZE,
   WAVE_KILLS_GROWTH
 } from './constants.mjs'
 import { monstersFor } from './content.mjs'
@@ -80,6 +81,8 @@ function resistancesFor(kind, affix) {
  * @param {string} options.projectId
  * @param {number} options.wave
  * @param {number} [options.kill] the monsters already killed on this wave
+ * @param {number} [options.partySize] the working characters it meets; the full reference party
+ *   when left out
  * @param {string | null} options.themeId the room's theme, for picking the entry
  * @param {{ monsters: object[] }} options.content a valid monsters file
  * @param {(level: number) => { physical: number, magical: number, total: number }} options.referencePartyHit
@@ -87,7 +90,10 @@ function resistancesFor(kind, affix) {
  *   maxHp: number, hp: number, physical: number, magical: number, attack: number, reward: number,
  *   loot: Record<string, number>, sprite: { body: string, accent: string } }}
  */
-export function monsterFor({ worldId, projectId, wave, kill = 0, themeId, content, referencePartyHit }) {
+export function monsterFor(options) {
+  const { worldId, projectId, wave, kill = 0, themeId, content, referencePartyHit } = options
+  const partySize = Math.min(options.partySize ?? REFERENCE_PARTY_SIZE, REFERENCE_PARTY_SIZE)
+  const partyShare = partySize / REFERENCE_PARTY_SIZE
   const where = { worldId, projectId, wave, kill }
   const kind = kindForWave(where)
   const affix = eliteFor(where)
@@ -95,7 +101,7 @@ export function monsterFor({ worldId, projectId, wave, kill = 0, themeId, conten
   const entry = entries[hashOf(rollText(where, 'entry')) % entries.length]
   const factors = MONSTER_KINDS[kind]
   const eliteHp = affix ? ELITE.hp : 1
-  const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * factors.hp * eliteHp
+  const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * partyShare * factors.hp * eliteHp
   return {
     id: entry.id,
     name: entry.name,

@@ -2,10 +2,10 @@
 // recorded, idle characters gather, and the working party of a project fights.
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
-import { GATHER_XP_PER_HOUR, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
+import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
 import { playFight, partyOf } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
-import { itemFactor } from './items.mjs'
+import { itemFactor, referenceGearLevel } from './items.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
 import { materialOfSkill } from './skills.mjs'
@@ -28,7 +28,7 @@ function gatherFor(world, project, character, hours) {
     tradeLevel: effectiveLevel(tradeSkill),
     effect: effectMultiplier(tradeSkill),
     worldLevel: worldLevel(world.skills),
-    toolFactor: itemFactor(tool),
+    toolFactor: itemFactor(tool) / GEAR_GROWTH ** referenceGearLevel(worldLevel(world.skills)),
     seasoning: seasoning(character.level),
     retireeBonus: retireeBonus(project)
   })

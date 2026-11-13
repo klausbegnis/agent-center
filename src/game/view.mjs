@@ -35,7 +35,7 @@ function groupEffect(upgradeId, level) {
   return { upgradeCostFactor: 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * level) }
 }
 
-function itemView(item, names, workbenchLevel) {
+function itemView(item, names, { workbenchLevel, level }) {
   return {
     id: item.id,
     name: names.get(item.entryId ?? item.id) ?? item.id,
@@ -46,14 +46,14 @@ function itemView(item, names, workbenchLevel) {
     power: effectiveGearLevel(item),
     factor: itemFactor(item),
     heldBy: item.heldBy,
-    upgradeCost: upgradeCost(item, { workbenchLevel })
+    upgradeCost: upgradeCost(item, { workbenchLevel, worldLevel: level })
   }
 }
 
-function characterView(character, project, names, workbenchLevel) {
+function characterView(character, project, names, prices) {
   const equipped = (id) => {
     const item = id ? findItem(project.chest, id) : null
-    return item ? itemView(item, names, workbenchLevel) : null
+    return item ? itemView(item, names, prices) : null
   }
   return {
     sessionId: character.sessionId,
@@ -86,7 +86,7 @@ function monsterView(monster) {
 }
 
 function projectView(projectId, project, world, names) {
-  const workbenchLevel = groupLevel(world.upgrades, 'workbench')
+  const prices = { workbenchLevel: groupLevel(world.upgrades, 'workbench'), level: worldLevel(world.skills) }
   return {
     id: projectId,
     wave: project.wave,
@@ -96,8 +96,8 @@ function projectView(projectId, project, world, names) {
     stamina: project.stamina,
     resting: project.restTicks > 0,
     party: Object.keys(project.characters).sort()
-      .map((sessionId) => characterView(project.characters[sessionId], project, names, workbenchLevel)),
-    chest: project.chest.map((item) => itemView(item, names, workbenchLevel)),
+      .map((sessionId) => characterView(project.characters[sessionId], project, names, prices)),
+    chest: project.chest.map((item) => itemView(item, names, prices)),
     retirees: project.retirees.map((retiree) => ({ ...retiree, attributes: { ...retiree.attributes } })),
     retiredCount: project.retiredCount,
     retireeBonus: retireeBonus(project)
@@ -113,7 +113,7 @@ function worldView(worldId, world, names) {
     materials: Object.fromEntries(MATERIALS.map((id) => [id, world.materials[id] ?? 0])),
     upgrades: GROUP_UPGRADE_IDS.map((upgradeId) => {
       const level = groupLevel(world.upgrades, upgradeId)
-      const cost = groupUpgradeCost(upgradeId, level)
+      const cost = groupUpgradeCost(upgradeId, level, worldLevel(world.skills))
       return { id: upgradeId, level, cost, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()

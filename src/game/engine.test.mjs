@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import {
   GATHER_STOPS_AFTER_HOURS,
+  GROUP_UPGRADES,
   MAX_FIGHT_TICKS_PER_ADVANCE,
   SKILL_CAP,
   TICK_SECONDS,
@@ -258,10 +259,11 @@ test('autoSpend buys upgrades and never spends more than the world has', () => {
 test('a group upgrade is bought only when the world can pay for it', () => {
   const save = partyOfFour()
   assert.equal(engine.buyGroupUpgrade(save, { worldId: 'main', upgradeId: 'campfire' }), save)
-  const rich = withMaterials(save, { logs: 1_000, crops: 1_000 })
+  const [first, second] = GROUP_UPGRADES.campfire.recipe
+  const rich = withMaterials(save, { [first]: 1_000, [second]: 1_000 })
   const bought = engine.buyGroupUpgrade(rich, { worldId: 'main', upgradeId: 'campfire' })
   assert.equal(bought.worlds.main.upgrades.campfire, 1)
-  assert.ok(bought.worlds.main.materials.logs < 1_000)
+  assert.ok(bought.worlds.main.materials[first] < 1_000)
 })
 
 test('prestige is refused below the cap and keeps the effective level at it', () => {

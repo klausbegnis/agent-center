@@ -4,9 +4,9 @@ import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
-import { itemFactor } from './items.mjs'
+import { itemFactor, referenceGearLevel } from './items.mjs'
 import { killsToPass, monsterFor } from './monsters.mjs'
-import { characterHit, partyHits, referenceAttributes, referenceGearLevel } from './power.mjs'
+import { characterHit, partyHits, referenceAttributes } from './power.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
 import { addMaterials } from './worlds.mjs'
 
@@ -70,8 +70,11 @@ export function partyAgainst(party, level) {
   }
 }
 
-/** The project's next monster, with the rune circle's head start taken off its health. */
-function spawn({ worldId, projectId, project, world, content, referencePartyHit }) {
+/**
+ * The project's next monster, measured against a party of the working party's size, with the
+ * rune circle's head start taken off its health.
+ */
+function spawn({ worldId, projectId, project, world, content, referencePartyHit, partySize }) {
   const monster = monsterFor({
     worldId,
     projectId,
@@ -79,7 +82,8 @@ function spawn({ worldId, projectId, project, world, content, referencePartyHit 
     kill: project.waveKills,
     themeId: project.themeId,
     content: content.monsters,
-    referencePartyHit
+    referencePartyHit,
+    partySize
   })
   const hp = monster.maxHp * (1 - runeCircleShare(groupLevel(world.upgrades, 'runeCircle')))
   return { ...monster, hp }
@@ -94,10 +98,17 @@ function settleKill(state, context) {
   state.materials = addMaterials(state.materials, reward.materials)
   const roll = { level: monster.level, themeId: state.themeId, seed }
   const entry = reward.itemDrop ? droppedEntry(content.items, roll) : null
-  if (entry) state.chest = addDrop(state.chest, entry)
+  let salvage = {}
+  if (entry) {
+    const dropped = addDrop(state.chest, entry, worldLevel)
+    state.chest = dropped.chest
+    salvage = dropped.salvage
+    state.materials = addMaterials(state.materials, salvage)
+  }
   events.push({
     type: 'kill', projectId, wave: state.wave, kind: monster.kind, affix: monster.affix,
-    ticks: state.fightTicks, rested: state.fightRested, materials: reward.materials, item: entry?.id ?? null
+    ticks: state.fightTicks, rested: state.fightRested, materials: addMaterials(reward.materials, salvage),
+    item: entry?.id ?? null
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
   state.waveKills += 1
@@ -108,7 +119,8 @@ function settleKill(state, context) {
   state.fightTicks = 0
   state.fightRested = false
   const { referencePartyHit } = context
-  state.monster = spawn({ worldId, projectId, project: state, world, content, referencePartyHit })
+  const partySize = party.size
+  state.monster = spawn({ worldId, projectId, project: state, world, content, referencePartyHit, partySize })
 }
 
 /** One tick: rest if resting, otherwise strike and be struck. */
@@ -165,7 +177,8 @@ export function playFight(options) {
     worldId, projectId, world, content, party, worldLevel, events, against, referencePartyHit
   }
   if (!state.monster) {
-    state.monster = spawn({ worldId, projectId, project: state, world, content, referencePartyHit })
+    const where = { worldId, projectId, project: state, world, content }
+    state.monster = spawn({ ...where, referencePartyHit, partySize: party.size })
   }
   for (let tick = 0; tick < ticks; tick++) playTick(state, context)
   const { materials, ...next } = state

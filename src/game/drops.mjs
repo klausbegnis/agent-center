@@ -3,8 +3,7 @@
 import { addToChest } from './chest.mjs'
 import { COPIES_PER_ITEM, DROP_SLOT_WEIGHTS, ITEM_MAX_TIER, TIER_LEVELS } from './constants.mjs'
 import { hashOf } from './hash.mjs'
-import { createItem } from './items.mjs'
-import { referenceGearLevel } from './power.mjs'
+import { createItem, referenceGearLevel, upgradeCost } from './items.mjs'
 import { CLASSES } from './skills.mjs'
 
 /**
@@ -61,16 +60,17 @@ export function droppedEntry(content, { level, themeId, seed }) {
 
 /**
  * Puts a dropped entry in the chest. Below COPIES_PER_ITEM copies of the entry it is a new copy
- * at level 0; past that the lowest copy gains an upgrade level instead, so nothing is lost and
- * the chest stays small.
+ * at level 0; past that it is salvaged into the materials one upgrade of a fresh copy costs in
+ * that world, so the chest stays small and a drop never adds power for free.
  *
  * @param {object[]} chest
  * @param {object} entry
- * @returns {object[]}
+ * @param {number} [worldLevel]
+ * @returns {{ chest: object[], salvage: Record<string, number> }}
  */
-export function addDrop(chest, entry) {
-  const copies = chest.filter((item) => (item.entryId ?? item.id) === entry.id)
-  if (copies.length < COPIES_PER_ITEM) return addToChest(chest, createItem(entry))
-  const lowest = copies.reduce((low, item) => (item.level < low.level ? item : low))
-  return chest.map((item) => (item === lowest ? { ...item, level: item.level + 1 } : item))
+export function addDrop(chest, entry, worldLevel = 0) {
+  const copies = chest.filter((item) => (item.entryId ?? item.id) === entry.id).length
+  const item = createItem(entry)
+  if (copies < COPIES_PER_ITEM) return { chest: addToChest(chest, item), salvage: {} }
+  return { chest, salvage: upgradeCost(item, { worldLevel }) }
 }

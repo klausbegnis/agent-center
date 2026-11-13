@@ -63,8 +63,9 @@ test('a character starts with one point in every attribute in a new world', () =
   assert.deepEqual(Object.values(attributes), [1, 1, 1, 1, 1, 1, 1])
 })
 
-test('a trained class skill gives newcomers half its effective level in the class attribute', () => {
-  const skills = { lore: { ...emptySkill(), level: 9, stars: 1 } }
+test('a trained world gives newcomers half its level in the class attribute', () => {
+  const trained = { ...emptySkill(), level: 9, stars: 1 }
+  const skills = { forge: trained, lore: trained, engineering: trained, arcana: trained, command: trained }
   const attributes = startingAttributes('defense', skills)
   assert.equal(attributes.resilience, 1 + Math.floor((SKILL_CAP + 9) / 2))
   assert.equal(attributes.strength, 1)

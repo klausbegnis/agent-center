@@ -10,14 +10,13 @@ import {
   VETERAN_BONUS_PER_LEVEL
 } from './constants.mjs'
 import { hashOf } from './hash.mjs'
-import { characterXpToNext, effectiveLevel, emptySkill } from './progression.mjs'
+import { characterXpToNext, worldLevel } from './progression.mjs'
 import {
   ATTRIBUTES,
   CLASSES,
   GATHERING_SKILLS,
   attributeForActivity,
-  attributeOfClass,
-  skillOfClass
+  attributeOfClass
 } from './skills.mjs'
 
 /**
@@ -64,8 +63,8 @@ export function tradeFor(sessionId) {
 }
 
 /**
- * One point in every attribute, plus half the class skill's effective level in the class
- * attribute: a world that trained the skill trains its newcomers too.
+ * One point in every attribute, plus half the world level in the class attribute: a world that
+ * trained its skills trains its newcomers too.
  *
  * @param {string} className
  * @param {{ [skillId: string]: Skill }} skills the world's skills
@@ -73,8 +72,7 @@ export function tradeFor(sessionId) {
  */
 export function startingAttributes(className, skills) {
   const attributes = Object.fromEntries(ATTRIBUTES.map((attribute) => [attribute, 1]))
-  const classSkill = skills[skillOfClass(className)] ?? emptySkill()
-  attributes[attributeOfClass(className)] += Math.floor(effectiveLevel(classSkill) / 2)
+  attributes[attributeOfClass(className)] += Math.floor(worldLevel(skills) / 2)
   return attributes
 }
 

@@ -1,16 +1,20 @@
 // What a world can buy with its materials: item upgrades and the three group upgrades, their costs
 // and effects, and the autoSpend policy that buys the best affordable purchase repeatedly.
-import { bestFreeItem } from './chest.mjs'
 import {
-  CAMPFIRE_STEP,
+  CAMPFIRE_HALF,
+  CAMPFIRE_MAX,
   GROUP_COST_BASE,
   GROUP_COST_GROWTH,
+  GROUP_LEVELS_PER_WORLD_LEVEL,
   GROUP_UPGRADES,
-  RUNE_CIRCLE_STEP,
+  REWARD_GROWTH,
+  RUNE_CIRCLE_HALF,
+  RUNE_CIRCLE_MAX,
   SPEND_MAX_PURCHASES,
   SPEND_WEIGHTS
 } from './constants.mjs'
 import { canAfford, payFor, upgradeCost } from './items.mjs'
+import { worldLevel } from './progression.mjs'
 
 /** The group upgrade ids, in the order they are shown and tried. */
 export const GROUP_UPGRADE_IDS = Object.freeze(Object.keys(GROUP_UPGRADES))
@@ -23,15 +27,20 @@ export const GROUP_UPGRADE_IDS = Object.freeze(Object.keys(GROUP_UPGRADES))
 export const groupLevel = (upgrades, upgradeId) => upgrades?.[upgradeId] ?? 0
 
 /**
- * The materials the next level of a group upgrade costs: GROUP_COST_BASE * GROUP_COST_GROWTH **
- * level of each of its two recipe materials, rounded.
+ * The materials the next level of a group upgrade costs, priced against the world like items:
+ * GROUP_COST_BASE * REWARD_GROWTH ** worldLevel * GROUP_COST_GROWTH ** (level -
+ * GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each of its two recipe materials, rounded, at
+ * least 1.
  *
  * @param {string} upgradeId one of GROUP_UPGRADE_IDS
  * @param {number} level the level it has now
+ * @param {number} [worldLevelNow] the world's level
  * @returns {Record<string, number>}
  */
-export function groupUpgradeCost(upgradeId, level) {
-  const amount = Math.round(GROUP_COST_BASE * GROUP_COST_GROWTH ** level)
+export function groupUpgradeCost(upgradeId, level, worldLevelNow = 0) {
+  const ahead = level - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevelNow
+  const full = GROUP_COST_BASE * REWARD_GROWTH ** worldLevelNow * GROUP_COST_GROWTH ** ahead
+  const amount = Math.max(1, Math.round(full))
   return Object.fromEntries(GROUP_UPGRADES[upgradeId].recipe.map((materialId) => [materialId, amount]))
 }
 
@@ -41,7 +50,7 @@ export function groupUpgradeCost(upgradeId, level) {
  * @param {number} level the campfire's level
  * @returns {number}
  */
-export const campfireShare = (level) => 1 - (1 - CAMPFIRE_STEP) ** level
+export const campfireShare = (level) => (CAMPFIRE_MAX * level) / (level + CAMPFIRE_HALF)
 
 /**
  * The share of its health every new monster starts without.
@@ -49,38 +58,31 @@ export const campfireShare = (level) => 1 - (1 - CAMPFIRE_STEP) ** level
  * @param {number} level the rune circle's level
  * @returns {number}
  */
-export const runeCircleShare = (level) => 1 - (1 - RUNE_CIRCLE_STEP) ** level
+export const runeCircleShare = (level) => (RUNE_CIRCLE_MAX * level) / (level + RUNE_CIRCLE_HALF)
 
 /**
- * The items of a project worth upgrading: those a living character holds, and the best free item
- * of each slot and weapon damage type, which the next character will take.
+ * The items of a project worth upgrading: those a living character holds.
  *
  * @param {object} project
  * @returns {object[]}
  */
 export function itemsInUse(project) {
-  const wanted = [
-    { slot: 'weapon', damageType: 'physical' },
-    { slot: 'weapon', damageType: 'magical' },
-    { slot: 'outfit' },
-    { slot: 'tool' }
-  ]
-  const nextIds = new Set(wanted.map((which) => bestFreeItem(project.chest, which)?.id).filter(Boolean))
-  return project.chest.filter((item) => item.heldBy !== null || nextIds.has(item.id))
+  return project.chest.filter((item) => item.heldBy !== null)
 }
 
 /** Every purchase a world could make now, affordable or not, in a stable order. */
 function purchasesOf(world) {
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
+  const level = worldLevel(world.skills)
   const purchases = []
   for (const projectId of Object.keys(world.projects).sort()) {
     for (const item of itemsInUse(world.projects[projectId])) {
-      const cost = upgradeCost(item, { workbenchLevel })
+      const cost = upgradeCost(item, { workbenchLevel, worldLevel: level })
       purchases.push({ kind: item.slot, projectId, itemId: item.id, cost })
     }
   }
   for (const upgradeId of GROUP_UPGRADE_IDS) {
-    const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId))
+    const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), level)
     purchases.push({ kind: 'group', upgradeId, cost })
   }
   return purchases

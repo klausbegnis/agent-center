@@ -5,7 +5,7 @@ import { advanceWithEvents } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
-import { canPrestige, prestige as prestigeSkill } from './progression.mjs'
+import { canPrestige, prestige as prestigeSkill, worldLevel } from './progression.mjs'
 import { forgetTitles } from './retirement.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
@@ -43,7 +43,8 @@ function upgradeItem(save, { projectId, itemId }) {
   const world = worldId === null ? null : save.worlds[worldId]
   const item = world?.projects[projectId] ? findItem(world.projects[projectId].chest, itemId) : null
   if (!item) return save
-  const cost = upgradeCost(item, { workbenchLevel: groupLevel(world.upgrades, 'workbench') })
+  const workbenchLevel = groupLevel(world.upgrades, 'workbench')
+  const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills) })
   const next = applyPurchase(world, { kind: item.slot, projectId, itemId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }
@@ -58,7 +59,7 @@ function upgradeItem(save, { projectId, itemId }) {
 function buyGroupUpgrade(save, { worldId, upgradeId }) {
   const world = save.worlds[worldId]
   if (!world || !GROUP_UPGRADE_IDS.includes(upgradeId)) return save
-  const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId))
+  const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), worldLevel(world.skills))
   const next = applyPurchase(world, { kind: 'group', upgradeId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }

@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  CLASS_HIT,
+  CLASS_SKILL_WEIGHT,
   GEAR_GROWTH,
   NEWCOMER_SHARE,
+  PACE_MAX,
+  PACE_MIN,
   POWER_GROWTH,
   REFERENCE_GEAR_PER_LEVEL,
   SEASONED_LEVEL,
@@ -39,10 +43,10 @@ test('a normal working pace counts as one', () => {
   assert.equal(pace(20_000), 1)
 })
 
-test('pace never drops below a quarter or rises above double', () => {
-  assert.equal(pace(0), 0.25)
-  assert.equal(pace(1_000_000), 2)
-  assert.equal(pace(Number.NaN), 0.25)
+test('pace never drops below its minimum or rises above its maximum', () => {
+  assert.equal(pace(0), PACE_MIN)
+  assert.equal(pace(1_000_000), PACE_MAX)
+  assert.equal(pace(Number.NaN), PACE_MIN)
 })
 
 test('precision adds half a percent of critical chance per point', () => {
@@ -55,7 +59,7 @@ test('critical chance stops at one half', () => {
 
 test('a bare seasoned physical character at level 1 hits by the formula', () => {
   const hit = characterHit({ character: character('physical'), skills: {}, tokensPerMinute: 20_000 })
-  close(hit.amount, 10 * POWER_GROWTH * 1.3 * 1.05)
+  close(hit.amount, 10 * POWER_GROWTH * CLASS_HIT.physical * 1.05)
   assert.equal(hit.type, 'physical')
 })
 
@@ -67,7 +71,7 @@ test('only the magical class deals magical damage', () => {
   assert.deepEqual(types, ['physical', 'magical', 'physical', 'physical'])
 })
 
-test('the class skill, attribute, weapon, pace and agility all raise the hit', () => {
+test('the class skill above the world level, attribute, weapon, pace and agility all raise the hit', () => {
   const base = characterHit({ character: character('magical'), skills: {}, tokensPerMinute: 20_000 }).amount
   const trained = characterHit({
     character: character('magical', { attributes: { ...BARE_ATTRIBUTES, arcane: 10, agility: 10 } }),
@@ -75,7 +79,7 @@ test('the class skill, attribute, weapon, pace and agility all raise the hit', (
     weaponFactor: 1.5,
     tokensPerMinute: 40_000
   }).amount
-  close(trained / base, POWER_GROWTH * 1.2 * 1.5 * 2 * 1.1)
+  close(trained / base, 2 ** CLASS_SKILL_WEIGHT * 1.2 * 1.5 * pace(40_000) * 1.1)
 })
 
 test('with the same attributes a newcomer hits for the newcomer share of a seasoned character', () => {
@@ -154,11 +158,23 @@ test('the reference character has the attribute points a real one earns by the s
 })
 
 test('a prestige star makes the class skill hit harder at the same effective level', () => {
-  const plain = { level: 99, xp: 0, banked: 0, stars: 0 }
-  const starred = { level: 99, xp: 0, banked: 0, stars: 1 }
+  const plain = { level: 149, xp: 0, banked: 0, stars: 0 }
+  const starred = { level: 50, xp: 0, banked: 0, stars: 1 }
   const hitWith = (skill) => characterHit({ character: character('physical'), skills: { forge: skill },
     tokensPerMinute: 20_000 }).amount
-  close(hitWith(starred) / hitWith(plain), POWER_GROWTH ** 99 * (1 + STAR_EFFECT_BONUS))
+  close(hitWith(starred) / hitWith(plain), 1 + STAR_EFFECT_BONUS)
+})
+
+test('a class skill below the world level weakens the hit, but only by a bounded factor', () => {
+  const at = (level) => ({ level, xp: 0, banked: 0, stars: 0 })
+  const skills = { forge: at(40), lore: at(40), engineering: at(40), arcana: at(40), command: at(10) }
+  const support = characterHit({ character: character('support'), skills, tokensPerMinute: 20_000 }).amount
+  const even = { ...skills, command: at(40) }
+  const evenSupport = characterHit({
+    character: character('support'), skills: even, tokensPerMinute: 20_000
+  }).amount
+  assert.ok(support < evenSupport)
+  assert.ok(support > evenSupport * POWER_GROWTH ** -30)
 })
 
 test('the reference party keeps growing across a prestige of its skills', () => {
@@ -167,7 +183,7 @@ test('the reference party keeps growing across a prestige of its skills', () => 
 
 test('the reference party lives in a world whose five work skills are all at its level', () => {
   const level = 150
-  const growth = referencePartyHit(level).total / referencePartyHit(level - 1).total
-  assert.ok(growth > POWER_GROWTH, 'the world level, not only the class skills, follows the level')
-  assert.ok(referenceAttributes('physical', level).strength >= 1 + Math.floor(level / 2))
+  const viaClassSkills = referencePartyHit(level).total / referencePartyHit(level - 1).total
+  assert.ok(viaClassSkills > POWER_GROWTH, 'the world level, not only the class skills, follows the level')
+  assert.equal(referenceAttributes('physical', level).strength >= 1 + Math.floor(level / 2), true)
 })

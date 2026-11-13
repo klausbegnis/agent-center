@@ -2,11 +2,24 @@
 // it. Stats are computed here; the item entries in game/items.json carry no numbers.
 import {
   GEAR_GROWTH,
+  REFERENCE_GEAR_PER_LEVEL,
+  REWARD_GROWTH,
   TIER_LEVELS,
   UPGRADE_COST_BASE,
   UPGRADE_COST_GROWTH,
   WORKBENCH_DISCOUNT_PER_LEVEL
 } from './constants.mjs'
+
+/**
+ * The upgrade levels the reference party's gear is worth at a level. Fractional: the reference
+ * keeps up smoothly instead of in steps.
+ *
+ * @param {number} level a monster's or a world's level
+ * @returns {number}
+ */
+export function referenceGearLevel(level) {
+  return REFERENCE_GEAR_PER_LEVEL * level
+}
 
 /**
  * An item's power in upgrade levels: its own level plus TIER_LEVELS for each tier above the
@@ -57,16 +70,18 @@ export function createItem(entry) {
 
 /**
  * The materials one upgrade of the item costs: the same amount of each of its two recipe
- * materials, `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel`, divided by
- * `1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel`, rounded, at least 1.
+ * materials, `UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel * UPGRADE_COST_GROWTH **
+ * (effectiveGearLevel - referenceGearLevel(worldLevel))`, divided by `1 +
+ * WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel`, rounded, at least 1.
  *
  * @param {{ tier: number, level: number, recipe: string[] }} item
- * @param {{ workbenchLevel?: number }} [options]
+ * @param {{ workbenchLevel?: number, worldLevel?: number }} [options]
  * @returns {Record<string, number>}
  */
-export function upgradeCost(item, { workbenchLevel = 0 } = {}) {
+export function upgradeCost(item, { workbenchLevel = 0, worldLevel = 0 } = {}) {
   const discount = 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
-  const full = UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel(item)
+  const ahead = effectiveGearLevel(item) - referenceGearLevel(worldLevel)
+  const full = UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel * UPGRADE_COST_GROWTH ** ahead
   const amount = Math.max(1, Math.round(full * discount))
   return Object.fromEntries(item.recipe.map((materialId) => [materialId, amount]))
 }

@@ -4,6 +4,7 @@ import {
   ATTRIBUTE_HIT_BONUS,
   BASE_HIT,
   CLASS_HIT,
+  CLASS_SKILL_WEIGHT,
   CRIT_BASE,
   CRIT_DAMAGE,
   CRIT_MAX,
@@ -18,15 +19,17 @@ import {
   PACE_MAX,
   PACE_MIN,
   POWER_GROWTH,
-  REFERENCE_GEAR_PER_LEVEL,
   REFERENCE_TOKENS_PER_MINUTE,
   SEASONED_LEVEL,
   SKILL_CAP,
   SUPPORT_AURA
 } from './constants.mjs'
 import { fortuneAttribute, seasoning, startingAttributes } from './characters.mjs'
-import { effectMultiplier, effectiveLevel, emptySkill } from './progression.mjs'
+import { referenceGearLevel } from './items.mjs'
+import { effectMultiplier, effectiveLevel, emptySkill, worldLevel } from './progression.mjs'
 import { CLASSES, WORK_SKILLS, attributeForActivity, attributeOfClass, skillOfClass } from './skills.mjs'
+
+export { referenceGearLevel }
 
 /** The activities that train an attribute, which the reference character spreads its points over. */
 const REFERENCE_ACTIVITIES = ['write', 'read', 'run', 'think', 'delegate']
@@ -56,6 +59,21 @@ export function critChance(precision) {
 }
 
 /**
+ * How much a character's class skill adds to its hit: (effective level of the class skill /
+ * world level) ** CLASS_SKILL_WEIGHT, times the skill's star effect. 1 when the class skill is
+ * at the world level without stars.
+ *
+ * @param {string} className
+ * @param {{ [skillId: string]: Skill }} skills the world's skills
+ * @returns {number}
+ */
+export function classSkillFactor(className, skills) {
+  const classSkill = skills[skillOfClass(className)] ?? emptySkill()
+  const ratio = effectiveLevel(classSkill) / worldLevel(skills)
+  return ratio ** CLASS_SKILL_WEIGHT * effectMultiplier(classSkill)
+}
+
+/**
  * @param {{ character: Character, skills: { [skillId: string]: Skill }, weaponFactor?: number,
  *   tokensPerMinute: number }} options `weaponFactor` is the weapon's upgrade and tier factor
  * @returns {Hit}
@@ -63,11 +81,10 @@ export function critChance(precision) {
 export function characterHit({ character, skills, weaponFactor = 1, tokensPerMinute }) {
   const className = character.class
   const { attributes } = character
-  const classSkill = skills[skillOfClass(className)] ?? emptySkill()
   const amount =
     BASE_HIT *
-    POWER_GROWTH ** effectiveLevel(classSkill) *
-    effectMultiplier(classSkill) *
+    POWER_GROWTH ** worldLevel(skills) *
+    classSkillFactor(className, skills) *
     (1 + ATTRIBUTE_HIT_BONUS * (attributes[attributeOfClass(className)] ?? 0)) *
     weaponFactor *
     seasoning(character.level) *
@@ -101,17 +118,6 @@ export function partyHits(members) {
 function skillAtEffectiveLevel(level) {
   const stars = Math.max(0, Math.floor((level - 1) / SKILL_CAP))
   return { ...emptySkill(), level: level - stars * SKILL_CAP, stars }
-}
-
-/**
- * The upgrade levels the reference party's gear is worth at a monster level. Fractional: the
- * reference keeps up smoothly instead of in steps.
- *
- * @param {number} level
- * @returns {number}
- */
-export function referenceGearLevel(level) {
-  return REFERENCE_GEAR_PER_LEVEL * level
 }
 
 /**

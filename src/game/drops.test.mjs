@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { COPIES_PER_ITEM, ITEM_MAX_TIER, TIER_LEVELS } from './constants.mjs'
 import { addDrop, dropTier, droppedEntry } from './drops.mjs'
-import { effectiveGearLevel } from './items.mjs'
+import { upgradeCost } from './items.mjs'
 import { referenceGearLevel } from './power.mjs'
 
 const items = JSON.parse(readFileSync(new URL('../../game/items.json', import.meta.url), 'utf8'))
@@ -39,12 +39,15 @@ test('a drop is generic or of the room\'s theme, and never above the drop tier',
   }
 })
 
-test('a drop is a new copy until the chest holds enough, then it upgrades the lowest copy', () => {
+test('a drop is a new copy until the chest holds enough, then it is salvaged into materials', () => {
   let chest = []
-  for (let copy = 0; copy < COPIES_PER_ITEM; copy++) chest = addDrop(chest, entry)
+  for (let copy = 0; copy < COPIES_PER_ITEM; copy++) {
+    const dropped = addDrop(chest, entry)
+    assert.deepEqual(dropped.salvage, {})
+    chest = dropped.chest
+  }
   assert.equal(chest.length, COPIES_PER_ITEM)
-  const before = chest.reduce((sum, item) => sum + effectiveGearLevel(item), 0)
-  chest = addDrop(chest, entry)
-  assert.equal(chest.length, COPIES_PER_ITEM)
-  assert.equal(chest.reduce((sum, item) => sum + effectiveGearLevel(item), 0), before + 1)
+  const surplus = addDrop(chest, entry)
+  assert.equal(surplus.chest, chest)
+  assert.deepEqual(surplus.salvage, upgradeCost(chest[0]))
 })

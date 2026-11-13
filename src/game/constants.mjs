@@ -26,6 +26,13 @@ export const STAR_EFFECT_BONUS = 0.02
 
 /** Power grows by this factor per effective level, for characters and monsters alike. */
 export const POWER_GROWTH = 1.04
+/**
+ * A character fights at its world's level, like the monsters, and its class skill adds a
+ * bounded factor: (effective level of the class skill / world level) ** CLASS_SKILL_WEIGHT.
+ * The five skills drift apart in proportion (one can be twice another), so a class skill used
+ * as a level of its own would make one class many times too strong.
+ */
+export const CLASS_SKILL_WEIGHT = 0.5
 export const BASE_HIT = 10
 /** Damage added per point of the class attribute. */
 export const ATTRIBUTE_HIT_BONUS = 0.02
@@ -34,8 +41,8 @@ export const GEAR_GROWTH = 1.1
 /** One item tier is worth this many upgrade levels, in effect and in upgrade cost. */
 export const TIER_LEVELS = 2
 /**
- * The reference party's gear is worth this many upgrade levels per monster level, so gear is
- * about a fifth of a hit in an established world.
+ * The reference party's gear is worth this many upgrade levels per monster level (one every
+ * eight levels), so gear is about a fifth of a hit in an established world.
  */
 export const REFERENCE_GEAR_PER_LEVEL = 0.125
 /**
@@ -75,6 +82,12 @@ export const STARTING_LUCK_SPREAD = 4
 /** One combat tick is this much working time. A reference party kills in HITS_TO_KILL ticks. */
 export const TICK_SECONDS = 10
 export const HITS_TO_KILL = 24
+/**
+ * A monster's health is measured against a reference party of as many working characters as
+ * the party it meets, up to this many: one per class. Most projects have one or two sessions at
+ * a time, and they should still kill in about HITS_TO_KILL ticks.
+ */
+export const REFERENCE_PARTY_SIZE = 4
 /**
  * Without defence or healing, a reference party's stamina lasts this many ticks: fewer than
  * HITS_TO_KILL, so such a party rests during its first kill.
@@ -162,33 +175,47 @@ export const ITEM_DROP_MAX = 0.5
 export const ELITE_ITEM_DROP_FACTOR = 3
 /** A drop is a weapon this many times as often as an outfit or a tool. */
 export const DROP_SLOT_WEIGHTS = { weapon: 2, outfit: 1, tool: 1 }
-/** A chest keeps this many copies of an entry; another drop of it upgrades the lowest copy. */
+/**
+ * A chest keeps this many copies of an entry; a further drop of it is salvaged into the
+ * materials of one upgrade of a fresh copy.
+ */
 export const COPIES_PER_ITEM = 4
 
 /**
- * Upgrading an item of effective gear level e costs UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** e
- * of each of its two recipe materials, so a higher tier costs more to upgrade.
+ * Upgrades are priced against the world: an item at the reference gear of its world's level
+ * costs UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel of each recipe material, which grows like
+ * kill rewards, and every level above the reference multiplies that by UPGRADE_COST_GROWTH
+ * (every level below divides it). Gear then stays near the reference however fast a party
+ * kills, and a project that lags catches up cheaply.
  */
-export const UPGRADE_COST_BASE = 50
-export const UPGRADE_COST_GROWTH = 1.35
+export const UPGRADE_COST_BASE = 400
+export const UPGRADE_COST_GROWTH = 2
 export const ITEM_MAX_TIER = 10
 /** A workbench of level L divides upgrade costs by 1 + WORKBENCH_DISCOUNT_PER_LEVEL * L. */
 export const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
-/** After each kill a campfire of level L gives back 1 - (1 - CAMPFIRE_STEP) ** L of the missing stamina. */
-export const CAMPFIRE_STEP = 0.1
-/** A rune circle of level L takes 1 - (1 - RUNE_CIRCLE_STEP) ** L off every new monster's health. */
-export const RUNE_CIRCLE_STEP = 0.02
 /**
- * The group upgrades of a world and the two materials each costs. Level L costs
- * GROUP_COST_BASE * GROUP_COST_GROWTH ** L of each, rounded.
+ * Group upgrade effects approach a ceiling without reaching it, so they keep growing with no
+ * level cap and never trivialise fights: an effect of level L is MAX * L / (L + HALF).
+ * The campfire gives back that share of the missing stamina after each kill; the rune circle
+ * takes that share off every new monster's health.
+ */
+export const CAMPFIRE_MAX = 0.6
+export const CAMPFIRE_HALF = 5
+export const RUNE_CIRCLE_MAX = 0.2
+export const RUNE_CIRCLE_HALF = 10
+/**
+ * The group upgrades of a world and the two materials each costs. Like items they are priced
+ * against the world: level L costs GROUP_COST_BASE * REWARD_GROWTH ** worldLevel *
+ * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded.
  */
 export const GROUP_UPGRADES = {
   campfire: { recipe: ['logs', 'crops'] },
   workbench: { recipe: ['ore', 'gears'] },
   runeCircle: { recipe: ['runes', 'crystals'] }
 }
-export const GROUP_COST_BASE = 80
-export const GROUP_COST_GROWTH = 1.35
+export const GROUP_COST_BASE = 400
+export const GROUP_COST_GROWTH = 2
+export const GROUP_LEVELS_PER_WORLD_LEVEL = 0.1
 /**
  * autoSpend buys the affordable purchase with the lowest cost divided by its weight, so a weapon
  * in use is upgraded before a group upgrade, an outfit or a tool of the same price.

@@ -11,7 +11,8 @@ const WHOLE_UNIT_TOLERANCE = 1e-9
  *
  * @param {{ tradeLevel: number, effect?: number, worldLevel?: number, toolFactor?: number,
  *   seasoning?: number, retireeBonus?: number }} input `tradeLevel` is the effective level of
- *   the character's gathering skill and `effect` its star effect multiplier.
+ *   the character's gathering skill, `effect` its star effect multiplier and `toolFactor` the
+ *   tool's factor against the reference gear of the world level (1 for a tool at the reference).
  * @returns {number}
  */
 export function gatherRate({

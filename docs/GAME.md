@@ -75,8 +75,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 - Class: chosen when the character is created, among the classes least present in its
   project's living characters; ties are broken by a hash of the session id. The same session
   id in the same party always gets the same class.
-- Starting attributes: 1 each, plus `floor(effectiveLevel(classSkill) / 2)` in the class
-  attribute ("trained by those who came before"). Luck starts at `1 + hash(sessionId) mod
+- Starting attributes: 1 each, plus `floor(worldLevel / 2)` in the class attribute ("trained
+  by those who came before"). Luck starts at `1 + hash(sessionId) mod
   STARTING_LUCK_SPREAD`.
 - Each character level gives `CLASS_POINTS_PER_LEVEL` to the class attribute,
   `ACTIVITY_POINTS_PER_LEVEL` to the attribute of the activity that earned most experience
@@ -89,7 +89,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 Per tick, one working character deals:
 
 ```
-hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
+hit = BASE_HIT * POWER_GROWTH ** worldLevel
+    * (E / worldLevel) ** CLASS_SKILL_WEIGHT * (1 + STAR_EFFECT_BONUS * stars)
     * (1 + ATTRIBUTE_HIT_BONUS * classAttribute)
     * itemFactor(weapon)
     * seasoning(characterLevel)
@@ -99,7 +100,10 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
     * (1 + HASTE_PER_AGILITY * agility)
 ```
 
-- `E` is the effective level of the class skill and `stars` its prestige stars.
+- `E` is the effective level of the class skill and `stars` its prestige stars. A character
+  fights at its world's level, like the monsters; its class skill adds a bounded factor. The
+  five skills drift apart in proportion (one can be twice another), so a class skill used as a
+  level of its own would make one class many times too strong.
 - `itemFactor(item) = GEAR_GROWTH ** effectiveGearLevel(item)` with `effectiveGearLevel =
   level + TIER_LEVELS * (tier - 1)`: a tier is a head start worth `TIER_LEVELS` upgrades. No
   item counts as factor 1.
@@ -123,12 +127,16 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
   monsters an hour. With one kill per wave the wave would run far ahead of the world; with
   this rule it settles a few levels above it and fights keep coming.
 - `referencePartyHit(level)` is the total hit of four reference characters, one per class,
-  with `E = level` (with as many stars as that needs), character level `SEASONED_LEVEL`, the
+  in a world whose five work skills all have effective level `level` (with as many stars as
+  that needs), character level `SEASONED_LEVEL`, the
   attributes a real character has at that level (starting attributes plus the class and
   fortune points of every level, and its activity points spread evenly over the five
   activities), gear worth `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, with aura
   and full party bonus.
-- `monsterHp = HITS_TO_KILL * referencePartyHit(level) * kind.hp * (elite ? ELITE.hp : 1)`.
+- `monsterHp = HITS_TO_KILL * referencePartyHit(level) * min(n, REFERENCE_PARTY_SIZE) /
+  REFERENCE_PARTY_SIZE * kind.hp * (elite ? ELITE.hp : 1)`, with `n` the working characters
+  when the monster appears. Most projects have one or two sessions at a time; they still kill
+  in about `HITS_TO_KILL` ticks, and the class mix and the support's aura still matter.
 - Damage taken is multiplied by `kind.physical` or `kind.magical` by type.
 - Kind: the first monster of every `BOSS_EVERY`-th wave is a `boss`; otherwise a hash of
   world, project, wave and kill picks `common` (`COMMON_SHARE`), `armored` (`ARMORED_SHARE`) or
@@ -155,8 +163,8 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
   The entry is the highest tier up to `dropTier(level) = 1 + floor(REFERENCE_GEAR_PER_LEVEL *
   level / TIER_LEVELS)` (at most `ITEM_MAX_TIER`) among the generic and the room theme's
   entries: a drop helps a project catch up with the reference gear, never jumps past it. The
-  chest keeps `COPIES_PER_ITEM` copies of an entry; a further drop of it adds one upgrade level
-  to its lowest copy instead.
+  chest keeps `COPIES_PER_ITEM` copies of an entry; a further drop of it is salvaged into the
+  materials one upgrade of a fresh copy costs, so a drop never adds power for free.
 
 ## Time
 
@@ -185,9 +193,10 @@ project id:
 
 - An idle character gathers its trade:
   `GATHER_PER_HOUR * REWARD_GROWTH ** worldLevel * (1 + GATHER_SKILL_BONUS *
-  effectiveLevel(trade)) * (1 + STAR_EFFECT_BONUS * stars(trade)) * itemFactor(tool) *
-  seasoning * (1 + retireeBonus)` units per hour. The world level term keeps gathering a
-  steady share of income as kill rewards grow.
+  effectiveLevel(trade)) * (1 + STAR_EFFECT_BONUS * stars(trade)) * toolFactor * seasoning *
+  (1 + retireeBonus)` units per hour, with `toolFactor = itemFactor(tool) / GEAR_GROWTH **
+  referenceGearLevel(worldLevel)` (1 for a tool at the reference). The world level term keeps
+  gathering a steady share of income as kill rewards grow.
 - Each hour gathered gives `GATHER_XP_PER_HOUR` experience to that gathering skill (gathering
   skills are the one exception to "experience from tokens only", and they never feed work
   skills). Fractions of a unit are carried by the character to the next reading.
@@ -195,26 +204,37 @@ project id:
 
 ## Spending
 
+- Prices follow the world. An item whose effective gear level is at the reference gear of the
+  world level costs `UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel` of each recipe material,
+  which grows like kill rewards; each level above the reference multiplies that by
+  `UPGRADE_COST_GROWTH`, each level below divides it. Why: rewards come per kill and a strong
+  party kills faster, so with prices fixed by item level alone gear ran away from the
+  monsters. Priced this way gear stays near the reference however fast a party kills, and a
+  project that lags catches up cheaply.
 - Group upgrades, per world, each with a two-material recipe in `GROUP_UPGRADES`. Level L
-  costs `round(GROUP_COST_BASE * GROUP_COST_GROWTH ** L)` of each material. None has a cap:
-  - `campfire`: after each kill the party gets back `1 - (1 - CAMPFIRE_STEP) ** L` of its
-    missing stamina (healing between fights).
+  costs `round(GROUP_COST_BASE * REWARD_GROWTH ** worldLevel * GROUP_COST_GROWTH ** (L -
+  GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel))` of each material, at least 1. No level cap; the
+  campfire and the rune circle approach a ceiling (`MAX * L / (L + HALF)`) so they never make
+  fights trivial:
+  - `campfire`: after each kill the party gets back `CAMPFIRE_MAX * L / (L + CAMPFIRE_HALF)`
+    of its missing stamina (healing between fights).
   - `workbench`: item upgrades cost `1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * L)`.
-  - `runeCircle`: every new monster starts with `1 - (1 - RUNE_CIRCLE_STEP) ** L` less health.
-- `autoSpend` looks at every item a living character holds, the best free item of each slot
-  and weapon damage type (the next character's pick), and the three group upgrades. Among the
-  affordable ones it buys the one with the lowest total cost divided by `SPEND_WEIGHTS` of its
-  kind, and repeats, at most `SPEND_MAX_PURCHASES` times a call.
+  - `runeCircle`: every new monster starts with `RUNE_CIRCLE_MAX * L / (L + RUNE_CIRCLE_HALF)`
+    less health.
+- `autoSpend` looks at every item a living character holds and the three group upgrades.
+  Among the affordable ones it buys the one with the lowest total cost divided by
+  `SPEND_WEIGHTS` of its kind, and repeats, at most `SPEND_MAX_PURCHASES` times a call.
 
 ## Items, chest, retirement
 
 - An item has a slot (`weapon`, `outfit`, `tool`), for weapons a damage type, a tier 1 to 10
   and an upgrade level from 0 with no limit. Stats are computed from tier and level; no item
   carries hand-typed numbers.
-- Upgrading an item costs `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel /
-  (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)`, rounded and at least 1, of each of the
-  two materials in the item's recipe. A higher tier costs more to upgrade, as much as the same
-  power reached by levels.
+- Upgrading an item costs `UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel *
+  UPGRADE_COST_GROWTH ** (effectiveGearLevel - referenceGearLevel(worldLevel)) / (1 +
+  WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)`, rounded and at least 1, of each of the two
+  materials in the item's recipe (see "Spending"). A higher tier costs more to upgrade, as
+  much as the same power reached by levels.
 - Each project has a chest. A new character takes, by itself, the best free item of each slot
   (highest effective gear level, then tier, then level, then id), with a weapon of its class's
   damage type.

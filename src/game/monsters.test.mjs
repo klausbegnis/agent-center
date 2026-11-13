@@ -144,3 +144,13 @@ test('a wave at or below the world level passes with one kill, and each level ab
   assert.equal(killsToPass(11, 10), WAVE_KILLS_GROWTH)
   assert.equal(killsToPass(14, 10), WAVE_KILLS_GROWTH ** 4)
 })
+
+test('a monster met by a smaller party has health for that many reference characters', () => {
+  const where = { worldId: 'main', projectId: 'cosmic-llama', wave: 12, themeId: null }
+  const options = { ...where, content: content(), referencePartyHit }
+  const full = monsterFor(options)
+  const pair = monsterFor({ ...options, partySize: 2 })
+  const crowd = monsterFor({ ...options, partySize: 9 })
+  assert.ok(Math.abs(pair.maxHp - full.maxHp / 2) < 1e-6)
+  assert.equal(crowd.maxHp, full.maxHp)
+})

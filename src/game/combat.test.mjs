@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { HITS_TO_KILL, MITIGATION_CAP, MONSTER_KINDS, STAMINA_TICKS } from './constants.mjs'
+import {
+  ELITE_ITEM_DROP_FACTOR,
+  HITS_TO_KILL,
+  ITEM_DROP_BASE,
+  ITEM_DROP_MAX,
+  ITEM_DROP_PER_LUCK,
+  MITIGATION_CAP,
+  MONSTER_KINDS,
+  STAMINA_TICKS
+} from './constants.mjs'
 import { fightTick, healing, mitigation, monsterAttack, referenceStamina, rewardFor } from './combat.mjs'
 
 const referencePartyHit = (level) => ({
@@ -201,19 +210,21 @@ test('the same kill always gives the same reward', () => {
 })
 
 const dropShare = (monster, luck) => {
-  const seeds = Array.from({ length: 4000 }, (_, index) => `world-1|rumble-banana|${index}`)
+  const seeds = Array.from({ length: 40_000 }, (_, index) => `world-1|rumble-banana|${index}`)
   return seeds.filter((seed) => rewardFor(monster, { luck, seed }).itemDrop).length / seeds.length
 }
+const near = (actual, expected) => Math.abs(actual - expected) < expected * 0.15
 
-test('items drop about one kill in twenty without luck', () => {
-  assert.ok(Math.abs(dropShare(monsterOf('common', 5), 0) - 0.05) < 0.015)
+test('items drop at the base chance without luck', () => {
+  assert.ok(near(dropShare(monsterOf('common', 5), 0), ITEM_DROP_BASE))
 })
 
-test('luck raises the item drop chance up to half of the kills', () => {
-  assert.ok(dropShare(monsterOf('common', 5), 20) > dropShare(monsterOf('common', 5), 0) + 0.05)
-  assert.ok(Math.abs(dropShare(monsterOf('common', 5), 10_000) - 0.5) < 0.03)
+test('luck raises the item drop chance up to its cap', () => {
+  const lucky = ITEM_DROP_BASE + 50 * ITEM_DROP_PER_LUCK
+  assert.ok(near(dropShare(monsterOf('common', 5), 50), lucky))
+  assert.ok(near(dropShare(monsterOf('common', 5), 1_000_000), ITEM_DROP_MAX))
 })
 
-test('an elite triples the item drop chance', () => {
-  assert.ok(Math.abs(dropShare(monsterOf('common', 5, 'swift'), 0) - 0.15) < 0.02)
+test('an elite multiplies the item drop chance', () => {
+  assert.ok(near(dropShare(monsterOf('common', 5, 'swift'), 0), ITEM_DROP_BASE * ELITE_ITEM_DROP_FACTOR))
 })
