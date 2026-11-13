@@ -128,7 +128,8 @@ test('the retiree bonus stops at its cap', () => {
 })
 
 test('the retiree bonus reaches its cap exactly when the kept records are full', () => {
-  const full = project({ retirees: Array.from({ length: RETIREES_KEPT }, (_, index) => retireeRecord(`old-${index}`)) })
+  const records = Array.from({ length: RETIREES_KEPT }, (_, index) => retireeRecord(`old-${index}`))
+  const full = project({ retirees: records })
   const almost = project({ retirees: full.retirees.slice(1) })
   assert.equal(retireeBonus(full), RETIREE_BONUS_MAX)
   assert.ok(retireeBonus(almost) < RETIREE_BONUS_MAX)

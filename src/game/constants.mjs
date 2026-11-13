@@ -104,11 +104,17 @@ export const MITIGATION_CAP = 0.75
 export const MITIGATION_HALF = 0.5
 /**
  * Healing per tick is HEAL_CAP_SHARE * m / (m + HEAL_HALF) of the stamina pool for the sum m of
- * medicine ratios: a reference supporter heals a little more than a common monster drains
- * through a reference defender, so a balanced party holds against common monsters.
+ * medicine ratios: a reference supporter heals 4% a tick, more than the 3.1% a common monster
+ * drains through a reference defender, so a balanced party holds against common monsters even
+ * with gear somewhat behind the reference.
  */
-export const HEAL_CAP_SHARE = 0.065
+export const HEAL_CAP_SHARE = 0.08
 export const HEAL_HALF = 1
+/**
+ * A party's stamina pool is the reference's times (outfit factor / reference outfit factor) **
+ * OUTFIT_STAMINA_WEIGHT: outfits matter, but a project whose outfits lag is not exhausted at once.
+ */
+export const OUTFIT_STAMINA_WEIGHT = 0.5
 /**
  * A regenerating monster heals this share of its health each tick it survives, but never more
  * than REGENERATING_DAMAGE_SHARE of the damage it took that tick, so any party can beat it.
@@ -121,6 +127,11 @@ export const ENRAGED_MAX_BONUS = 1
 export const THORNY_SHARE = 0.5
 /** A swift monster strikes this much harder. */
 export const SWIFT_ATTACK = 1.5
+/**
+ * Fight time beyond this many ticks between two readings is not counted (eight hours): a long
+ * gap, such as a computer waking up, stays cheap to compute.
+ */
+export const MAX_FIGHT_TICKS_PER_ADVANCE = 2880
 
 export const MONSTER_KINDS = {
   common: { hp: 1, attack: 1, physical: 1, magical: 1, reward: 1 },
@@ -130,9 +141,14 @@ export const MONSTER_KINDS = {
 }
 export const ELITE = { hp: 1.5, reward: 3 }
 
-/** Units an idle character gathers per hour before bonuses, and when gathering stops. */
+/**
+ * Units an idle character gathers per hour before bonuses, at world level 0. The rate grows by
+ * REWARD_GROWTH per world level, like kill rewards, so gathering stays a steady share of income.
+ */
 export const GATHER_PER_HOUR = 20
 export const GATHER_SKILL_BONUS = 0.04
+/** Experience an hour of gathering gives the trade's skill. */
+export const GATHER_XP_PER_HOUR = 300
 export const GATHER_STOPS_AFTER_HOURS = 8
 export const REWARD_BASE = 10
 export const REWARD_GROWTH = 1.03
@@ -141,6 +157,10 @@ export const ITEM_DROP_BASE = 0.05
 export const ITEM_DROP_PER_LUCK = 0.005
 export const ITEM_DROP_MAX = 0.5
 export const ELITE_ITEM_DROP_FACTOR = 3
+/** A drop is a weapon this many times as often as an outfit or a tool. */
+export const DROP_SLOT_WEIGHTS = { weapon: 2, outfit: 1, tool: 1 }
+/** A chest keeps this many copies of an entry; another drop of it upgrades the lowest copy. */
+export const COPIES_PER_ITEM = 4
 
 /**
  * Upgrading an item of effective gear level e costs UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** e
@@ -151,6 +171,28 @@ export const UPGRADE_COST_GROWTH = 1.35
 export const ITEM_MAX_TIER = 10
 /** A workbench of level L divides upgrade costs by 1 + WORKBENCH_DISCOUNT_PER_LEVEL * L. */
 export const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
+/** After each kill a campfire of level L gives back 1 - (1 - CAMPFIRE_STEP) ** L of the missing stamina. */
+export const CAMPFIRE_STEP = 0.1
+/** A rune circle of level L takes 1 - (1 - RUNE_CIRCLE_STEP) ** L off every new monster's health. */
+export const RUNE_CIRCLE_STEP = 0.02
+/**
+ * The group upgrades of a world and the two materials each costs. Level L costs
+ * GROUP_COST_BASE * GROUP_COST_GROWTH ** L of each, rounded.
+ */
+export const GROUP_UPGRADES = {
+  campfire: { recipe: ['logs', 'crops'] },
+  workbench: { recipe: ['ore', 'gears'] },
+  runeCircle: { recipe: ['runes', 'crystals'] }
+}
+export const GROUP_COST_BASE = 80
+export const GROUP_COST_GROWTH = 1.35
+/**
+ * autoSpend buys the affordable purchase with the lowest cost divided by its weight, so a weapon
+ * in use is upgraded before a group upgrade, an outfit or a tool of the same price.
+ */
+export const SPEND_WEIGHTS = { weapon: 3, group: 1.5, outfit: 1, tool: 1 }
+/** autoSpend stops after this many purchases in one call. */
+export const SPEND_MAX_PURCHASES = 500
 /**
  * Each retiree adds RETIREE_BONUS to its project's gathering, up to RETIREES_KEPT of them: the
  * cap is reached exactly when the kept records are full.

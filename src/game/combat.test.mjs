@@ -173,7 +173,8 @@ test('a regenerating monster heals after it is hit, but not past its full health
 test('a regenerating monster always loses health to a weak party, so it can be beaten', () => {
   const monster = monsterOf('common', 10, 'regenerating')
   const weak = { physical: monster.maxHp * 0.002, magical: 0 }
-  const result = fightTick({ monster, hits: weak, defenders: [], supporters: [], stamina: 100, maxStamina: 100 })
+  const party = { hits: weak, defenders: [], supporters: [] }
+  const result = fightTick({ monster, ...party, stamina: 100, maxStamina: 100 })
   assert.ok(result.monster.hp < monster.maxHp)
 })
 

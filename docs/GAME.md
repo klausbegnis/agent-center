@@ -4,6 +4,31 @@ An optional layer on top of the rooms. The tokens a session spends become progre
 is the contract for the engine in `src/game/`. The engine is pure: no I/O, no timers, no Orca
 API, no DOM. Nothing here is wired to the worker or the UI yet.
 
+## The engine
+
+`createEngine({ content: { monsters, items } })` takes the parsed `game/monsters.json` and
+`game/items.json` and returns functions that each take a save and return a new one. None of
+them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
+milliseconds the caller passes.
+
+| Function | What it does |
+|---|---|
+| `applyTokens(save, { projectId, sessionId, tokens, activity, now, themeId?, title?, guest? })` | Counts the tokens a session spent since the last reading. Creates the world, the project (wave at the world level, starter chest) and the character when missing; a session found among the project's retirees comes back instead. Grants experience to the activity's work skill and to the character, and records `lastTokenAt`. A guest or an excluded project changes nothing. |
+| `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest? }` with `state` one of `working`, `waiting`, `blocked`, `idle`. See "Time". |
+| `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, affix, ticks, whether the party rested, materials and dropped item. |
+| `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
+| `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
+| `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
+| `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
+| `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
+| `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
+| `view(save)` | A plain summary for a UI: per world the level, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
+
+The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
+retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
+upgrades and `autoSpend`), `drops.mjs` (item drops) and `view.mjs`, over the rule modules
+described below.
+
 Every number lives in `src/game/constants.mjs`. Formulas below name those constants.
 
 ## Principles
@@ -122,17 +147,63 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
 - A regenerating elite heals `REGENERATING_SHARE` of its health a tick, never more than
   `REGENERATING_DAMAGE_SHARE` of the damage it took that tick, so every fight can be won.
 - Reward for a kill: `REWARD_BASE * REWARD_GROWTH ** level * kind.reward` materials, split by
-  the monster's loot table, times `ELITE.reward` for an elite, with an item drop whose chance
-  grows with the party's luck.
+  the monster's loot table, times `ELITE.reward` for an elite.
+- Item drop: chance `min(ITEM_DROP_MAX, ITEM_DROP_BASE + ITEM_DROP_PER_LUCK * luck)` with the
+  working party's summed luck, times `ELITE_ITEM_DROP_FACTOR` for an elite (same cap). The slot
+  is picked by hash with `DROP_SLOT_WEIGHTS`, a weapon's damage type by a class picked by hash.
+  The entry is the highest tier up to `dropTier(level) = 1 + floor(REFERENCE_GEAR_PER_LEVEL *
+  level / TIER_LEVELS)` (at most `ITEM_MAX_TIER`) among the generic and the room theme's
+  entries: a drop helps a project catch up with the reference gear, never jumps past it. The
+  chest keeps `COPIES_PER_ITEM` copies of an entry; a further drop of it adds one upgrade level
+  to its lowest copy instead.
+
+## Time
+
+`advance(save, { from, to, sessions })` handles each project that has a reading, in order of
+project id:
+
+- Each reported character's `state` is recorded.
+- Idle characters gather (see "Gathering").
+- If any of the project's sessions is `waiting` or `blocked`, the whole party waits with it:
+  no fight.
+- Otherwise the `working` characters fight, guests included, for the interval plus the time
+  left over from earlier readings, in whole ticks of `TICK_SECONDS`. More than
+  `MAX_FIGHT_TICKS_PER_ADVANCE` ticks in one reading are not counted, so a long gap is cheap.
+  Many short readings fight exactly as far as one long one.
+- One tick: a resting party counts down its rest (`REST_SECONDS`) and is back to full stamina
+  at the end of it. Otherwise the party strikes and the monster strikes back (see "Monsters
+  and waves"). On a kill the reward is added to the world, a drop goes into the chest, the
+  campfire restores stamina, the wave's kill count goes up (and the wave when it is passed),
+  and the next monster appears with the rune circle's cut taken off its health.
+- The party's stamina pool is `referenceStamina(level) * (outfit factor / GEAR_GROWTH **
+  referenceGearLevel(level)) ** OUTFIT_STAMINA_WEIGHT`, with the mean outfit factor of the
+  working characters. The save keeps stamina as a share of the pool.
+- Sessions that are not reported, and projects without a reading, do nothing.
 
 ## Gathering
 
-- An idle character (its agent done, seen or not) gathers its trade:
-  `GATHER_PER_HOUR * (1 + GATHER_SKILL_BONUS * effectiveLevel(trade)) * toolFactor *
-  seasoning * (1 + retireeBonus)` units per hour.
-- Each unit gathered is one experience point in that gathering skill (gathering skills are
-  the one exception to "experience from tokens only", and they never feed work skills).
+- An idle character gathers its trade:
+  `GATHER_PER_HOUR * REWARD_GROWTH ** worldLevel * (1 + GATHER_SKILL_BONUS *
+  effectiveLevel(trade)) * (1 + STAR_EFFECT_BONUS * stars(trade)) * itemFactor(tool) *
+  seasoning * (1 + retireeBonus)` units per hour. The world level term keeps gathering a
+  steady share of income as kill rewards grow.
+- Each hour gathered gives `GATHER_XP_PER_HOUR` experience to that gathering skill (gathering
+  skills are the one exception to "experience from tokens only", and they never feed work
+  skills). Fractions of a unit are carried by the character to the next reading.
 - Gathering stops `GATHER_STOPS_AFTER_HOURS` after the last tokens arrived in that world.
+
+## Spending
+
+- Group upgrades, per world, each with a two-material recipe in `GROUP_UPGRADES`. Level L
+  costs `round(GROUP_COST_BASE * GROUP_COST_GROWTH ** L)` of each material. None has a cap:
+  - `campfire`: after each kill the party gets back `1 - (1 - CAMPFIRE_STEP) ** L` of its
+    missing stamina (healing between fights).
+  - `workbench`: item upgrades cost `1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * L)`.
+  - `runeCircle`: every new monster starts with `1 - (1 - RUNE_CIRCLE_STEP) ** L` less health.
+- `autoSpend` looks at every item a living character holds, the best free item of each slot
+  and weapon damage type (the next character's pick), and the three group upgrades. Among the
+  affordable ones it buys the one with the lowest total cost divided by `SPEND_WEIGHTS` of its
+  kind, and repeats, at most `SPEND_MAX_PURCHASES` times a call.
 
 ## Items, chest, retirement
 
@@ -146,19 +217,22 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
 - Each project has a chest. A new character takes, by itself, the best free item of each slot
   (highest effective gear level, then tier, then level, then id), with a weapon of its class's
   damage type.
+- A new project's chest holds the lowest generic tier of a weapon for each class (three
+  physical, one magical), an outfit and a tool.
 - When a session closes its character retires: its items go back to the chest and a retiree
   record is kept (generated name id, class, level, tokens, main skill, time; the session title
   only when the setting allows it). Each retiree adds `RETIREE_BONUS` to the project's
-  gathering, up to `RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT`. The last `RETIREES_KEPT` are kept; older ones fold
-  into a counter. A session that comes back with the same id leaves retirement with its level
-  and takes its items back when they are free.
+  gathering, up to `RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT`. The last
+  `RETIREES_KEPT` are kept; older ones fold into a counter. A session that comes back with the
+  same id leaves retirement with its level and attributes and takes the best free items.
 
 ## Worlds
 
 - Progress is kept per world. Each project belongs to one world or to none (out of the game).
   Skills, materials and group upgrades are per world; wave, chest and retirees per project.
-- Characters on a host without session history are guests: they fight with newcomer power
-  and keep no progress.
+- Characters on a host without session history are guests: they fight as a level 1 character
+  of the world with no gear, and leave nothing behind: no character, retiree or experience.
+  Kills they help with still pay the project.
 
 ## Content
 
@@ -167,8 +241,8 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
   hints and an optional list of themes. No entry holds a balance number.
 - A theme may later bring its own monster parts and names; until then the default set is split
   between the shipped themes, with a generic set for any other theme.
-- A monster for a wave is picked by hash among the entries of that kind that match the room's
-  theme, falling back to the generic ones.
+- A monster is picked by hash among the entries of its kind that match the room's theme,
+  falling back to the generic ones. The room's theme is the last `themeId` a reading gave.
 
 ## Save shape
 
@@ -179,14 +253,20 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles } }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt }
-Project   { wave, monster, stamina, restingUntil, chest: Item[],
-            characters: { [sessionId]: Character }, retirees: Retiree[], retiredCount }
+Project   { wave, waveKills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
+            themeId, chest: Item[], characters: { [sessionId]: Character },
+            retirees: Retiree[], retiredCount }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
-            tokens, bornAt, lastSeenAt }
+            tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state }
+Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
 ```
+
+`stamina` is a share of the party's pool; `restTicks` the rest left; `fightMs` fight time not
+yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
+a character's experience by work skill, for the retiree's main skill.
 
 ## Simulation
 
-`node scripts/simulate-game.mjs` plays usage scenarios through the engine and prints how
+`npm run simulate` plays usage scenarios through the engine and prints how
 levels, waves, materials and upgrades progress over days, weeks and months. A balance change
 is judged by its output, not by eye.

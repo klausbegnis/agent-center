@@ -25,14 +25,23 @@ export function emptyWorld() {
 }
 
 /**
+ * A project before its first fight. `stamina` is a share of the party's pool, `restTicks` the
+ * fight ticks of rest left, `fightMs` fight time not yet worth a whole tick, and `fightTicks` and
+ * `fightRested` describe the fight under way.
+ *
  * @param {{ wave?: number }} [start] the wave is the world level when the project first joins
  */
 export function emptyProject({ wave = FIRST_WAVE } = {}) {
   return {
     wave,
+    waveKills: 0,
     monster: null,
-    stamina: null,
-    restingUntil: null,
+    stamina: 1,
+    restTicks: 0,
+    fightMs: 0,
+    fightTicks: 0,
+    fightRested: false,
+    themeId: null,
     chest: [],
     characters: {},
     retirees: [],
@@ -137,6 +146,27 @@ export function resetWorld(save, worldId) {
 }
 
 /**
+ * @param {object} world
+ * @param {string} projectId
+ * @param {object} project
+ * @returns {object} the world with that project replaced
+ */
+export const withProjectIn = (world, projectId, project) => ({
+  ...world,
+  projects: { ...world.projects, [projectId]: project }
+})
+
+/**
+ * @param {object} project
+ * @param {object} character
+ * @returns {object} the project with that character replaced
+ */
+export const withCharacter = (project, character) => ({
+  ...project,
+  characters: { ...project.characters, [character.sessionId]: character }
+})
+
+/**
  * @param {Record<string, number>} materials
  * @param {Record<string, number>} more
  * @returns {Record<string, number>} both added together
@@ -162,6 +192,10 @@ function normalizeProject(value) {
   return {
     ...project,
     wave: isNumber(project.wave) ? project.wave : FIRST_WAVE,
+    waveKills: isNumber(project.waveKills) ? project.waveKills : 0,
+    stamina: isNumber(project.stamina) ? Math.min(1, Math.max(0, project.stamina)) : 1,
+    restTicks: isNumber(project.restTicks) ? project.restTicks : 0,
+    fightMs: isNumber(project.fightMs) ? project.fightMs : 0,
     chest: Array.isArray(project.chest) ? project.chest.filter(isPlainObject) : [],
     characters: keepEntries(project.characters, isPlainObject),
     retirees: Array.isArray(project.retirees) ? project.retirees.filter(isPlainObject) : [],

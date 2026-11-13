@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { GATHER_PER_HOUR, GATHER_SKILL_BONUS, GATHER_STOPS_AFTER_HOURS } from './constants.mjs'
+import { GATHER_PER_HOUR, GATHER_SKILL_BONUS, GATHER_STOPS_AFTER_HOURS, REWARD_GROWTH } from './constants.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
 
 const HOUR = 3_600_000
@@ -13,6 +13,12 @@ test('trade level, tool, seasoning and retirees all multiply the rate', () => {
   const rate = gatherRate({ tradeLevel: 10, toolFactor: 2, seasoning: 0.75, retireeBonus: 0.1 })
   const expected = GATHER_PER_HOUR * (1 + GATHER_SKILL_BONUS * 10) * 2 * 0.75 * 1.1
   assert.ok(Math.abs(rate - expected) < 1e-9)
+})
+
+test('the rate grows with the world level like kill rewards, and with the trade\'s stars', () => {
+  const base = gatherRate({ tradeLevel: 0 })
+  assert.ok(Math.abs(gatherRate({ tradeLevel: 0, worldLevel: 30 }) - base * REWARD_GROWTH ** 30) < 1e-9)
+  assert.ok(Math.abs(gatherRate({ tradeLevel: 0, effect: 1.04 }) - base * 1.04) < 1e-9)
 })
 
 test('the whole interval counts while the last tokens are recent', () => {

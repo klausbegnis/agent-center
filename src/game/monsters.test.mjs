@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { BOSS_EVERY, ELITE, ELITE_ONE_IN, HITS_TO_KILL, MONSTER_KINDS, WAVE_KILLS_GROWTH } from './constants.mjs'
+import {
+  BOSS_EVERY,
+  ELITE,
+  ELITE_ONE_IN,
+  HITS_TO_KILL,
+  MONSTER_KINDS,
+  WAVE_KILLS_GROWTH
+} from './constants.mjs'
 import { AFFIXES, eliteFor, killsToPass, kindForWave, monsterFor } from './monsters.mjs'
 
 const referencePartyHit = (level) => ({
@@ -120,7 +127,8 @@ test('a theme without its own entry of a kind gets a generic one', () => {
 })
 
 test('only the first monster of a boss wave is the boss', () => {
-  const kinds = [1, 2, 3, 4, 5].map((kill) => kindForWave({ worldId: 'main', projectId: 'cosmic-llama', wave: 20, kill }))
+  const where = { worldId: 'main', projectId: 'cosmic-llama', wave: 20 }
+  const kinds = [1, 2, 3, 4, 5].map((kill) => kindForWave({ ...where, kill }))
   assert.ok(kinds.every((kind) => kind !== 'boss'))
 })
 
