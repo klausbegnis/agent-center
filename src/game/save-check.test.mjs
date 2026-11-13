@@ -96,3 +96,28 @@ test('a value that is not a save of this version is refused', () => {
   assert.equal(cleanSave(null).ok, false)
   assert.equal(cleanSave({ ...emptySave(), version: 2 }).ok, false)
 })
+
+test('a generated monster keeps its rank and look, and a made-up look is refused', () => {
+  const look = { rig: 'humanoid', parts: { head: 'goblin-grin', extras: ['cape'], held: null }, colours: { skin: '#8f9a62' } }
+  const generated = withRoom((project) => {
+    delete project.monster.sprite
+    Object.assign(project.monster, { rank: 'veteran', dropFactor: 1.5, race: 'goblin', look })
+  })
+  const cleaned = cleanSave(generated)
+  assert.equal(cleaned.ok, true)
+  assert.deepEqual(cleaned.save.worlds.main.projects[ROOM].monster.look, look)
+  assert.equal(cleaned.save.worlds.main.projects[ROOM].monster.rank, 'veteran')
+
+  const badColour = withRoom((project) => {
+    Object.assign(project.monster, { race: 'goblin', look: { ...look, colours: { skin: 'url(x)' } } })
+  })
+  assert.equal(cleanSave(badColour).ok, false)
+  const badRank = withRoom((project) => {
+    project.monster.rank = 'godlike'
+  })
+  assert.equal(cleanSave(badRank).ok, false)
+  const nothingToDraw = withRoom((project) => {
+    delete project.monster.sprite
+  })
+  assert.equal(cleanSave(nothingToDraw).ok, false)
+})

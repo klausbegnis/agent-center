@@ -2,7 +2,7 @@
 // from the fields the engine writes, so nothing made up can be stored. `migrate` repairs what the
 // plugin's own storage holds; a file is refused instead as soon as one part is not what the engine
 // would have written. Pure.
-import { ITEM_MAX_TIER, MONSTER_KINDS } from './constants.mjs'
+import { ITEM_MAX_TIER, MONSTER_KINDS, MONSTER_RANKS } from './constants.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS } from './spending.mjs'
@@ -156,11 +156,60 @@ function retiree(value, path) {
   }
 }
 
+const COLOUR = /^#[0-9a-f]{6}$/i
+/** A look names a handful of parts and colours; more than this did not come from the engine. */
+const LOOK_ENTRIES = 16
+
+function bounded(value, path) {
+  const source = record(value, path)
+  if (Object.keys(source).length > LOOK_ENTRIES) fail(path, 'has too many entries')
+  return source
+}
+
+/** A part of a look: one part id, a few of them (the extras), or none. */
+function lookPart(value, path) {
+  if (value === null) return null
+  if (!Array.isArray(value)) return text(value, path)
+  if (value.length > LOOK_ENTRIES) fail(path, 'has too many entries')
+  return value.map((item, index) => text(item, `${path}[${index}]`))
+}
+
+function colour(value, path) {
+  if (typeof value !== 'string' || !COLOUR.test(value)) fail(path, 'is not a colour')
+  return value
+}
+
+/** What a generated monster or a roster boss looks like: its rig, part ids and colours. */
+function look(value, path) {
+  const source = record(value, path)
+  return {
+    rig: text(source.rig, `${path}.rig`),
+    parts: entries(bounded(source.parts, `${path}.parts`), `${path}.parts`, { key: text, entry: lookPart }),
+    colours: entries(bounded(source.colours, `${path}.colours`), `${path}.colours`, { key: text, entry: colour })
+  }
+}
+
+/**
+ * How a monster is drawn and ranked. A hand-made entry has `sprite`; a generated monster or a
+ * boss of the roster has `race` and `look`; one saved before ranks existed has no `rank`.
+ */
+function appearance(source, path) {
+  const kept = {}
+  if (source.rank !== undefined) kept.rank = oneOf(source.rank, Object.keys(MONSTER_RANKS), `${path}.rank`)
+  if (source.dropFactor !== undefined) kept.dropFactor = number(source.dropFactor, `${path}.dropFactor`)
+  if (source.race !== undefined) kept.race = text(source.race, `${path}.race`)
+  if (source.look !== undefined) kept.look = look(source.look, `${path}.look`)
+  if (source.sprite !== undefined) kept.sprite = entries(source.sprite, `${path}.sprite`, { key: text, entry: text })
+  if (!kept.look && !kept.sprite) fail(path, 'has nothing to be drawn with')
+  return kept
+}
+
 function monster(value, path) {
   if (value === null || value === undefined) return null
   const source = record(value, path)
   const maxHp = number(source.maxHp, `${path}.maxHp`, { min: Number.MIN_VALUE })
   return {
+    ...appearance(source, path),
     id: text(source.id, `${path}.id`),
     name: text(source.name, `${path}.name`),
     kind: oneOf(source.kind, Object.keys(MONSTER_KINDS), `${path}.kind`),
@@ -172,8 +221,7 @@ function monster(value, path) {
     magical: number(source.magical, `${path}.magical`),
     attack: number(source.attack, `${path}.attack`),
     reward: number(source.reward, `${path}.reward`),
-    loot: amounts(source.loot, `${path}.loot`, MATERIALS),
-    sprite: entries(source.sprite, `${path}.sprite`, { key: text, entry: text })
+    loot: amounts(source.loot, `${path}.loot`, MATERIALS)
   }
 }
 
