@@ -91,8 +91,14 @@ export function fitForStorage(value, maxBytes = MAX_STORED_BYTES) {
   return { value: fitted, fits: sizeOf(fitted) <= maxBytes }
 }
 
-/** Whether a stored value was written by a newer plugin than this one. */
-function isNewer(stored, saveVersion) {
+/**
+ * Whether a stored value (or an exported save file, which has the same `version` and `save`) was
+ * written by a newer plugin than this one.
+ *
+ * @param {unknown} stored
+ * @param {number} saveVersion the engine's save version
+ */
+export function isNewer(stored, saveVersion) {
   if (!stored || typeof stored !== 'object') return false
   const newerWrapper = Number.isInteger(stored.version) && stored.version > STORED_VERSION
   const newerSave = Number.isInteger(stored.save?.version) && stored.save.version > saveVersion

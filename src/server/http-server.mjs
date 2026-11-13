@@ -11,6 +11,12 @@ const ALL_INTERFACES = '0.0.0.0'
 const PORT_ATTEMPTS = 10
 const MAX_BODY_BYTES = 1024
 /**
+ * Routes whose body is a whole saved game. The plugin keeps at most 240 KiB of it, and a file
+ * larger than that is refused by the game with a reason; this leaves room for that answer.
+ */
+const LARGE_BODY_BYTES = 512 * 1024
+const LARGE_BODY_ROUTES = new Set(['/api/game/import-save'])
+/**
  * A page that stopped reading (a sleeping tablet) lets its updates pile up in memory. Past this
  * much unsent data its stream is closed; the page reconnects by itself when it wakes.
  */
@@ -24,12 +30,12 @@ const REQUEST_TIMEOUT_MS = 10_000
 /** Keeps idle event streams from being closed by proxies and sleeping tabs. */
 const HEARTBEAT_MS = 25_000
 
-function readJsonBody(request) {
+function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let body = ''
     request.on('data', (chunk) => {
       body += chunk
-      if (body.length > MAX_BODY_BYTES) {
+      if (body.length > maxBytes) {
         // Stop keeping what arrives, but let it drain so the refusal can still be answered.
         request.removeAllListeners('data')
         request.resume()
@@ -118,17 +124,27 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/assign-room': (input) => controller.gameAssignRoom(input.roomId, input.worldId ?? null),
     '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
     '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
-    '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on)
+    '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on),
+    '/api/game/export-save': () => controller.gameExportSave(),
+    '/api/game/import-save': (input) => controller.gameImportSave(input.file)
   }
 
   async function handlePost(pathname, request, response) {
     const route = postRoutes[pathname]
     if (!route) return send(response, 404, 'not found')
+    let input
     try {
-      const input = pathname === '/api/refresh' ? {} : await readJsonBody(request)
-      sendJson(response, 200, await route(input))
+      const maxBytes = LARGE_BODY_ROUTES.has(pathname) ? LARGE_BODY_BYTES : MAX_BODY_BYTES
+      input = pathname === '/api/refresh' ? {} : await readJsonBody(request, maxBytes)
     } catch {
-      sendJson(response, 400, { ok: false })
+      return sendJson(response, 400, { ok: false })
+    }
+    try {
+      sendJson(response, 200, await route(input))
+    } catch (error) {
+      // A game action says why it refused, so the page can tell the person; others only refuse.
+      const reason = pathname.startsWith('/api/game/') ? String(error?.message ?? error).slice(0, 200) : undefined
+      sendJson(response, 400, { ok: false, error: reason })
     }
   }
 

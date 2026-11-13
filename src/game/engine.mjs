@@ -7,6 +7,7 @@ import { upgradeCost } from './items.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
 import { canPrestige, prestige as prestigeSkill, worldLevel } from './progression.mjs'
 import { forgetTitles } from './retirement.mjs'
+import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
 import { viewOf } from './view.mjs'
@@ -128,6 +129,7 @@ export function createEngine({ content }) {
     setKeepTitles,
     autoSpend: (save) => autoSpendWithPurchases(save).save,
     autoSpendWithPurchases,
-    view: (save) => viewOf(save, content)
+    view: (save) => viewOf(save, content),
+    cleanSave
   }
 }

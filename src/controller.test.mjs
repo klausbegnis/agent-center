@@ -59,7 +59,9 @@ function recordingGame() {
     assignRoom: record('assign'),
     resetWorld: record('reset'),
     setAutoSpend: record('autoSpend'),
-    setKeepTitles: record('keepTitles')
+    setKeepTitles: record('keepTitles'),
+    exportSave: async () => ({ format: 'agent-center-game' }),
+    importSave: record('import')
   }
   return { game, calls }
 }
@@ -90,10 +92,24 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gameUpgradeItem('room', { id: 1 }), /invalid item/)
   await assert.rejects(controller.gameSetAutoSpend('yes'), /invalid auto-spend/)
   await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
+  await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
+  await assert.rejects(controller.gameImportSave([]), /invalid save file/)
   assert.equal(calls.length, 0)
 })
 
 test('a game that cannot run refuses its actions', async () => {
   const { controller } = setup()
   await assert.rejects(controller.gameBuyUpgrade('main', 'campfire'), /not available/)
+})
+
+test('an export answers the file and changes nothing; an import replaces the game and says so', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  assert.deepEqual(await controller.gameExportSave(), { format: 'agent-center-game' })
+  assert.equal(changes(), 0)
+  await controller.gameImportSave({ format: 'agent-center-game' })
+  assert.deepEqual(calls, [['import', { format: 'agent-center-game' }]])
+  assert.equal(changes(), 1)
+  const unavailable = setup()
+  await assert.rejects(unavailable.controller.gameExportSave(), /not available/)
 })

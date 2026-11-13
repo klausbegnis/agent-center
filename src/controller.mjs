@@ -19,6 +19,8 @@
  * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
  * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
  * @property {(keepTitles: boolean) => Promise<GameResult>} gameSetKeepTitles
+ * @property {() => Promise<object>} gameExportSave the saved game as a file's content
+ * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
  */
 
 /** @typedef {{ changed: boolean }} GameResult whether the action changed the game */
@@ -26,6 +28,11 @@
 /** Text from a surface, or an error: ids are compared with what exists, never stored as given. */
 function requireText(value, what) {
   if (typeof value !== 'string' || value === '' || value.length > 512) throw new Error(`invalid ${what}`)
+  return value
+}
+
+function requireObject(value, what) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(`invalid ${what}`)
   return value
 }
 
@@ -121,6 +128,8 @@ export function createController({
     })),
     gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
     gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
-    gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles')))
+    gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles'))),
+    gameExportSave: () => game.exportSave(),
+    gameImportSave: (file) => playAction(() => game.importSave(requireObject(file, 'save file')))
   }
 }

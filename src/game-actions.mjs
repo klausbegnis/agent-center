@@ -1,10 +1,12 @@
 // What a person can do in the game, checked before it reaches the engine: every id must name
 // something that exists (or, for a new world, be a well-formed name), so nothing made up is
 // stored. Each action answers whether it changed anything.
+import { emptyBridge } from './game-save.mjs'
+import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
-import { assignProject, resetWorld, worldIdOf } from './game/worlds.mjs'
+import { SAVE_VERSION, assignProject, migrate, resetWorld, worldIdOf } from './game/worlds.mjs'
 
 /** A world's id: lower-case words joined by dashes, short enough for a label. */
 const WORLD_ID = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -22,14 +24,18 @@ const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)
  *   data: () => import('./game-save.mjs').GameData,
  *   commit: (next: import('./game-save.mjs').GameData) => void,
  *   isRunning: () => boolean,
+ *   isLoaded: () => boolean,
  *   canWriteSave: () => boolean,
  *   load: () => Promise<unknown>,
  *   roomIds: () => string[],
- *   setKeepTitlesSetting: (value: boolean) => Promise<void>
- * }} dependencies
+ *   setKeepTitlesSetting: (value: boolean) => Promise<void>,
+ *   replaceGame: (next: import('./game-save.mjs').GameData) => void,
+ *   now: () => number
+ * }} dependencies `replaceGame` commits an imported game and forgets everything read before it
  */
 export function createGameActions(dependencies) {
   const { engine, data, commit, isRunning, canWriteSave, load, roomIds, setKeepTitlesSetting } = dependencies
+  const { isLoaded, replaceGame, now } = dependencies
   function requireRunning() {
     if (!isRunning()) throw new Error('the game is not running')
   }
@@ -119,6 +125,32 @@ export function createGameActions(dependencies) {
       if (bridge.autoSpend === autoSpend) return { changed: false }
       const next = autoSpend ? engine.autoSpend(save) : save
       commit({ save: next, bridge: { ...bridge, autoSpend } })
+      return { changed: true }
+    },
+
+    /**
+     * The saved game as a file: the engine's save and auto-spend, never the token baselines. It
+     * works whenever the save has been read, even before a round wrote anything.
+     */
+    async exportSave() {
+      if (!isLoaded()) throw new Error('the saved game has not been read yet')
+      if (!canWriteSave()) throw new Error('the saved game is from a newer version of the plugin')
+      const { save, bridge } = data()
+      return buildSaveFile({ save, autoSpend: bridge.autoSpend, at: now() })
+    },
+
+    /**
+     * Replaces the whole game with a save file. Nothing read before it counts again: the token
+     * baselines and `watchedUntil` start over, as when the game is turned off and on.
+     *
+     * @param {unknown} file the parsed save file
+     */
+    async importSave(file) {
+      requireRunning()
+      if (!canWriteSave()) throw new Error('the saved game is from a newer version of the plugin')
+      const read = readSaveFile(file, { saveVersion: SAVE_VERSION, migrate, cleanSave: engine.cleanSave })
+      if (!read.ok) throw new Error(read.reason)
+      replaceGame({ save: read.save, bridge: { ...emptyBridge(), autoSpend: read.autoSpend } })
       return { changed: true }
     },
 

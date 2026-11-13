@@ -93,6 +93,8 @@ export function createGameMode(dependencies) {
   let cachedStates = null
   let isRoundRunning = false
   let failedReads = 0
+  /** Counts imported games: a round that read before an import must not write over it. */
+  let generation = 0
 
   const data = () => gameSave.get()
   /** Replaces the save and the bridge, keeps them, and tells the surfaces. */
@@ -141,6 +143,21 @@ export function createGameMode(dependencies) {
     const { save, bridge } = data()
     if (bridge.watchedUntil === null || gameSave.isFromNewerVersion()) return
     commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend } })
+  }
+
+  /**
+   * Puts an imported game in place of the one played. Everything read before it is forgotten, as
+   * when the game stops watching, so the next round counts from now and fights nothing; its
+   * characters whose sessions are not open retire by the usual closing rules.
+   */
+  function replaceGame(next) {
+    generation += 1
+    lastRoundAt = null
+    links = new Map()
+    agentlessStates = {}
+    recent = []
+    forgetMeters()
+    commit(next)
   }
 
   function syncKeepTitles(save) {
@@ -246,10 +263,12 @@ export function createGameMode(dependencies) {
   /** One round of a running game: read, match, advance, count, ready the fights, close, spend, keep. */
   async function playRound() {
     const source = tokenSource
+    const startedIn = generation
     const bridge = bridgeFor(source)
     const agents = mainAgents(store.snapshot().rooms)
     const read = await readSource(source, bridge, agents)
-    if (!read) return
+    // A game imported while the source was read: what was read belongs to the game before it.
+    if (!read || generation !== startedIn) return
     const { at, reading } = read
     const { sessions, places, agentOf, how, deltas } = reading
     const readings = buildReadings({ sessions, places, agentOf, agents, deltas, themeOf })
@@ -337,13 +356,16 @@ export function createGameMode(dependencies) {
     data,
     commit,
     isRunning: () => status === 'running',
+    isLoaded: () => gameSave.isLoaded(),
     canWriteSave: () => !gameSave.isFromNewerVersion(),
     load: () => gameSave.load(),
     roomIds: () => store.snapshot().rooms.map((room) => room.id).filter((id) => id !== 'no-project'),
     setKeepTitlesSetting: async (value) => {
       await writeSetting('gameKeepTitles', value)
       keepTitles = value
-    }
+    },
+    replaceGame,
+    now
   })
 
   return {
@@ -376,6 +398,8 @@ export function createUnavailableGame(status) {
     assignRoom: refuse,
     resetWorld: refuse,
     setAutoSpend: refuse,
-    setKeepTitles: refuse
+    setKeepTitles: refuse,
+    exportSave: refuse,
+    importSave: refuse
   }
 }

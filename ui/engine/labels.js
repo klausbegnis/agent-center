@@ -162,12 +162,22 @@ const ACTION_NAMES = {
   moveRoomToWorld: 'Moving the room',
   resetWorld: 'The reset',
   setAutoSpend: 'Changing auto-spend',
-  setKeepTitles: 'Changing the titles setting'
+  setKeepTitles: 'Changing the titles setting',
+  exportSave: 'The export',
+  importSave: 'The import'
 }
 
-/** "The upgrade did not go through. Try again in a moment." */
-export function gameActionFailed(action) {
-  return `${ACTION_NAMES[action] ?? 'That'} did not go through. Try again in a moment.`
+/**
+ * "The upgrade did not go through. Try again in a moment.", or with the worker's reason when it
+ * gave one a person can act on: "The import did not go through: the save file is damaged…".
+ *
+ * @param {string} action
+ * @param {string} [reason]
+ */
+export function gameActionFailed(action, reason = '') {
+  const name = ACTION_NAMES[action] ?? 'That'
+  if (reason) return `${name} did not go through: ${reason.replace(/[.\s]+$/, '')}.`
+  return `${name} did not go through. Try again in a moment.`
 }
 
 /** What is said when the worker took an action but nothing changed, such as an unpaid upgrade. */
@@ -627,6 +637,33 @@ export const SETTINGS = {
     'every room\'s wave, chest and retirees in it, go back to the start. This cannot be undone.',
   resetConfirm: (worldId) => `Reset ${worldId}`,
   local: 'Everything stays on this computer.'
+}
+
+/** The "Save file" card of the game settings: export the game, or import one in its place. */
+export const SAVE_FILE = {
+  title: 'Save file',
+  note: 'Keep a copy of the game, or carry it to another computer. Token counts are not in the ' +
+    'file: after an import, counting starts again from now.',
+  export: 'Export',
+  exporting: 'Exporting…',
+  exported: 'A download of the file was started. If none came, copy the text below and keep it in a file.',
+  exportText: 'Exported save file',
+  copy: 'Copy',
+  copied: 'Copied.',
+  copySelected: 'The text is selected: press Ctrl+C or ⌘C to copy it.',
+  import: 'Import',
+  importFile: 'Save file to import',
+  importText: 'Or paste a save file here',
+  importQuestion: 'Replace the whole game with this file? All progress on this computer, in every ' +
+    'world, is replaced by the file\'s. This cannot be undone.',
+  importConfirm: 'Replace the game',
+  imported: 'The game was replaced by the file.',
+  readFailed: 'The file could not be read.',
+  textError: {
+    empty: 'Choose a file or paste a save file first.',
+    invalid: 'This is not valid JSON, so it cannot be a save file.',
+    notObject: 'This is not a save file: it should be one JSON object.'
+  }
 }
 
 /** "main · level 11" as a choice of world. */

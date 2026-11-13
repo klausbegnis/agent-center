@@ -26,6 +26,10 @@ All notable changes to this project are recorded here. The format follows
   or at a free spot the engine picks, with its own health bar; an elite glows and wears its
   affix, a boss is larger. Working characters fight it, each class in its own way, in a rhythm
   taken from the fight's tick; nothing moves under reduced motion.
+- The game settings have a **Save file** card: **Export** downloads the saved game as
+  `agent-center-save-YYYY-MM-DD.json` and shows it as text to copy (a download may be blocked in
+  Orca's panel); **Import** takes a chosen or pasted file and, after a confirmation, replaces the
+  whole game with it. Token counts are not in the file: after an import, counting starts again.
 - Arsenal and Skills are built around original pixel icons for skills, materials, classes, item
   slots, group upgrades and stars; the character marks in the rooms use the same icons.
 - The view state's game part adds the monster's `hp` and `maxHp`, `tickSeconds`, and names and

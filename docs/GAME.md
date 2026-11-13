@@ -24,6 +24,7 @@ milliseconds the caller passes.
 | `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
+| `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds). Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
@@ -522,12 +523,37 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
+| `game.exportSave` | `/api/game/export-save` | none |
+| `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 
-Each answers `{ changed }`. Ids must name something that exists: a world of the save, a room on
+Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
 refused with an error, and nothing is stored. Every action but `keepTitles` needs the game to be
-running; `keepTitles` writes the setting, and the save follows.
+running; `keepTitles` writes the setting, and the save follows. A refusal carries its reason:
+the HTTP routes answer `{ ok: false, error }` with status 400.
+
+### Save file
+
+`exportSave` answers `{ format: 'agent-center-game', version, exportedAt, save, autoSpend }`:
+`version` is the stored wrapper's (`STORED_VERSION`), `exportedAt` an ISO time, `save` the
+engine's save as it is in memory, written or not. It never holds the baselines or
+`watchedUntil`: they describe this computer's sessions at the moment of the export. It works
+whenever the stored save has been read, even with the game off, and is refused while the stored
+save is from a newer plugin.
+
+`importSave` replaces the whole game, in every world, with a file. It is refused, and nothing
+changes, when the game is not running or the stored save is from a newer plugin, when the value
+is not an object with that `format`, when its `version` or its save's `version` is newer than
+this plugin reads (the rule the storage uses), when its JSON is larger than the 240 KiB the
+storage keeps, or when its save, brought up to this version by `migrate`, does not pass
+`cleanSave`. Otherwise the save and `autoSpend` are taken from the file, the baselines and
+`watchedUntil` are forgotten as when the game is turned off, and the bridge forgets the last
+round, its links and the meters it read, so the next round counts from then and fights nothing,
+and nothing read before the import counts again. A round that was reading the sessions when the
+import came writes nothing. The settings keep their own value: `gameKeepTitles` off forgets the
+file's titles on the next round. Characters of the file whose sessions are not open here retire
+by the usual closing rules.
 
 ## View state
 

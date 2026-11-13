@@ -75,6 +75,12 @@ Where the tokens come from:
 The game's state says which one it is using (`tokenSource`). How the estimate is computed is in
 [docs/GAME.md](docs/GAME.md#the-estimate).
 
+To keep a copy of the game or carry it to another computer, open the game settings (the cog)
+and use **Save file**: **Export** downloads the game as a JSON file and also shows it as text to
+copy, since Orca's panel may block the download; **Import** takes such a file, chosen or pasted,
+and replaces the whole game on this computer after asking. Token counts are not in the file, so
+counting starts again from the import.
+
 ## Themes
 
 Each room can use a different theme. The selector at the top sets the default, used by every

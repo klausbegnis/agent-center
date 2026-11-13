@@ -70,9 +70,11 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     skills: createSkillsView({ panel: contents.skills, actions })
   }
 
-  function showNotice(message) {
+  function showNotice(message, action) {
     notice.textContent = message
     noticeUntil = Date.now() + NOTICE_MS
+    // The line above the panels may be scrolled away while the settings are read: say it there too.
+    if (action) settings.showMessage(action, message)
   }
 
   function setSettingsOpen(isOpen, returnFocus = false) {

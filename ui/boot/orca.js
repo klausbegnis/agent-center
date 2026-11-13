@@ -22,6 +22,8 @@ const transport = {
   resetWorld: (worldId) => orca.plugin.request('game.resetWorld', { worldId }),
   setAutoSpend: (on) => orca.plugin.request('game.autoSpend', { on }),
   setKeepTitles: (on) => orca.plugin.request('game.keepTitles', { on }),
+  exportSave: () => orca.plugin.request('game.exportSave'),
+  importSave: (file) => orca.plugin.request('game.importSave', { file }),
   // The panel and the tab keep their own view choice.
   prefs: {
     get: (key) => orca.storage.get(`${key}:${isTab ? 'tab' : 'panel'}`),

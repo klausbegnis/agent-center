@@ -25,6 +25,11 @@ async function setup(t, { lan = false } = {}) {
     gameSetAutoSpend: async (on) => {
       if (typeof on !== 'boolean') throw new Error('invalid auto-spend')
       return { changed: true }
+    },
+    gameImportSave: async (file) => {
+      if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Center save file')
+      calls.push(['import', JSON.stringify(file).length])
+      return { changed: true }
     }
   }
   const server = await startServer({ root: ROOT, port: FIRST_PORT, lan, controller })
@@ -130,4 +135,17 @@ test('a game action reaches the controller and its answer comes back', async (t)
   assert.deepEqual(calls, [['assign', 'local:/work/rumble-banana', 'side-projects']])
   assert.equal((await post('/api/game/auto-spend', '{"on":"yes"}')).status, 400)
   assert.equal((await post('/api/game/auto-spend', 'null')).status, 400)
+})
+
+test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
+  const file = { format: 'agent-center-game', padding: 'x'.repeat(200_000) }
+  assert.equal((await post({ file })).status, 200)
+  assert.equal(calls.length, 1)
+  const refused = await post({ file: { format: 'other' } })
+  assert.equal(refused.status, 400)
+  assert.deepEqual(JSON.parse(refused.text), { ok: false, error: 'this is not an Agent Center save file' })
+  assert.equal((await post({ file: { format: 'agent-center-game', padding: 'x'.repeat(600_000) } })).status, 400)
+  assert.equal(calls.length, 1)
 })

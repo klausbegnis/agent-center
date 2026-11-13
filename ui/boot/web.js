@@ -21,10 +21,16 @@ const narrow = (state) =>
 const post = (url, body) =>
   fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-/** A game action: the worker answers { changed }, or an error status for a value it refused. */
+/**
+ * A game action: the worker answers { changed } (or what was asked for), or an error status with
+ * the reason it refused, which becomes the error's message.
+ */
 async function postGame(route, body) {
   const response = await post(`/api/game/${route}`, body)
-  if (!response.ok) throw new Error(`${route}: HTTP ${response.status}`)
+  if (!response.ok) {
+    const answer = await response.json().catch(() => null)
+    throw new Error(answer?.error ?? `${route}: HTTP ${response.status}`)
+  }
   return response.json()
 }
 
@@ -39,6 +45,8 @@ const transport = {
   resetWorld: (worldId) => postGame('reset-world', { worldId }),
   setAutoSpend: (on) => postGame('auto-spend', { on }),
   setKeepTitles: (on) => postGame('keep-titles', { on }),
+  exportSave: () => postGame('export-save', {}),
+  importSave: (file) => postGame('import-save', { file }),
   prefs: {
     get: (key) => params.get(key) ?? localStorage.getItem(`agent-center:${key}`),
     set: (key, value) => localStorage.setItem(`agent-center:${key}`, value)

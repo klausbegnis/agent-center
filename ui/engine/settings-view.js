@@ -1,9 +1,10 @@
 // The game's settings, opened from the cog in the header: keep titles, auto-spend, each room's
-// world (another world, a new one, or out of the game) and resetting a world.
+// world (another world, a new one, or out of the game), resetting a world and the save file.
 import { button, el, select, setOptions } from './dom.js'
 import { confirmButton, replaceKeepingFocus, section, settingSwitch } from './game-controls.js'
 import { isEstimated, MAX_WORLDS, newWorldId, roomWorlds } from './game-model.js'
 import { ARSENAL, ESTIMATED_NOTE, roomTitle, SETTINGS, worldChoice } from './labels.js'
+import { createSaveFileCard } from './save-file-view.js'
 
 /** The value of the "out of the game" and "new world" choices; world ids are never empty. */
 const OUT_OF_GAME = ''
@@ -43,6 +44,8 @@ export function createSettingsView({ actions, onClose }) {
   for (const control of [keepTitles, autoSpend]) if (control) switches.append(control.element)
   switches.append(el('p', 'ac-game-card-line', SETTINGS.local))
   const body = el('div', 'ac-game-panel-body')
+  // Built once and put back on every redraw, so what was pasted or exported stays.
+  const saveFile = actions.exportSave || actions.importSave ? createSaveFileCard({ actions }) : null
   element.append(head, estimated, switches, body)
 
   function worldOptions(worlds) {
@@ -168,6 +171,7 @@ export function createSettingsView({ actions, onClose }) {
     list.append(...rooms.map((entry) => roomRow(entry, worlds)))
     const cards = [section(SETTINGS.worlds, [el('p', 'ac-game-card-line', SETTINGS.worldsNote), list])]
     if (actions.resetWorld && worlds.length) cards.push(resetCard(worlds))
+    if (saveFile) cards.push(saveFile.element)
     replaceKeepingFocus(body, cards)
   }
 
@@ -177,6 +181,15 @@ export function createSettingsView({ actions, onClose }) {
     update(next) {
       state = next
       draw()
+    },
+    /**
+     * Shows a message about an action next to the control that started it, when it has one.
+     *
+     * @param {string} action
+     * @param {string} message
+     */
+    showMessage(action, message) {
+      saveFile?.showMessage(action, message)
     },
     /** Moves the keyboard to the settings once they are shown. */
     focus() {

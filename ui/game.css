@@ -862,6 +862,32 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 }
 .ac-game-input:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
 .ac-game-new-world .ac-game-missing:empty { display: none; }
+/* The save file card: an export to copy and a file or text to import, each in its own block. */
+.ac-game-save-part {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-save-shown { display: flex; flex-direction: column; gap: 6px; align-self: stretch; }
+.ac-game-save-shown[hidden] { display: none; }
+.ac-game-save-field { flex-direction: column; align-items: stretch; gap: 4px; align-self: stretch; }
+.ac-game-save-text {
+  min-height: 72px;
+  max-height: 160px;
+  padding: 6px 8px;
+  resize: vertical;
+  font-family: var(--orca-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  white-space: pre;
+}
+.ac-game-save-picker { font: inherit; font-size: 12px; max-width: 100%; }
+.ac-game-save-picker:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-game-save-status { font-size: 12px; }
+.ac-game-save-status:empty,
+.ac-game-save-error:empty { display: none; }
 .ac-mini .ac-game-settings,
 .ac-collapsed .ac-game-settings { display: none !important; }
 .ac-mini.ac-root[data-game-settings] .ac-rooms { display: grid !important; }
