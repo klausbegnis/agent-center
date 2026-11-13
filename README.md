@@ -211,7 +211,10 @@ few address options, handy for a wall display:
 To open it on a tablet on the same network, turn on **Open to the local network** in the plugin
 settings and use the computer's IP address, or its name ending in `.local`, with the same port.
 That option has no password, so anyone on the network can see your project, folder and agent
-names and change the themes. [SECURITY.md](SECURITY.md) lists everything the page shows.
+names and change the themes. In game mode they can watch the game but not play it: every game
+control (spending, prestige, worlds, reset, auto-spend, keeping titles, export and import) works
+only on the computer that runs Orca, and such a page shows **View only**. [SECURITY.md](SECURITY.md)
+lists everything the page shows.
 
 ## Install
 

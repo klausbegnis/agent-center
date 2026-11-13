@@ -59,5 +59,10 @@ export const SAVE_FILE = {
   }
 }
 
+/** The marker by the tabs on a page opened from another machine, and what it means. */
+export const VIEW_ONLY_MARKER = 'View only'
+export const VIEW_ONLY_NOTE = 'This page is open from another machine on the network. The game can be ' +
+  'watched here, and played only on the computer that runs Orca.'
+
 /** "main · level 11" as a choice of world. */
 export const worldChoice = (world) => `${world.id} · level ${world.level}`

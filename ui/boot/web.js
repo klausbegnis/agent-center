@@ -1,5 +1,6 @@
 // External view: the same scene served by the worker at http://127.0.0.1:<port>/. The detached
 // window, fullscreen (another monitor or a tablet) and the always-on-top mini mode start here.
+import { GAME_ACTION_METHODS } from '../engine/game-actions.js'
 import { mountStage } from '../engine/stage.js'
 
 const app = document.getElementById('app')
@@ -59,6 +60,11 @@ const transport = {
   setTheme: (id) =>
     fetch('/api/theme', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) })
 }
+
+// A page opened from another machine may watch the game but not play it: the worker refuses its
+// game actions, so the controls are left out instead of failing when used.
+const firstState = await fetch('/api/state').then((response) => response.json()).catch(() => null)
+if (firstState?.game?.viewOnly === true) for (const name of GAME_ACTION_METHODS) delete transport[name]
 
 // EventSource reconnects on its own if Orca restarts the worker.
 const events = new EventSource('/api/events')

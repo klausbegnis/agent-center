@@ -9,7 +9,7 @@ import { createGameTabs, panelId, tabId } from './game-tabs.js'
 import { createSkillsView } from './skills-view.js'
 import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
 import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
-import { SETTINGS } from './settings-labels.js'
+import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
@@ -35,7 +35,11 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const estimated = el('span', 'ac-game-estimated', ESTIMATED_MARKER)
   estimated.title = ESTIMATED_NOTE
   estimated.setAttribute('aria-label', `${ESTIMATED_MARKER}: ${ESTIMATED_NOTE}`)
-  bar.append(tabs.element, estimated)
+  // On a page opened from another machine the worker refuses the game's actions: say so.
+  const viewOnly = el('span', 'ac-game-estimated ac-game-view-only', VIEW_ONLY_MARKER)
+  viewOnly.title = VIEW_ONLY_NOTE
+  viewOnly.setAttribute('aria-label', `${VIEW_ONLY_MARKER}: ${VIEW_ONLY_NOTE}`)
+  bar.append(tabs.element, estimated, viewOnly)
 
   const notice = el('p', 'ac-game-notice')
   notice.setAttribute('role', 'status')
@@ -122,6 +126,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     }
     bar.hidden = !isShown
     estimated.hidden = !(mode === 'running' && isEstimated(state?.game))
+    viewOnly.hidden = !(isShown && state?.game?.viewOnly === true)
     if (isShown) root.dataset.gameTab = tab
     else delete root.dataset.gameTab
     tabs.setSelected(tab)

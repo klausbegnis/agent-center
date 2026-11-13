@@ -13,6 +13,9 @@
 //   TRAVEL=1      with GAME, turn on "new scene after each monster": every room without a theme
 //                 of its own (all of them with `random` or a theme id) moves on to another
 //                 theme each time its monster dies
+//   LAN=1         open the demo to the local network, as the "Open to the local network" setting
+//                 does: open it from another machine, or from this one by its network address, to
+//                 see the game as view only
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
 // for them; the demo prints that address too. The monster contact sheet (every race, rank and
@@ -185,7 +188,7 @@ controller = createController({
   onChange: publish
 })
 
-server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: false, controller })
+server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: process.env.LAN === '1', controller })
 if (!server) {
   console.error('Agent Center (demo): no free port. Pick another one with PORT=…')
   process.exit(1)

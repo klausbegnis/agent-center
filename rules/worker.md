@@ -39,8 +39,16 @@ paths:
   `src/server/static-files.mjs` when adding a route.
 - Request bodies are capped. New POST routes go in the `postRoutes` table and call the
   controller.
-- There is no authentication. Do not add a route that changes anything outside the plugin's own
-  preferences, and do not expose anything the panel does not already show.
+- There is no authentication. Do not expose anything the panel does not already show.
+- A route open to the local network may change only how the page looks (themes, hidden rooms).
+  Every other route that changes something is for this computer alone: `isLocalOnlyRoute` in
+  `src/server/request-guard.mjs` names them, and the server refuses them to a connection whose
+  address is not loopback. All game routes are among them, because they change the saved game,
+  some for good, or answer the whole save. A new route that changes the game goes under
+  `/api/game/`; any other one that changes more than the page's looks is added to
+  `isLocalOnlyRoute`, with a test.
+- A page on another machine gets the view state through `src/server/network-view.mjs`: the game
+  with `viewOnly: true`, session ids replaced by aliases and retirees' titles left out.
 
 ## State
 

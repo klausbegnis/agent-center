@@ -45,7 +45,9 @@ Knowing this helps judge whether something is a vulnerability.
   A website can still send a request to the port; it gets a refusal, or a file of the plugin's
   own UI that the browser will not let it read.
 - With **Open to the local network** turned on, that page is reachable by anyone on the same
-  network, who can read all of the above and change themes and hidden rooms. This is off by
+  network, who can read all of the above and change themes and hidden rooms. In game mode they
+  can watch the game but not play it: the server refuses every game route to a connection that
+  does not come from this machine's loopback address (see "Game mode" below). This is off by
   default and is a deliberate trade-off, not a bug. Do not turn it on on a network you do not
   trust.
 - Whoever can reach that page can also keep it busy, for example by holding many connections
@@ -88,11 +90,29 @@ otherwise.
   only while **Game mode: keep conversation titles** is on, on the characters of finished
   sessions; turning that setting off deletes them.
 - **What it shows:** the view state, served on the local page like everything else, gains the
-  game: where its tokens come from, session ids of the characters on screen, levels, the room's fight, and the stored titles
-  when kept.
-- The local page's API can play the game: prestige, upgrade, move a room to another world, reset
-  a world, turn auto-spend and keeping titles on or off. Like the other settings it is open to
-  whoever can reach the page (see above). Resetting a world cannot be undone.
+  game: where its tokens come from, session ids of the characters on screen, levels, the room's
+  fight, and the stored titles when kept. A page opened from another machine (with **Open to the
+  local network** on) gets the same game with every session id replaced by an alias that cannot
+  be turned back into it, and without the retirees' titles.
+- **What the local page's API can do with it**, from this machine only. With **Open to the
+  local network** on, a request whose connection does not come from a loopback address is
+  refused for every one of these routes, before anything is read or changed:
+
+  | Route | What it does |
+  |---|---|
+  | `/api/game/prestige` | prestiges a skill (cannot be undone) |
+  | `/api/game/upgrade-item` | spends materials on an item |
+  | `/api/game/buy-upgrade` | spends materials on a group upgrade |
+  | `/api/game/assign-room` | moves a room to another world, a new one, or out of the game |
+  | `/api/game/reset-world` | starts a world over (cannot be undone) |
+  | `/api/game/auto-spend` | turns auto-spend on or off |
+  | `/api/game/travel` | turns "new scene after each monster" on or off |
+  | `/api/game/keep-titles` | turns keeping conversation titles on or off |
+  | `/api/game/export-save` | answers the whole save file |
+  | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |
+  | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
+
+  Any program or user account on this machine can still use them, like the other settings.
 
 It does not send anything to the internet, does not type into terminals, does not start
 agents, and does not block or rewrite tool calls.
@@ -111,6 +131,8 @@ not a vulnerability in the plugin.
 
 - Reading files outside `ui/` and `themes/` through the local server.
 - The local page being reachable from another machine while the network setting is off.
+- A page on another machine playing the game, reading the save, or reading session ids or kept
+  titles, while the network setting is on.
 - A website reading the local page or changing its settings, in either network setting.
 - A crafted workspace, branch, host or conversation name causing script to run in the panel or
   the external view.

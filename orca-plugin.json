@@ -118,7 +118,7 @@
       {
         "key": "lan",
         "title": "Open to the local network",
-        "description": "Lets another device on the same network, such as a tablet, open the external view. No password: anyone on the network can see your agent names.",
+        "description": "Lets another device on the same network, such as a tablet, open the external view. No password: anyone on the network can see your project and agent names and change themes. The game can only be watched from there; it is played on this computer.",
         "type": "boolean",
         "default": false
       },

@@ -652,6 +652,12 @@ refused with an error, and nothing is stored. Every action but `keepTitles` need
 running; `keepTitles` writes the setting, and the save follows. A refusal carries its reason:
 the HTTP routes answer `{ ok: false, error }` with status 400.
 
+The HTTP routes are for this computer only. With the plugin's **Open to the local network**
+setting on, a request whose connection does not come from a loopback address is refused with
+status 403 and that reason, for every route above, before the controller is called: they all
+change the saved game or, for `exportSave`, give it away. Such a page can still watch the game
+(see "View state").
+
 ### Save file
 
 `exportSave` answers `{ format: 'agent-center-game', version, exportedAt, save, autoSpend,
@@ -724,6 +730,11 @@ by the usual closing rules.
 }
 ```
 
+- A page opened from another machine (the local-network setting) gets this object through
+  `src/server/network-view.mjs`, with `viewOnly: true`, every `sessionId` (on characters, in
+  `recent`) and every chest item's `heldBy` replaced by an alias that is the same for the same
+  session, and retirees' `title` null. Its web page then offers none of the actions and shows a
+  "View only" marker. The panel and pages on this computer never get `viewOnly`.
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
 - `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw

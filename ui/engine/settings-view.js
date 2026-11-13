@@ -6,7 +6,7 @@ import { confirmButton, replaceKeepingFocus, section, settingSwitch } from './ga
 import { isEstimated, MAX_WORLDS, newWorldId, roomWorlds } from './game-model.js'
 import { ARSENAL, ESTIMATED_NOTE, roomTitle } from './labels.js'
 import { createSaveFileCard } from './save-file-view.js'
-import { SETTINGS, worldChoice } from './settings-labels.js'
+import { SETTINGS, VIEW_ONLY_NOTE, worldChoice } from './settings-labels.js'
 
 /** The value of the "out of the game" and "new world" choices; world ids are never empty. */
 const OUT_OF_GAME = ''
@@ -36,6 +36,7 @@ export function createSettingsView({ actions, onClose }) {
   head.append(title, button(SETTINGS.close, 'ac-button', { onClick: onClose }))
 
   const estimated = el('p', 'ac-game-settings-note', ESTIMATED_NOTE)
+  const viewOnly = el('p', 'ac-game-settings-note', VIEW_ONLY_NOTE)
   const switches = el('section', 'ac-game-card')
   const keepTitles = actions.setKeepTitles
     ? settingSwitch(SETTINGS.keepTitles, SETTINGS.keepTitlesHint, actions.setKeepTitles)
@@ -51,7 +52,7 @@ export function createSettingsView({ actions, onClose }) {
   const body = el('div', 'ac-game-panel-body')
   // Built once and put back on every redraw, so what was pasted or exported stays.
   const saveFile = actions.exportSave || actions.importSave ? createSaveFileCard({ actions }) : null
-  element.append(head, estimated, switches, body)
+  element.append(head, viewOnly, estimated, switches, body)
 
   function worldOptions(worlds) {
     const options = worlds.map((world) => [world.id, worldChoice(world)])
@@ -160,6 +161,7 @@ export function createSettingsView({ actions, onClose }) {
     if (!state) return
     const game = state.game
     estimated.hidden = !isEstimated(game)
+    viewOnly.hidden = game.viewOnly !== true
     keepTitles?.set(game.keepTitles === true)
     autoSpend?.set(game.autoSpend === true)
     travel?.set(game.travel === true)

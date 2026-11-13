@@ -70,6 +70,14 @@ All notable changes to this project are recorded here. The format follows
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 
+### Security
+
+- With **Open to the local network** on, a page opened from another machine can watch the game
+  but not play it: the server refuses every game route (spending, prestige, worlds, reset,
+  auto-spend, travel, keeping titles, export and import) to a connection that does not come
+  from this machine, and that page gets the game without session ids or retirees' titles and
+  shows **View only**. `LAN=1` opens the demo to the network to try it.
+
 ## 0.1.0 - 2026-11-12
 
 First public version.

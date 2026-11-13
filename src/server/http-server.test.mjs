@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
+import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -10,10 +11,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const FIRST_PORT = 48_650
 
 /** Starts a server on a free port with a stand-in controller, and closes it after the test. */
-async function setup(t, { lan = false } = {}) {
+async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
   const calls = []
   const controller = {
-    getState: () => ({ rooms: [] }),
+    getState: () => state,
     refresh: async () => ({ rooms: [] }),
     setTheme: async (id) => calls.push(['theme', id]),
     setRoomTheme: async () => {},
@@ -42,9 +43,9 @@ async function setup(t, { lan = false } = {}) {
 }
 
 /** A raw request, so the path and headers reach the server exactly as written. */
-function request(server, target, { method = 'GET', headers = {}, body = null } = {}) {
+function request(server, target, { method = 'GET', headers = {}, body = null, address = '127.0.0.1' } = {}) {
   return new Promise((resolve, reject) => {
-    const outgoing = http.request({ host: '127.0.0.1', port: server.port, path: target, method, headers }, (incoming) => {
+    const outgoing = http.request({ host: address, port: server.port, path: target, method, headers }, (incoming) => {
       let text = ''
       incoming.on('data', (chunk) => (text += chunk))
       incoming.on('end', () => resolve({ status: incoming.statusCode, headers: incoming.headers, text }))
@@ -154,4 +155,70 @@ test('a save file far larger than other bodies can be imported, and a refusal sa
   assert.deepEqual(JSON.parse(refused.text), { ok: false, error: 'this is not an Agent Center save file' })
   assert.equal((await post({ file: { format: 'agent-center-game', padding: 'x'.repeat(600_000) } })).status, 400)
   assert.equal(calls.length, 1)
+})
+
+/** An address of this machine on a network, so a request to it arrives as from another machine. */
+const networkAddress = Object.values(os.networkInterfaces()).flat()
+  .find((entry) => entry && !entry.internal && entry.family === 'IPv4')?.address
+
+const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
+  'travel', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']
+
+const gameState = {
+  rooms: [],
+  game: {
+    status: 'running',
+    rooms: { 'local:/work/rumble-banana': { joined: true, chest: [{ id: 'blade', heldBy: 'estimated:pane-1' }],
+      retirees: [{ nameId: 3, title: 'Fix checkout rounding' }] } },
+    characters: { 'pane-1': { sessionId: 'estimated:pane-1', level: 4 } },
+    recent: []
+  }
+}
+
+test('with the local network open, a page on another machine cannot use any game route', {
+  skip: networkAddress ? false : 'this machine has no network address'
+}, async (t) => {
+  const { server, calls } = await setup(t, { lan: true })
+  const headers = { host: `${networkAddress}:${server.port}` }
+  for (const route of GAME_ROUTES) {
+    const answer = await request(server, `/api/game/${route}`, { method: 'POST', headers, address: networkAddress,
+      body: '{"on":true,"roomId":"local:/work/rumble-banana","worldId":"main","file":{"format":"agent-center-game"}}' })
+    assert.equal(answer.status, 403, route)
+    assert.match(JSON.parse(answer.text).error, /only be played on the computer that runs Orca/, route)
+  }
+  assert.deepEqual(calls, [])
+})
+
+test('with the local network open, a page on another machine can still change a theme', {
+  skip: networkAddress ? false : 'this machine has no network address'
+}, async (t) => {
+  const { server, calls } = await setup(t, { lan: true })
+  const headers = { host: `${networkAddress}:${server.port}` }
+  const answer = await request(server, '/api/theme', { method: 'POST', headers, address: networkAddress, body: '{"id":"guild-hall"}' })
+  assert.equal(answer.status, 200)
+  assert.deepEqual(calls, [['theme', 'guild-hall']])
+})
+
+test('with the local network open, a page on another machine gets the game without session ids or titles', {
+  skip: networkAddress ? false : 'this machine has no network address'
+}, async (t) => {
+  const { server } = await setup(t, { lan: true, state: gameState })
+  const headers = { host: `${networkAddress}:${server.port}` }
+  const { game } = JSON.parse((await request(server, '/api/state', { headers, address: networkAddress })).text)
+  assert.equal(game.viewOnly, true)
+  const room = game.rooms['local:/work/rumble-banana']
+  assert.equal(room.retirees[0].title, null)
+  assert.doesNotMatch(JSON.stringify(game), /estimated:pane-1/)
+  assert.equal(room.chest[0].heldBy, game.characters['pane-1'].sessionId)
+})
+
+test('with the local network open, this machine still plays the game and sees all of it', async (t) => {
+  const { server, calls } = await setup(t, { lan: true, state: gameState })
+  const assigned = await request(server, '/api/game/assign-room', { method: 'POST',
+    body: '{"roomId":"local:/work/rumble-banana","worldId":"main"}' })
+  assert.equal(assigned.status, 200)
+  assert.deepEqual(calls, [['assign', 'local:/work/rumble-banana', 'main']])
+  const { game } = JSON.parse((await request(server, '/api/state')).text)
+  assert.equal(game.viewOnly, undefined)
+  assert.equal(game.characters['pane-1'].sessionId, 'estimated:pane-1')
 })
