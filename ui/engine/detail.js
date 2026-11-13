@@ -2,8 +2,12 @@
 import { button, el } from './dom.js'
 import { activityLabel, since, subagentOf } from './labels.js'
 
-/** @param {{ openWorkspace?: (workspaceId: string, agentId: string) => unknown }} transport */
-export function createDetail(transport) {
+/**
+ * @param {{ openWorkspace?: (workspaceId: string, agentId: string) => unknown }} transport
+ * @param {{ onOpenWorkspace?: () => void }} [options] `onOpenWorkspace` runs after the button
+ *   asked Orca to open the agent's workspace
+ */
+export function createDetail(transport, { onOpenWorkspace } = {}) {
   const element = el('aside', 'ac-detail')
   element.hidden = true
 
@@ -34,7 +38,10 @@ export function createDetail(transport) {
       if (transport.openWorkspace && agent.workspaceId) {
         element.append(
           button('Open workspace', 'ac-button ac-primary', {
-            onClick: () => transport.openWorkspace(agent.workspaceId, agent.id)
+            onClick: () => {
+              transport.openWorkspace(agent.workspaceId, agent.id)
+              onOpenWorkspace?.()
+            }
           })
         )
       }

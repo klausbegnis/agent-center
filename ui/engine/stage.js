@@ -94,7 +94,13 @@ export async function mountStage(root, transport, options = {}) {
     onRefreshed: enqueue
   })
   const roomsElement = el('main', 'ac-rooms')
-  const detail = createDetail(transport)
+  const detail = createDetail(transport, {
+    // The person is leaving for the workspace: the card has done its job.
+    onOpenWorkspace: () => {
+      selectedAgentId = null
+      render()
+    }
+  })
   const shelf = createShelf(transport)
   const game = createGameShell({ root, roomsElement, transport, onTabChange: () => layout() })
   header.addTitleTool(game.settingsButton)
