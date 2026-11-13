@@ -41,7 +41,8 @@ function raceRow(races, bosses, race) {
   }
   const boss = bosses.bosses.find((each) => each.race === race.id)
   if (boss) monsters.push(rosterBoss(bosses, races, boss))
-  return { title: race.noun || race.id, monsters }
+  const title = race.noun || `${race.id[0].toUpperCase()}${race.id.slice(1)}`
+  return { title, monsters }
 }
 
 /** The same monster at every rank, each affixed one with another affix. */

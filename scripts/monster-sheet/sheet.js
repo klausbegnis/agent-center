@@ -50,5 +50,7 @@ function section(title, monsters) {
 
 const data = await (await fetch('/monsters.json')).json()
 const sheet = document.getElementById('sheet')
-for (const row of data.rows) sheet.append(...section(row.title, row.monsters))
-sheet.append(...section('Bosses', data.bosses))
+// ?part=races or ?part=bosses shows one half, so a screenshot of either fits one page.
+const part = new URLSearchParams(location.search).get('part')
+if (part !== 'bosses') for (const row of data.rows) sheet.append(...section(row.title, row.monsters))
+if (part !== 'races') sheet.append(...section('Bosses', data.bosses))

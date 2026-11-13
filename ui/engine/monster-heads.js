@@ -101,23 +101,23 @@ export const HEAD_PARTS = {
 
   'ogre-dull': head([
     '..........',
-    '...hsss...',
-    '..ssssss..',
-    '.Ssssssss.',
-    'sSspsspsSs',
-    '.SssSSssS.',
-    '..spppps..',
-    '...ssss...'
+    '...hhss...',
+    '..hsssss..',
+    'SsSSSSSSsS',
+    'SspsssspsS',
+    '.ssSSSSss.',
+    '.sbppppbs.',
+    '..ssssss..'
   ]),
   'ogre-underbite': head([
     '....rr....',
-    '...rsss...',
+    '...hsss...',
     '..ssssss..',
-    '.SSSSSSSS.',
-    'sSspsspsSs',
-    '..ssSSss..',
-    '.Sbpbbpbs.',
-    '..ssssss..'
+    'S.SSSSSS.S',
+    'SspsssspsS',
+    '..sSSSSs..',
+    '.bsppppsb.',
+    '.b.ssss.b.'
   ]),
 
   'human-bearded': head([
