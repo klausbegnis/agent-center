@@ -37,6 +37,8 @@ export const SAVE_FILE = {
   title: 'Save file',
   note: 'Keep a copy of the game, or carry it to another computer. Token counts are not in the ' +
     'file: after an import, counting starts again from now.',
+  privacy: 'The file is private: it holds your projects\' folder paths, the names of paired machines, ' +
+    'session ids and, when titles are kept, conversation titles. Do not attach it to a public bug report.',
   export: 'Export',
   exporting: 'Exporting…',
   exported: 'A download of the file was started. If none came, copy the text below and keep it in a file.',

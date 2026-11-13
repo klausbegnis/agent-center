@@ -82,6 +82,9 @@ All notable changes to this project are recorded here. The format follows
   project kept in another world than its own, or with `__proto__`, `constructor` or `prototype`
   as an id. Its titles and monster names are cleaned like live titles (no control or bidi
   characters, at most 80 characters).
+- The game's **Save file** card, the README and SECURITY.md say that an exported save is
+  private (folder paths, paired machines' names, session ids, and kept titles) and must not be
+  attached to a public bug report; so does the bug report form.
 
 ## 0.1.0 - 2026-11-12
 

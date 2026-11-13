@@ -32,7 +32,7 @@ function textBox(label, key) {
  *   `showMessage` shows why an export or an import did not go through, in the card
  */
 export function createSaveFileCard({ actions }) {
-  const children = [el('p', 'ac-game-card-line', SAVE_FILE.note)]
+  const children = [el('p', 'ac-game-card-line', SAVE_FILE.note), el('p', 'ac-game-card-line', SAVE_FILE.privacy)]
   const parts = {}
   if (actions.exportSave) parts.exportSave = exportPart(actions.exportSave)
   if (actions.importSave) parts.importSave = importPart(actions.importSave)

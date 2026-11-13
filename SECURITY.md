@@ -108,11 +108,20 @@ otherwise.
   | `/api/game/auto-spend` | turns auto-spend on or off |
   | `/api/game/travel` | turns "new scene after each monster" on or off |
   | `/api/game/keep-titles` | turns keeping conversation titles on or off |
-  | `/api/game/export-save` | answers the whole save file |
+  | `/api/game/export-save` | answers the whole save file (see "The save file" below) |
   | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |
   | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
 
   Any program or user account on this machine can still use them, like the other settings.
+
+### The save file
+
+**Export** gives the whole save as a file, and that file is private: it holds the full folder
+path of every project that played, the names of paired machines whose agents played (in their
+characters' ids), session ids and, when **Game mode: keep conversation titles** is on, the
+titles of finished conversations. Keep it like any other private file, and do not attach it to
+a public issue or bug report. **Import** checks a file part by part before it replaces the
+game, and cleans its titles and monster names like the labels above.
 
 It does not send anything to the internet, does not type into terminals, does not start
 agents, and does not block or rewrite tool calls.

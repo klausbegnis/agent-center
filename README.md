@@ -145,7 +145,9 @@ To keep a copy of the game or carry it to another computer, open the game settin
 and use **Save file**: **Export** downloads the game as a JSON file and also shows it as text to
 copy, since Orca's panel may block the download; **Import** takes such a file, chosen or pasted,
 and replaces the whole game on this computer after asking. Token counts are not in the file, so
-counting starts again from the import.
+counting starts again from the import. The file is private: it holds your projects' folder
+paths, the names of paired machines, session ids and, when titles are kept, conversation
+titles. Do not attach it to a public bug report.
 
 A room that is no longer on screen keeps its chest and retirees. The Arsenal's Items section
 lists them under **Chests left behind** for the chosen room's world; **Move here** moves them
