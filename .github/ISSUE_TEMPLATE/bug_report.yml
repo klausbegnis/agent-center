@@ -55,7 +55,7 @@ body:
   - type: input
     id: plugin-version
     attributes:
-      label: Agent Tavern version or commit
+      label: Agent Center version or commit
     validations:
       required: true
   - type: input

@@ -1,4 +1,4 @@
-# Agent Tavern
+# Agent Center
 
 An Orca plugin: one room per project, where each agent is a character acting out what it is
 doing. Plain JavaScript, no build step, no runtime dependencies.

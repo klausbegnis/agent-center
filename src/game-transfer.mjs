@@ -50,10 +50,10 @@ function sizeOf(value) {
  */
 export function readSaveFile(value, { saveVersion, migrate, cleanSave, maxBytes = MAX_STORED_BYTES }) {
   if (!isPlainObject(value) || value.format !== SAVE_FILE_FORMAT) {
-    return { ok: false, reason: 'this is not an Agent Tavern save file' }
+    return { ok: false, reason: 'this is not an Agent Center save file' }
   }
   if (isNewer(value, saveVersion)) {
-    return { ok: false, reason: 'the save file is from a newer version of Agent Tavern; update the plugin first' }
+    return { ok: false, reason: 'the save file is from a newer version of Agent Center; update the plugin first' }
   }
   if (sizeOf(value) > maxBytes) return { ok: false, reason: 'the save file is larger than the plugin can keep' }
   if (!isPlainObject(value.save) || !Number.isInteger(value.save.version)) {
@@ -64,7 +64,7 @@ export function readSaveFile(value, { saveVersion, migrate, cleanSave, maxBytes 
   // Migrate turns a version it has no way up from into an empty save: a file must not empty the game.
   const hadWorlds = isPlainObject(value.save.worlds) && Object.keys(value.save.worlds).length > 0
   if (hadWorlds && Object.keys(migrated.worlds).length === 0) {
-    return { ok: false, reason: 'the save file is from a version of Agent Tavern this one cannot read' }
+    return { ok: false, reason: 'the save file is from a version of Agent Center this one cannot read' }
   }
   const cleaned = cleanSave(migrated)
   if (!cleaned.ok) return { ok: false, reason: `the save file is damaged: ${cleaned.problem}` }
