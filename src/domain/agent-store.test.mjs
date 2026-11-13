@@ -399,3 +399,39 @@ test('known workspaces are described with their folder, host and room', () => {
   const feature = described.find((workspace) => workspace.id === 'w-feature')
   assert.deepEqual(feature, { id: 'w-feature', path: '/p/base/worktrees/feature', hostId: 'local', roomId: 'local:/p/base' })
 })
+
+test('the store counts each agent working time by activity and the tool calls it starts', () => {
+  const { store, tick } = setup()
+  store.status({ workspaceId: 'w-base', paneKey: 'p1', terminalId: 't1', state: 'working' })
+  tick(10_000)
+  store.toolBefore({ workspaceId: 'w-base', terminalId: 't1', tool: 'Read', input: {}, callId: 'c1' })
+  tick(20_000)
+  store.toolBefore({ workspaceId: 'w-base', terminalId: 't1', tool: 'Edit', input: {}, callId: 'c2' })
+  tick(5_000)
+  store.status({ workspaceId: 'w-base', paneKey: 'p1', terminalId: 't1', state: 'waiting' })
+  tick(60_000)
+  const meter = store.workMeters().p1
+  assert.deepEqual(meter.workedMs, { think: 10_000, read: 20_000, write: 5_000 })
+  assert.equal(meter.toolCalls, 2)
+  assert.equal(meter.startedAt, 1_000)
+})
+
+test('a subagent tool call counts for the agent that started the subagent', () => {
+  const { store } = setup()
+  store.status({ workspaceId: 'w-base', paneKey: 'p1', terminalId: 't1', state: 'working' })
+  store.toolBefore({ workspaceId: 'w-base', terminalId: 't1', tool: 'Agent', input: { subagent_type: 'Explore' }, callId: 'c1' })
+  store.toolBefore({ workspaceId: 'w-base', terminalId: 't1', tool: 'Grep', input: {}, callId: 'c2' })
+  assert.deepEqual(Object.keys(store.workMeters()), ['p1'])
+  assert.equal(store.workMeters().p1.toolCalls, 2)
+})
+
+test('tool calls counted before the pane was known stay with the agent once it is', () => {
+  const { store, tick } = setup()
+  store.toolBefore({ workspaceId: 'w-front', terminalId: 't9', tool: 'Bash', input: {}, callId: 'c1' })
+  tick(4_000)
+  store.status({ workspaceId: 'w-front', paneKey: 'p9', terminalId: 't9', state: 'working' })
+  const meters = store.workMeters()
+  assert.deepEqual(Object.keys(meters), ['p9'])
+  assert.equal(meters.p9.toolCalls, 1)
+  assert.deepEqual(meters.p9.workedMs, { run: 4_000 })
+})
