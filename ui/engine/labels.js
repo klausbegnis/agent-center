@@ -430,10 +430,23 @@ export const ARSENAL = {
   noRooms: 'No room has joined the game yet. A room joins with its first tokens.',
   autoSpend: 'Auto-spend',
   autoSpendHint: 'Buys the cheapest useful upgrade whenever the world can pay for it.',
+  spending: 'Spending',
+  world: (worldId, level) => `World ${worldId} · ${levelShort(level)}`,
   materials: (worldId, level) => `Materials · world ${worldId}, level ${level}`,
+  sections: 'Arsenal sections',
   characters: 'Characters',
-  noCharacters: 'No character in this room right now.',
+  noCharacters: 'Nobody is in this room right now. A character joins when an agent works here.',
+  levelProgress: (name) => `Progress of ${name} to the next level`,
   guests: (count) => `${plural(count, 'guest')}: they help fight but keep nothing.`,
+  chestSlots: 'Chest slots',
+  noItems: 'The chest is empty. Monsters drop items as the party wins fights.',
+  pickItem: 'Choose a slot to see its item and upgrade it.',
+  canUpgrade: 'can upgrade now',
+  chestLegend: 'T tier · +N level · ● held · ▲ can upgrade now',
+  now: 'Now',
+  notBuilt: 'Not built yet',
+  heldBy: 'Holder',
+  effect: 'Effect',
   attributes: 'Attributes',
   equipment: 'Equipment',
   chest: (shown, size) => (shown < size ? `Chest · ${shown} of ${size} items` : `Chest · ${size} items`),
@@ -441,16 +454,71 @@ export const ARSENAL = {
   upgradeItem: (name) => `Upgrade ${name}`,
   upgradeCost: (text) => `Next level: ${text}`,
   nextLevel: 'Next level',
-  short: (amount) => `needs ${amount} more`,
+  cost: 'Cost',
+  short: (amount) => `${amount} short`,
   attributesShort: (character) => `Attributes of ${character}`,
   emptySlot: 'nothing',
   groupUpgrades: (worldId) => `Group upgrades · world ${worldId}`,
   buy: 'Build',
   buyUpgrade: (name, level) => `Build ${name} level ${level}`,
   retirees: 'Retirees',
-  noRetirees: 'No character has retired here yet.',
+  noRetirees: 'No character has retired here yet. A character retires at the level cap and leaves a bonus.',
   moreRetirees: (count) => `and ${plural(count, 'older retiree')}`,
   title: (title) => `was "${title}"`
+}
+
+/** The Arsenal's sections, as their tabs name them. */
+export const ARSENAL_SECTION_LABEL = { items: 'Items', party: 'Party', camp: 'Camp' }
+
+/** "T3", a tier as the corner of a slot shows it. */
+export const tierShort = (tier) => `T${tier}`
+/** "+4", an upgrade level as the corner of a slot shows it. */
+export const levelPlus = (level) => `+${level}`
+
+/**
+ * What a chest slot says to a screen reader and in its tooltip: "Whittled Cudgel: Weapon,
+ * physical, Tier 1, +0, held by Fix login. Can upgrade now".
+ *
+ * @param {{ name: string, slot: string, damageType?: string | null, tier: number, level: number }} item
+ * @param {string | null} holder the holder's name, '' for one not on screen, null for a free item
+ * @param {boolean} canUpgrade
+ */
+export function itemSlotLabel(item, holder, canUpgrade) {
+  const who = holder === null ? 'free' : holder ? `held by ${holder}` : 'in use'
+  const base = `${item.name}: ${slotText(item)}, Tier ${item.tier}, ${levelPlus(item.level)}, ${who}`
+  return canUpgrade ? `${base}. Can upgrade now` : base
+}
+
+/** "Weapon: Whittled Cudgel, Tier 1, +0", or "Weapon: nothing", for a character's slot. */
+export function equipmentSlotLabel(slot, item) {
+  const slotName = labelOf(SLOT_LABEL, slot)
+  if (!item) return `${slotName}: nothing`
+  return `${slotName}: ${item.name}, Tier ${item.tier}, ${levelPlus(item.level)}`
+}
+
+/** What an item adds, by slot, with its factor filled in: "×1.33 to hits". */
+const ITEM_EFFECT = {
+  weapon: (factor) => `${factor} to hits`,
+  outfit: (factor) => `${factor} outfit power, for a larger stamina pool`,
+  tool: (factor) => `${factor} to gathering`
+}
+export function itemEffectText(slot, factorText) {
+  return (ITEM_EFFECT[slot] ?? ((factor) => factor))(factorText)
+}
+
+/**
+ * A material tile of the strip as a screen reader hears it: "Bars 60", and when a price on
+ * screen is short of it, "Bars 60, short: a price needs 70 more".
+ *
+ * @param {string} id
+ * @param {string} amountText
+ * @param {null | { prices: number, mostText: string }} short
+ */
+export function materialTileLabel(id, amountText, short) {
+  const base = `${materialLabel(id)} ${amountText}`
+  if (!short) return base
+  const who = short.prices === 1 ? 'a price needs' : `${short.prices} prices need up to`
+  return `${base}, short: ${who} ${short.mostText} more`
 }
 
 /** "Fighter · Lv 9", the class and level of a living character. */

@@ -207,3 +207,36 @@ test('with no monster the band says what the party does instead of a missing foe
     assert.ok(partyLabel(party))
   }
 })
+
+test('a chest slot says its item, slot, tier, level and holder, and when it can be upgraded', async () => {
+  const { itemSlotLabel } = await import('./labels.js')
+  const wand = { name: 'Ashwood Wand', slot: 'weapon', damageType: 'magical', tier: 2, level: 3 }
+  const facts = 'Ashwood Wand: Weapon, magical, Tier 2, +3'
+  assert.equal(itemSlotLabel(wand, 'Search filters', false), `${facts}, held by Search filters`)
+  assert.equal(itemSlotLabel(wand, null, true), `${facts}, free. Can upgrade now`)
+  assert.equal(itemSlotLabel(wand, '', false), `${facts}, in use`)
+})
+
+test("a character's slot names the slot and its item, or says it is empty", async () => {
+  const { equipmentSlotLabel } = await import('./labels.js')
+  const jerkin = { name: 'Padded Jerkin', tier: 1, level: 0 }
+  assert.equal(equipmentSlotLabel('outfit', jerkin), 'Outfit: Padded Jerkin, Tier 1, +0')
+  assert.equal(equipmentSlotLabel('tool', null), 'Tool: nothing')
+})
+
+test('what an item adds is said for its slot', async () => {
+  const { itemEffectText } = await import('./labels.js')
+  assert.equal(itemEffectText('weapon', '×1.10'), '×1.10 to hits')
+  assert.equal(itemEffectText('tool', '×1.21'), '×1.21 to gathering')
+})
+
+test('a material tile says its amount, and how short the prices on screen are of it', async () => {
+  const { materialTileLabel } = await import('./labels.js')
+  assert.equal(materialTileLabel('bars', '60', null), 'Bars 60')
+  const short = { prices: 1, mostText: '130' }
+  assert.equal(materialTileLabel('bars', '60', short), 'Bars 60, short: a price needs 130 more')
+  assert.equal(
+    materialTileLabel('logs', '12 k', { prices: 2, mostText: '4,000' }),
+    'Logs 12 k, short: 2 prices need up to 4,000 more'
+  )
+})
