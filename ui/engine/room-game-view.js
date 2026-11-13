@@ -138,8 +138,12 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
     monsters = new Map([...monsters].filter(([known]) => known === shown.key || known === key))
     foe.setPhase(shown.phase)
     if (shown.key) drawFoe(fight, shown.key)
-    if (shown.phase === 'gone') foe.element.remove()
-    else if (!foe.element.isConnected) scene.append(foe.element)
+    if (shown.phase === 'gone') {
+      foe.element.remove()
+      foe.plate.remove()
+    } else if (!foe.element.isConnected) {
+      scene.append(foe.plate, foe.element)
+    }
     return shown
   }
 

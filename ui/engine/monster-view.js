@@ -7,6 +7,9 @@ import { monsterAccent } from './game-model.js'
 import { monsterHeight, monsterRank } from './monster-place.js'
 import { MONSTER_INKS, monsterShape, pixelPath, viewBoxOf } from './pixel-art.js'
 
+/** The plate over the monster's head is this share of its width. */
+const PLATE_WIDTH = 0.8
+
 /**
  * @param {{ theme: object, spot: { x: number, y: number }, mirrored: boolean }} options `spot` is
  *   where its feet go, in the theme's room units
@@ -30,17 +33,21 @@ export function createMonsterView({ theme, spot, mirrored }) {
   /** Damage numbers, impact marks and the mending glow play here, over the body. */
   const marks = el('div', 'ac-foe-marks')
   marks.setAttribute('aria-hidden', 'true')
-  element.append(plate, body, marks, name)
+  element.append(body, marks, name)
   for (const node of [plate, body, name]) node.setAttribute('aria-hidden', 'true')
 
   const x = mirrored ? theme.room.width - spot.x : spot.x
   element.style.left = `${(x / theme.room.width) * 100}%`
   element.style.top = `${(spot.y / theme.room.height) * 100}%`
   element.style.zIndex = String(Math.round(spot.y))
+  // The plate over its head is a piece of its own, drawn under every character, so it never
+  // hides a name or a bubble; the engine puts it over the head of the monster's size.
+  plate.style.left = element.style.left
   let drawnBody = null
 
   return {
     element,
+    plate,
     body,
     marks,
     /** Where its feet are, in the theme's room units, as drawn (mirrored rooms included). */
@@ -59,8 +66,12 @@ export function createMonsterView({ theme, spot, mirrored }) {
         art.replaceChildren(svgPaths('ac-monster-art', viewBoxOf(rows), paths))
       }
       element.dataset.rank = monsterRank(monster)
+      plate.dataset.rank = element.dataset.rank
       element.dataset.affix = monster.affix ?? ''
-      element.style.width = `${(monsterHeight(theme, monster) / theme.room.width) * 100}%`
+      const size = monsterHeight(theme, monster)
+      element.style.width = `${(size / theme.room.width) * 100}%`
+      plate.style.width = `${((size * PLATE_WIDTH) / theme.room.width) * 100}%`
+      plate.style.top = `${((spot.y - size) / theme.room.height) * 100}%`
       element.style.setProperty('--ac-monster-accent', monsterAccent(monster))
       fill.style.transform = `scaleX(${health})`
       tag.textContent = tagText ?? ''
@@ -76,6 +87,8 @@ export function createMonsterView({ theme, spot, mirrored }) {
     setPhase(phase) {
       element.dataset.phase = phase
       element.hidden = phase === 'gone'
+      plate.dataset.phase = phase
+      plate.hidden = phase === 'gone' || phase === 'leaving'
     }
   }
 }

@@ -276,7 +276,7 @@
 }
 .ac-mini .ac-game-pill,
 .ac-mini .ac-game-badge,
-.ac-mini .ac-foe-plate { display: none; }
+.ac-mini .ac-foe-plate { display: none !important; }
 
 /* Panels: cards in one column at the panel's width, more side by side when there is room. */
 .ac-game-panel-content,
@@ -714,12 +714,16 @@
 .ac-foe:hover,
 .ac-foe:focus-visible { z-index: 9998 !important; }
 .ac-foe-plate {
+  position: absolute;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.15em;
-  width: 72%;
-  margin-bottom: 0.15em;
+  padding-bottom: 0.2em;
+  transform: translate(-50%, -100%);
+  color: var(--ac-label);
+  font-family: var(--ac-font);
   font-size: clamp(7px, 2.3cqw, 11px);
   line-height: 1.15;
   pointer-events: none;
@@ -732,7 +736,7 @@
   white-space: nowrap;
 }
 .ac-foe-tag { background: var(--ac-game-gold); color: #171a21; }
-.ac-foe[data-rank='boss'] .ac-foe-tag { background: var(--ac-game-bad); }
+.ac-foe-plate[data-rank='boss'] .ac-foe-tag { background: var(--ac-game-bad); }
 .ac-foe-state { background: var(--ac-label-shadow); color: var(--ac-label); font-weight: 600; }
 .ac-foe-tag[hidden],
 .ac-foe-state[hidden] { display: none; }
@@ -819,7 +823,8 @@
 .ac-foe[data-phase='arriving'] { animation: ac-foe-arrive 0.9s ease-out 1 both; }
 .ac-foe[data-phase='leaving'] { animation: ac-foe-leave 0.9s ease-in 1 both; }
 .ac-foe[data-phase='dying'] .ac-foe-body { animation: ac-foe-fall 1.2s ease-in 1 both; }
-.ac-foe[data-phase='dying'] .ac-foe-plate { opacity: 0.4; }
+.ac-foe-plate[hidden] { display: none; }
+.ac-foe-plate[data-phase='dying'] { opacity: 0.4; }
 
 /* Fight moves. A character's sprite moves, never its button, and ends where it began, so names,
    bubbles and stations stay where they are. Directions come from the engine as --ac-fight-x/y. */
