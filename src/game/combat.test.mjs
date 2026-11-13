@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
-  ELITE_ITEM_DROP_FACTOR,
   HITS_TO_KILL,
   ITEM_DROP_BASE,
   ITEM_DROP_MAX,
   ITEM_DROP_PER_LUCK,
   MITIGATION_CAP,
   MONSTER_KINDS,
+  MONSTER_RANKS,
   STAMINA_TICKS
 } from './constants.mjs'
 import { fightTick, healing, mitigation, monsterAttack, referenceStamina, rewardFor } from './combat.mjs'
@@ -225,6 +225,11 @@ test('luck raises the item drop chance up to its cap', () => {
   assert.ok(near(dropShare(monsterOf('common', 5), 1_000_000), ITEM_DROP_MAX))
 })
 
-test('an elite multiplies the item drop chance', () => {
-  assert.ok(near(dropShare(monsterOf('common', 5, 'swift'), 0), ITEM_DROP_BASE * ELITE_ITEM_DROP_FACTOR))
+test('a monster\'s drop factor multiplies the item drop chance', () => {
+  const champion = { ...monsterOf('common', 5, 'swift'), dropFactor: MONSTER_RANKS.champion.drop }
+  assert.ok(near(dropShare(champion, 0), ITEM_DROP_BASE * MONSTER_RANKS.champion.drop))
+})
+
+test('an elite saved before ranks keeps the elite drop factor', () => {
+  assert.ok(near(dropShare(monsterOf('common', 5, 'swift'), 0), ITEM_DROP_BASE * MONSTER_RANKS.elite.drop))
 })

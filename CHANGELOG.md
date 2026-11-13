@@ -42,6 +42,10 @@ All notable changes to this project are recorded here. The format follows
   slots, group upgrades and stars; the character marks in the rooms use the same icons.
 - The view state's game part adds the monster's `hp` and `maxHp`, `tickSeconds`, and names and
   levels on kill, drop and purchase events.
+- Monsters climb a rank ladder: normal, veteran, elite, champion, boss and legendary (a boss
+  with an affix). Rarer ranks have more health and pay more per minute; the odds and factors are
+  in `MONSTER_RANKS` and keep kills and rewards per hour where they were. Kill events and the
+  view state's monster carry the `rank`; monsters saved before keep working.
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 

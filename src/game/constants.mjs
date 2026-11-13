@@ -132,7 +132,6 @@ export const REFERENCE_PARTY_SIZE = 4
 export const STAMINA_TICKS = 16
 export const REST_SECONDS = 60
 export const BOSS_EVERY = 10
-export const ELITE_ONE_IN = 8
 /** Off boss waves, a common monster about half the time; the rest split between the two resistant kinds. */
 export const COMMON_SHARE = 0.5
 export const ARMORED_SHARE = 0.25
@@ -192,7 +191,31 @@ export const MONSTER_KINDS = {
   ethereal: { hp: 1, attack: 1, physical: 1.5, magical: 0.5, reward: 1.2 },
   boss: { hp: 4, attack: 1.5, physical: 1, magical: 1, reward: 5 }
 }
-export const ELITE = { hp: 1.5, reward: 3 }
+/**
+ * The rank ladder, told apart in a room by its glow. Off boss waves a hash picks the rank by
+ * `share`; a boss wave's boss is `legendary` one time in LEGENDARY_ONE_IN, otherwise `boss`.
+ * `hp` and `reward` multiply the kind's, `drop` multiplies the item drop chance (same cap).
+ * An elite, a champion and a legendary boss carry one affix.
+ *
+ * Why these numbers: before the ladder one monster in eight was an elite (health 1.5, reward 3,
+ * drops 3), so an average monster had health 1.0625 and paid 1.25 (1.18 per unit of health). The
+ * shares and factors below give health 1.0825 and pay 1.28 (1.18 per unit of health): kills per
+ * hour drop by 2% and the reward per hour of fighting stays where it was. A rarer rank takes
+ * longer and pays more per minute, so meeting one is good news. A legendary boss is measured
+ * the same way against the boss it replaces.
+ */
+export const MONSTER_RANKS = {
+  normal: { share: 0.75, hp: 1, reward: 1, drop: 1 },
+  veteran: { share: 0.15, hp: 1.15, reward: 1.25, drop: 1.5 },
+  elite: { share: 0.08, hp: 1.5, reward: 3, drop: 3 },
+  champion: { share: 0.02, hp: 2, reward: 5, drop: 4 },
+  boss: { hp: 1, reward: 1, drop: 1 },
+  legendary: { hp: 1.3, reward: 1.6, drop: 3 }
+}
+/** The ranks that carry an affix. */
+export const AFFIX_RANKS = ['elite', 'champion', 'legendary']
+/** One boss in this many is legendary: a boss with an affix and the strongest glow. */
+export const LEGENDARY_ONE_IN = 5
 
 /**
  * Units an idle character gathers per hour before bonuses, at world level 0. The rate grows by
@@ -205,11 +228,10 @@ export const GATHER_XP_PER_HOUR = 300
 export const GATHER_STOPS_AFTER_HOURS = 8
 export const REWARD_BASE = 10
 export const REWARD_GROWTH = 1.03
-/** The chance of an item drop: a base, a bonus per point of luck, a cap, and the elite factor. */
+/** The chance of an item drop: a base, a bonus per point of luck and a cap. Ranks multiply it. */
 export const ITEM_DROP_BASE = 0.005
 export const ITEM_DROP_PER_LUCK = 0.0003
 export const ITEM_DROP_MAX = 0.05
-export const ELITE_ITEM_DROP_FACTOR = 3
 /** A drop is a weapon this many times as often as an outfit or a tool. */
 export const DROP_SLOT_WEIGHTS = { weapon: 2, outfit: 1, tool: 1 }
 /**

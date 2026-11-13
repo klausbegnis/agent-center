@@ -16,7 +16,7 @@ milliseconds the caller passes.
 |---|---|
 | `applyTokens(save, { projectId, sessionId, tokens, activity, now, themeId?, title?, guest? })` | Counts the tokens a session spent since the last reading. Creates the world, the project (wave at the world level, starter chest) and the character when missing; a session found among the project's retirees comes back instead. Grants experience to the activity's work skill and to the character, and records `lastTokenAt`. A guest or an excluded project changes nothing. |
 | `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest? }` with `state` one of `working`, `waiting`, `blocked`, `idle`. See "Time". |
-| `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, affix, ticks, whether the party rested, materials and dropped item. |
+| `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, rank, affix, ticks, whether the party rested, materials and dropped item. |
 | `prepareFights(save, { sessions })` | Moves no time. Records each reported character's state, and gives a project whose party has a working member (a character or a guest) and no monster its monster now, measured against that party. |
 | `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
 | `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
@@ -147,15 +147,19 @@ hit = BASE_HIT * POWER_GROWTH ** worldLevel
   `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, attack speed 1, with aura and full
   party bonus.
 - `monsterHp = HITS_TO_KILL * referencePartyHit(level) * min(n, REFERENCE_PARTY_SIZE) /
-  REFERENCE_PARTY_SIZE * kind.hp * (elite ? ELITE.hp : 1)`, with `n` the working characters
+  REFERENCE_PARTY_SIZE * kind.hp * rank.hp`, with `n` the working characters
   when the monster appears. Most projects have one or two sessions at a time; they still kill
   in about `HITS_TO_KILL` ticks, and the class mix and the support's aura still matter.
 - Damage taken is multiplied by `kind.physical` or `kind.magical` by type.
 - Kind: the first monster of every `BOSS_EVERY`-th wave is a `boss`; otherwise a hash of
   world, project, wave and kill picks `common` (`COMMON_SHARE`), `armored` (`ARMORED_SHARE`) or
-  `ethereal`. One monster in `ELITE_ONE_IN`, by the same hash and never a boss, is an
-  elite with one affix: `regenerating`, `enraged`, `thorny`, `swift`, or one of the two
-  resistances. Each affix has one clear counter among the classes.
+  `ethereal`. The kind sets the resistances; the rank says how strong the monster is.
+- Rank: a ladder, each step told apart in a room by its glow (see "Ranks" below). Off boss
+  waves the same kind of hash picks `normal`, `veteran`, `elite` or `champion` by the shares in
+  `MONSTER_RANKS`; a boss wave's boss is `legendary` one time in `LEGENDARY_ONE_IN`, otherwise
+  `boss`. An elite, a champion and a legendary boss carry one affix: `regenerating`, `enraged`,
+  `thorny`, `swift`, or one of the two resistances. Each affix has one clear counter among the
+  classes.
 - Stamina: the monster drains `referenceStamina(level) / STAMINA_TICKS * kind.attack` a tick,
   so a reference party with no defence and no healing lasts `STAMINA_TICKS` ticks, fewer than
   `HITS_TO_KILL`: it rests during its first kill.
@@ -166,18 +170,40 @@ hit = BASE_HIT * POWER_GROWTH ** worldLevel
   one defender and one supporter holds its stamina against a common monster of its level, at
   every level. At zero stamina the party rests `REST_SECONDS` of fight time; the monster keeps
   its remaining health.
-- A regenerating elite heals `REGENERATING_SHARE` of its health a tick, never more than
+- A regenerating monster heals `REGENERATING_SHARE` of its health a tick, never more than
   `REGENERATING_DAMAGE_SHARE` of the damage it took that tick, so every fight can be won.
-- Reward for a kill: `REWARD_BASE * REWARD_GROWTH ** level * kind.reward` materials, split by
-  the monster's loot table, times `ELITE.reward` for an elite.
+- Reward for a kill: `REWARD_BASE * REWARD_GROWTH ** level * kind.reward * rank.reward`
+  materials, split by the monster's loot table.
 - Item drop: chance `min(ITEM_DROP_MAX, ITEM_DROP_BASE + ITEM_DROP_PER_LUCK * luck)` with the
-  working party's summed luck, times `ELITE_ITEM_DROP_FACTOR` for an elite (same cap). The slot
+  working party's summed luck, times the rank's `drop` factor (same cap). The slot
   is picked by hash with `DROP_SLOT_WEIGHTS`, a weapon's damage type by a class picked by hash.
   The entry is the highest tier up to `dropTier(level) = 1 + floor(REFERENCE_GEAR_PER_LEVEL *
   level / TIER_LEVELS)` (at most `ITEM_MAX_TIER`) among the generic and the room theme's
   entries: a drop helps a project catch up with the reference gear, never jumps past it. The
   chest keeps `COPIES_PER_ITEM` copies of an entry; a further drop of it is salvaged into the
   materials one upgrade of a fresh copy costs, so a drop never adds power for free.
+
+### Ranks
+
+| Rank | Odds | Health | Reward | Item drop | Affix | In the room |
+|---|---|---|---|---|---|---|
+| normal | 75% off boss waves | x1 | x1 | x1 | no | no glow |
+| veteran | 15% | x1.15 | x1.25 | x1.5 | no | a faint pale outline, still |
+| elite | 8% | x1.5 | x3 | x3 | yes | an outline and a slow pulsing halo in the affix's colour |
+| champion | 2% | x2 | x5 | x4 | yes | a double outline (affix colour inside, gold outside) and a quicker, larger halo |
+| boss | 4 in 5 boss waves | the `boss` kind's x4 | x5 | x1 | no | a deep red halo and outline, slow |
+| legendary | 1 in 5 boss waves | x4 x1.3 | x5 x1.6 | x3 | yes | a gold outline, an affix-coloured halo and a turning ring of light |
+
+- The numbers live in `MONSTER_RANKS` (`src/game/constants.mjs`) and multiply the kind's. The
+  item drop chance is multiplied by `drop`, under the same cap.
+- Why these numbers: before the ladder one monster in eight was an elite (health x1.5, reward
+  x3), so the average monster had health 1.0625 and paid 1.25. The ladder averages health
+  1.0825 and pay 1.28: kills per hour drop by about 2% and the reward per hour of fighting stays
+  the same. Rarer ranks take longer and pay more per minute.
+- A rank's word is on the monster's name plate: `Veteran`, the affix for an elite, `Champion`,
+  `Boss`, `Legendary`. Without motion (reduced motion) the glows stay and only stop moving.
+- A monster saved before ranks has no `rank`: a boss is a `boss`, one with an affix an `elite`,
+  any other `normal`, with that rank's item drop factor.
 
 ## Time
 
@@ -578,7 +604,7 @@ by the usual closing rules.
   rooms: {
     'local:/work/sneaky-pancake': {
       worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
-      monster: { id, name, kind, affix, level, healthShare: 0.12, hp: 412, maxHp: 3430,
+      monster: { id, name, kind, rank, affix, level, healthShare: 0.12, hp: 412, maxHp: 3430,
         sprite: { body, accent } }, // hp rounded up, so a monster still standing never reads 0
       party: 'fighting',            // fighting | resting | paused | idle
       pausedBy: null,               // blocked | waiting while paused, otherwise null
@@ -616,7 +642,7 @@ by the usual closing rules.
   estimate: one character per agent, on this computer or a paired one) or `guest` (a paired
   machine's agent while the game reads real totals).
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
-  kind, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
+  kind, rank, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
   `drop` (item, with its `name` and `tier`), `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
@@ -675,17 +701,18 @@ What the simulator measures now:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight | 23 ticks, 3.8 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
-| Kills per hour of fighting | 9 to 11 | 8 to 11 | 12 to 16 |
+| Median common fight (normal rank) | 24 ticks, 4.0 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
+| Kills per hour of fighting | 9 to 11 | 7.6 to 10.4 | 11.4 to 15.4 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 2.1 | 7.3 to 12.1 |
-| Gathering share of materials | 30% | 25% | 16% |
+| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 1.9 | 7.4 to 12.1 |
+| Gathering share of materials | 29% | 24% | 15% |
 | Hit from world, gear, character (day 90 on) | 55%, 20%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
 
-At levels 10, 60 and 150 a balanced party rests in 1 to 12% of its fights, one without a
-defender or a supporter in 52 to 100%; a party without magic takes 1.9 to 2.1 times as long
+At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
+defender or a supporter in 50 to 100%; a party without magic takes 1.9 to 2.1 times as long
 against armored monsters; a boss takes about three times a common monster and an elite 1.7 to
-1.9 times; every fight ends. A newcomer does 73% of a seasoned character's work and is
+1.9 times; every fight ends. The eight hours at level 10 meet a legendary boss rather than a
+plain one: 238 ticks, 6.5 times a common monster with its legendary health taken off. A newcomer does 73% of a seasoned character's work and is
 seasoned after about an hour of an agent working. Engineering trails the other skills in all
 three scenarios (agents run commands less than they write or read), so their parties attack
 at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow the

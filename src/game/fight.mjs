@@ -5,7 +5,7 @@ import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
-import { killsToPass, monsterFor } from './monsters.mjs'
+import { killsToPass, monsterFor, rankOf } from './monsters.mjs'
 import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
 import { addMaterials } from './worlds.mjs'
@@ -112,9 +112,9 @@ function settleKill(state, context) {
     state.materials = addMaterials(state.materials, salvage)
   }
   events.push({
-    type: 'kill', projectId, wave: state.wave, kind: monster.kind, affix: monster.affix,
-    ticks: state.fightTicks, rested: state.fightRested, materials: addMaterials(reward.materials, salvage),
-    item: entry?.id ?? null
+    type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
+    affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
+    materials: addMaterials(reward.materials, salvage), item: entry?.id ?? null
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
   state.waveKills += 1

@@ -1,13 +1,14 @@
 // Which monster a project meets on a wave, how many kills a wave takes, and the monster's numbers.
 // Everything comes from a hash of world, project, wave and kill, so the same fight is always the same.
 import {
+  AFFIX_RANKS,
   ARMORED_SHARE,
   BOSS_EVERY,
   COMMON_SHARE,
-  ELITE,
-  ELITE_ONE_IN,
   HITS_TO_KILL,
+  LEGENDARY_ONE_IN,
   MONSTER_KINDS,
+  MONSTER_RANKS,
   REFERENCE_PARTY_SIZE,
   WAVE_KILLS_GROWTH
 } from './constants.mjs'
@@ -55,16 +56,48 @@ export function kindForWave(where) {
   return roll < COMMON_SHARE + ARMORED_SHARE ? 'armored' : 'ethereal'
 }
 
+/** The ranks off boss waves, rarest first, so a low roll is the rare one. */
+const WAVE_RANKS = ['champion', 'elite', 'veteran', 'normal']
+
 /**
- * The elite affix of a monster, or null. About one monster in ELITE_ONE_IN, never a boss.
+ * The rank of a monster: on a boss wave `legendary` one time in LEGENDARY_ONE_IN, otherwise
+ * `boss`; off them `champion`, `elite`, `veteran` or `normal` by MONSTER_RANKS' shares.
+ *
+ * @param {Where} where
+ * @returns {'normal' | 'veteran' | 'elite' | 'champion' | 'boss' | 'legendary'}
+ */
+export function rankFor(where) {
+  if (isBoss(where)) return chanceOf(rollText(where, 'legendary')) < 1 / LEGENDARY_ONE_IN ? 'legendary' : 'boss'
+  const roll = chanceOf(rollText(where, 'elite'))
+  let below = 0
+  for (const rank of WAVE_RANKS) {
+    below += MONSTER_RANKS[rank].share
+    if (roll < below) return rank
+  }
+  return 'normal'
+}
+
+/**
+ * The affix of a monster, or null: an elite, a champion and a legendary boss carry one.
  *
  * @param {Where} where
  * @returns {string | null} one of AFFIXES
  */
-export function eliteFor(where) {
-  if (isBoss(where)) return null
-  if (chanceOf(rollText(where, 'elite')) >= 1 / ELITE_ONE_IN) return null
+export function affixFor(where) {
+  if (!AFFIX_RANKS.includes(rankFor(where))) return null
   return AFFIXES[hashOf(rollText(where, 'affix')) % AFFIXES.length]
+}
+
+/**
+ * The rank of a monster as saved. Monsters saved before ranks existed have none: a boss is a
+ * boss, one with an affix an elite, any other normal.
+ *
+ * @param {{ rank?: string, kind?: string, affix?: string | null }} monster
+ */
+export function rankOf(monster) {
+  if (Object.hasOwn(MONSTER_RANKS, monster?.rank ?? '')) return monster.rank
+  if (monster?.kind === 'boss') return 'boss'
+  return monster?.affix ? 'elite' : 'normal'
 }
 
 /** Damage factors by type: the kind's, unless a resistance affix replaces them. */
@@ -86,8 +119,9 @@ function resistancesFor(kind, affix) {
  * @param {string | null} options.themeId the room's theme, for picking the entry
  * @param {{ monsters: object[] }} options.content a valid monsters file
  * @param {(level: number) => { physical: number, magical: number, total: number }} options.referencePartyHit
- * @returns {{ id: string, name: string, kind: string, affix: string | null, level: number,
- *   maxHp: number, hp: number, physical: number, magical: number, attack: number, reward: number,
+ * @returns {{ id: string, name: string, kind: string, rank: string, affix: string | null,
+ *   level: number, maxHp: number, hp: number, physical: number, magical: number, attack: number,
+ *   reward: number, dropFactor: number,
  *   loot: Record<string, number>, sprite: { body: string, accent: string } }}
  */
 export function monsterFor(options) {
@@ -96,23 +130,26 @@ export function monsterFor(options) {
   const partyShare = partySize / REFERENCE_PARTY_SIZE
   const where = { worldId, projectId, wave, kill }
   const kind = kindForWave(where)
-  const affix = eliteFor(where)
+  const rank = rankFor(where)
+  const affix = affixFor(where)
+  const ranked = MONSTER_RANKS[rank]
   const entries = monstersFor(content, { kind, themeId })
   const entry = entries[hashOf(rollText(where, 'entry')) % entries.length]
   const factors = MONSTER_KINDS[kind]
-  const eliteHp = affix ? ELITE.hp : 1
-  const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * partyShare * factors.hp * eliteHp
+  const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * partyShare * factors.hp * ranked.hp
   return {
     id: entry.id,
     name: entry.name,
     kind,
+    rank,
     affix,
     level: wave,
     maxHp,
     hp: maxHp,
     ...resistancesFor(kind, affix),
     attack: factors.attack,
-    reward: factors.reward * (affix ? ELITE.reward : 1),
+    reward: factors.reward * ranked.reward,
+    dropFactor: ranked.drop,
     loot: { ...entry.loot },
     sprite: { ...entry.sprite }
   }

@@ -4,7 +4,7 @@ import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
-import { killsToPass } from './monsters.mjs'
+import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
 import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
@@ -82,6 +82,7 @@ function monsterView(monster) {
     id: monster.id,
     name: monster.name,
     kind: monster.kind,
+    rank: rankOf(monster),
     affix: monster.affix,
     level: monster.level,
     healthShare: monster.maxHp > 0 ? monster.hp / monster.maxHp : 0,

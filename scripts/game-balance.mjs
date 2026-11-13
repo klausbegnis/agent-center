@@ -3,6 +3,7 @@
 import {
   CHARACTER_LEVEL_BASE,
   CHARACTER_LEVEL_EXPONENT,
+  MONSTER_RANKS,
   REFERENCE_TOKENS_PER_MINUTE,
   SEASONED_LEVEL,
   SKILL_CAP,
@@ -107,10 +108,12 @@ export function compositionCheck(engine, level) {
     const ticksOf = (filter) => median(events.filter(filter).map((event) => event.ticks))
     results[name] = {
       rest: events.filter((event) => event.rested).length / events.length,
-      common: ticksOf((event) => event.kind === 'common' && !event.affix),
-      armored: ticksOf((event) => event.kind === 'armored' && !event.affix),
-      elite: ticksOf((event) => event.affix),
-      boss: ticksOf((event) => event.kind === 'boss'),
+      common: ticksOf((event) => event.kind === 'common' && event.rank === 'normal'),
+      armored: ticksOf((event) => event.kind === 'armored' && event.rank === 'normal'),
+      elite: ticksOf((event) => event.rank === 'elite'),
+      champion: ticksOf((event) => event.rank === 'champion'),
+      boss: ticksOf((event) => event.rank === 'boss'),
+      legendary: ticksOf((event) => event.rank === 'legendary'),
       longest: Math.max(...events.map((event) => event.ticks))
     }
   }
@@ -185,7 +188,7 @@ function scenarioChecks(run) {
   const late = run.rows.filter((row) => row.day >= 30)
   const gaps = late.flatMap((row) => row.waves.map((wave) => wave - row.level))
   const kills = Math.min(...late.map((row) => row.killsPerHour))
-  const common = run.allKills.filter((event) => event.kind === 'common' && !event.affix)
+  const common = run.allKills.filter((event) => event.kind === 'common' && event.rank === 'normal')
   const ticks = median(common.map((event) => event.ticks))
   const buys = late.map((row) => row.purchasesPerDay)
   const gathered = run.totals.gathered / Math.max(1, run.totals.gathered + run.totals.killMaterials)
@@ -219,11 +222,15 @@ function compositionChecks(engine) {
     const slower = parties['no magic'].armored / parties['no magic'].common
     results.push([`level ${level}: no magic is about twice as slow on armored`, between(slower, 1.6, 2.6),
       `x${fixed(slower)}`])
-    const boss = balanced.boss / balanced.common
+    // Eight hours meet one boss wave or two; when its boss is legendary, it is measured as a plain
+    // boss with the legendary health taken off.
+    const bossTicks = balanced.boss ?? balanced.legendary / MONSTER_RANKS.legendary.hp
+    const boss = bossTicks / balanced.common
     const elite = balanced.elite / balanced.common
+    const bossLabel = balanced.boss === null ? 'legendary boss as plain' : 'boss'
     results.push([`level ${level}: elites and bosses harder, always beaten`,
       between(boss, 2.5, 8) && elite > 1.2 && Number.isFinite(balanced.longest),
-      `boss x${fixed(boss)}, elite x${fixed(elite)}, longest ${balanced.longest} ticks`])
+      `${bossLabel} x${fixed(boss)}, elite x${fixed(elite)}, longest ${balanced.longest} ticks`])
   }
   return results
 }

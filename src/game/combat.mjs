@@ -1,7 +1,6 @@
 // One combat tick between a project's working party and its monster, and the reward for a kill.
 // Pure: every function returns new objects and leaves its inputs alone.
 import {
-  ELITE_ITEM_DROP_FACTOR,
   ENRAGED_MAX_BONUS,
   HEAL_CAP_SHARE,
   HEAL_HALF,
@@ -10,6 +9,7 @@ import {
   ITEM_DROP_PER_LUCK,
   MITIGATION_CAP,
   MITIGATION_HALF,
+  MONSTER_RANKS,
   POWER_GROWTH,
   REGENERATING_DAMAGE_SHARE,
   REGENERATING_SHARE,
@@ -21,6 +21,7 @@ import {
   THORNY_SHARE
 } from './constants.mjs'
 import { chanceOf } from './hash.mjs'
+import { rankOf } from './monsters.mjs'
 
 /** Floating point leaves crumbs; less than this share of the whole counts as nothing left. */
 const SETTLE_SHARE = 1e-9
@@ -148,16 +149,20 @@ function splitByWeights(total, weights) {
   return Object.fromEntries(shares.map((share) => [share.id, share.amount]))
 }
 
-/** The chance of an item drop for a party's luck, tripled for an elite, never above the cap. */
-function itemDropChance(luck, isElite) {
+/** The chance of an item drop for a party's luck, times the monster's rank factor, never above the cap. */
+function itemDropChance(luck, dropFactor) {
   const chance = Math.min(ITEM_DROP_MAX, ITEM_DROP_BASE + ITEM_DROP_PER_LUCK * luck)
-  return isElite ? Math.min(ITEM_DROP_MAX, chance * ELITE_ITEM_DROP_FACTOR) : chance
+  return Math.min(ITEM_DROP_MAX, chance * dropFactor)
 }
+
+/** A monster saved before ranks carries no drop factor: its rank's, from the kind and affix it has. */
+const dropFactorOf = (monster) => monster.dropFactor ?? MONSTER_RANKS[rankOf(monster)].drop
 
 /**
  * What a kill gives: materials split by the monster's loot weights, and whether an item drops.
  *
- * @param {{ level: number, reward: number, affix: string | null, loot: Record<string, number> }} monster
+ * @param {{ level: number, reward: number, dropFactor?: number, affix: string | null,
+ *   loot: Record<string, number> }} monster
  * @param {{ luck: number, seed: string }} roll seed makes the drop deterministic (e.g. world, project, wave)
  * @returns {{ materials: Record<string, number>, itemDrop: boolean }}
  */
@@ -165,6 +170,6 @@ export function rewardFor(monster, { luck, seed }) {
   const total = Math.round(REWARD_BASE * REWARD_GROWTH ** monster.level * monster.reward)
   return {
     materials: splitByWeights(total, monster.loot),
-    itemDrop: chanceOf(`${seed}|item`) < itemDropChance(luck, Boolean(monster.affix))
+    itemDrop: chanceOf(`${seed}|item`) < itemDropChance(luck, dropFactorOf(monster))
   }
 }

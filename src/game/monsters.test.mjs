@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   BOSS_EVERY,
-  ELITE,
-  ELITE_ONE_IN,
   HITS_TO_KILL,
+  LEGENDARY_ONE_IN,
   MONSTER_KINDS,
+  MONSTER_RANKS,
   WAVE_KILLS_GROWTH
 } from './constants.mjs'
-import { AFFIXES, eliteFor, killsToPass, kindForWave, monsterFor } from './monsters.mjs'
+import { AFFIXES, affixFor, killsToPass, kindForWave, monsterFor, rankFor, rankOf } from './monsters.mjs'
 
 const referencePartyHit = (level) => ({
   physical: 60 * 1.04 ** level,
@@ -59,16 +59,39 @@ test('a wave always has the same kind, and another project can differ', () => {
   assert.notDeepEqual(kinds('rumble-banana'), kinds('rumble-cherry'))
 })
 
-test('about one wave in ELITE_ONE_IN is an elite, never a boss wave', () => {
-  const elites = wavesUpTo(8000).filter((wave) => eliteFor(where(wave)) !== null)
-  assert.equal(elites.some((wave) => wave % BOSS_EVERY === 0), false)
-  const share = elites.length / (8000 * (1 - 1 / BOSS_EVERY))
-  assert.ok(Math.abs(share - 1 / ELITE_ONE_IN) < 0.02)
+test('off boss waves each rank comes up about as often as its share, never boss or legendary', () => {
+  const ranks = wavesUpTo(20000).filter((wave) => wave % BOSS_EVERY).map((wave) => rankFor(where(wave)))
+  for (const rank of ['normal', 'veteran', 'elite', 'champion']) {
+    const share = ranks.filter((each) => each === rank).length / ranks.length
+    assert.ok(Math.abs(share - MONSTER_RANKS[rank].share) < 0.01, `${rank}: ${share}`)
+  }
+  assert.ok(!ranks.includes('boss') && !ranks.includes('legendary'))
 })
 
-test('elites carry every affix over enough waves', () => {
-  const affixes = new Set(wavesUpTo(8000).map((wave) => eliteFor(where(wave))).filter(Boolean))
+test('a boss wave opens with a boss, legendary about one time in LEGENDARY_ONE_IN', () => {
+  const ranks = wavesUpTo(4000).map((index) => rankFor(where(index * BOSS_EVERY)))
+  assert.ok(ranks.every((rank) => rank === 'boss' || rank === 'legendary'))
+  const share = ranks.filter((rank) => rank === 'legendary').length / ranks.length
+  assert.ok(Math.abs(share - 1 / LEGENDARY_ONE_IN) < 0.03)
+})
+
+test('only elites, champions and legendary bosses carry an affix', () => {
+  for (const wave of wavesUpTo(3000)) {
+    const hasAffix = affixFor(where(wave)) !== null
+    assert.equal(hasAffix, ['elite', 'champion', 'legendary'].includes(rankFor(where(wave))))
+  }
+})
+
+test('affixed monsters carry every affix over enough waves', () => {
+  const affixes = new Set(wavesUpTo(8000).map((wave) => affixFor(where(wave))).filter(Boolean))
   assert.deepEqual([...affixes].sort(), [...AFFIXES].sort())
+})
+
+test('a monster saved before ranks gets its rank from its kind and affix', () => {
+  assert.equal(rankOf({ kind: 'boss', affix: null }), 'boss')
+  assert.equal(rankOf({ kind: 'common', affix: 'thorny' }), 'elite')
+  assert.equal(rankOf({ kind: 'armored', affix: null }), 'normal')
+  assert.equal(rankOf({ kind: 'common', rank: 'champion', affix: 'swift' }), 'champion')
 })
 
 test('the same wave always gives the same monster', () => {
@@ -76,7 +99,7 @@ test('the same wave always gives the same monster', () => {
 })
 
 test('a monster has the wave as level and full health that takes HITS_TO_KILL reference hits', () => {
-  const wave = firstWave((each) => kindForWave(where(each)) === 'common' && !eliteFor(where(each)))
+  const wave = firstWave((each) => kindForWave(where(each)) === 'common' && rankFor(where(each)) === 'normal')
   const monster = build(wave)
   assert.equal(monster.level, wave)
   assert.equal(monster.hp, monster.maxHp)
@@ -84,30 +107,47 @@ test('a monster has the wave as level and full health that takes HITS_TO_KILL re
 })
 
 test('a boss has its kind\'s health, attack and reward', () => {
-  const monster = build(BOSS_EVERY)
+  const wave = firstWave((each) => each % BOSS_EVERY === 0 && rankFor(where(each)) === 'boss')
+  const monster = build(wave)
   assert.equal(monster.kind, 'boss')
   assert.equal(monster.affix, null)
-  assert.ok(Math.abs(monster.maxHp - 4 * HITS_TO_KILL * referencePartyHit(BOSS_EVERY).total) < 1e-6)
+  assert.ok(Math.abs(monster.maxHp - 4 * HITS_TO_KILL * referencePartyHit(wave).total) < 1e-6)
   assert.equal(monster.attack, MONSTER_KINDS.boss.attack)
   assert.equal(monster.reward, MONSTER_KINDS.boss.reward)
 })
 
 test('an armored monster takes half damage from physical hits', () => {
-  const wave = firstWave((each) => kindForWave(where(each)) === 'armored' && !eliteFor(where(each)))
+  const wave = firstWave((each) => kindForWave(where(each)) === 'armored' && !affixFor(where(each)))
   const monster = build(wave)
   assert.deepEqual([monster.physical, monster.magical], [0.5, 1.5])
 })
 
-test('an elite has more health and reward than its kind', () => {
-  const wave = firstWave((each) => kindForWave(where(each)) === 'common' && eliteFor(where(each)))
+for (const rank of ['veteran', 'elite', 'champion']) {
+  test(`a ${rank} has its rank's health, reward and drop factor on top of its kind's`, () => {
+    const wave = firstWave((each) => kindForWave(where(each)) === 'common' && rankFor(where(each)) === rank)
+    const monster = build(wave)
+    const factors = MONSTER_RANKS[rank]
+    assert.equal(monster.rank, rank)
+    assert.ok(Math.abs(monster.maxHp - factors.hp * HITS_TO_KILL * referencePartyHit(wave).total) < 1e-6)
+    assert.equal(monster.reward, factors.reward)
+    assert.equal(monster.dropFactor, factors.drop)
+  })
+}
+
+test('a legendary boss is a boss with an affix and the legendary factors', () => {
+  const wave = firstWave((each) => each % BOSS_EVERY === 0 && rankFor(where(each)) === 'legendary')
   const monster = build(wave)
-  assert.ok(Math.abs(monster.maxHp - ELITE.hp * HITS_TO_KILL * referencePartyHit(wave).total) < 1e-6)
-  assert.equal(monster.reward, ELITE.reward)
+  const { legendary } = MONSTER_RANKS
+  assert.equal(monster.kind, 'boss')
+  assert.ok(AFFIXES.includes(monster.affix))
+  const expected = 4 * legendary.hp * HITS_TO_KILL * referencePartyHit(wave).total
+  assert.ok(Math.abs(monster.maxHp - expected) < 1e-6)
+  assert.equal(monster.reward, MONSTER_KINDS.boss.reward * legendary.reward)
 })
 
 test('an ethereal affix on an armored monster replaces its resistances', () => {
   const isEtherealArmored = (each) =>
-    kindForWave(where(each)) === 'armored' && eliteFor(where(each)) === 'ethereal'
+    kindForWave(where(each)) === 'armored' && affixFor(where(each)) === 'ethereal'
   const wave = firstWave(isEtherealArmored)
   const monster = build(wave)
   assert.deepEqual([monster.kind, monster.physical, monster.magical], ['armored', 1.5, 0.5])
@@ -123,6 +163,7 @@ test('a monster is picked among the theme\'s entries of its kind', () => {
 })
 
 test('a theme without its own entry of a kind gets a generic one', () => {
+  assert.equal(build(BOSS_EVERY, 'world-theme').kind, 'boss')
   assert.equal(build(BOSS_EVERY, 'world-theme').id, 'plain-boss')
 })
 
