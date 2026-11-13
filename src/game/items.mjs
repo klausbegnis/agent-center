@@ -1,0 +1,97 @@
+// Owned items: what a tier and an upgrade level are worth, what an upgrade costs and paying for
+// it. Stats are computed here; the item entries in game/items.json carry no numbers.
+import { GEAR_LEVEL_BONUS, UPGRADE_COST_BASE, UPGRADE_COST_GROWTH } from './constants.mjs'
+
+/**
+ * Each tier is worth this much more than the one below it. Geometric so that a tier step stays
+ * a noticeable gain at every height: tier 5 is 1.75x, tier 10 is 3.52x tier 1. One tier step is
+ * worth about three upgrade levels (1 + 3 * GEAR_LEVEL_BONUS = 1.15).
+ */
+const TIER_GROWTH = 1.15
+/** Each workbench level takes this share off an upgrade's cost. */
+const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
+/** However high the workbench, an upgrade still costs at least this share of its full price. */
+const WORKBENCH_COST_FLOOR = 0.5
+
+/**
+ * What an item's tier multiplies its effect by: `TIER_GROWTH ** (tier - 1)`, so tier 1 gives 1.
+ *
+ * @param {number} tier 1 to 10
+ * @returns {number}
+ */
+export function tierFactor(tier) {
+  return TIER_GROWTH ** (tier - 1)
+}
+
+/**
+ * What an owned item multiplies its effect by. No item at all gives 1.
+ *
+ * @param {{ tier: number, level: number } | null} item
+ * @returns {number}
+ */
+export function itemFactor(item) {
+  if (!item) return 1
+  return (1 + GEAR_LEVEL_BONUS * item.level) * tierFactor(item.tier)
+}
+
+/**
+ * An owned item at level 0, free in the chest, made from a content entry.
+ *
+ * @param {{ id: string, slot: string, damageType?: string, tier: number, recipe: string[] }} entry
+ * @returns {{ id: string, entryId: string, slot: string, damageType?: string, tier: number,
+ *   recipe: string[], level: number, heldBy: null }}
+ */
+export function createItem(entry) {
+  const item = { id: entry.id, entryId: entry.id, slot: entry.slot }
+  if (entry.slot === 'weapon') item.damageType = entry.damageType
+  return { ...item, tier: entry.tier, recipe: [...entry.recipe], level: 0, heldBy: null }
+}
+
+/**
+ * The materials one upgrade of the item costs: the same amount of each of its two recipe
+ * materials, `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** level`, less 5% per workbench level
+ * down to half price, rounded.
+ *
+ * @param {{ level: number, recipe: string[] }} item
+ * @param {{ workbenchLevel?: number }} [options]
+ * @returns {Record<string, number>}
+ */
+export function upgradeCost(item, { workbenchLevel = 0 } = {}) {
+  const discount = Math.max(WORKBENCH_COST_FLOOR, 1 - WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
+  const amount = Math.round(UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** item.level * discount)
+  return Object.fromEntries(item.recipe.map((materialId) => [materialId, amount]))
+}
+
+/**
+ * @param {Record<string, number>} materials what is in stock
+ * @param {Record<string, number>} cost
+ * @returns {boolean}
+ */
+export function canAfford(materials, cost) {
+  return Object.entries(cost).every(([materialId, amount]) => (materials[materialId] ?? 0) >= amount)
+}
+
+/**
+ * The materials left once the cost is paid. Throws when the stock does not cover it.
+ *
+ * @param {Record<string, number>} materials
+ * @param {Record<string, number>} cost
+ * @returns {Record<string, number>}
+ */
+export function payFor(materials, cost) {
+  if (!canAfford(materials, cost)) throw new Error('not enough materials for this cost')
+  const left = { ...materials }
+  for (const [materialId, amount] of Object.entries(cost)) left[materialId] = (left[materialId] ?? 0) - amount
+  return left
+}
+
+/**
+ * The item one upgrade level higher. Paying for it is the caller's job (`upgradeCost`, `payFor`).
+ *
+ * @template {{ level: number }} Item
+ * @param {Item} item
+ * @returns {Item}
+ */
+export function upgradeItem(item) {
+  return { ...item, level: item.level + 1 }
+}
