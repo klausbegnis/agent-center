@@ -6,7 +6,7 @@ import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from '
 import { addDrop, droppedEntry } from './drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import { killsToPass, monsterFor } from './monsters.mjs'
-import { characterHit, partyHits, referenceAttributes } from './power.mjs'
+import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
 import { addMaterials } from './worlds.mjs'
 
@@ -30,9 +30,10 @@ const REST_TICKS = Math.ceil(REST_SECONDS / TICK_SECONDS)
  */
 export function partyOf(members, world, project) {
   const itemOf = (id) => (id ? findItem(project.chest, id) : null)
+  const speed = engineeringSpeed(world.skills)
   const hitters = members.map(({ character, tokensPerMinute }) => {
     const weaponFactor = itemFactor(itemOf(character.equipment?.weapon))
-    const hit = characterHit({ character, skills: world.skills, weaponFactor, tokensPerMinute })
+    const hit = characterHit({ character, skills: world.skills, weaponFactor, tokensPerMinute, speed })
     return { class: character.class, ...hit }
   })
   const { physical, magical } = partyHits(hitters)

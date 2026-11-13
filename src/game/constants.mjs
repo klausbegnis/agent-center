@@ -34,6 +34,16 @@ export const POWER_GROWTH = 1.04
  */
 export const CLASS_SKILL_WEIGHT = 0.5
 export const BASE_HIT = 10
+/**
+ * Engineering is the party's attack speed: every working character's hit is multiplied by
+ * (effective level of engineering / world level) ** ENGINEERING_SPEED_WEIGHT times its star
+ * effect, kept between ENGINEERING_SPEED_MIN and ENGINEERING_SPEED_MAX. It touches the whole
+ * party, so it is bounded more tightly than a class skill: a world that never runs a command
+ * is slowed, never stopped. The reference party monsters are measured against uses 1.
+ */
+export const ENGINEERING_SPEED_WEIGHT = 0.35
+export const ENGINEERING_SPEED_MIN = 0.6
+export const ENGINEERING_SPEED_MAX = 1.5
 /** Damage added per point of the class attribute. */
 export const ATTRIBUTE_HIT_BONUS = 0.02
 /** Each upgrade level multiplies an item's effect by this. */

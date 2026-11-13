@@ -300,6 +300,27 @@ test('the view shows each world\'s skills and each project\'s fight and party', 
   assert.ok(shown.party.every((member) => member.equipment.weapon && member.equipment.weapon.name))
 })
 
+test('the view shows the party\'s attack speed from the world\'s Engineering', () => {
+  const save = trainWorld(emptySave(), 20)
+  assert.equal(engine.view(save).worlds[0].attackSpeed, 1)
+  const ahead = tokensFor(save, { projectId: 'turbo-waffle', sessionId: 'runner', activity: 'run',
+    tokens: (xpToReach(40) - xpToReach(20)) * TOKENS_PER_XP })
+  assert.ok(engine.view(ahead).worlds[0].attackSpeed > 1)
+})
+
+test('training Engineering ahead of the other skills makes the party kill more often', () => {
+  const trained = trainWorld(emptySave(), 20)
+  const runner = { projectId: 'turbo-waffle', sessionId: 'runner', activity: 'run' }
+  const fast = tokensFor(trained, { ...runner, tokens: (xpToReach(40) - xpToReach(20)) * TOKENS_PER_XP })
+  const fightOf = (save) => {
+    const withParty = partyOfFour(save)
+    const sessions = ['first', 'second', 'third', 'fourth'].map((sessionId) => working(sessionId))
+    const moved = engine.advanceWithEvents(withParty, { from: 0, to: 4 * HOUR, sessions })
+    return moved.events.filter((event) => event.type === 'kill').length
+  }
+  assert.ok(fightOf(fast) > fightOf(trained))
+})
+
 /** Levels, waves and materials of a save, to compare before and after a step. */
 function progressOf(save) {
   const skills = {}

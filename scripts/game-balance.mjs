@@ -10,7 +10,7 @@ import {
 } from '../src/game/constants.mjs'
 import { startingAttributes } from '../src/game/characters.mjs'
 import { itemFactor, referenceGearLevel } from '../src/game/items.mjs'
-import { characterHit, referenceAttributes } from '../src/game/power.mjs'
+import { characterHit, engineeringSpeed, referenceAttributes } from '../src/game/power.mjs'
 import { xpToNext } from '../src/game/progression.mjs'
 import { WORK_SKILLS } from '../src/game/skills.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
@@ -39,8 +39,9 @@ export function printTable(headers, rows) {
   for (const row of rows) console.log(line(row))
 }
 
-const hitOf = (character, skills, weaponFactor = 1) =>
-  characterHit({ character, skills, weaponFactor, tokensPerMinute: REFERENCE_TOKENS_PER_MINUTE }).amount
+const hitOf = (character, skills, weaponFactor = 1) => characterHit({
+  character, skills, weaponFactor, tokensPerMinute: REFERENCE_TOKENS_PER_MINUTE, speed: engineeringSpeed(skills)
+}).amount
 
 /**
  * How a project's typical hit splits between the world, the project's gear and the character,

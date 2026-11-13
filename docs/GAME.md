@@ -22,7 +22,7 @@ milliseconds the caller passes.
 | `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
-| `view(save)` | A plain summary for a UI: per world the level, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
+| `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
@@ -100,12 +100,19 @@ hit = BASE_HIT * POWER_GROWTH ** worldLevel
     * pace
     * (1 + critChance * (CRIT_DAMAGE - 1))
     * (1 + HASTE_PER_AGILITY * agility)
+    * speed
 ```
 
 - `E` is the effective level of the class skill and `stars` its prestige stars. A character
   fights at its world's level, like the monsters; its class skill adds a bounded factor. The
   five skills drift apart in proportion (one can be twice another), so a class skill used as a
   level of its own would make one class many times too strong.
+- `speed` is the party's attack speed from the world's Engineering, the one work skill no class
+  draws on: `clamp((Eng / worldLevel) ** ENGINEERING_SPEED_WEIGHT * (1 + STAR_EFFECT_BONUS *
+  engStars), ENGINEERING_SPEED_MIN, ENGINEERING_SPEED_MAX)` with `Eng` the effective level of
+  `engineering`. It is 1 when Engineering is at the world level, more when it is ahead, less
+  when it lags; it applies to every working character alike, guests included, so it is
+  bounded more tightly than a class skill. The reference party always attacks at speed 1.
 - `itemFactor(item) = GEAR_GROWTH ** effectiveGearLevel(item)` with `effectiveGearLevel =
   level + TIER_LEVELS * (tier - 1)`: a tier is a head start worth `TIER_LEVELS` upgrades. No
   item counts as factor 1.
@@ -133,7 +140,8 @@ hit = BASE_HIT * POWER_GROWTH ** worldLevel
   that needs), character level `SEASONED_LEVEL`, the attributes a real character has at that
   level (starting attributes plus the class and fortune points of every level, and its
   activity points spread evenly over the five activities), gear worth
-  `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, with aura and full party bonus.
+  `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, attack speed 1, with aura and full
+  party bonus.
 - `monsterHp = HITS_TO_KILL * referencePartyHit(level) * min(n, REFERENCE_PARTY_SIZE) /
   REFERENCE_PARTY_SIZE * kind.hp * (elite ? ELITE.hp : 1)`, with `n` the working characters
   when the monster appears. Most projects have one or two sessions at a time; they still kill
@@ -323,18 +331,21 @@ What the simulator measures now:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight | 23 ticks, 3.8 min | 24 ticks, 4.0 min | 18 ticks, 3.0 min |
-| Kills per hour of fighting | 9 to 11 | 8 to 12 | 12 to 17 |
+| Median common fight | 23 ticks, 3.8 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
+| Kills per hour of fighting | 9 to 11 | 8 to 11 | 12 to 16 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 2.0 | 7.6 to 12.1 |
-| Gathering share of materials | 29% | 23% | 15% |
-| Hit from world, gear, character (day 90 on) | 56%, 20%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
+| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 2.1 | 7.3 to 12.1 |
+| Gathering share of materials | 30% | 25% | 16% |
+| Hit from world, gear, character (day 90 on) | 55%, 20%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 12% of its fights, one without a
 defender or a supporter in 52 to 100%; a party without magic takes 1.9 to 2.1 times as long
 against armored monsters; a boss takes about three times a common monster and an elite 1.7 to
 1.9 times; every fight ends. A newcomer does 73% of a seasoned character's work and is
-seasoned after about an hour of an agent working.
+seasoned after about an hour of an agent working. Engineering trails the other skills in all
+three scenarios (agents run commands less than they write or read), so their parties attack
+at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow the
+world level, not the party, so that shows as a slightly longer fight.
 
 Targets the numbers do not meet, and why:
 

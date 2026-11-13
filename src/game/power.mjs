@@ -9,6 +9,9 @@ import {
   CRIT_DAMAGE,
   CRIT_MAX,
   CRIT_PER_PRECISION,
+  ENGINEERING_SPEED_MAX,
+  ENGINEERING_SPEED_MIN,
+  ENGINEERING_SPEED_WEIGHT,
   ACTIVITY_POINTS_PER_LEVEL,
   CLASS_POINTS_PER_LEVEL,
   FORTUNE_POINTS_PER_LEVEL,
@@ -74,11 +77,28 @@ export function classSkillFactor(className, skills) {
 }
 
 /**
+ * The party's attack speed from the world's Engineering: (effective level of engineering /
+ * world level) ** ENGINEERING_SPEED_WEIGHT, times its star effect, within ENGINEERING_SPEED_MIN
+ * and ENGINEERING_SPEED_MAX. 1 when Engineering is at the world level without stars.
+ *
+ * @param {{ [skillId: string]: Skill }} skills the world's skills
+ * @returns {number}
+ */
+export function engineeringSpeed(skills) {
+  const engineering = skills.engineering ?? emptySkill()
+  const ratio = effectiveLevel(engineering) / worldLevel(skills)
+  const factor = ratio ** ENGINEERING_SPEED_WEIGHT * effectMultiplier(engineering)
+  return Math.min(ENGINEERING_SPEED_MAX, Math.max(ENGINEERING_SPEED_MIN, factor))
+}
+
+/**
  * @param {{ character: Character, skills: { [skillId: string]: Skill }, weaponFactor?: number,
- *   tokensPerMinute: number }} options `weaponFactor` is the weapon's upgrade and tier factor
+ *   tokensPerMinute: number, speed?: number }} options `weaponFactor` is the weapon's upgrade and
+ *   tier factor; `speed` the party's attack speed (`engineeringSpeed` of a real world, 1 for the
+ *   reference party)
  * @returns {Hit}
  */
-export function characterHit({ character, skills, weaponFactor = 1, tokensPerMinute }) {
+export function characterHit({ character, skills, weaponFactor = 1, tokensPerMinute, speed = 1 }) {
   const className = character.class
   const { attributes } = character
   const amount =
@@ -91,7 +111,8 @@ export function characterHit({ character, skills, weaponFactor = 1, tokensPerMin
     CLASS_HIT[className] *
     pace(tokensPerMinute) *
     (1 + critChance(attributes.precision ?? 0) * (CRIT_DAMAGE - 1)) *
-    (1 + HASTE_PER_AGILITY * (attributes.agility ?? 0))
+    (1 + HASTE_PER_AGILITY * (attributes.agility ?? 0)) *
+    speed
   return { amount, type: className === 'magical' ? 'magical' : 'physical' }
 }
 
@@ -162,7 +183,7 @@ export function referencePartyHit(level) {
     const attributes = referenceAttributes(className, level)
     const character = { class: className, level: SEASONED_LEVEL, attributes }
     const tokensPerMinute = REFERENCE_TOKENS_PER_MINUTE
-    const hit = characterHit({ character, skills, weaponFactor, tokensPerMinute })
+    const hit = characterHit({ character, skills, weaponFactor, tokensPerMinute, speed: 1 })
     return { class: className, ...hit }
   })
   return partyHits(members)

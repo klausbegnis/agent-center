@@ -3,6 +3,9 @@ import { test } from 'node:test'
 import {
   CLASS_HIT,
   CLASS_SKILL_WEIGHT,
+  ENGINEERING_SPEED_MAX,
+  ENGINEERING_SPEED_MIN,
+  ENGINEERING_SPEED_WEIGHT,
   GEAR_GROWTH,
   NEWCOMER_SHARE,
   PACE_MAX,
@@ -15,6 +18,7 @@ import {
 import {
   characterHit,
   critChance,
+  engineeringSpeed,
   pace,
   partyHits,
   referenceAttributes,
@@ -186,4 +190,63 @@ test('the reference party lives in a world whose five work skills are all at its
   const viaClassSkills = referencePartyHit(level).total / referencePartyHit(level - 1).total
   assert.ok(viaClassSkills > POWER_GROWTH, 'the world level, not only the class skills, follows the level')
   assert.equal(referenceAttributes('physical', level).strength >= 1 + Math.floor(level / 2), true)
+})
+
+const skillAt = (level, stars = 0) => ({ level, xp: 0, banked: 0, stars })
+
+/** Five work skills at `level`, with Engineering at `engineering` instead. */
+function worldWithEngineering(level, engineering) {
+  return { forge: level, lore: level, engineering, arcana: level, command: level }
+}
+
+test('engineering at the world level gives the party its normal attack speed', () => {
+  const skills = worldWithEngineering(skillAt(30), skillAt(30))
+  close(engineeringSpeed(skills), 1)
+})
+
+test('engineering ahead of the world level makes the party attack faster', () => {
+  const skills = worldWithEngineering(skillAt(30), skillAt(50))
+  assert.ok(engineeringSpeed(skills) > 1)
+  close(engineeringSpeed(skills), (50 / 34) ** ENGINEERING_SPEED_WEIGHT)
+})
+
+test('engineering behind the world level slows the party, but never below the minimum', () => {
+  const behind = worldWithEngineering(skillAt(40), skillAt(30))
+  assert.ok(engineeringSpeed(behind) < 1)
+  const neglected = worldWithEngineering(skillAt(99), skillAt(1))
+  assert.equal(engineeringSpeed(neglected), ENGINEERING_SPEED_MIN)
+})
+
+test('engineering far ahead never speeds the party past the maximum', () => {
+  const skills = worldWithEngineering(skillAt(1), skillAt(99, 9))
+  assert.equal(engineeringSpeed(skills), ENGINEERING_SPEED_MAX)
+})
+
+test('engineering prestige stars count towards the attack speed', () => {
+  const starred = worldWithEngineering(skillAt(50, 1), skillAt(50, 1))
+  close(engineeringSpeed(starred), 1 + STAR_EFFECT_BONUS)
+})
+
+test('the attack speed multiplies a character hit', () => {
+  const base = characterHit({ character: character('physical'), skills: {}, tokensPerMinute: 20_000 }).amount
+  const fast = characterHit({ character: character('physical'), skills: {}, tokensPerMinute: 20_000, speed: 1.2 })
+  close(fast.amount, base * 1.2)
+})
+
+test('the reference party attacks at speed one, even in a world whose stars would make it faster', () => {
+  const level = 150
+  const skill = skillAt(level - 99, 1)
+  const skills = Object.fromEntries(['forge', 'lore', 'engineering', 'arcana', 'command'].map((id) => [id, skill]))
+  assert.ok(engineeringSpeed(skills) > 1)
+  const members = ['physical', 'magical', 'defense', 'support'].map((className) => ({
+    class: className,
+    ...characterHit({
+      character: { class: className, level: SEASONED_LEVEL, attributes: referenceAttributes(className, level) },
+      skills,
+      weaponFactor: GEAR_GROWTH ** referenceGearLevel(level),
+      tokensPerMinute: 20_000,
+      speed: 1
+    })
+  }))
+  close(referencePartyHit(level).total, partyHits(members).total)
 })

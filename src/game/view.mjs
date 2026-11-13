@@ -5,6 +5,7 @@ import { findItem } from './chest.mjs'
 import { WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
 import { killsToPass } from './monsters.mjs'
+import { engineeringSpeed } from './power.mjs'
 import { canPrestige, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
@@ -108,6 +109,7 @@ function worldView(worldId, world, names) {
   return {
     id: worldId,
     level: worldLevel(world.skills),
+    attackSpeed: engineeringSpeed(world.skills),
     workSkills: WORK_SKILLS.map((skillId) => skillView(skillId, world.skills[skillId])),
     gatheringSkills: GATHERING_SKILLS.map((skillId) => skillView(skillId, world.skills[skillId])),
     materials: Object.fromEntries(MATERIALS.map((id) => [id, world.materials[id] ?? 0])),
