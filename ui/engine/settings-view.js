@@ -1,5 +1,6 @@
-// The game's settings, opened from the cog in the header: keep titles, auto-spend, each room's
-// world (another world, a new one, or out of the game), resetting a world and the save file.
+// The game's settings, opened from the cog in the header: keep titles, auto-spend, new scene after
+// each monster, each room's world (another world, a new one, or out of the game), resetting a
+// world and the save file.
 import { button, el, select, setOptions } from './dom.js'
 import { confirmButton, replaceKeepingFocus, section, settingSwitch } from './game-controls.js'
 import { isEstimated, MAX_WORLDS, newWorldId, roomWorlds } from './game-model.js'
@@ -41,7 +42,10 @@ export function createSettingsView({ actions, onClose }) {
   const autoSpend = actions.setAutoSpend
     ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend)
     : null
-  for (const control of [keepTitles, autoSpend]) if (control) switches.append(control.element)
+  const travel = actions.setTravel
+    ? settingSwitch(SETTINGS.travel, SETTINGS.travelHint, actions.setTravel)
+    : null
+  for (const control of [keepTitles, autoSpend, travel]) if (control) switches.append(control.element)
   switches.append(el('p', 'ac-game-card-line', SETTINGS.local))
   const body = el('div', 'ac-game-panel-body')
   // Built once and put back on every redraw, so what was pasted or exported stays.
@@ -157,6 +161,7 @@ export function createSettingsView({ actions, onClose }) {
     estimated.hidden = !isEstimated(game)
     keepTitles?.set(game.keepTitles === true)
     autoSpend?.set(game.autoSpend === true)
+    travel?.set(game.travel === true)
     const worlds = game.worlds ?? []
     const rooms = roomWorlds(state)
     const signature = JSON.stringify([

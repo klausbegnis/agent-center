@@ -163,6 +163,7 @@ const ACTION_NAMES = {
   moveRoomToWorld: 'Moving the room',
   resetWorld: 'The reset',
   setAutoSpend: 'Changing auto-spend',
+  setTravel: 'Changing the scene setting',
   setKeepTitles: 'Changing the titles setting',
   exportSave: 'The export',
   importSave: 'The import',
@@ -649,6 +650,9 @@ export const SETTINGS = {
   keepTitles: 'Keep session titles',
   keepTitlesHint: 'Off: a retiree keeps only a generated name, its level and what it did. Turning it off ' +
     'forgets the titles already kept.',
+  travel: 'New scene after each monster',
+  travelHint: 'Each room that plays and has no theme of its own moves to another theme when its ' +
+    'monster dies, as if the party travelled on. Its monsters fit the scene.',
   worlds: 'Worlds',
   worldsNote: 'Each world keeps its own skills, materials and upgrades. A room out of the game counts ' +
     'no tokens.',

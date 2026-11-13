@@ -50,6 +50,7 @@ const EMOTE_TICK_MS = 250
  *   takes the room out of the game; a new kebab-case id makes a new world
  * @property {(worldId: string) => Promise<unknown>} [resetWorld]
  * @property {(on: boolean) => Promise<unknown>} [setAutoSpend]
+ * @property {(on: boolean) => Promise<unknown>} [setTravel] "new scene after each monster"
  * @property {(on: boolean) => Promise<unknown>} [setKeepTitles]
  */
 
@@ -106,7 +107,14 @@ export async function mountStage(root, transport, options = {}) {
   header.addTitleTool(game.settingsButton)
   root.append(header.element, game.bar, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
 
+  // Emotes, the game's blows and fading scenes rest while nobody can see them and for people who
+  // asked for less motion. The page is looked up each time because the mini view moves the root
+  // to another window.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const isMotionWanted = () => !root.ownerDocument.hidden && !reducedMotion.matches
+
   const roomList = createRoomList({
+    isMotionWanted,
     container: roomsElement,
     library,
     transport,
@@ -197,13 +205,9 @@ export async function mountStage(root, transport, options = {}) {
     if (state && selectedAgentId) showSelectedAgent()
   }, DETAIL_REFRESH_MS)
 
-  // Emotes and the game's blows rest while nobody can see them and for people who asked for less
-  // motion. The page is looked up each time because the mini view moves the root to another
-  // window.
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   setInterval(() => {
     const now = Date.now()
-    const isMoving = !root.ownerDocument.hidden && !reducedMotion.matches
+    const isMoving = isMotionWanted()
     game.tick(now)
     roomList.tickGame(now, isMoving)
     if (isMoving) roomList.tickEmotes(now)

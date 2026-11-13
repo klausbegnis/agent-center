@@ -10,6 +10,7 @@ export const GAME_ACTION_METHODS = [
   'moveRoomToWorld',
   'resetWorld',
   'setAutoSpend',
+  'setTravel',
   'setKeepTitles',
   'exportSave',
   'importSave',

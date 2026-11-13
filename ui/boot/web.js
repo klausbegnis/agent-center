@@ -44,6 +44,7 @@ const transport = {
   moveRoomToWorld: (roomId, worldId) => postGame('assign-room', { roomId, worldId }),
   resetWorld: (worldId) => postGame('reset-world', { worldId }),
   setAutoSpend: (on) => postGame('auto-spend', { on }),
+  setTravel: (on) => postGame('travel', { on }),
   setKeepTitles: (on) => postGame('keep-titles', { on }),
   exportSave: () => postGame('export-save', {}),
   importSave: (file) => postGame('import-save', { file }),

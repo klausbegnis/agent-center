@@ -191,7 +191,14 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   return {
     section,
     stage,
+    scene,
     themeId: theme.id,
+    /** The agent whose character an element is, or null; for keeping focus across a swap. */
+    agentIdOf(element) {
+      for (const [agentId, actor] of actors) if (actor === element) return agentId
+      return null
+    },
+    actorOf: (agentId) => actors.get(agentId),
     /**
      * @param {{ agents: object[] }} current the room as it is now
      * @param {object} state the full view state
