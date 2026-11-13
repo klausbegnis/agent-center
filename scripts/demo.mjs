@@ -12,7 +12,8 @@
 //   GAME=estimated  the same through the token estimate, as on an Orca without session totals
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
-// for them; the demo prints that address too.
+// for them; the demo prints that address too. The monster contact sheet (every race, rank and
+// boss) is served on the next port at /monsters.html; see scripts/monster-sheet.mjs.
 //
 // Every project, host and conversation name here is made up.
 import path from 'node:path'
@@ -25,6 +26,7 @@ import { RANDOM_THEME } from '../src/preferences.mjs'
 import { startServer } from '../src/server/http-server.mjs'
 import { listThemes, TEMPLATE_THEME } from '../src/themes.mjs'
 import { createDemoGame } from './demo-game.mjs'
+import { startMonsterSheet } from './monster-sheet.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const store = createAgentStore()
@@ -185,6 +187,9 @@ if (!server) {
 }
 console.log(`Agent Center (demo): ${server.url}`)
 console.log(`  with emotes every few seconds: ${server.url}?emotes=fast`)
+// The monster contact sheet, for reviewing the monster art, on the next port.
+const sheet = await startMonsterSheet({ root: ROOT, port: server.port + 1 })
+if (sheet) console.log(`  monster contact sheet: ${sheet.url}`)
 
 if (!process.env.FREEZE) {
   // A looping script: agents change tools, delegate and finish, so the rooms keep moving.

@@ -56,6 +56,8 @@ All notable changes to this project are recorded here. The format follows
   roster of 55 named bosses ("Morvash, the Bog Tyrant") that a project meets one by one. The
   hand-made monsters of the shipped themes still turn up in their rooms. Looks and names only:
   health, reward and loot are as before.
+- The demo serves a monster contact sheet (`/monsters.html` on the next port) for reviewing
+  the monster art.
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 

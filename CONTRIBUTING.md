@@ -47,6 +47,12 @@ themes; add a theme id (`npm run demo guild-hall`) to show every room on that th
 Useful address options: `?view=gallery`, `?view=list`, and `?only=<text>` to show only matching
 rooms.
 
+The demo also serves the monster contact sheet on the next port,
+`http://127.0.0.1:47701/monsters.html`: every race of game mode in a row of generated variants
+(an elite, a champion and one of its bosses among them), the rank ladder with its glows,
+chimeras and the whole boss roster, each at room size and at three times that, on light and dark
+grounds. Look at it after changing monster parts, races or bosses.
+
 To try it inside Orca (1.4.248 or later):
 
 ```bash
