@@ -26,7 +26,7 @@ import {
 } from './constants.mjs'
 import { fortuneAttribute, seasoning, startingAttributes } from './characters.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill } from './progression.mjs'
-import { CLASSES, attributeForActivity, attributeOfClass, skillOfClass } from './skills.mjs'
+import { CLASSES, WORK_SKILLS, attributeForActivity, attributeOfClass, skillOfClass } from './skills.mjs'
 
 /** The activities that train an attribute, which the reference character spreads its points over. */
 const REFERENCE_ACTIVITIES = ['write', 'read', 'run', 'think', 'delegate']
@@ -125,7 +125,7 @@ export function referenceGearLevel(level) {
  */
 export function referenceAttributes(className, level) {
   const skill = skillAtEffectiveLevel(level)
-  const skills = Object.fromEntries(CLASSES.map((each) => [skillOfClass(each), skill]))
+  const skills = Object.fromEntries(WORK_SKILLS.map((skillId) => [skillId, skill]))
   const attributes = startingAttributes(className, skills)
   const add = (attribute, points) => {
     attributes[attribute] += points
@@ -150,7 +150,7 @@ export function referenceAttributes(className, level) {
  */
 export function referencePartyHit(level) {
   const skill = skillAtEffectiveLevel(level)
-  const skills = Object.fromEntries(CLASSES.map((className) => [skillOfClass(className), skill]))
+  const skills = Object.fromEntries(WORK_SKILLS.map((skillId) => [skillId, skill]))
   const weaponFactor = GEAR_GROWTH ** referenceGearLevel(level)
   const members = CLASSES.map((className) => {
     const attributes = referenceAttributes(className, level)

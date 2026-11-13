@@ -164,3 +164,10 @@ test('a prestige star makes the class skill hit harder at the same effective lev
 test('the reference party keeps growing across a prestige of its skills', () => {
   assert.ok(referencePartyHit(100).total > referencePartyHit(99).total * POWER_GROWTH)
 })
+
+test('the reference party lives in a world whose five work skills are all at its level', () => {
+  const level = 150
+  const growth = referencePartyHit(level).total / referencePartyHit(level - 1).total
+  assert.ok(growth > POWER_GROWTH, 'the world level, not only the class skills, follows the level')
+  assert.ok(referenceAttributes('physical', level).strength >= 1 + Math.floor(level / 2))
+})
