@@ -105,3 +105,69 @@ export function themeLoadFailure(state) {
   if (state.theme === RANDOM_THEME) return 'Could not load any theme.'
   return `Could not load the theme "${state.theme}".`
 }
+
+// The game. Its wording is kept here with the rest; the game's own facts come from the view state.
+
+/** The game's tabs. */
+export const GAME_TAB_LABEL = { rooms: 'Rooms', arsenal: 'Arsenal', skills: 'Skills' }
+export const GAME_TABS_NAME = 'Game views'
+
+/** The small marker by the tabs, and what it means, when token totals are not reported. */
+export const ESTIMATED_MARKER = 'Estimated'
+export const ESTIMATED_NOTE =
+  'Progress is estimated from working time because this Orca does not report token totals yet.'
+
+/**
+ * What the Arsenal and Skills tabs say when the game cannot run.
+ *
+ * @param {string} status the view state's `game.status`
+ * @returns {{ title: string, lines: string[] }}
+ */
+export function gameUnavailable(status) {
+  const rooms = 'The rooms work as usual.'
+  if (status === 'needs-permission') {
+    return {
+      title: 'The game needs to count tokens',
+      lines: [
+        'Game mode turns the tokens your sessions spend into progress. To count them, the plugin ' +
+          'needs Orca\'s permission to read this computer\'s session history. It reads only the ' +
+          'token total of each session, never a conversation or a file.',
+        'Grant the permission in Orca\'s plugin settings, or turn game mode off there.',
+        rooms
+      ]
+    }
+  }
+  if (status === 'unsupported') {
+    return {
+      title: 'This Orca cannot run the game',
+      lines: ['This version of Orca does not offer the session history the game counts tokens from.', rooms]
+    }
+  }
+  if (status === 'newer-save') {
+    return {
+      title: 'The game was saved by a newer version',
+      lines: ['Update Agent Center to carry on. Nothing in the save was changed.', rooms]
+    }
+  }
+  return { title: 'The game is not available', lines: [rooms] }
+}
+
+const ACTION_NAMES = {
+  prestigeSkill: 'Prestige',
+  upgradeItem: 'The upgrade',
+  buyGroupUpgrade: 'The purchase',
+  moveRoomToWorld: 'Moving the room',
+  resetWorld: 'The reset',
+  setAutoSpend: 'Changing auto-spend',
+  setKeepTitles: 'Changing the titles setting'
+}
+
+/** "The upgrade did not go through. Try again in a moment." */
+export function gameActionFailed(action) {
+  return `${ACTION_NAMES[action] ?? 'That'} did not go through. Try again in a moment.`
+}
+
+/** What is said when the worker took an action but nothing changed, such as an upgrade it could not pay for. */
+export function gameActionUnchanged(action) {
+  return `${ACTION_NAMES[action] ?? 'That'} changed nothing: the game has moved on since this was drawn.`
+}

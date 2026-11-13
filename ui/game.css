@@ -1,0 +1,113 @@
+/* Game mode: the tabs, the Arsenal and Skills panels, the settings and the fight drawn over each
+   room. Loaded after stage.css. Nothing here applies while the game is off: every rule hangs on
+   an element only the game draws, or on the root's data-game-tab, which is set only while the
+   game's tabs show. Colours come from Orca's theme (--orca-*) with dark defaults. */
+.ac-root {
+  --ac-game-good: #6fe0d2;
+  --ac-game-warn: #f8b366;
+  --ac-game-bad: #ff9a9a;
+  --ac-game-gold: #f2c14e;
+  --ac-game-track: color-mix(in srgb, var(--orca-foreground, #e8eaf0) 14%, transparent);
+}
+
+/* Tabs */
+.ac-game-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-bar[hidden] { display: none; }
+.ac-game-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ac-game-tab {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ac-game-tab:hover { color: var(--orca-foreground, #e8eaf0); }
+/* The open tab is underlined and bold, not only coloured. */
+.ac-game-tab[aria-selected='true'] {
+  border-bottom-color: var(--orca-ring, #6fe0d2);
+  color: var(--orca-foreground, #e8eaf0);
+}
+.ac-game-tab:focus-visible {
+  outline: 2px solid var(--orca-ring, #6fe0d2);
+  outline-offset: -2px;
+}
+.ac-game-estimated {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  cursor: help;
+}
+.ac-game-estimated[hidden] { display: none; }
+.ac-game-notice {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ac-game-warn);
+}
+.ac-game-notice:empty { display: none; }
+
+/* Which part shows: the rooms on the Rooms tab, a panel on the others. */
+.ac-root[data-game-tab='arsenal'] .ac-rooms,
+.ac-root[data-game-tab='skills'] .ac-rooms,
+.ac-root[data-game-tab='arsenal'] .ac-shelf,
+.ac-root[data-game-tab='skills'] .ac-shelf { display: none; }
+/* Gallery fits the rooms without scrolling; a panel scrolls like List. */
+.ac-root.ac-gallery[data-game-tab='arsenal'],
+.ac-root.ac-gallery[data-game-tab='skills'] { overflow: auto; }
+.ac-game-panel[hidden] { display: none !important; }
+.ac-game-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+/* Cards */
+.ac-game-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 8px;
+  background: var(--orca-card, #1f232c);
+}
+.ac-game-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ac-game-card-line {
+  margin: 0;
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+
+/* Mini: the rooms only, whatever tab was open. */
+.ac-mini .ac-game-bar,
+.ac-mini .ac-game-notice,
+.ac-mini .ac-game-panel { display: none !important; }
+.ac-mini.ac-root[data-game-tab] .ac-rooms { display: grid; }
+/* Collapsed tray: only the header strip. */
+.ac-collapsed .ac-game-bar,
+.ac-collapsed .ac-game-notice,
+.ac-collapsed .ac-game-panel { display: none !important; }

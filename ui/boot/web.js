@@ -9,6 +9,7 @@ const listeners = new Set()
 //   ?view=gallery|list   start in that view
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
+//   ?tab=rooms|arsenal|skills   open that tab of game mode
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>
@@ -19,10 +20,24 @@ const narrow = (state) =>
 const post = (url, body) =>
   fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
+/** A game action: the worker answers { changed }, or an error status for a value it refused. */
+async function postGame(route, body) {
+  const response = await post(`/api/game/${route}`, body)
+  if (!response.ok) throw new Error(`${route}: HTTP ${response.status}`)
+  return response.json()
+}
+
 const transport = {
   base: '/',
   setRoomHidden: (id, hidden) => post('/api/room', { id, hidden }),
   setRoomTheme: (id, theme) => post('/api/room', { id, theme }),
+  prestigeSkill: (worldId, skillId) => postGame('prestige', { worldId, skillId }),
+  upgradeItem: (roomId, itemId) => postGame('upgrade-item', { roomId, itemId }),
+  buyGroupUpgrade: (worldId, upgradeId) => postGame('buy-upgrade', { worldId, upgradeId }),
+  moveRoomToWorld: (roomId, worldId) => postGame('assign-room', { roomId, worldId }),
+  resetWorld: (worldId) => postGame('reset-world', { worldId }),
+  setAutoSpend: (on) => postGame('auto-spend', { on }),
+  setKeepTitles: (on) => postGame('keep-titles', { on }),
   prefs: {
     get: (key) => params.get(key) ?? localStorage.getItem(`agent-center:${key}`),
     set: (key, value) => localStorage.setItem(`agent-center:${key}`, value)

@@ -7,6 +7,7 @@
 import { createDetail } from './detail.js'
 import { el } from './dom.js'
 import { paceFor } from './emotes.js'
+import { createGameShell } from './game-shell.js'
 import { createHeader, VIEWS } from './header.js'
 import { themeLoadFailure } from './labels.js'
 import { watchMiniMode } from './mini-mode.js'
@@ -39,6 +40,15 @@ const EMOTE_TICK_MS = 250
  *   workspace on the agent's terminal
  * @property {{ get: (key: string) => unknown, set: (key: string, value: string) => unknown }} [prefs]
  *   per-surface choices such as the view; values are strings
+ * @property {(worldId: string, skillId: string) => Promise<unknown>} [prestigeSkill] the game's
+ *   actions, each answering `{ changed }`; see GAME_ACTION_METHODS in game-actions.js
+ * @property {(roomId: string, itemId: string) => Promise<unknown>} [upgradeItem]
+ * @property {(worldId: string, upgradeId: string) => Promise<unknown>} [buyGroupUpgrade]
+ * @property {(roomId: string, worldId: string | null) => Promise<unknown>} [moveRoomToWorld] null
+ *   takes the room out of the game; a new kebab-case id makes a new world
+ * @property {(worldId: string) => Promise<unknown>} [resetWorld]
+ * @property {(on: boolean) => Promise<unknown>} [setAutoSpend]
+ * @property {(on: boolean) => Promise<unknown>} [setKeepTitles]
  */
 
 /**
@@ -82,7 +92,8 @@ export async function mountStage(root, transport, options = {}) {
   const roomsElement = el('main', 'ac-rooms')
   const detail = createDetail(transport)
   const shelf = createShelf(transport)
-  root.append(header.element, sprites, roomsElement, shelf.element)
+  const game = createGameShell({ root, roomsElement, transport, onTabChange: () => layout() })
+  root.append(header.element, game.bar, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
 
   const roomList = createRoomList({
     container: roomsElement,
@@ -141,6 +152,7 @@ export async function mountStage(root, transport, options = {}) {
     const hiddenRooms = state.rooms.filter((room) => hiddenIds.has(room.id))
 
     header.update(state)
+    game.update(state)
     roomList.render(visibleRooms, state, { selectedAgentId, pinnedRoomId, now: Date.now() })
     showEmptyMessage(visibleRooms.length, hiddenRooms.length)
     shelf.update(hiddenRooms)
@@ -164,6 +176,7 @@ export async function mountStage(root, transport, options = {}) {
   if (VIEWS.includes(savedView)) view = savedView
   const savedPin = await Promise.resolve(transport.prefs?.get('pinned')).catch(() => null)
   if (typeof savedPin === 'string' && savedPin) pinnedRoomId = savedPin
+  await game.restoreTab()
 
   transport.onState(enqueue)
   await enqueue(await transport.getState())
@@ -175,6 +188,7 @@ export async function mountStage(root, transport, options = {}) {
   // is looked up each time because the mini view moves the root to another window.
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   setInterval(() => {
+    game.tick(Date.now())
     if (root.ownerDocument.hidden || reducedMotion.matches) roomList.stopEmotes()
     else roomList.tickEmotes(Date.now())
   }, EMOTE_TICK_MS)
