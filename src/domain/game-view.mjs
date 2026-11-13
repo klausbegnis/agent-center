@@ -113,12 +113,16 @@ function shownRetirees(retirees, keepTitles) {
     }))
 }
 
-function roomView(project, worldId, readings, keepTitles) {
+function roomView(project, worldId, readings, keepTitles, sceneTheme) {
+  const kills = project.kills ?? 0
   return {
     worldId,
     joined: true,
     wave: project.wave,
     waveKills: project.waveKills,
+    kills,
+    // Only a travelling room has one: the theme it is drawn in, whatever its default.
+    ...(sceneTheme ? { sceneTheme } : {}),
     killsToPass: project.killsToPass,
     monster: project.monster,
     party: partyStateOf(readings, project.resting),
@@ -246,6 +250,7 @@ function describeEvents(recent, { projects, worlds, itemEntries }) {
  * @param {GameStatus} input.status
  * @param {TokenSource | null} input.tokenSource null when the game is not running
  * @param {boolean} input.autoSpend
+ * @param {boolean} [input.travel] "new scene after each monster"
  * @param {boolean} input.keepTitles
  * @param {{ worlds: object[], projectWorld: Record<string, string | null> } | null} input.engineView
  *   the engine's `view(save)`, or null when the game is not running
@@ -261,11 +266,15 @@ function describeEvents(recent, { projects, worlds, itemEntries }) {
  *   states of the sessions no agent on screen runs
  * @param {object[]} input.recent
  * @param {object} input.debug counters from the last round
+ * @param {(roomId: string, kills: number) => string | null} [input.sceneThemeOf] the theme a room
+ *   that travels is in after that many kills, null for a room that stays put
  * @returns {object}
  */
 export function buildGameView(input) {
   const { status, autoSpend, keepTitles, engineView, defaultWorldId, roomIds, links, agentStates, recent, debug } = input
-  if (status !== 'running' || !engineView) return { status, tokenSource: null, autoSpend, keepTitles }
+  const travel = input.travel === true
+  const sceneThemeOf = input.sceneThemeOf ?? (() => null)
+  if (status !== 'running' || !engineView) return { status, tokenSource: null, autoSpend, travel, keepTitles }
   const { tokenSource } = input
   const projects = new Map()
   for (const world of engineView.worlds) {
@@ -282,7 +291,8 @@ export function buildGameView(input) {
       rooms[roomId] = { worldId, joined: false }
       continue
     }
-    rooms[roomId] = roomView(found.project, worldId, statesByRoom[roomId] ?? [], keepTitles)
+    const sceneTheme = sceneThemeOf(roomId, found.project.kills ?? 0)
+    rooms[roomId] = roomView(found.project, worldId, statesByRoom[roomId] ?? [], keepTitles, sceneTheme)
   }
   const characters = {}
   for (const [agentId, link] of links) {
@@ -302,6 +312,6 @@ export function buildGameView(input) {
   const tickSeconds = engineView.tickSeconds ?? null
   const described = describeEvents(recent, { projects, worlds, itemEntries: engineView.itemEntries ?? {} })
   return {
-    status, tokenSource, autoSpend, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug
+    status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug
   }
 }

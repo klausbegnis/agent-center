@@ -62,12 +62,35 @@ const input = (view, extra = {}) => ({
 
 test('a game that is not running sends only its status and settings', () => {
   const view = buildGameView(input(null, { status: 'off' }))
-  assert.deepEqual(view, { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
+  assert.deepEqual(view, { status: 'off', tokenSource: null, autoSpend: false, travel: false, keepTitles: false })
 })
 
 test('a running game says where its tokens come from', () => {
   assert.equal(buildGameView(input(engineView())).tokenSource, 'estimated')
   assert.equal(buildGameView(input(engineView(), { tokenSource: 'history' })).tokenSource, 'history')
+})
+
+test('a room carries its kill count, and a scene only when it travels', () => {
+  const view = engineView()
+  view.worlds[0].projects[0].kills = 7
+  const still = buildGameView(input(view)).rooms[BANANA]
+  assert.equal(still.kills, 7)
+  assert.equal('sceneTheme' in still, false)
+  const asked = []
+  const sceneThemeOf = (roomId, kills) => {
+    asked.push([roomId, kills])
+    return 'guild-hall'
+  }
+  const travelling = buildGameView(input(view, { travel: true, sceneThemeOf }))
+  assert.equal(travelling.travel, true)
+  assert.equal(travelling.rooms[BANANA].sceneTheme, 'guild-hall')
+  assert.deepEqual(asked, [[BANANA, 7]])
+})
+
+test('a room that has not joined has no scene even while rooms travel', () => {
+  const room = buildGameView(input(engineView(), { roomIds: [BANANA, 'local:/work/cosmic-llama'],
+    travel: true, sceneThemeOf: () => 'guild-hall' })).rooms['local:/work/cosmic-llama']
+  assert.deepEqual(room, { worldId: 'main', joined: false })
 })
 
 test('a room shows the items in use first, then the strongest, up to a limit', () => {

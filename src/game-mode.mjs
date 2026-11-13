@@ -9,6 +9,7 @@ import { buildGameView, gameStatus, keepRecent, tokenSourceOf } from './domain/g
 import { createGameActions } from './game-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
 import { readFromEstimate, readFromHistory } from './game-sources.mjs'
+import { sceneThemeOf } from './game/scenes.mjs'
 import { DEFAULT_WORLD } from './game/worlds.mjs'
 import { RANDOM_THEME } from './preferences.mjs'
 
@@ -64,15 +65,18 @@ function levelsOf(save) {
  *   store: { snapshot: () => { rooms: object[] }, sessionLinks: () => Record<string, string>,
  *     describeWorkspaces: () => object[], workMeters: () => Record<string, object> },
  *   preferences: { snapshot: () => { theme: string, roomThemes: Record<string, string> } },
+ *   listThemeIds?: () => string[],
  *   now?: () => number,
  *   log: (message: string) => void,
  *   onChange: () => void
- * }} dependencies `readWorkMeters` is what the estimate reads, the store's meters unless given
+ * }} dependencies `readWorkMeters` is what the estimate reads, the store's meters unless given;
+ *   `listThemeIds` the themes the surfaces can draw, which travelling rooms move through
  */
 export function createGameMode(dependencies) {
   const { engine, gameSave, readSettings, writeSetting, access, readHistory, readWorkspaces } = dependencies
   const { store, preferences, now = Date.now, log, onChange } = dependencies
   const readWorkMeters = dependencies.readWorkMeters ?? (() => store.workMeters())
+  const listThemeIds = dependencies.listThemeIds ?? (() => [])
   let status = /** @type {GameStatus} */ ('off')
   let tokenSource = /** @type {TokenSource} */ ('estimated')
   /** The work meters as last read. Kept in memory only: the meters start again with the worker. */
@@ -105,11 +109,37 @@ export function createGameMode(dependencies) {
   }
   const stamp = (events, at) => events.map((event) => ({ id: ++eventId, at, ...event }))
 
-  function themeOf(roomId) {
-    const { theme, roomThemes } = preferences.snapshot()
-    // Under Random the UI picks a room's theme; the worker does not know which, so the monsters
-    // come from the generic set.
-    return roomThemes?.[roomId] ?? (theme === RANDOM_THEME ? null : theme)
+  /**
+   * The themes a room moves through with "new scene after each monster", or null when it stays
+   * put: the setting is off, there is only one theme, or the room picked a theme of its own.
+   *
+   * @param {string} roomId
+   * @param {string[]} themeIds the themes there are, read once by the caller
+   */
+  function travelThemes(roomId, themeIds) {
+    if (!data().bridge.travel || themeIds.length < 2) return null
+    const own = preferences.snapshot().roomThemes?.[roomId]
+    return own && themeIds.includes(own) ? null : themeIds
+  }
+
+  /** The room's theme for its monsters, for rooms that do not travel. */
+  function themeOfWith(themeIds) {
+    return (roomId) => {
+      // A travelling room's theme follows its kills, which the engine counts as it fights.
+      if (travelThemes(roomId, themeIds)) return null
+      const { theme, roomThemes } = preferences.snapshot()
+      // Under Random the UI picks a room's theme; the worker does not know which, so the monsters
+      // come from the generic set.
+      return roomThemes?.[roomId] ?? (theme === RANDOM_THEME ? null : theme)
+    }
+  }
+
+  /** The readings with the themes each travelling room moves through, for the engine. */
+  function withScenes(states, themeIds) {
+    return states.map((state) => {
+      const scenes = travelThemes(state.projectId, themeIds)
+      return scenes ? { ...state, scenes } : state
+    })
   }
 
   async function updateStatus() {
@@ -142,7 +172,7 @@ export function createGameMode(dependencies) {
     forgetMeters()
     const { save, bridge } = data()
     if (bridge.watchedUntil === null || gameSave.isFromNewerVersion()) return
-    commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend } })
+    commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend, travel: bridge.travel } })
   }
 
   /**
@@ -271,14 +301,16 @@ export function createGameMode(dependencies) {
     if (!read || generation !== startedIn) return
     const { at, reading } = read
     const { sessions, places, agentOf, how, deltas } = reading
-    const readings = buildReadings({ sessions, places, agentOf, agents, deltas, themeOf })
+    const themeIds = listThemeIds()
+    const readings = buildReadings({ sessions, places, agentOf, agents, deltas, themeOf: themeOfWith(themeIds) })
+    const states = withScenes(readings.states, themeIds)
 
     let save = syncKeepTitles(data().save)
-    const advanced = advance(save, readings.states, at)
+    const advanced = advance(save, states, at)
     const counted = countTokens(advanced.save, readings.tokens, agentOf, at)
     // A room that just joined, or a party that just started working, meets its monster now, so
     // the state published with it already shows the fight.
-    const ready = engine.prepareFights(counted.save, { sessions: readings.states })
+    const ready = engine.prepareFights(counted.save, { sessions: states })
     const closed = closeSessions(ready, charactersToClose(source, ready, reading, at), at)
     const spent = spendIfAsked(closed.save, bridge.autoSpend)
     save = spent.save
@@ -322,14 +354,18 @@ export function createGameMode(dependencies) {
   }
 
   /**
-   * The game part of the view state, rebuilt only after a round, an action, or a change in the
-   * state of an agent that has a character. A character's state and its party's are the store's
-   * now, not the last round's, so they always match the room drawn next to them.
+   * The game part of the view state, rebuilt only after a round, an action, a change in the
+   * state of an agent that has a character, or a change of theme that moves a travelling room.
+   * A character's state and its party's are the store's now, not the last round's, so they
+   * always match the room drawn next to them.
    */
   function getView() {
     const { rooms } = store.snapshot()
     const agentStates = new Map(mainAgents(rooms).map((agent) => [agent.id, agent.state]))
-    const states = [...links.keys()].map((agentId) => `${agentId}=${agentStates.get(agentId) ?? ''}`).join('|')
+    const agentKey = [...links.keys()].map((agentId) => `${agentId}=${agentStates.get(agentId) ?? ''}`).join('|')
+    const themeIds = data().bridge.travel ? listThemeIds() : []
+    const themeKey = themeIds.length ? JSON.stringify([themeIds, preferences.snapshot().roomThemes]) : ''
+    const states = `${agentKey}#${themeKey}`
     if (cachedView && states === cachedStates) return cachedView
     const running = status === 'running'
     const { save, bridge } = data()
@@ -338,6 +374,7 @@ export function createGameMode(dependencies) {
       status,
       tokenSource: running ? tokenSource : null,
       autoSpend: bridge.autoSpend,
+      travel: bridge.travel,
       keepTitles,
       engineView: running ? engine.view(save) : null,
       defaultWorldId: DEFAULT_WORLD,
@@ -346,7 +383,11 @@ export function createGameMode(dependencies) {
       agentStates,
       agentlessStates,
       recent,
-      debug
+      debug,
+      sceneThemeOf: (roomId, kills) => {
+        const scenes = travelThemes(roomId, themeIds)
+        return scenes ? sceneThemeOf(roomId, scenes, kills) : null
+      }
     })
     return cachedView
   }
@@ -384,7 +425,7 @@ export function createGameMode(dependencies) {
  * @param {GameStatus} status
  */
 export function createUnavailableGame(status) {
-  const view = { status, tokenSource: null, autoSpend: false, keepTitles: false }
+  const view = { status, tokenSource: null, autoSpend: false, travel: false, keepTitles: false }
   const refuse = async () => {
     throw new Error('the game is not available')
   }
@@ -398,6 +439,7 @@ export function createUnavailableGame(status) {
     assignRoom: refuse,
     resetWorld: refuse,
     setAutoSpend: refuse,
+    setTravel: refuse,
     setKeepTitles: refuse,
     exportSave: refuse,
     importSave: refuse,

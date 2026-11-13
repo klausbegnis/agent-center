@@ -22,14 +22,15 @@ const RETIREES_KEPT_WHEN_LARGE = [25, 10, 0]
 
 /**
  * @typedef {{ baselines: Record<string, { total: number, at: number }>, watchedUntil: number | null,
- *   autoSpend: boolean, tokenSource: 'history' | 'estimated' | null }} Bridge what the worker keeps
- *   beside the engine's save; `baselines` and `watchedUntil` belong to `tokenSource`
+ *   autoSpend: boolean, travel: boolean, tokenSource: 'history' | 'estimated' | null }} Bridge what
+ *   the worker keeps beside the engine's save; `baselines` and `watchedUntil` belong to
+ *   `tokenSource`, and `travel` is "new scene after each monster"
  * @typedef {{ save: object, bridge: Bridge }} GameData
  */
 
 /** @returns {Bridge} */
 export function emptyBridge() {
-  return { baselines: {}, watchedUntil: null, autoSpend: false, tokenSource: null }
+  return { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null }
 }
 
 const TOKEN_SOURCES = new Set(['history', 'estimated'])
@@ -43,6 +44,7 @@ function normalizeBridge(value) {
     baselines: normalizeBaselines(bridge.baselines),
     watchedUntil,
     autoSpend: bridge.autoSpend === true,
+    travel: bridge.travel === true,
     tokenSource: TOKEN_SOURCES.has(bridge.tokenSource) ? bridge.tokenSource : formerSource
   }
 }

@@ -75,7 +75,7 @@ const partyOf = (game) => Object.keys(game.getView().rooms?.[BANANA]?.joined ? g
 test('the game is off until the person turns it on, and says so', async () => {
   const { game, history } = setup({ settings: {} })
   await game.round()
-  assert.deepEqual(game.getView(), { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
+  assert.deepEqual(game.getView(), { status: 'off', tokenSource: null, autoSpend: false, travel: false, keepTitles: false })
   assert.equal(history.reads, 0)
 })
 

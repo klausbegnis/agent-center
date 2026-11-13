@@ -74,7 +74,7 @@ const storedSave = async ({ game, storage }) => {
   return storage.get(GAME_STORAGE_KEY)
 }
 
-test('an export holds the save and auto-spend, never the token baselines', async () => {
+test('an export holds the save, auto-spend and travel, never the token baselines', async () => {
   const { game, storage } = await playedGame()
   const file = await game.exportSave()
   const stored = await storedSave({ game, storage })
@@ -82,9 +82,10 @@ test('an export holds the save and auto-spend, never the token baselines', async
   assert.equal(file.version, STORED_VERSION)
   assert.equal(file.exportedAt, new Date(1_005 * MINUTE).toISOString())
   assert.equal(file.autoSpend, true)
+  assert.equal(file.travel, false)
   assert.deepEqual(file.save, stored.save)
   assert.ok(Object.keys(stored.bridge.baselines).length > 0)
-  assert.deepEqual(Object.keys(file).sort(), ['autoSpend', 'exportedAt', 'format', 'save', 'version'])
+  assert.deepEqual(Object.keys(file).sort(), ['autoSpend', 'exportedAt', 'format', 'save', 'travel', 'version'])
 })
 
 test('an export works once the save was read, even with the game off and nothing written', async () => {
@@ -106,6 +107,27 @@ test('an exported game imported elsewhere is the same game, with its auto-spend'
   assert.deepEqual(again.save, file.save)
   assert.equal(again.autoSpend, true)
   assert.equal(other.game.getView().autoSpend, true)
+})
+
+test('an exported game carries "new scene after each monster" to where it is imported', async () => {
+  const { game } = await playedGame()
+  await game.setTravel(true)
+  const file = JSON.parse(JSON.stringify(await game.exportSave()))
+  assert.equal(file.travel, true)
+  const other = setup()
+  await other.game.round()
+  await other.game.importSave(file)
+  assert.equal(other.game.getView().travel, true)
+  assert.equal((await other.game.exportSave()).travel, true)
+})
+
+test('a save file from before the scene setting imports with it off', () => {
+  const file = buildSaveFile({ save: emptySave(), autoSpend: true, at: 0 })
+  delete file.travel
+  const read = readSaveFile(file, reading)
+  assert.equal(read.ok, true)
+  assert.equal(read.travel, false)
+  assert.equal(readSaveFile({ ...file, travel: 'yes' }, reading).travel, false)
 })
 
 test('an import forgets the baselines, so nothing read before it counts again', async () => {

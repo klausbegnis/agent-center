@@ -6,20 +6,24 @@ import { MAX_STORED_BYTES, STORED_VERSION, isNewer } from './game-save.mjs'
 export const SAVE_FILE_FORMAT = 'agent-center-game'
 
 /**
- * The file an export gives: the engine's save and the auto-spend setting. Never the bridge's token
+ * The file an export gives: the engine's save, the auto-spend setting and "new scene after each
+ * monster" (`travel`). Never the bridge's token
  * baselines or `watchedUntil`: they describe this computer's sessions at this moment and would
  * count tokens wrongly anywhere else.
  *
- * @param {{ save: object, autoSpend: boolean, at: number }} input `at` is the time of the export
- * @returns {{ format: string, version: number, exportedAt: string, save: object, autoSpend: boolean }}
+ * @param {{ save: object, autoSpend: boolean, travel?: boolean, at: number }} input `at` is the time
+ *   of the export
+ * @returns {{ format: string, version: number, exportedAt: string, save: object, autoSpend: boolean,
+ *   travel: boolean }}
  */
-export function buildSaveFile({ save, autoSpend, at }) {
+export function buildSaveFile({ save, autoSpend, travel = false, at }) {
   return {
     format: SAVE_FILE_FORMAT,
     version: STORED_VERSION,
     exportedAt: new Date(at).toISOString(),
     save,
-    autoSpend: autoSpend === true
+    autoSpend: autoSpend === true,
+    travel: travel === true
   }
 }
 
@@ -46,7 +50,8 @@ function sizeOf(value) {
  *   cleanSave: (save: object) => { ok: true, save: object } | { ok: false, problem: string },
  *   maxBytes?: number
  * }} engine the engine's save version, `migrate` and `cleanSave`
- * @returns {{ ok: true, save: object, autoSpend: boolean } | { ok: false, reason: string }}
+ * @returns {{ ok: true, save: object, autoSpend: boolean, travel: boolean } | { ok: false, reason: string }}
+ *   a file from before `travel` existed turns it off
  */
 export function readSaveFile(value, { saveVersion, migrate, cleanSave, maxBytes = MAX_STORED_BYTES }) {
   if (!isPlainObject(value) || value.format !== SAVE_FILE_FORMAT) {
@@ -68,5 +73,5 @@ export function readSaveFile(value, { saveVersion, migrate, cleanSave, maxBytes 
   }
   const cleaned = cleanSave(migrated)
   if (!cleaned.ok) return { ok: false, reason: `the save file is damaged: ${cleaned.problem}` }
-  return { ok: true, save: cleaned.save, autoSpend: value.autoSpend === true }
+  return { ok: true, save: cleaned.save, autoSpend: value.autoSpend === true, travel: value.travel === true }
 }

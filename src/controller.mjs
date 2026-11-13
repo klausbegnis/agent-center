@@ -18,6 +18,8 @@
  *   room in a world, or out of the game with null
  * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
  * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
+ * @property {(travel: boolean) => Promise<GameResult>} gameSetTravel turns "new scene after each
+ *   monster" on or off
  * @property {(keepTitles: boolean) => Promise<GameResult>} gameSetKeepTitles
  * @property {() => Promise<object>} gameExportSave the saved game as a file's content
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
@@ -130,6 +132,7 @@ export function createController({
     })),
     gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
     gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
+    gameSetTravel: (travel) => playAction(() => game.setTravel(requireBoolean(travel, 'travel'))),
     gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles'))),
     gameExportSave: () => game.exportSave(),
     gameImportSave: (file) => playAction(() => game.importSave(requireObject(file, 'save file'))),

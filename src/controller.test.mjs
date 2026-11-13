@@ -59,6 +59,7 @@ function recordingGame() {
     assignRoom: record('assign'),
     resetWorld: record('reset'),
     setAutoSpend: record('autoSpend'),
+    setTravel: record('travel'),
     setKeepTitles: record('keepTitles'),
     exportSave: async () => ({ format: 'agent-center-game' }),
     importSave: record('import'),
@@ -69,7 +70,7 @@ function recordingGame() {
 
 test('the view state carries the game part', () => {
   const { controller } = setup()
-  assert.deepEqual(controller.getState().game, { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
+  assert.deepEqual(controller.getState().game, { status: 'off', tokenSource: null, autoSpend: false, travel: false, keepTitles: false })
 })
 
 test('game actions reach the game with their fields and tell the surfaces', async () => {
@@ -78,12 +79,14 @@ test('game actions reach the game with their fields and tell the surfaces', asyn
   await controller.gamePrestige('main', 'forge')
   await controller.gameAssignRoom('local:/work/rumble-banana', null)
   await controller.gameSetAutoSpend(true)
+  await controller.gameSetTravel(false)
   assert.deepEqual(calls, [
     ['prestige', { worldId: 'main', skillId: 'forge' }],
     ['assign', { roomId: 'local:/work/rumble-banana', worldId: null }],
-    ['autoSpend', true]
+    ['autoSpend', true],
+    ['travel', false]
   ])
-  assert.equal(changes(), 3)
+  assert.equal(changes(), 4)
 })
 
 test('game actions with values of the wrong kind are refused before they reach the game', async () => {
@@ -92,6 +95,7 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gamePrestige(undefined, 'forge'), /invalid world/)
   await assert.rejects(controller.gameUpgradeItem('room', { id: 1 }), /invalid item/)
   await assert.rejects(controller.gameSetAutoSpend('yes'), /invalid auto-spend/)
+  await assert.rejects(controller.gameSetTravel(1), /invalid travel/)
   await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
   await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
   await assert.rejects(controller.gameImportSave([]), /invalid save file/)

@@ -26,6 +26,10 @@ async function setup(t, { lan = false } = {}) {
       if (typeof on !== 'boolean') throw new Error('invalid auto-spend')
       return { changed: true }
     },
+    gameSetTravel: async (on) => {
+      calls.push(['travel', on])
+      return { changed: true }
+    },
     gameImportSave: async (file) => {
       if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Center save file')
       calls.push(['import', JSON.stringify(file).length])
@@ -135,6 +139,8 @@ test('a game action reaches the controller and its answer comes back', async (t)
   assert.deepEqual(calls, [['assign', 'local:/work/rumble-banana', 'side-projects']])
   assert.equal((await post('/api/game/auto-spend', '{"on":"yes"}')).status, 400)
   assert.equal((await post('/api/game/auto-spend', 'null')).status, 400)
+  assert.equal((await post('/api/game/travel', '{"on":true}')).status, 200)
+  assert.deepEqual(calls.at(-1), ['travel', true])
 })
 
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {

@@ -149,14 +149,28 @@ export function createGameActions(dependencies) {
     },
 
     /**
-     * The saved game as a file: the engine's save and auto-spend, never the token baselines. It
-     * works whenever the save has been read, even before a round wrote anything.
+     * Turns "new scene after each monster" on or off. A setting of the bridge, like auto-spend:
+     * nothing in the engine's save changes until the next kill.
+     *
+     * @param {boolean} travel
+     */
+    async setTravel(travel) {
+      requireRunning()
+      const { save, bridge } = data()
+      if (bridge.travel === travel) return { changed: false }
+      commit({ save, bridge: { ...bridge, travel } })
+      return { changed: true }
+    },
+
+    /**
+     * The saved game as a file: the engine's save, auto-spend and travel, never the token
+     * baselines. It works whenever the save has been read, even before a round wrote anything.
      */
     async exportSave() {
       if (!isLoaded()) throw new Error('the saved game has not been read yet')
       if (!canWriteSave()) throw new Error('the saved game is from a newer version of the plugin')
       const { save, bridge } = data()
-      return buildSaveFile({ save, autoSpend: bridge.autoSpend, at: now() })
+      return buildSaveFile({ save, autoSpend: bridge.autoSpend, travel: bridge.travel, at: now() })
     },
 
     /**
@@ -170,7 +184,8 @@ export function createGameActions(dependencies) {
       if (!canWriteSave()) throw new Error('the saved game is from a newer version of the plugin')
       const read = readSaveFile(file, { saveVersion: SAVE_VERSION, migrate, cleanSave: engine.cleanSave })
       if (!read.ok) throw new Error(read.reason)
-      replaceGame({ save: read.save, bridge: { ...emptyBridge(), autoSpend: read.autoSpend } })
+      const { autoSpend, travel } = read
+      replaceGame({ save: read.save, bridge: { ...emptyBridge(), autoSpend, travel } })
       return { changed: true }
     },
 

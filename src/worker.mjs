@@ -95,6 +95,8 @@ export default async function activate(orca) {
       readWorkMeters: () => store.workMeters(),
       store,
       preferences,
+      // The themes the surfaces draw, which a travelling room moves through.
+      listThemeIds: () => listThemes(ROOT).map((theme) => theme.id),
       log,
       onChange: () => publish()
     })

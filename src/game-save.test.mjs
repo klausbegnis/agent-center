@@ -43,11 +43,11 @@ test('nothing stored loads an empty game with nothing watched yet', async () => 
   const { gameSave } = setup()
   const data = await gameSave.load()
   assert.deepEqual(data.save, emptySave())
-  assert.deepEqual(data.bridge, { baselines: {}, watchedUntil: null, autoSpend: false, tokenSource: null })
+  assert.deepEqual(data.bridge, { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null })
 })
 
 test('a stored game comes back with its baselines and settings', async () => {
-  const bridge = { baselines: { 's1': { total: 10, at: 5 } }, watchedUntil: 5, autoSpend: true, tokenSource: 'estimated' }
+  const bridge = { baselines: { 's1': { total: 10, at: 5 } }, watchedUntil: 5, autoSpend: true, travel: true, tokenSource: 'estimated' }
   const { gameSave } = setup({ stored: { version: STORED_VERSION, save: progressed(), bridge } })
   const data = await gameSave.load()
   assert.deepEqual(data.save.projectWorld, { 'local:/work/rumble-banana': 'main' })
@@ -59,6 +59,13 @@ test('a save watched before the estimate existed is known to come from the sessi
   const { gameSave } = setup({ stored: { version: STORED_VERSION, save: progressed(), bridge } })
   const data = await gameSave.load()
   assert.equal(data.bridge.tokenSource, 'history')
+})
+
+test('a stored game from before the scene setting has it off', async () => {
+  const bridge = { baselines: {}, watchedUntil: 5, autoSpend: true, tokenSource: 'history' }
+  const { gameSave } = setup({ stored: { version: STORED_VERSION, save: progressed(), bridge } })
+  const data = await gameSave.load()
+  assert.equal(data.bridge.travel, false)
 })
 
 test('a change is written once after the delay, not on every change', async () => {
