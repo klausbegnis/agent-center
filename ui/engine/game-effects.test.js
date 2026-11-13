@@ -54,9 +54,8 @@ test('a group purchase shows in every room of its world', () => {
   assert.equal(effect.text, 'Built Campfire level 4')
 })
 
-test('damage shows on the monster as the share of health lost', () => {
-  const [effect] = gameEffects({ ...none, hits: [{ roomId: 'room', share: 0.06 }] }, state())
-  assert.deepEqual([effect.target, effect.text], ['monster', '−6%'])
+test('health lost between states adds no line of its own: the fight shows each blow', () => {
+  assert.deepEqual(gameEffects({ ...none, hits: [{ roomId: 'room', share: 0.06 }] }, state()), [])
 })
 
 test('a busy room shows only its newest lines', () => {

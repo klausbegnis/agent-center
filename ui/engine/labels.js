@@ -261,7 +261,7 @@ export function foeTag(monster) {
 }
 
 /** What a monster in a room says under its health bar when its fight does not go on. */
-const FOE_STATE = { resting: 'Party resting', waiting: 'On hold', blocked: 'On hold' }
+const FOE_STATE = { resting: 'Party resting', waiting: 'On hold', blocked: 'On hold', idle: 'Party away' }
 export const foeState = (party) => FOE_STATE[party] ?? ''
 
 /**
@@ -563,7 +563,6 @@ export const worldChoice = (world) => `${world.id} · level ${world.level}`
 
 /** What the game's events say as they play over a room. */
 export const EFFECT = {
-  hit: (share) => `−${share}`,
   damage: (amount) => `−${amount}`,
   mend: '+',
   defeated: (count) => (count > 1 ? `Defeated ×${count}` : 'Defeated!'),

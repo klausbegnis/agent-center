@@ -89,11 +89,12 @@ export function roomFight(game, roomId) {
 }
 
 /** Party states in which the monster stands in the room: it fights, or waits with the party. */
-const MONSTER_STAYS = new Set(['fighting', 'resting', 'waiting', 'blocked'])
+const MONSTER_STAYS = new Set(['fighting', 'resting', 'waiting', 'blocked', 'idle'])
 
 /**
- * What identifies the monster that should stand in a room now, or null when none should: there
- * is none yet, or nobody in the room works. A new key is a new monster.
+ * What identifies the monster that should stand in a room now, or null when there is none yet.
+ * It stays while nobody in the room works, standing still, so the room shows what waits for the
+ * party. A new key is a new monster.
  *
  * @param {ReturnType<typeof roomFight>} fight
  */

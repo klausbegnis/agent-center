@@ -222,7 +222,7 @@ test('a monster stands in the room while its party fights, rests or waits, and n
   assert.equal(standingMonsterKey(fight), '4|1|blob|4')
   assert.equal(fight.hp, 50)
   assert.equal(standingMonsterKey(roomFight(game('resting'), 'room')), '4|1|blob|4')
-  assert.equal(standingMonsterKey(roomFight(game('idle'), 'room')), null)
+  assert.equal(standingMonsterKey(roomFight(game('idle'), 'room')), '4|1|blob|4')
 })
 
 test('only working characters fight, and only while the party fights a monster', () => {

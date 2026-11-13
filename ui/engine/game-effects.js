@@ -1,7 +1,7 @@
 // What the new events of a state look like over the rooms: a damage number or "Defeated!" by the
 // monster, "Level 9!" by a character, and short lines about loot, drops, retirements, arrivals
 // and purchases under the fight. Never touches the DOM.
-import { formatAmount, formatShare } from './game-format.js'
+import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
 
@@ -137,10 +137,9 @@ function capLines(effects) {
 export function gameEffects(changes, state) {
   const game = state.game
   if (!game?.rooms) return []
-  const hits = changes.hits.map(({ roomId, share }) =>
-    ({ roomId, target: 'monster', text: EFFECT.hit(formatShare(share)), tone: 'hit' }))
+  // Health lost between two states is not shown here: the fight in the room shows each blow's
+  // damage on the monster itself, and a second number over the band's name only covered it.
   return capLines([
-    ...hits,
     ...killEffects(changes.events, game.rooms),
     ...levelEffects(changes.events, game.rooms),
     ...arrivalEffects(changes.arrivals, state),
