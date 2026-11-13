@@ -62,6 +62,12 @@ gone quiet, across every machine Orca is connected to.
 
 ## Game mode
 
+![Six rooms in game mode: parties, monsters, waves and health bars](docs/screenshots/game-gallery.png)
+
+| Rooms | Arsenal | Skills |
+| --- | --- | --- |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The chest with its item slots and the materials the world holds](docs/screenshots/game-arsenal.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) |
+
 Off by default. When it is on, each room's agents form a party: the tokens their sessions spend
 give experience, working agents fight the room's monsters, idle ones gather materials, and the
 materials buy upgrades. Progress is kept per world and survives restarts. The rules are in

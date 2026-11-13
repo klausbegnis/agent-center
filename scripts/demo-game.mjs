@@ -155,6 +155,20 @@ export async function createDemoGame({ engine, store, preferences, onChange, fro
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
   const values = new Map([['game', startingSave()]])
   const settings = { gameMode: true, gameKeepTitles: true }
+  // The frozen scene never changes, so an agent that waits or is blocked in it would have kept
+  // its room's party on hold for the whole made-up day. Until the last rounds those agents
+  // count as working: the day before they got stuck.
+  let isDayBefore = false
+  const STUCK = new Set(['waiting', 'blocked'])
+  const unstuck = (agent) => (STUCK.has(agent.state) ? { ...agent, state: 'working' } : agent)
+  const liveStore = store
+  store = Object.assign(Object.create(liveStore), {
+    snapshot: () => {
+      const snapshot = liveStore.snapshot()
+      if (!isDayBefore) return snapshot
+      return { ...snapshot, rooms: snapshot.rooms.map((room) => ({ ...room, agents: room.agents.map(unstuck) })) }
+    }
+  })
   const history = createHistory(store)
   const meters = createMeters(store)
   let lastStepAt = now()
@@ -192,6 +206,7 @@ export async function createDemoGame({ engine, store, preferences, onChange, fro
     // A day of play, spending now and then, then the last hours without spending so the
     // materials pile up for the screenshot.
     for (let round = 0; round < FROZEN_ROUNDS; round++) {
+      isDayBefore = round < FROZEN_ROUNDS - 2
       if (round === 1) await game.setAutoSpend(true)
       if (round === FROZEN_ROUNDS - 240) await game.setAutoSpend(false)
       frozenClock += ROUND_MS * SPEED

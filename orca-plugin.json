@@ -23,6 +23,10 @@
       "alt": "Six project rooms in Gallery view on three themes"
     },
     {
+      "path": "assets/screenshot-game.png",
+      "alt": "Game mode: each room's party fights its monster, with wave, health and stamina on top"
+    },
+    {
       "path": "assets/screenshot-pixel-dark.png",
       "alt": "The Pixel Dark theme: a developer office with agents at their desks"
     },
