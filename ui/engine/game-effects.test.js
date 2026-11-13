@@ -71,3 +71,18 @@ test('events of a room that is not on screen are left out', () => {
   const kill = { type: 'kill', roomId: 'elsewhere', materials: {} }
   assert.deepEqual(gameEffects({ ...none, events: [kill] }, state()), [])
 })
+
+test('a drop and an upgrade use the names and the level the worker gives them', () => {
+  const state = {
+    rooms: [{ id: 'room', agents: [] }],
+    game: { rooms: { room: { joined: true, chest: [] } }, worlds: [], characters: {} }
+  }
+  const events = [
+    { id: 1, type: 'drop', roomId: 'room', item: 'ashwood-wand', name: 'Ashwood Wand', tier: 2 },
+    { id: 2, type: 'purchase', kind: 'weapon', roomId: 'room', projectId: 'room', itemId: 'rod',
+      name: 'Spark Rod', level: 4 }
+  ]
+  const texts = gameEffects({ events, arrivals: [], hits: [] }, state).map((effect) => effect.text)
+  assert.ok(texts.includes('Found Ashwood Wand'))
+  assert.ok(texts.includes('Upgraded Spark Rod to Lv 4'))
+})

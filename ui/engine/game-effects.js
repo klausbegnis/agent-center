@@ -65,16 +65,18 @@ function levelEffects(events, rooms) {
 function purchaseEffects(event, game) {
   if (event.kind === 'group') {
     const world = game.worlds?.find((item) => item.id === event.worldId)
-    const level = world?.upgrades?.find((upgrade) => upgrade.id === event.upgradeId)?.level
+    const level = event.level ?? world?.upgrades?.find((upgrade) => upgrade.id === event.upgradeId)?.level
     const text = EFFECT.built(UPGRADE_LABEL[event.upgradeId] ?? event.upgradeId, level ?? '')
     return (world?.roomIds ?? []).filter((roomId) => game.rooms[roomId]?.joined)
       .map((roomId) => ({ roomId, target: 'room', text, tone: 'purchase' }))
   }
-  const room = game.rooms[event.projectId]
+  // The worker names the item and the level it reached; an older worker leaves them out.
+  const roomId = event.roomId ?? event.projectId
+  const room = game.rooms[roomId]
   if (!room) return []
   const item = room.chest?.find((entry) => entry.id === event.itemId)
-  const text = EFFECT.upgraded(itemName(room, event.itemId), item?.level ?? '')
-  return [{ roomId: event.projectId, target: 'room', text, tone: 'purchase' }]
+  const text = EFFECT.upgraded(event.name ?? itemName(room, event.itemId), event.level ?? item?.level ?? '')
+  return [{ roomId, target: 'room', text, tone: 'purchase' }]
 }
 
 /** One line for each retirement, drop and purchase. */
@@ -86,7 +88,7 @@ function lineEffects(events, game) {
       const text = EFFECT.retired(retireeName(event.nameId), event.level)
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'retire' })
     } else if (event.type === 'drop' && room && event.item) {
-      const text = EFFECT.found(itemName(room, event.item))
+      const text = EFFECT.found(event.name ?? itemName(room, event.item))
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'drop' })
     } else if (event.type === 'purchase') {
       effects.push(...purchaseEffects(event, game))
