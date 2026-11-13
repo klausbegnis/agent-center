@@ -6,6 +6,7 @@ import { createGameActions } from './game-actions.js'
 import { card } from './game-controls.js'
 import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
+import { createSkillsView } from './skills-view.js'
 import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
@@ -53,7 +54,8 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const actions = createGameActions(transport, showNotice)
   /** What draws each panel while the game runs. */
   const views = {
-    arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs })
+    arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs }),
+    skills: createSkillsView({ panel: contents.skills, actions })
   }
 
   function showNotice(message) {

@@ -84,11 +84,11 @@ export function switchControl({ label, hint, onChange }) {
  * caller, so a redraw does not close a question someone is reading.
  *
  * @param {{ label: string, ariaLabel?: string, question: string, confirm: string,
- *   className?: string, key: string, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void,
+ *   className?: string, confirmClassName?: string, key: string, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void,
  *   onConfirm: () => void }} options `key` names the opening button for replaceKeepingFocus
  */
 export function confirmButton(options) {
-  const { label, ariaLabel, question, confirm, className = '', key, isOpen = false, onOpenChange, onConfirm } = options
+  const { label, ariaLabel, question, confirm, className = '', confirmClassName = 'ac-game-danger', key, isOpen = false, onOpenChange, onConfirm } = options
   const element = el('div', 'ac-game-confirm')
   const open = button(label, `ac-button ${className}`.trim(), { onClick: () => show(true, true) })
   open.dataset.key = key
@@ -97,7 +97,7 @@ export function confirmButton(options) {
   const box = el('div', 'ac-game-confirm-box')
   box.setAttribute('role', 'group')
   box.setAttribute('aria-label', label)
-  const yes = button(confirm, 'ac-button ac-game-danger', {
+  const yes = button(confirm, `ac-button ${confirmClassName}`, {
     onClick: () => {
       show(false, true)
       onConfirm()

@@ -400,3 +400,29 @@
 }
 .ac-game-retiree { display: flex; flex-wrap: wrap; gap: 0 8px; }
 .ac-game-retiree-title { flex-basis: 100%; font-style: italic; color: var(--orca-muted-foreground, #9aa3b2); }
+
+/* Skills */
+.ac-game-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.ac-game-summary .ac-game-card-line { flex-basis: 100%; margin: 0; }
+.ac-game-summary-level { font-size: 15px; }
+.ac-game-stars { color: var(--ac-game-gold); letter-spacing: 1px; }
+.ac-game-progress { font-size: 11px; }
+.ac-game-progress .ac-game-meter-track { height: 6px; }
+.ac-game-progress .ac-game-meter-text { min-width: 3.5em; text-align: right; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ac-game-confirm-box[hidden],
+.ac-game-confirm .ac-button[hidden] { display: none; }
+.ac-game-confirm-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: var(--orca-background, #171a21);
+}

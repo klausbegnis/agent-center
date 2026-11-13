@@ -383,3 +383,62 @@ export const ARSENAL = {
 export function characterFacts(character) {
   return `${classLabel(character.class)} · ${levelShort(character.level)}`
 }
+
+/** What each skill is grown by and what it does. Engineering's factor is filled in. */
+const WORK_SKILL_EFFECT = {
+  forge: 'Grows while agents write code. Strengthens physical attacks.',
+  arcana: 'Grows while agents think. Strengthens magical attacks.',
+  lore: 'Grows while agents read. Strengthens the Guardians\' defence.',
+  command: 'Grows while agents delegate. Strengthens the Healers\' support.'
+}
+const TRADE_MATERIAL = { mining: 'ore', fishing: 'fish', farming: 'crops', woodcutting: 'logs', hunting: 'hides', runecraft: 'runes' }
+
+/**
+ * What a skill does: "Grows while agents write code. Strengthens physical attacks."
+ *
+ * @param {string} skillId
+ * @param {string} attackSpeed the party's attack speed as written, for Engineering: "×1.11"
+ */
+export function skillEffect(skillId, attackSpeed) {
+  if (skillId === 'engineering') {
+    return `Grows while agents run commands. Sets the party's attack speed, now ${attackSpeed}.`
+  }
+  if (WORK_SKILL_EFFECT[skillId]) return WORK_SKILL_EFFECT[skillId]
+  const material = TRADE_MATERIAL[skillId]
+  return material ? `Idle characters with this trade gather ${material}, and it grows as they do.` : ''
+}
+
+/** Stars as shown, "★★", or "★×7" when there are many, with the words for screen readers. */
+export function starsLabel(stars) {
+  if (!stars) return { short: '', full: '' }
+  return { short: stars > 5 ? `★×${stars}` : '★'.repeat(stars), full: plural(stars, 'star') }
+}
+
+/** "Lv 27", or "Lv 3 · effective 102" once a skill has stars. */
+export function skillLevelText(skill) {
+  return skill.stars ? `${levelShort(skill.level)} · effective ${skill.effectiveLevel}` : levelShort(skill.level)
+}
+
+/** What prestiging a skill does, said before it is done. */
+export function prestigeQuestion(skill) {
+  const name = skillLabel(skill.id)
+  return `${name} goes back to level 1 and earns a star (${plural(skill.stars + 1, 'star')} in all). Nothing ` +
+    `gets weaker: its effective level stays ${skill.effectiveLevel}, the experience banked at the cap is ` +
+    'poured back in, and every star makes it grow faster.'
+}
+
+export const SKILLS = {
+  world: 'World',
+  worldLevel: (level) => `World level ${level}`,
+  worldNote: 'The mean of the five work skills. Monsters and prices follow it.',
+  attackSpeed: (speed) => `Attack speed ${speed}`,
+  work: 'Work skills',
+  workNote: 'They grow with the tokens agents spend, by what they spend them on.',
+  gathering: 'Gathering skills',
+  gatheringNote: 'They grow while idle characters gather.',
+  progress: (name) => `${name} progress to the next level`,
+  atCap: 'At the cap',
+  prestige: 'Prestige',
+  prestigeSkill: (skillId) => `Prestige ${skillLabel(skillId)}`,
+  confirmPrestige: (skillId) => `Prestige ${skillLabel(skillId)}`
+}

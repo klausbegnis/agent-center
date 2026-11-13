@@ -158,3 +158,26 @@ test('a retiree shows its class, level and main skill', async () => {
   assert.equal(retireeFacts({ class: 'magical', level: 10, mainSkill: 'command' }), 'Mage · Lv 10 · mostly Command')
   assert.equal(retireeFacts({ class: 'defense', level: 2, mainSkill: null }), 'Guardian · Lv 2')
 })
+
+test('each work skill says what grows it and what it strengthens, Engineering with its factor', async () => {
+  const { skillEffect } = await import('./labels.js')
+  assert.match(skillEffect('forge', '×1.00'), /write code.*physical attacks/)
+  assert.match(skillEffect('arcana', '×1.00'), /magical attacks/)
+  assert.match(skillEffect('engineering', '×1.11'), /attack speed, now ×1\.11/)
+  assert.match(skillEffect('fishing', '×1.00'), /gather fish/)
+})
+
+test('stars are drawn one by one, and counted past five', async () => {
+  const { starsLabel } = await import('./labels.js')
+  assert.deepEqual(starsLabel(0), { short: '', full: '' })
+  assert.deepEqual(starsLabel(2), { short: '★★', full: '2 stars' })
+  assert.equal(starsLabel(7).short, '★×7')
+})
+
+test('the prestige question says what is kept', async () => {
+  const { prestigeQuestion } = await import('./labels.js')
+  const question = prestigeQuestion({ id: 'forge', stars: 1, effectiveLevel: 198 })
+  assert.match(question, /level 1/)
+  assert.match(question, /2 stars in all/)
+  assert.match(question, /effective level stays 198/)
+})
