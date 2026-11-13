@@ -47,7 +47,7 @@ test('a new skill starts at level 1 with nothing banked and no stars', () => {
 })
 
 test('enough experience raises a skill several levels at once and keeps the rest', () => {
-  const skill = grantSkillXp(emptySkill(), 100 + 303 + 50)
+  const skill = grantSkillXp(emptySkill(), xpToNext(1) + xpToNext(2) + 50)
   assert.deepEqual(skill, { level: 3, xp: 50, banked: 0, stars: 0 })
 })
 
@@ -83,7 +83,7 @@ test('prestige returns to level 1 with one more star', () => {
 })
 
 test('prestige pours the banked experience back in without multiplying it again', () => {
-  const skill = prestige(cappedSkill(100 + 303 + 10, 3))
+  const skill = prestige(cappedSkill(xpToNext(1) + xpToNext(2) + 10, 3))
   assert.deepEqual(skill, { level: 3, xp: 10, banked: 0, stars: 4 })
 })
 

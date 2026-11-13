@@ -5,9 +5,12 @@
 /** Tokens a session spends for one experience point. Calibrated against real usage later. */
 export const TOKENS_PER_XP = 1000
 
-/** Experience from level n to n + 1 is LEVEL_BASE * n ** LEVEL_EXPONENT, rounded. */
-export const LEVEL_BASE = 100
-export const LEVEL_EXPONENT = 1.6
+/**
+ * Experience from level n to n + 1 is LEVEL_BASE * n ** LEVEL_EXPONENT, rounded. Linear, so the
+ * total grows with the square of the level and the late levels are not a wall.
+ */
+export const LEVEL_BASE = 125
+export const LEVEL_EXPONENT = 1
 /** A skill stops at this level and banks further experience until it is prestiged. */
 export const SKILL_CAP = 99
 /**

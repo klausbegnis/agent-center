@@ -59,7 +59,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 
 - `xp = tokens / TOKENS_PER_XP`. Each grant goes in full to the work skill of the activity and
   to the character.
-- `xpToNext(n) = round(LEVEL_BASE * n ** LEVEL_EXPONENT)`.
+- `xpToNext(n) = round(LEVEL_BASE * n ** LEVEL_EXPONENT)`. With `LEVEL_EXPONENT = 1` the total to
+  reach a level grows with its square, so the late levels are not a wall.
 - A skill stops at `SKILL_CAP`; further experience is banked. Prestige sets the level to 1,
   adds a star and pours the banked experience back in.
 - A star multiplies experience gained in that skill by `1 + STAR_XP_BONUS * stars`.
