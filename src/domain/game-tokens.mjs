@@ -32,6 +32,20 @@ function allowance(since, now) {
 }
 
 /**
+ * Tokens read over the time since `since`, held to what any agent could spend in it: at most
+ * MAX_TOKENS_PER_MINUTE, over at most MAX_CATCH_UP_MS. Estimated tokens are bounded the same way
+ * as real ones.
+ *
+ * @param {number} tokens
+ * @param {number} since when the interval started
+ * @param {number} now
+ * @returns {number}
+ */
+export function boundTokens(tokens, since, now) {
+  return Math.max(0, Math.min(tokens, allowance(since, now)))
+}
+
+/**
  * Where counting starts for a session read for the first time. One started after the last
  * reading (`watchedUntil`) is new: everything it spent counts, from its start. Any other was
  * already under way before the game watched it: its total so far is history and counts nothing.
@@ -80,7 +94,7 @@ export function readTokenDeltas(baselines, sessions, { now, watchedUntil }) {
       resets += 1
       continue
     }
-    const tokens = Math.min(session.totalTokens - baseline.total, allowance(baseline.at, now))
+    const tokens = boundTokens(session.totalTokens - baseline.total, baseline.at, now)
     if (tokens > 0) {
       const minutes = Math.max(0, now - baseline.at) / MS_PER_MINUTE
       deltas.push({ sessionId: session.sessionId, tokens, minutes })

@@ -1,5 +1,6 @@
 // Joins Orca's session history to the rooms and agents the store knows: which room a session
 // belongs to, which character on screen runs it, what it is doing, and when it is over. Pure.
+import { isEstimatedSessionId } from './game-estimate.mjs'
 
 /** The activities the game turns into work skills; any other activity counts as thinking. */
 const WORK_ACTIVITIES = new Set(['write', 'read', 'run', 'think', 'delegate'])
@@ -225,7 +226,8 @@ export function guestSessionId(agentId) {
 
 /**
  * The characters whose session is over: no longer running with no agent left in the room, or
- * gone from the history (see UNLISTED_CHARACTER_KEPT_MS).
+ * gone from the history (see UNLISTED_CHARACTER_KEPT_MS). A character of the token estimate has
+ * no session in the history; once real totals are read it retires at once.
  *
  * @param {object} input
  * @param {{ projectId: string, sessionId: string, lastSeenAt: number | null }[]} input.characters
@@ -241,9 +243,10 @@ export function sessionsToClose({ characters, sessions, agentOf, truncated, now 
   const closing = []
   for (const { projectId, sessionId, lastSeenAt } of characters) {
     const session = byId.get(sessionId)
-    const isOver = session
+    const isListedOver = session
       ? !session.running && !agentOf.has(sessionId)
       : !truncated || now - (lastSeenAt ?? 0) > UNLISTED_CHARACTER_KEPT_MS
+    const isOver = isEstimatedSessionId(sessionId) || isListedOver
     if (isOver) closing.push({ projectId, sessionId, title: session?.title ?? null })
   }
   return closing

@@ -4,6 +4,7 @@ import {
   BASELINES_KEPT,
   MAX_CATCH_UP_MS,
   MAX_TOKENS_PER_MINUTE,
+  boundTokens,
   normalizeBaselines,
   readTokenDeltas
 } from './game-tokens.mjs'
@@ -85,4 +86,10 @@ test('stored baselines keep only well-formed entries', () => {
   assert.deepEqual(normalizeBaselines(stored), { good: { total: 5, at: 1 } })
   assert.deepEqual(normalizeBaselines(null), {})
   assert.deepEqual(normalizeBaselines([1, 2]), {})
+})
+
+test('tokens are bounded by what any agent could spend in the time since', () => {
+  assert.equal(boundTokens(10, 0, 60_000), 10)
+  assert.equal(boundTokens(10 ** 12, 0, 60_000), MAX_TOKENS_PER_MINUTE)
+  assert.equal(boundTokens(-5, 0, 60_000), 0)
 })

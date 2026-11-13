@@ -66,6 +66,31 @@ export const VETERAN_BONUS_PER_LEVEL = 0.005
 export const REFERENCE_TOKENS_PER_MINUTE = 20_000
 export const PACE_MIN = 0.25
 export const PACE_MAX = 1.5
+/**
+ * The token estimate, for an Orca whose session history gives no token totals. An agent working
+ * one minute at ESTIMATE_TOOL_CALLS_PER_MINUTE, at an activity of weight 1, is estimated at
+ * ESTIMATE_TOKENS_PER_WORKING_MINUTE: the 25,000 the simulator assumes, so its progression still
+ * describes what a person sees. Of that, ESTIMATE_TOKENS_PER_MINUTE_WORKED comes from time and
+ * the rest from tool calls: each call is a model turn that reads the conversation back and takes
+ * in the tool's result, which is where most tokens go, while time alone is the model writing.
+ */
+export const ESTIMATE_TOKENS_PER_WORKING_MINUTE = 25_000
+export const ESTIMATE_TOOL_CALLS_PER_MINUTE = 3.75
+export const ESTIMATE_TOKENS_PER_MINUTE_WORKED = 10_000
+export const ESTIMATE_TOKENS_PER_TOOL_CALL =
+  (ESTIMATE_TOKENS_PER_WORKING_MINUTE - ESTIMATE_TOKENS_PER_MINUTE_WORKED) / ESTIMATE_TOOL_CALLS_PER_MINUTE
+/**
+ * How much a minute at each activity spends against thinking; any other activity counts as
+ * thinking. Writing generates the file's text as output; reading spends its tokens in the call's
+ * result, already counted per call; a command or a subagent leaves the agent mostly waiting on
+ * it. Over the simulator's three activity mixes the weights average 0.92 to 1.03.
+ */
+export const ESTIMATE_ACTIVITY_WEIGHTS = { think: 1, write: 1.3, read: 0.9, run: 0.6, delegate: 0.8 }
+/**
+ * Tool calls counted per minute at most: a burst of parallel calls is real, a flood is not, and
+ * it would otherwise buy far more than any agent spends.
+ */
+export const ESTIMATE_MAX_TOOL_CALLS_PER_MINUTE = 30
 
 /**
  * How hard each class hits. Most projects have one or two sessions at a time, so a lone

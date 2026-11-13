@@ -266,3 +266,14 @@ test('a session linked to its agent by id counts in the agent\'s room even when 
   assert.equal(tokens[0].projectId, BANANA)
   assert.equal(counters.unplaced, 0)
 })
+
+test('a character of the token estimate retires as soon as real session totals are read', () => {
+  const closing = sessionsToClose({
+    characters: [{ projectId: BANANA, sessionId: 'estimated:pane-1', lastSeenAt: 0 }],
+    sessions: [historySession('s1')],
+    agentOf: new Map(),
+    truncated: true,
+    now: 1
+  })
+  assert.deepEqual(closing, [{ projectId: BANANA, sessionId: 'estimated:pane-1', title: null }])
+})
