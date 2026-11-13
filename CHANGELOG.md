@@ -70,6 +70,17 @@ All notable changes to this project are recorded here. The format follows
 - `GAME=1 node scripts/demo.mjs` runs the game with made-up tokens and `GAME=estimated` through
   the estimate; `FREEZE=1` shows a fixed save.
 
+### Changed
+
+- The listing name is now **Agent Center: Tavern & Auto-Battler**. The panel, the tab, the
+  status bar item and the commands keep the name **Agent Center**, and the plugin's id
+  (`agent-center`) does not change.
+- The listing has a new description, saying the plugin can be watched or played as an idle
+  auto-battler, a new cover (the game-mode gallery) and two new screenshots: game mode on
+  Gothic Dungeon and the roster of named bosses.
+- The README is rewritten around the two ways to use the plugin: watching the rooms, or
+  turning on game mode.
+
 ### Security
 
 - With **Open to the local network** on, a page opened from another machine can watch the game
