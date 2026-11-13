@@ -47,8 +47,10 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 - Work skills, by the activity the tokens are spent on: `forge` (write), `lore` (read),
   `engineering` (run), `arcana` (think), `command` (delegate).
 - Gathering skills: `mining`, `fishing`, `farming`, `woodcutting`, `hunting`, `runecraft`.
-- Materials: work skills yield `bars`, `pages`, `gears`, `crystals`, `seals` in that order;
-  gathering skills yield `ore`, `fish`, `crops`, `logs`, `hides`, `runes`.
+- Materials, named after the skills in the same order: `bars`, `pages`, `gears`, `crystals`,
+  `seals` for the work skills, which only kills give; `ore`, `fish`, `crops`, `logs`, `hides`,
+  `runes` for the gathering skills, which gathering and kills give. Work skills never yield
+  materials themselves.
 - Classes: `physical`, `magical`, `defense`, `support`. Their skill: `forge`, `arcana`,
   `lore`, `command`. Their attribute: `strength`, `arcane`, `resilience`, `medicine`.
 - Attributes: `strength`, `arcane`, `agility`, `precision`, `resilience`, `medicine`, `luck`.
@@ -128,11 +130,10 @@ hit = BASE_HIT * POWER_GROWTH ** worldLevel
   this rule it settles a few levels above it and fights keep coming.
 - `referencePartyHit(level)` is the total hit of four reference characters, one per class,
   in a world whose five work skills all have effective level `level` (with as many stars as
-  that needs), character level `SEASONED_LEVEL`, the
-  attributes a real character has at that level (starting attributes plus the class and
-  fortune points of every level, and its activity points spread evenly over the five
-  activities), gear worth `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, with aura
-  and full party bonus.
+  that needs), character level `SEASONED_LEVEL`, the attributes a real character has at that
+  level (starting attributes plus the class and fortune points of every level, and its
+  activity points spread evenly over the five activities), gear worth
+  `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, with aura and full party bonus.
 - `monsterHp = HITS_TO_KILL * referencePartyHit(level) * min(n, REFERENCE_PARTY_SIZE) /
   REFERENCE_PARTY_SIZE * kind.hp * (elite ? ELITE.hp : 1)`, with `n` the working characters
   when the monster appears. Most projects have one or two sessions at a time; they still kill
@@ -288,6 +289,64 @@ a character's experience by work skill, for the retiree's main skill.
 
 ## Simulation
 
-`npm run simulate` plays usage scenarios through the engine and prints how
-levels, waves, materials and upgrades progress over days, weeks and months. A balance change
-is judged by its output, not by eye.
+```bash
+npm run simulate
+```
+
+`scripts/simulate-game.mjs` plays 365 days of three made-up scenarios through the engine:
+working hours 9 to 12 and 13 to 18 on weekdays, sessions that open and close, three activity
+profiles (mostly writing, mostly reading and thinking, mostly delegating), waiting and idle
+time, `autoSpend` every evening and prestige whenever it is offered. An agent spends 25,000
+tokens per minute while it works; a lighter user works fewer minutes. Every choice is a hash,
+so the output only changes with the code. It prints the progression at day 1, 3, 7, 14, 30,
+60, 90, 180 and 365 and a balance check (`scripts/game-balance.mjs`) with PASS or FAIL
+against the targets below, in about two seconds. A balance change is judged by its output,
+not by eye.
+
+## Balance
+
+The design targets: power is accumulated (about 70% of a hit from the world, 20% from the
+project's gear, 10% from the character; a newcomer does three quarters of a seasoned
+character's work and is seasoned within hours); the most used skill of a 20 million tokens a
+day world reaches 10 in about a day, 30 in about three weeks and its first prestige in four to
+six months; a party at par kills a common monster in about four minutes and its wave settles a
+little above the world level; a balanced party rarely rests, one missing a defender or a
+supporter rests more, one missing a damage type is twice as slow against the matching
+resistance; a meaningful upgrade every one to two working days; gathering 15 to 30% of
+materials.
+
+What the simulator measures now:
+
+| | light | medium | heavy |
+|---|---|---|---|
+| Tokens a working day, sessions at a time, projects | 3M, 1, 1 | 20M, 3, 2 | 100M, 6, 3 |
+| Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
+| World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
+| Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
+| Median common fight | 23 ticks, 3.8 min | 24 ticks, 4.0 min | 18 ticks, 3.0 min |
+| Kills per hour of fighting | 9 to 11 | 8 to 12 | 12 to 17 |
+| Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
+| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 2.0 | 7.6 to 12.1 |
+| Gathering share of materials | 29% | 23% | 15% |
+| Hit from world, gear, character (day 90 on) | 56%, 20%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
+
+At levels 10, 60 and 150 a balanced party rests in 1 to 12% of its fights, one without a
+defender or a supporter in 52 to 100%; a party without magic takes 1.9 to 2.1 times as long
+against armored monsters; a boss takes about three times a common monster and an elite 1.7 to
+1.9 times; every fight ends. A newcomer does 73% of a seasoned character's work and is
+seasoned after about an hour of an agent working.
+
+Targets the numbers do not meet, and why:
+
+- The hit split is right only in the middle. A character's own share is bounded (seasoning
+  and its own attribute points, the "three quarters" rule), while the world's grows without
+  end, so the character's share falls from about a quarter in a young world to almost nothing
+  in a world of level 1000. Keeping both targets everywhere is impossible; the newcomer rule
+  wins because it keeps every new session useful.
+- Upgrades follow the world's growth. Gear must keep up with the world to stay a fifth of a
+  hit, and the heavy world grows twenty times faster than the light one while it has six
+  characters' items to the light one's single character. Medium gets one or two upgrades a
+  working day, light one every one to five days, heavy about ten a day.
+- Most projects have one or two sessions at a time, so most parties are not balanced and a
+  fight with a rest is the usual case: 60 to 90% of fights early, 25 to 60% after a year as
+  the campfire grows.
