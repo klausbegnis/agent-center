@@ -286,7 +286,8 @@
 @container (max-width: 300px) {
   .ac-game-wave-kills,
   .ac-game-foe-title,
-  .ac-game-party-state { display: none; }
+  .ac-game-foe-level,
+  .ac-game-party { display: none; }
 }
 .ac-mini .ac-game-pill,
 .ac-mini .ac-game-badge { display: none; }
