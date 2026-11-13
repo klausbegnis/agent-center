@@ -68,8 +68,10 @@ Game mode is off by default. It asks for no permission of its own.
   read. Nothing new is read from Orca, and the session history is never called.
 - **Once Orca provides them**, and only when Orca offers the Agent Session History to plugins
   and you granted the session history permission (`history:read`), the game uses the real
-  totals: the worker calls `agent.listSessions` every 30 seconds. This version of the plugin
-  does not ask for that permission yet, so the call is never made until it does.
+  totals: the worker calls `agent.listSessions` every 30 seconds. It makes that call only when
+  Orca lists the permission among those granted; an Orca that does not say counts as not
+  granting it. This version of the plugin does not ask for that permission, so the call is
+  never made.
 
 The rest of this section is about what happens once real totals are read, except where it says
 otherwise.

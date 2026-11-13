@@ -51,15 +51,15 @@ export function normalizeSessions(answer) {
 
 /**
  * Whether this Orca offers the history to the worker, and whether the person granted it.
- * `orca.grantedCapabilities` is fixed when the worker starts; an Orca without it is asked, and
- * a refusal then says so (see readSessionHistory).
+ * `orca.grantedCapabilities` is fixed when the worker starts. An Orca that does not say what was
+ * granted counts as not granting it: the history is read only when the grant is known.
  *
  * @param {{ host: { has?: (method: string) => boolean }, grantedCapabilities?: readonly string[] }} orca
  * @returns {{ supported: boolean, granted: boolean }}
  */
 export function historyAccess(orca) {
   const supported = typeof orca.host?.has === 'function' && orca.host.has(SESSION_HISTORY_METHOD) === true
-  const granted = Array.isArray(orca.grantedCapabilities) ? orca.grantedCapabilities.includes(HISTORY_CAPABILITY) : true
+  const granted = Array.isArray(orca.grantedCapabilities) && orca.grantedCapabilities.includes(HISTORY_CAPABILITY)
   return { supported, granted }
 }
 

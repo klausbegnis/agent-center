@@ -85,6 +85,9 @@ All notable changes to this project are recorded here. The format follows
 - The game's **Save file** card, the README and SECURITY.md say that an exported save is
   private (folder paths, paired machines' names, session ids, and kept titles) and must not be
   attached to a public bug report; so does the bug report form.
+- The session history is read only when Orca says the `history:read` permission was granted;
+  an Orca that does not say what was granted counts as not granting it. The **Game mode**
+  setting no longer promises real token totals, which this version cannot read.
 
 ## 0.1.0 - 2026-11-12
 

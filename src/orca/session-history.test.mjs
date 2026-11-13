@@ -45,7 +45,13 @@ test('the history is offered when this Orca has the method and the person grante
   assert.deepEqual(historyAccess(orca(true, ['history:read'])), { supported: true, granted: true })
   assert.deepEqual(historyAccess(orca(true, ['storage:own'])), { supported: true, granted: false })
   assert.deepEqual(historyAccess(orca(false, ['history:read'])), { supported: false, granted: true })
-  assert.deepEqual(historyAccess({ host: {} }), { supported: false, granted: true })
+  assert.deepEqual(historyAccess({ host: {} }), { supported: false, granted: false })
+})
+
+test('an Orca that does not say what was granted is taken as not granting the history', () => {
+  const orca = { host: { has: () => true } }
+  assert.deepEqual(historyAccess(orca), { supported: true, granted: false })
+  assert.deepEqual(historyAccess({ ...orca, grantedCapabilities: 'history:read' }), { supported: true, granted: false })
 })
 
 test('a refused history read says whether it was refused for lack of permission', async () => {

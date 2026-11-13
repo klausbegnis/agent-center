@@ -431,7 +431,7 @@ While it runs, `game.tokenSource` says where the tokens come from:
 
 | `tokenSource` | When | What it is |
 |---|---|---|
-| `history` | This Orca offers `agent.listSessions` to the worker (`orca.host.has`) and the `history:read` capability is granted (`orca.grantedCapabilities`). | Real token totals from Orca's Agent Session History. |
+| `history` | This Orca offers `agent.listSessions` to the worker (`orca.host.has`) and the `history:read` capability is granted (`orca.grantedCapabilities` lists it; an Orca that does not say what was granted counts as not granting it). | Real token totals from Orca's Agent Session History. |
 | `estimated` | Any other case: the method is missing (every Orca release at host API 1.6, such as 1.4.258), the capability is not granted, or a read was refused with `capability_denied` or `consent_required`. | An estimate from each agent's working time and tool calls (see "The estimate"). It is not a measurement. |
 
 The plugin does not ask for `history:read` yet, so today the game runs on the estimate.

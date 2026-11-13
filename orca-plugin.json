@@ -134,7 +134,7 @@
       {
         "key": "gameMode",
         "title": "Game mode",
-        "description": "Turns the work your agents do into progress: levels, monsters to fight, materials and upgrades. On Orca releases without session token totals, progress is estimated from working time and tool calls. Uses real token totals from Orca's Agent Session History once Orca offers them and the session history permission is granted.",
+        "description": "Turns the work your agents do into progress: levels, monsters to fight, materials and upgrades. Progress is estimated from working time and tool calls, not measured: this version of the plugin does not read Orca's session token totals.",
         "type": "boolean",
         "default": false
       },
