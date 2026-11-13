@@ -220,7 +220,7 @@ lists everything the page shows.
 
 ## Install
 
-Find **Agent Center** in Orca's plugin directory, or open its page:
+Find **Agent Center: Tavern & Auto-Battler** in Orca's plugin directory, or open its page:
 <https://orca.dev/plugins/klausbegnis/agent-center>.
 
 To run it from a checkout instead:
