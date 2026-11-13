@@ -2,9 +2,10 @@
 
 # Agent Center
 
-**See your coding agents at work.** A plugin for [Orca](https://github.com/stablyai/orca) that
-gives every project its own little room, where each agent is a character acting out what it is
-doing right now.
+**See your coding agents at work, and let them play if you like.** A plugin for
+[Orca](https://github.com/stablyai/orca) that gives every project its own little room, where
+each agent is a character acting out what it is doing right now. Turn on the optional game mode
+and the rooms become an auto-battler that runs on the work your agents do.
 
 ![Six project rooms in Gallery view, on three different themes](docs/screenshots/gallery.png)
 
@@ -18,6 +19,16 @@ its colours, and vanish when they finish.
 
 One glance tells you which of your projects are busy, which are waiting on you, and which have
 gone quiet, across every machine Orca is connected to.
+
+## Two ways to use it
+
+- **Just leave them there.** This is the default. The rooms are a live picture of your agents
+  and nothing else: no numbers, no progress, nothing to manage.
+- **Game mode.** An idle auto-battler on top of the same rooms. Each agent becomes a character
+  with a class, a level and attributes; the agents working in a room fight its monsters wave
+  after wave, the idle ones gather materials, and what they earn buys gear and upgrades for the
+  party. It plays by itself while you work. You choose how much to look at it. It is off until
+  you turn it on, and turning it off brings the plain rooms back with your progress kept.
 
 ## What you get
 
@@ -45,8 +56,9 @@ gone quiet, across every machine Orca is connected to.
   folder with a few files.
 - **Anywhere on screen.** A sidebar panel, a tab next to your terminals, a detached window,
   fullscreen on a spare monitor or tablet, or a small always-on-top window.
-- **Game mode, off by default.** The tokens your sessions spend become levels, fights against
-  monsters, materials and upgrades for each room's party. See [Game mode](#game-mode).
+- **An optional auto-battler.** Game mode turns the work your sessions do into levels, fights
+  against monsters, materials and upgrades for each room's party. Off by default. See
+  [Game mode](#game-mode).
 
 ## Game mode
 

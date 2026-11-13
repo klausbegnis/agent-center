@@ -2,7 +2,7 @@
   "name": "agent-center",
   "version": "0.1.0",
   "private": true,
-  "description": "An Orca plugin that shows one room per project, where each agent is a character acting out what it is doing.",
+  "description": "An Orca plugin that shows one room per project, where each agent is a character acting out what it is doing, with an optional auto-battler game mode.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -21,5 +21,14 @@
     "simulate": "node scripts/simulate-game.mjs",
     "sync-rules": "node scripts/sync-rules.mjs",
     "verify": "npm run check && npm test"
-  }
+  },
+  "keywords": [
+    "orca",
+    "orca-plugin",
+    "coding-agents",
+    "claude-code",
+    "pixel-art",
+    "auto-battler",
+    "idle-game"
+  ]
 }

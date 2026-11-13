@@ -4,7 +4,7 @@
   "id": "agent-center",
   "name": "Agent Center",
   "version": "0.1.0",
-  "description": "One room per project where every agent and subagent is a character acting out what it is doing. Swappable themes.",
+  "description": "One room per project where every agent is a character acting out its work. Just watch them, or turn on the optional auto-battler: the work your agents do becomes levels, monsters and loot. Swappable themes.",
   "license": "MIT",
   "author": {
     "name": "klausbegnis",
