@@ -37,7 +37,7 @@ const CHECKPOINTS = [1, 3, 7, 14, 30, 60, 90, 180, 365]
 const PROJECTS = ['rumble-banana', 'turbo-waffle', 'cosmic-llama']
 const THEMES = [null, 'pixel-dark', 'guild-hall']
 /** Below this world level a hit is almost all character, and its split says nothing. */
-const MIN_SHARE_LEVEL = 5
+const MIN_SHARE_LEVEL = 10
 
 const SCENARIOS = [
   { id: 'light', tokensPerDay: 3_000_000, concurrent: 1, projects: 1, sessionWorkHours: 16 },
