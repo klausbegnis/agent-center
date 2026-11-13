@@ -1,15 +1,25 @@
 <div align="center">
 
-# Agent Center
+# Agent Center & Auto-Battler
 
-**See your coding agents at work, and let them play if you like.** A plugin for
-[Orca](https://github.com/stablyai/orca) that gives every project its own little room, where
-each agent is a character acting out what it is doing right now. Turn on the optional game mode
-and the rooms become an auto-battler that runs on the work your agents do.
+**A live room for every project in [Orca](https://github.com/stablyai/orca), where your coding
+agents are characters acting out their work, and an idle auto-battler that runs on what they do.**
 
-![Six project rooms in Gallery view, on three different themes](docs/screenshots/gallery.png)
+![Six project rooms in game mode: each room's party of agents fights its monster](docs/screenshots/game-gallery.png)
 
 </div>
+
+## Two ways to use it
+
+| Just watch | Play |
+|:---:|:---:|
+| ![Six project rooms, each with its agents as characters](docs/screenshots/gallery.png) | ![The same rooms in game mode, with monsters, waves and health bars](docs/screenshots/game-gallery.png) |
+| **The default.** The rooms are a live picture of your agents and nothing else. No numbers, no progress, nothing to manage. One glance tells you who is busy, who is waiting on you and who has gone quiet. | **Game mode.** The same rooms become an auto-battler. Every agent is a character with a class and a level, the agents working in a room fight its monsters, the idle ones gather, and the loot buys gear. It plays by itself while you work. |
+
+Game mode is off until you turn it on. Turning it off brings the plain rooms back and keeps
+your progress for next time.
+
+## The rooms
 
 An agent editing files sits at a desk. One searching the codebase walks to the bookshelf. One
 running a command stands at the server rack. When it needs you, it stops and raises a **?**. When
@@ -19,18 +29,6 @@ its colours, and vanish when they finish.
 
 One glance tells you which of your projects are busy, which are waiting on you, and which have
 gone quiet, across every machine Orca is connected to.
-
-## Two ways to use it
-
-- **Just leave them there.** This is the default. The rooms are a live picture of your agents
-  and nothing else: no numbers, no progress, nothing to manage.
-- **Game mode.** An idle auto-battler on top of the same rooms. Each agent becomes a character
-  with a class, a level and attributes; the agents working in a room fight its monsters wave
-  after wave, the idle ones gather materials, and what they earn buys gear and upgrades for the
-  party. It plays by itself while you work. You choose how much to look at it. It is off until
-  you turn it on, and turning it off brings the plain rooms back with your progress kept.
-
-## What you get
 
 - **One room per project.** Worktrees of the same repository share a room, and so does a
   repository cloned inside another one's folder. The room title shows the project and the host
@@ -56,26 +54,69 @@ gone quiet, across every machine Orca is connected to.
   folder with a few files.
 - **Anywhere on screen.** A sidebar panel, a tab next to your terminals, a detached window,
   fullscreen on a spare monitor or tablet, or a small always-on-top window.
-- **An optional auto-battler.** Game mode turns the work your sessions do into levels, fights
-  against monsters, materials and upgrades for each room's party. Off by default. See
-  [Game mode](#game-mode).
 
-## Game mode
+## Game mode: the auto-battler
 
-![Six rooms in game mode: parties, monsters, waves and health bars](docs/screenshots/game-gallery.png)
+You do not play it so much as feed it. Your agents do their work, and the work is what moves
+the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 | Rooms | Arsenal | Skills |
 | --- | --- | --- |
 | ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The chest with its item slots and the materials the world holds](docs/screenshots/game-arsenal.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) |
 
-Off by default. When it is on, each room's agents form a party: the tokens their sessions spend
-give experience, working agents fight the room's monsters, idle ones gather materials, and the
-materials buy upgrades. Progress is kept per world and survives restarts. The rules are in
-[docs/GAME.md](docs/GAME.md).
+### How it plays
 
-To turn it on, open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**.
+- **Every agent is a character.** A session gets a class when it first works (Fighter, Mage,
+  Guardian or Healer, picked to balance its room's party), then levels up and grows seven
+  attributes as it spends tokens. Click a character to see its sheet.
+- **Each room is a party fighting waves.** The agents working in a room fight its monster.
+  Every kill moves the wave on, every tenth wave brings a boss, and a party that runs out of
+  stamina rests before it goes again. When an agent stops to wait for you, its party holds.
+- **What your agents do decides what grows.** Writing code raises Forge, reading raises Lore,
+  running commands raises Engineering, thinking raises Arcana and delegating raises Command.
+  Each one makes a different part of the party stronger, and together they set the world level
+  that monsters and prices follow.
+- **Idle agents gather.** A character whose agent has finished takes a trade (mining, fishing,
+  farming, woodcutting, hunting or runecraft) and brings materials home.
+- **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
+  a new character takes the best free item of each slot by itself. Materials upgrade items and
+  buy upgrades for the whole party, by hand or with auto-spend.
+- **Sessions retire.** Close a terminal and its character retires into the room's hall, leaves
+  its gear in the chest for the next one and adds a small bonus to the room's gathering for
+  good.
+- **Worlds keep things apart.** Progress belongs to a world, a group of rooms you choose. Put
+  work and side projects in different worlds, or leave a room out of the game altogether.
+- **No level cap.** At level 99 a skill can be prestiged for a star and started again, stronger.
+
+### The bestiary
+
+![Named bosses of the roster, each with its own fixed look](docs/screenshots/game-bosses.png)
+
+- **20 races**, from goblins, orcs and trolls to dragons, golems and wood wardens. A monster is
+  put together from separate parts (head, body, legs, outfit, headgear, what it holds, colours),
+  so two of the same race rarely look alike, and its name says what it is: a "Moss Troll
+  Brute", an "Ashen Skeleton Archer".
+- **55 named bosses**, each with a fixed look and a name of its own. A room meets all of them
+  before any comes back.
+- **Ranks you can read by the glow.** Most monsters are plain. A veteran has a faint outline,
+  an elite a halo in the colour of its special trait, a champion a stronger one, a boss a red
+  aura, and now and then a boss arrives legendary, in gold. The rarer the rank, the tougher the
+  fight and the better the reward.
+- A room's theme adds a few monsters of its own on top.
+
+![The same monster as plain, veteran, elite and champion, and a boss as boss and legendary](docs/screenshots/game-ranks.png)
+
+### Turning it on
+
+Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
+gains three tabs: **Rooms**, **Arsenal** (chest, party and camp) and **Skills**. The cog in the
+panel's header opens the game's own settings: worlds, auto-spend and the save file.
+
 **Game mode: keep conversation titles** keeps a finished session's title on its retired
-character; it is off by default.
+character; it is off by default. Everything the game keeps stays on your computer. The full
+rules and numbers are in [docs/GAME.md](docs/GAME.md).
+
+### Good to know
 
 Where the tokens come from:
 
@@ -166,7 +207,7 @@ names and change the themes. [SECURITY.md](SECURITY.md) lists everything the pag
 
 ## Install
 
-Find **Agent Center** in Orca's plugin directory, or open its page:
+Find **Agent Center & Auto-Battler** in Orca's plugin directory, or open its page:
 <https://orca.dev/plugins/klausbegnis/agent-center>.
 
 To run it from a checkout instead:
