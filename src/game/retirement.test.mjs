@@ -126,3 +126,10 @@ test('each retiree adds to gathering, counting those folded into the counter', (
 test('the retiree bonus stops at its cap', () => {
   assert.equal(retireeBonus(project({ retiredCount: 10_000 })), RETIREE_BONUS_MAX)
 })
+
+test('the retiree bonus reaches its cap exactly when the kept records are full', () => {
+  const full = project({ retirees: Array.from({ length: RETIREES_KEPT }, (_, index) => retireeRecord(`old-${index}`)) })
+  const almost = project({ retirees: full.retirees.slice(1) })
+  assert.equal(retireeBonus(full), RETIREE_BONUS_MAX)
+  assert.ok(retireeBonus(almost) < RETIREE_BONUS_MAX)
+})

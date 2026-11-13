@@ -143,7 +143,7 @@ hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
 - When a session closes its character retires: its items go back to the chest and a retiree
   record is kept (generated name id, class, level, tokens, main skill, time; the session title
   only when the setting allows it). Each retiree adds `RETIREE_BONUS` to the project's
-  gathering, up to `RETIREE_BONUS_MAX`. The last `RETIREES_KEPT` are kept; older ones fold
+  gathering, up to `RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT`. The last `RETIREES_KEPT` are kept; older ones fold
   into a counter. A session that comes back with the same id leaves retirement with its level
   and takes its items back when they are free.
 

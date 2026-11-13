@@ -145,6 +145,10 @@ export const UPGRADE_COST_GROWTH = 1.35
 export const ITEM_MAX_TIER = 10
 /** A workbench of level L divides upgrade costs by 1 + WORKBENCH_DISCOUNT_PER_LEVEL * L. */
 export const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
-export const RETIREE_BONUS = 0.01
-export const RETIREE_BONUS_MAX = 0.25
+/**
+ * Each retiree adds RETIREE_BONUS to its project's gathering, up to RETIREES_KEPT of them: the
+ * cap is reached exactly when the kept records are full.
+ */
+export const RETIREE_BONUS = 0.005
 export const RETIREES_KEPT = 50
+export const RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT
