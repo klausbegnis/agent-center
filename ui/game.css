@@ -426,3 +426,84 @@
   border-radius: 6px;
   background: var(--orca-background, #171a21);
 }
+
+/* Settings: they take the place of the open tab's content until closed. */
+.ac-root[data-game-settings] .ac-rooms,
+.ac-root[data-game-settings] .ac-shelf,
+.ac-root[data-game-settings] .ac-game-panel { display: none !important; }
+.ac-root.ac-gallery[data-game-settings] { overflow: auto; }
+.ac-game-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+}
+.ac-game-settings-button[hidden] { display: none; }
+.ac-game-settings-button[aria-expanded='true'] { border-color: var(--orca-ring, #6fe0d2); }
+.ac-game-settings-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+.ac-game-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.ac-game-settings[hidden] { display: none; }
+.ac-game-settings-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ac-game-settings-title { margin: 0; font-size: 14px; font-weight: 700; }
+.ac-game-settings-title:focus { outline: none; }
+.ac-game-settings-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-game-settings-note[hidden] { display: none; }
+.ac-game-room-world {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  font-size: 12px;
+}
+.ac-game-room-world-name {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-game-room-world .ac-select { flex: 0 1 180px; min-width: 0; }
+.ac-game-new-world { flex-basis: 100%; }
+.ac-game-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: var(--orca-radius, 6px);
+  background: var(--orca-background, #171a21);
+  color: var(--orca-foreground, #e8eaf0);
+  font: inherit;
+  font-size: 12px;
+}
+.ac-game-input:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-game-new-world .ac-game-missing:empty { display: none; }
+.ac-mini .ac-game-settings,
+.ac-collapsed .ac-game-settings { display: none !important; }
+.ac-mini.ac-root[data-game-settings] .ac-rooms { display: grid !important; }

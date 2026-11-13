@@ -442,3 +442,34 @@ export const SKILLS = {
   prestigeSkill: (skillId) => `Prestige ${skillLabel(skillId)}`,
   confirmPrestige: (skillId) => `Prestige ${skillLabel(skillId)}`
 }
+
+export const SETTINGS = {
+  open: 'Game settings',
+  title: 'Game settings',
+  close: 'Close',
+  keepTitles: 'Keep session titles',
+  keepTitlesHint: 'Off: a retiree keeps only a generated name, its level and what it did. Turning it off ' +
+    'forgets the titles already kept.',
+  worlds: 'Worlds',
+  worldsNote: 'Each world keeps its own skills, materials and upgrades. A room out of the game counts no tokens.',
+  roomWorld: (room) => `World for the ${room} room`,
+  outOfGame: 'Out of the game',
+  newWorld: 'New world…',
+  newWorldName: 'Name of the new world',
+  create: 'Create',
+  cancel: 'Cancel',
+  newWorldError: {
+    empty: 'Give the world a name with at least one letter or digit.',
+    taken: 'There is already a world with that name.',
+    full: 'There are already eight worlds, the most there can be.'
+  },
+  reset: 'Reset this world',
+  resetWorld: 'World to reset',
+  resetQuestion: (worldId) => `Reset world "${worldId}"? Its skills, materials and group upgrades, and every ` +
+    'room\'s wave, chest and retirees in it, go back to the start. This cannot be undone.',
+  resetConfirm: (worldId) => `Reset ${worldId}`,
+  local: 'Everything stays on this computer.'
+}
+
+/** "main · level 11" as a choice of world. */
+export const worldChoice = (world) => `${world.id} · level ${world.level}`

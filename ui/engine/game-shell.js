@@ -1,13 +1,15 @@
 // The game's frame around the rooms: the tabs, the Arsenal and Skills panels and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { createArsenalView } from './arsenal-view.js'
-import { el } from './dom.js'
+import { button, el, svgIcon } from './dom.js'
 import { createGameActions } from './game-actions.js'
 import { card } from './game-controls.js'
 import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
 import { createSkillsView } from './skills-view.js'
-import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
+import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable, SETTINGS } from './labels.js'
+import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
+import { createSettingsView } from './settings-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
 const NOTICE_MS = 6000
@@ -25,6 +27,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   let mode = 'off'
   let state = null
   let noticeUntil = 0
+  let isSettingsOpen = false
 
   const bar = el('div', 'ac-game-bar')
   const tabs = createGameTabs({ onSelect: (next) => select(next) })
@@ -52,6 +55,13 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   }
 
   const actions = createGameActions(transport, showNotice)
+  // The cog that opens the settings sits in the header; it shows only while the game runs.
+  const settingsButton = button('', 'ac-button ac-game-settings-button', { onClick: () => setSettingsOpen(!isSettingsOpen) })
+  settingsButton.append(svgIcon('ac-game-settings-icon', SETTINGS_MARK.length, pixelPath(SETTINGS_MARK, '#')))
+  settingsButton.setAttribute('aria-label', SETTINGS.open)
+  settingsButton.title = SETTINGS.open
+  const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
+
   /** What draws each panel while the game runs. */
   const views = {
     arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs }),
@@ -63,7 +73,16 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     noticeUntil = Date.now() + NOTICE_MS
   }
 
+  function setSettingsOpen(isOpen, returnFocus = false) {
+    isSettingsOpen = isOpen
+    show()
+    onTabChange()
+    if (isOpen) settings.focus()
+    else if (returnFocus) settingsButton.focus()
+  }
+
   function select(next) {
+    isSettingsOpen = false
     tab = tabOrDefault(next)
     transport.prefs?.set('tab', tab)
     show()
@@ -86,6 +105,16 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
 
   function show() {
     const isShown = mode !== 'off'
+    if (mode !== 'running') isSettingsOpen = false
+    settingsButton.hidden = mode !== 'running'
+    settingsButton.setAttribute('aria-expanded', String(isSettingsOpen))
+    settings.element.hidden = !isSettingsOpen
+    if (isSettingsOpen) {
+      root.dataset.gameSettings = 'open'
+      settings.update(state)
+    } else {
+      delete root.dataset.gameSettings
+    }
     bar.hidden = !isShown
     estimated.hidden = !(mode === 'running' && isEstimated(state?.game))
     if (isShown) root.dataset.gameTab = tab
@@ -105,13 +134,15 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   }
 
   bar.hidden = true
+  settingsButton.hidden = true
   for (const panel of Object.values(panels)) panel.hidden = true
 
   return {
     /** The tab bar goes above the rooms; the panels and the message line below it. */
     bar,
     notice,
-    panels: Object.values(panels),
+    panels: [...Object.values(panels), settings.element],
+    settingsButton,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {

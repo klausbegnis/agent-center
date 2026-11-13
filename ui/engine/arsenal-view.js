@@ -1,7 +1,7 @@
 // The Arsenal tab: the world's materials, and for one room its characters, its chest with item
 // upgrades, the world's group upgrades and the room's retirees.
 import { button, el, select, setOptions } from './dom.js'
-import { replaceKeepingFocus, section, switchControl } from './game-controls.js'
+import { replaceKeepingFocus, section, settingSwitch } from './game-controls.js'
 import { costEntries, formatAmount, formatShare, missingMaterials } from './game-format.js'
 import { chosenRoomId, holderName, joinedRooms, roomCharacters, worldById } from './game-model.js'
 import { retireeName } from './game-names.js'
@@ -46,9 +46,7 @@ export function createArsenalView({ panel, actions, prefs }) {
   })
   roomField.append(el('span', 'ac-game-field-label', ARSENAL.room), roomSelect)
   head.append(roomField)
-  const autoSpend = actions.setAutoSpend
-    ? switchControl({ label: ARSENAL.autoSpend, hint: ARSENAL.autoSpendHint, onChange: (on) => actions.setAutoSpend(on) })
-    : null
+  const autoSpend = actions.setAutoSpend ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend) : null
   if (autoSpend) head.append(autoSpend.element)
   const body = el('div', 'ac-game-panel-body')
   panel.append(head, body)

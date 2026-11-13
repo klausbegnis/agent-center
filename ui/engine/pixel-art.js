@@ -233,3 +233,15 @@ export function viewBoxOf(rows) {
 export function monsterShape(body) {
   return MONSTER_SHAPES[body] ?? MONSTER_SHAPES.blob
 }
+
+/** The mark on the game settings button: a cog. */
+export const SETTINGS_MARK = [
+  '...##...',
+  '.#.##.#.',
+  '..####..',
+  '###..###',
+  '###..###',
+  '..####..',
+  '.#.##.#.',
+  '...##...'
+]

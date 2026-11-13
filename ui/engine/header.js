@@ -57,6 +57,10 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
 
   return {
     element,
+    /** Adds a control at the end of the tools, such as the game's settings button. */
+    addTool(node) {
+      tools.append(node)
+    },
     setView(view) {
       viewSelect.value = view
     },

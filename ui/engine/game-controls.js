@@ -136,3 +136,21 @@ export function replaceKeepingFocus(container, children) {
   container.replaceChildren(...children)
   if (key) container.querySelector(`[data-key="${CSS.escape(key)}"]`)?.focus()
 }
+
+/**
+ * A switch for a setting the worker keeps: it flips back when the worker refuses the change.
+ *
+ * @param {string} label
+ * @param {string} hint
+ * @param {(on: boolean) => Promise<boolean>} action resolves to whether the change went through
+ */
+export function settingSwitch(label, hint, action) {
+  const control = switchControl({
+    label,
+    hint,
+    onChange: async (on) => {
+      if (!(await action(on))) control.set(!on)
+    }
+  })
+  return control
+}

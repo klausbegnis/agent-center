@@ -144,3 +144,40 @@ export function holderName(item, state, roomId) {
   const { members } = roomCharacters(state, roomId)
   return members.find(({ character }) => character.sessionId === item.heldBy)?.agent.name ?? ''
 }
+
+/** Orca keeps at most this many worlds; the worker refuses a ninth. */
+export const MAX_WORLDS = 8
+/** The longest world id the worker accepts. */
+const WORLD_ID_MAX_LENGTH = 32
+
+/**
+ * The id of a new world from the name someone typed: lower case, words joined by dashes, as the
+ * worker accepts it.
+ *
+ * @param {string} text
+ * @param {string[]} existingIds
+ * @returns {{ id: string } | { error: 'empty' | 'taken' | 'full' }}
+ */
+export function newWorldId(text, existingIds) {
+  if (existingIds.length >= MAX_WORLDS) return { error: 'full' }
+  const id = String(text ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, WORLD_ID_MAX_LENGTH)
+    .replace(/^-+|-+$/g, '')
+  if (!id) return { error: 'empty' }
+  if (existingIds.includes(id)) return { error: 'taken' }
+  return { id }
+}
+
+/**
+ * Every room the game knows of, in the order the rooms are listed, with its world (null when it
+ * is out of the game).
+ *
+ * @returns {{ room: object, worldId: string | null }[]}
+ */
+export function roomWorlds(state) {
+  return state.rooms
+    .filter((room) => state.game?.rooms && Object.hasOwn(state.game.rooms, room.id))
+    .map((room) => ({ room, worldId: state.game.rooms[room.id].worldId ?? null }))
+}

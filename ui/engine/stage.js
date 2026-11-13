@@ -93,6 +93,7 @@ export async function mountStage(root, transport, options = {}) {
   const detail = createDetail(transport)
   const shelf = createShelf(transport)
   const game = createGameShell({ root, roomsElement, transport, onTabChange: () => layout() })
+  header.addTool(game.settingsButton)
   root.append(header.element, game.bar, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
 
   const roomList = createRoomList({

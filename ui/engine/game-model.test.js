@@ -11,7 +11,9 @@ import {
   gameModeOf,
   isEstimated,
   monsterAccent,
+  newWorldId,
   roomFight,
+  roomWorlds,
   tabAfterKey,
   tabOrDefault
 } from './game-model.js'
@@ -156,4 +158,25 @@ test('a world is found by its id', () => {
   const game = { worlds: [{ id: 'main' }, { id: 'side-projects' }] }
   assert.equal(worldById(game, 'side-projects').id, 'side-projects')
   assert.equal(worldById(game, 'nowhere'), null)
+})
+
+test('a new world takes its id from the typed name, as the worker accepts it', () => {
+  assert.deepEqual(newWorldId('Side Quests!', ['main']), { id: 'side-quests' })
+  assert.deepEqual(newWorldId('  --Night  shift-- ', ['main']), { id: 'night-shift' })
+  assert.equal(newWorldId('a'.repeat(50), []).id.length, 32)
+})
+
+test('a new world needs a name, a name of its own, and room for one more world', () => {
+  assert.deepEqual(newWorldId('!!', ['main']), { error: 'empty' })
+  assert.deepEqual(newWorldId('Main', ['main']), { error: 'taken' })
+  const eight = Array.from({ length: 8 }, (_, index) => `world-${index}`)
+  assert.deepEqual(newWorldId('one more', eight), { error: 'full' })
+})
+
+test('every room the game knows of is listed with its world, a room out of the game with none', () => {
+  const state = {
+    rooms: [{ id: 'a' }, { id: 'b' }, { id: 'none' }],
+    game: { rooms: { a: { worldId: 'main', joined: true }, b: { worldId: null, joined: false } } }
+  }
+  assert.deepEqual(roomWorlds(state).map(({ room, worldId }) => [room.id, worldId]), [['a', 'main'], ['b', null]])
 })
