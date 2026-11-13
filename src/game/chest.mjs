@@ -1,5 +1,6 @@
 // A project's chest: the items its characters share. A new character takes the best free item of
 // each slot; a retiring one puts its items back.
+import { effectiveGearLevel } from './items.mjs'
 
 /** The weapon damage type of each class (docs/GAME.md, "Power"). */
 const CLASS_DAMAGE_TYPE = { magical: 'magical' }
@@ -10,8 +11,13 @@ function damageTypeOf(characterClass) {
   return CLASS_DAMAGE_TYPE[characterClass] ?? DEFAULT_DAMAGE_TYPE
 }
 
-/** Highest tier first, then highest level, then id, so the order never depends on the chest's. */
+/**
+ * Most powerful first (effective gear level), then highest tier, then highest level, then id,
+ * so the order never depends on the chest's.
+ */
 function isBetter(item, other) {
+  const power = effectiveGearLevel(item) - effectiveGearLevel(other)
+  if (power !== 0) return power > 0
   if (item.tier !== other.tier) return item.tier > other.tier
   if (item.level !== other.level) return item.level > other.level
   return item.id < other.id

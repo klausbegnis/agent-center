@@ -1,7 +1,22 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { NEWCOMER_SHARE, POWER_GROWTH } from './constants.mjs'
-import { characterHit, critChance, pace, partyHits, referencePartyHit } from './power.mjs'
+import {
+  GEAR_GROWTH,
+  NEWCOMER_SHARE,
+  POWER_GROWTH,
+  REFERENCE_GEAR_PER_LEVEL,
+  SEASONED_LEVEL,
+  STAR_EFFECT_BONUS
+} from './constants.mjs'
+import {
+  characterHit,
+  critChance,
+  pace,
+  partyHits,
+  referenceAttributes,
+  referenceGearLevel,
+  referencePartyHit
+} from './power.mjs'
 import { emptySkill } from './progression.mjs'
 import { ATTRIBUTES } from './skills.mjs'
 
@@ -116,17 +131,34 @@ test('the reference party splits its hit between physical and magical', () => {
   assert.ok(reference.magical > 0 && reference.physical > reference.magical)
 })
 
-test('the reference party grows by about four percent a level', () => {
-  for (let level = 1; level < 120; level++) {
-    if ((level + 1) % 5 === 0) continue
+test('the reference party grows by its power and gear growth a level, plus a little for attributes', () => {
+  const smooth = POWER_GROWTH * GEAR_GROWTH ** REFERENCE_GEAR_PER_LEVEL
+  for (let level = 1; level < 300; level++) {
     const growth = referencePartyHit(level + 1).total / referencePartyHit(level).total
-    assert.ok(growth >= POWER_GROWTH - 1e-9 && growth < 1.065, `level ${level} grows by ${growth}`)
+    assert.ok(growth >= smooth - 1e-9 && growth < smooth * 1.03, `level ${level} grows by ${growth}`)
   }
 })
 
-test('the reference party jumps every five levels as its weapon gains a level', () => {
-  close(referencePartyHit(5).total / referencePartyHit(4).total, POWER_GROWTH * 1.05)
-  close(referencePartyHit(15).total / referencePartyHit(14).total, (POWER_GROWTH * 1.15) / 1.1)
+test('the reference party\'s gear keeps up smoothly with the monster level', () => {
+  close(referenceGearLevel(40), 40 * REFERENCE_GEAR_PER_LEVEL)
+  close(referenceGearLevel(41) - referenceGearLevel(40), REFERENCE_GEAR_PER_LEVEL)
+})
+
+test('the reference character has the attribute points a real one earns by the seasoned level', () => {
+  const levels = SEASONED_LEVEL - 1
+  const attributes = referenceAttributes('physical', 1)
+  close(attributes.strength, 1 + levels + levels / 5)
+  close(attributes.precision, 1 + Math.floor(levels / 2))
+  close(attributes.luck, 1 + Math.ceil(levels / 2))
+  close(attributes.medicine, 1 + levels / 5)
+})
+
+test('a prestige star makes the class skill hit harder at the same effective level', () => {
+  const plain = { level: 99, xp: 0, banked: 0, stars: 0 }
+  const starred = { level: 99, xp: 0, banked: 0, stars: 1 }
+  const hitWith = (skill) => characterHit({ character: character('physical'), skills: { forge: skill },
+    tokensPerMinute: 20_000 }).amount
+  close(hitWith(starred) / hitWith(plain), POWER_GROWTH ** 99 * (1 + STAR_EFFECT_BONUS))
 })
 
 test('the reference party keeps growing across a prestige of its skills', () => {

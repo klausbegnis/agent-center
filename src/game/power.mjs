@@ -8,22 +8,28 @@ import {
   CRIT_DAMAGE,
   CRIT_MAX,
   CRIT_PER_PRECISION,
+  ACTIVITY_POINTS_PER_LEVEL,
+  CLASS_POINTS_PER_LEVEL,
+  FORTUNE_POINTS_PER_LEVEL,
   FULL_PARTY_BONUS,
   FULL_PARTY_CLASSES,
-  GEAR_LEVEL_BONUS,
+  GEAR_GROWTH,
   HASTE_PER_AGILITY,
   PACE_MAX,
   PACE_MIN,
   POWER_GROWTH,
-  REFERENCE_LEVELS_PER_WEAPON_LEVEL,
+  REFERENCE_GEAR_PER_LEVEL,
   REFERENCE_TOKENS_PER_MINUTE,
   SEASONED_LEVEL,
   SKILL_CAP,
   SUPPORT_AURA
 } from './constants.mjs'
-import { seasoning, startingAttributes } from './characters.mjs'
-import { effectiveLevel, emptySkill } from './progression.mjs'
-import { CLASSES, attributeOfClass, skillOfClass } from './skills.mjs'
+import { fortuneAttribute, seasoning, startingAttributes } from './characters.mjs'
+import { effectMultiplier, effectiveLevel, emptySkill } from './progression.mjs'
+import { CLASSES, attributeForActivity, attributeOfClass, skillOfClass } from './skills.mjs'
+
+/** The activities that train an attribute, which the reference character spreads its points over. */
+const REFERENCE_ACTIVITIES = ['write', 'read', 'run', 'think', 'delegate']
 
 /**
  * @typedef {import('./characters.mjs').Character} Character
@@ -61,6 +67,7 @@ export function characterHit({ character, skills, weaponFactor = 1, tokensPerMin
   const amount =
     BASE_HIT *
     POWER_GROWTH ** effectiveLevel(classSkill) *
+    effectMultiplier(classSkill) *
     (1 + ATTRIBUTE_HIT_BONUS * (attributes[attributeOfClass(className)] ?? 0)) *
     weaponFactor *
     seasoning(character.level) *
@@ -97,8 +104,46 @@ function skillAtEffectiveLevel(level) {
 }
 
 /**
+ * The upgrade levels the reference party's gear is worth at a monster level. Fractional: the
+ * reference keeps up smoothly instead of in steps.
+ *
+ * @param {number} level
+ * @returns {number}
+ */
+export function referenceGearLevel(level) {
+  return REFERENCE_GEAR_PER_LEVEL * level
+}
+
+/**
+ * The attributes of a seasoned reference character of a class at a level: the starting
+ * attributes of a world whose skills are all at that level, plus the points of the levels up to
+ * SEASONED_LEVEL, with its activity points spread evenly over the five activities.
+ *
+ * @param {string} className
+ * @param {number} level
+ * @returns {{ [attribute: string]: number }}
+ */
+export function referenceAttributes(className, level) {
+  const skill = skillAtEffectiveLevel(level)
+  const skills = Object.fromEntries(CLASSES.map((each) => [skillOfClass(each), skill]))
+  const attributes = startingAttributes(className, skills)
+  const add = (attribute, points) => {
+    attributes[attribute] += points
+  }
+  for (let reached = 2; reached <= SEASONED_LEVEL; reached++) {
+    add(attributeOfClass(className), CLASS_POINTS_PER_LEVEL)
+    add(fortuneAttribute(reached), FORTUNE_POINTS_PER_LEVEL)
+    for (const activity of REFERENCE_ACTIVITIES) {
+      add(attributeForActivity(activity), ACTIVITY_POINTS_PER_LEVEL / REFERENCE_ACTIVITIES.length)
+    }
+  }
+  return attributes
+}
+
+/**
  * The party monster health is measured against: one seasoned character of each class, with
- * starting attributes, effective level `level` in every class skill and a weapon that keeps up.
+ * the attributes a real one has earned by SEASONED_LEVEL, effective level `level` in every class
+ * skill and gear worth `referenceGearLevel(level)` upgrade levels.
  *
  * @param {number} level the monster's level
  * @returns {PartyHits}
@@ -106,9 +151,9 @@ function skillAtEffectiveLevel(level) {
 export function referencePartyHit(level) {
   const skill = skillAtEffectiveLevel(level)
   const skills = Object.fromEntries(CLASSES.map((className) => [skillOfClass(className), skill]))
-  const weaponFactor = 1 + GEAR_LEVEL_BONUS * Math.floor(level / REFERENCE_LEVELS_PER_WEAPON_LEVEL)
+  const weaponFactor = GEAR_GROWTH ** referenceGearLevel(level)
   const members = CLASSES.map((className) => {
-    const attributes = startingAttributes(className, skills)
+    const attributes = referenceAttributes(className, level)
     const character = { class: className, level: SEASONED_LEVEL, attributes }
     const tokensPerMinute = REFERENCE_TOKENS_PER_MINUTE
     const hit = characterHit({ character, skills, weaponFactor, tokensPerMinute })

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
+import { GEAR_GROWTH, TIER_LEVELS, UPGRADE_COST_BASE, UPGRADE_COST_GROWTH } from './constants.mjs'
 import {
-  canAfford, createItem, itemFactor, payFor, tierFactor, upgradeCost, upgradeItem
+  canAfford, createItem, effectiveGearLevel, itemFactor, payFor, tierFactor, upgradeCost, upgradeItem
 } from './items.mjs'
 
 const MATERIALS = [
@@ -24,10 +25,15 @@ test('tier 1 is worth exactly 1 and every tier is worth more than the one below'
   for (let tier = 2; tier <= 10; tier++) assert.ok(tierFactor(tier) > tierFactor(tier - 1))
 })
 
-test('no item multiplies by 1, and upgrade levels add to the tier factor', () => {
+test('no item multiplies by 1, and upgrade levels compound on the tier factor', () => {
   assert.equal(itemFactor(null), 1)
   assert.equal(itemFactor(blade(0)), 1)
-  assert.ok(Math.abs(itemFactor({ tier: 3, level: 4 }) - 1.2 * tierFactor(3)) < 1e-9)
+  assert.ok(Math.abs(itemFactor({ tier: 3, level: 4 }) - GEAR_GROWTH ** 4 * tierFactor(3)) < 1e-9)
+})
+
+test('a tier is worth TIER_LEVELS upgrade levels', () => {
+  assert.equal(effectiveGearLevel({ tier: 3, level: 1 }), 1 + 2 * TIER_LEVELS)
+  assert.ok(Math.abs(itemFactor({ tier: 2, level: 0 }) - itemFactor({ tier: 1, level: TIER_LEVELS })) < 1e-9)
 })
 
 test('a new item starts at level 0, free, and carries its recipe', () => {
@@ -39,15 +45,24 @@ test('a new item starts at level 0, free, and carries its recipe', () => {
 })
 
 test('an upgrade costs the base amount of each recipe material at level 0 and grows with level', () => {
-  assert.deepEqual(upgradeCost(blade(0)), { bars: 50, ore: 50 })
-  assert.deepEqual(upgradeCost(blade(1)), { bars: 68, ore: 68 })
+  const base = UPGRADE_COST_BASE
+  assert.deepEqual(upgradeCost(blade(0)), { bars: base, ore: base })
+  const next = Math.round(base * UPGRADE_COST_GROWTH)
+  assert.deepEqual(upgradeCost(blade(1)), { bars: next, ore: next })
   assert.ok(upgradeCost(blade(10)).bars > upgradeCost(blade(9)).bars)
 })
 
-test('each workbench level takes 5% off an upgrade, never below half price', () => {
-  assert.deepEqual(upgradeCost(blade(0), { workbenchLevel: 2 }), { bars: 45, ore: 45 })
-  assert.deepEqual(upgradeCost(blade(0), { workbenchLevel: 10 }), { bars: 25, ore: 25 })
-  assert.deepEqual(upgradeCost(blade(0), { workbenchLevel: 40 }), { bars: 25, ore: 25 })
+test('upgrading a higher tier costs as much as upgrading the same power reached by levels', () => {
+  const fancy = { ...blade(0), tier: 3 }
+  assert.deepEqual(upgradeCost(fancy), upgradeCost(blade(2 * TIER_LEVELS)))
+  assert.ok(upgradeCost(fancy).bars > upgradeCost(blade(0)).bars)
+})
+
+test('each workbench level lowers the cost a little less than the one before, with no floor', () => {
+  const at = (workbenchLevel) => upgradeCost(blade(0), { workbenchLevel }).bars
+  assert.equal(at(2), Math.round(UPGRADE_COST_BASE / 1.1))
+  assert.ok(at(0) - at(10) > at(10) - at(20))
+  assert.ok(at(40) < at(20))
 })
 
 test('paying exactly what is in stock is allowed and leaves zero', () => {

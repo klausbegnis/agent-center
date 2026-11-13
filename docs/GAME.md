@@ -63,9 +63,9 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 Per tick, one working character deals:
 
 ```
-hit = BASE_HIT * POWER_GROWTH ** E
+hit = BASE_HIT * POWER_GROWTH ** E * (1 + STAR_EFFECT_BONUS * stars)
     * (1 + ATTRIBUTE_HIT_BONUS * classAttribute)
-    * (1 + GEAR_LEVEL_BONUS * weaponLevel) * weaponTierFactor
+    * itemFactor(weapon)
     * seasoning(characterLevel)
     * CLASS_HIT[class]
     * pace
@@ -73,7 +73,10 @@ hit = BASE_HIT * POWER_GROWTH ** E
     * (1 + HASTE_PER_AGILITY * agility)
 ```
 
-- `E` is the effective level of the class skill.
+- `E` is the effective level of the class skill and `stars` its prestige stars.
+- `itemFactor(item) = GEAR_GROWTH ** effectiveGearLevel(item)` with `effectiveGearLevel =
+  level + TIER_LEVELS * (tier - 1)`: a tier is a head start worth `TIER_LEVELS` upgrades. No
+  item counts as factor 1.
 - `seasoning(l) = NEWCOMER_SHARE + (1 - NEWCOMER_SHARE) * (l - 1) / (SEASONED_LEVEL - 1)` up
   to `SEASONED_LEVEL`, then `1 + VETERAN_BONUS_PER_LEVEL * (l - SEASONED_LEVEL)`.
 - `pace = clamp(tokensPerMinute / REFERENCE_TOKENS_PER_MINUTE, PACE_MIN, PACE_MAX)`.
@@ -89,8 +92,11 @@ hit = BASE_HIT * POWER_GROWTH ** E
 - A project's wave starts at the world level when the project first joins, and goes up by one
   per kill. The monster's level is the wave.
 - `referencePartyHit(level)` is the total hit of four reference characters, one per class,
-  with `E = level`, character level `SEASONED_LEVEL`, starting attributes, weapon level
-  `floor(level / 5)`, pace 1, with aura and full party bonus.
+  with `E = level` (with as many stars as that needs), character level `SEASONED_LEVEL`, the
+  attributes a real character has at that level (starting attributes plus the class and
+  fortune points of every level, and its activity points spread evenly over the five
+  activities), gear worth `REFERENCE_GEAR_PER_LEVEL * level` upgrade levels, pace 1, with aura
+  and full party bonus.
 - `monsterHp = HITS_TO_KILL * referencePartyHit(level) * kind.hp * (elite ? ELITE.hp : 1)`.
 - Damage taken is multiplied by `kind.physical` or `kind.magical` by type.
 - Kind: every `BOSS_EVERY` waves a `boss`; otherwise a hash of world, project and wave picks
@@ -120,10 +126,13 @@ hit = BASE_HIT * POWER_GROWTH ** E
 - An item has a slot (`weapon`, `outfit`, `tool`), for weapons a damage type, a tier 1 to 10
   and an upgrade level from 0 with no limit. Stats are computed from tier and level; no item
   carries hand-typed numbers.
-- Upgrading from level g costs `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** g` of each of the
-  two materials in the item's recipe.
+- Upgrading an item costs `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel /
+  (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)`, rounded and at least 1, of each of the
+  two materials in the item's recipe. A higher tier costs more to upgrade, as much as the same
+  power reached by levels.
 - Each project has a chest. A new character takes, by itself, the best free item of each slot
-  (highest tier, then level), with a weapon of its class's damage type.
+  (highest effective gear level, then tier, then level, then id), with a weapon of its class's
+  damage type.
 - When a session closes its character retires: its items go back to the chest and a retiree
   record is kept (generated name id, class, level, tokens, main skill, time; the session title
   only when the setting allows it). Each retiree adds `RETIREE_BONUS` to the project's

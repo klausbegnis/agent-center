@@ -24,9 +24,17 @@ export const STAR_EFFECT_BONUS = 0.02
 /** Power grows by this factor per effective level, for characters and monsters alike. */
 export const POWER_GROWTH = 1.04
 export const BASE_HIT = 10
-/** Damage added per point of the class attribute, and per upgrade level of a weapon. */
+/** Damage added per point of the class attribute. */
 export const ATTRIBUTE_HIT_BONUS = 0.02
-export const GEAR_LEVEL_BONUS = 0.05
+/** Each upgrade level multiplies an item's effect by this. */
+export const GEAR_GROWTH = 1.1
+/** One item tier is worth this many upgrade levels, in effect and in upgrade cost. */
+export const TIER_LEVELS = 2
+/**
+ * The reference party's gear is worth this many upgrade levels per monster level, so gear is
+ * about a fifth of a hit in an established world.
+ */
+export const REFERENCE_GEAR_PER_LEVEL = 0.125
 /**
  * seasoning(1), rising to 1 at SEASONED_LEVEL. With the attribute points it has not earned yet,
  * a level 1 character does about three quarters of a seasoned one's work.
@@ -60,8 +68,6 @@ export const ATTRIBUTE_POINTS_PER_LEVEL =
   CLASS_POINTS_PER_LEVEL + ACTIVITY_POINTS_PER_LEVEL + FORTUNE_POINTS_PER_LEVEL
 /** A new character's luck is 1 plus a hash of its session id modulo this: 1 to 4. */
 export const STARTING_LUCK_SPREAD = 4
-/** The reference party's weapon gains one upgrade level every this many monster levels. */
-export const REFERENCE_LEVELS_PER_WEAPON_LEVEL = 5
 
 /** One combat tick is this much working time. A reference party kills in HITS_TO_KILL ticks. */
 export const TICK_SECONDS = 10
@@ -120,14 +126,15 @@ export const ITEM_DROP_PER_LUCK = 0.005
 export const ITEM_DROP_MAX = 0.5
 export const ELITE_ITEM_DROP_FACTOR = 3
 
+/**
+ * Upgrading an item of effective gear level e costs UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** e
+ * of each of its two recipe materials, so a higher tier costs more to upgrade.
+ */
 export const UPGRADE_COST_BASE = 50
 export const UPGRADE_COST_GROWTH = 1.35
-/** Each item tier is worth this much more than the one below it. */
-export const TIER_GROWTH = 1.15
 export const ITEM_MAX_TIER = 10
-/** Each workbench level takes this share off an upgrade's cost, down to WORKBENCH_COST_FLOOR. */
+/** A workbench of level L divides upgrade costs by 1 + WORKBENCH_DISCOUNT_PER_LEVEL * L. */
 export const WORKBENCH_DISCOUNT_PER_LEVEL = 0.05
-export const WORKBENCH_COST_FLOOR = 0.5
 export const RETIREE_BONUS = 0.01
 export const RETIREE_BONUS_MAX = 0.25
 export const RETIREES_KEPT = 50

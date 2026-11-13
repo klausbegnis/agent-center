@@ -8,13 +8,21 @@ function item(id, slot, { tier = 1, level = 0, damageType, heldBy = null } = {})
   return owned
 }
 
-test('the best free item is the highest tier, then the highest level', () => {
+test('the best free item is the most powerful one, whatever its tier', () => {
   const chest = [
     item('low-tier-high-level', 'tool', { tier: 1, level: 9 }),
     item('high-tier-low-level', 'tool', { tier: 4, level: 0 }),
     item('high-tier-high-level', 'tool', { tier: 4, level: 2 })
   ]
-  assert.equal(bestFreeItem(chest, { slot: 'tool' }).id, 'high-tier-high-level')
+  assert.equal(bestFreeItem(chest, { slot: 'tool' }).id, 'low-tier-high-level')
+})
+
+test('between two equally powerful items the higher tier is picked', () => {
+  const chest = [
+    item('upgraded-plain', 'tool', { tier: 1, level: 6 }),
+    item('fresh-fancy', 'tool', { tier: 4, level: 0 })
+  ]
+  assert.equal(bestFreeItem(chest, { slot: 'tool' }).id, 'fresh-fancy')
 })
 
 test('two equal items are told apart by id, whatever their order in the chest', () => {

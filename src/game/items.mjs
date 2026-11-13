@@ -1,33 +1,45 @@
 // Owned items: what a tier and an upgrade level are worth, what an upgrade costs and paying for
 // it. Stats are computed here; the item entries in game/items.json carry no numbers.
 import {
-  GEAR_LEVEL_BONUS,
-  TIER_GROWTH,
+  GEAR_GROWTH,
+  TIER_LEVELS,
   UPGRADE_COST_BASE,
   UPGRADE_COST_GROWTH,
-  WORKBENCH_COST_FLOOR,
   WORKBENCH_DISCOUNT_PER_LEVEL
 } from './constants.mjs'
 
 /**
- * What an item's tier multiplies its effect by: `TIER_GROWTH ** (tier - 1)`, so tier 1 gives 1.
+ * An item's power in upgrade levels: its own level plus TIER_LEVELS for each tier above the
+ * first. Effect and upgrade cost both follow it, so a tier is a head start, never a trap.
+ *
+ * @param {{ tier: number, level: number }} item
+ * @returns {number}
+ */
+export function effectiveGearLevel(item) {
+  return item.level + TIER_LEVELS * (item.tier - 1)
+}
+
+/**
+ * What an item's tier multiplies its effect by: `GEAR_GROWTH ** (TIER_LEVELS * (tier - 1))`, so
+ * tier 1 gives 1.
  *
  * @param {number} tier 1 to 10
  * @returns {number}
  */
 export function tierFactor(tier) {
-  return TIER_GROWTH ** (tier - 1)
+  return GEAR_GROWTH ** (TIER_LEVELS * (tier - 1))
 }
 
 /**
- * What an owned item multiplies its effect by. No item at all gives 1.
+ * What an owned item multiplies its effect by: `GEAR_GROWTH ** effectiveGearLevel`. No item at
+ * all gives 1, the same as a tier 1 item at level 0.
  *
  * @param {{ tier: number, level: number } | null} item
  * @returns {number}
  */
 export function itemFactor(item) {
   if (!item) return 1
-  return (1 + GEAR_LEVEL_BONUS * item.level) * tierFactor(item.tier)
+  return GEAR_GROWTH ** effectiveGearLevel(item)
 }
 
 /**
@@ -45,16 +57,17 @@ export function createItem(entry) {
 
 /**
  * The materials one upgrade of the item costs: the same amount of each of its two recipe
- * materials, `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** level`, less 5% per workbench level
- * down to half price, rounded.
+ * materials, `UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel`, divided by
+ * `1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel`, rounded, at least 1.
  *
- * @param {{ level: number, recipe: string[] }} item
+ * @param {{ tier: number, level: number, recipe: string[] }} item
  * @param {{ workbenchLevel?: number }} [options]
  * @returns {Record<string, number>}
  */
 export function upgradeCost(item, { workbenchLevel = 0 } = {}) {
-  const discount = Math.max(WORKBENCH_COST_FLOOR, 1 - WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
-  const amount = Math.round(UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** item.level * discount)
+  const discount = 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
+  const full = UPGRADE_COST_BASE * UPGRADE_COST_GROWTH ** effectiveGearLevel(item)
+  const amount = Math.max(1, Math.round(full * discount))
   return Object.fromEntries(item.recipe.map((materialId) => [materialId, amount]))
 }
 
