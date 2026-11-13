@@ -45,6 +45,8 @@ body {
   align-items: center;
   gap: 8px;
 }
+/* The title and counters: laid out as part of the header, unless game mode gives it a control. */
+.ac-title-row { display: contents; }
 .ac-title {
   margin: 0;
   font-size: 14px;

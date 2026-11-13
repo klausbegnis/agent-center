@@ -49,7 +49,11 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
   }
   for (const action of extraActions) tools.append(button(action.label, 'ac-button', action))
 
-  element.append(el('h1', 'ac-title', 'Agent Center'), counts, tools)
+  // The title and the counters share a row that never wraps, so a control put at its end stays
+  // on the first line whatever the tools do. Without such a control the row lays out as before.
+  const titleRow = el('div', 'ac-title-row')
+  titleRow.append(el('h1', 'ac-title', 'Agent Center'), counts)
+  element.append(titleRow, tools)
 
   function addChip(count, label, tone) {
     if (count) counts.append(el('span', `ac-chip ac-chip-${tone}`, `${count} ${label}`))
@@ -57,9 +61,13 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
 
   return {
     element,
-    /** Adds a control at the end of the tools, such as the game's settings button. */
+    /** Adds a control at the end of the tools. */
     addTool(node) {
       tools.append(node)
+    },
+    /** Adds a control at the right end of the title row, such as the game's settings button. */
+    addTitleTool(node) {
+      titleRow.append(node)
     },
     setView(view) {
       viewSelect.value = view
