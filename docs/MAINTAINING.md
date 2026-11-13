@@ -1,4 +1,4 @@
-# Maintaining Agent Center
+# Maintaining Agent Tavern
 
 How issues are triaged, how pull requests are reviewed and merged, and how releases are cut.
 Contributors do not need this page; [CONTRIBUTING.md](../CONTRIBUTING.md) is theirs.

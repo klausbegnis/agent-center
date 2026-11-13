@@ -150,7 +150,7 @@ export function gameUnavailable(status) {
   if (status === 'newer-save') {
     return {
       title: 'The game was saved by a newer version',
-      lines: ['Update Agent Center to carry on. Nothing in the save was changed.', rooms]
+      lines: ['Update Agent Tavern to carry on. Nothing in the save was changed.', rooms]
     }
   }
   return { title: 'The game is not running', lines: ['Game mode is on, but the game cannot run now.', rooms] }

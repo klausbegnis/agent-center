@@ -27,7 +27,7 @@ async function setup(t, { lan = false } = {}) {
       return { changed: true }
     },
     gameImportSave: async (file) => {
-      if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Center save file')
+      if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Tavern save file')
       calls.push(['import', JSON.stringify(file).length])
       return { changed: true }
     }
@@ -145,7 +145,7 @@ test('a save file far larger than other bodies can be imported, and a refusal sa
   assert.equal(calls.length, 1)
   const refused = await post({ file: { format: 'other' } })
   assert.equal(refused.status, 400)
-  assert.deepEqual(JSON.parse(refused.text), { ok: false, error: 'this is not an Agent Center save file' })
+  assert.deepEqual(JSON.parse(refused.text), { ok: false, error: 'this is not an Agent Tavern save file' })
   assert.equal((await post({ file: { format: 'agent-center-game', padding: 'x'.repeat(600_000) } })).status, 400)
   assert.equal(calls.length, 1)
 })

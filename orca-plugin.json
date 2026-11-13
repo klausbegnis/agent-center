@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
   "manifestVersion": 2,
   "id": "agent-center",
-  "name": "Agent Center & Auto-Battler",
+  "name": "Agent Tavern",
   "version": "0.1.0",
-  "description": "A live room per project where your agents are characters acting out their work. Just watch, or turn on the idle auto-battler: their work becomes levels, loot and fights against 20 monster races and 55 named bosses.",
+  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: their work becomes levels, loot and fights against 20 monster races and 55 named bosses.",
   "license": "MIT",
   "author": {
     "name": "klausbegnis",
@@ -53,7 +53,7 @@
     "panels": [
       {
         "id": "rooms",
-        "title": "Agent Center",
+        "title": "Agent Tavern",
         "icon": "bot",
         "entry": "ui/panel.html",
         "ui": "html"
@@ -62,7 +62,7 @@
     "customEditors": [
       {
         "id": "rooms-tab",
-        "title": "Agent Center",
+        "title": "Agent Tavern",
         "extensions": [
           ".agentcenter"
         ],
@@ -72,18 +72,18 @@
     "newFiles": [
       {
         "id": "rooms-tab",
-        "title": "Agent Center",
+        "title": "Agent Tavern",
         "extension": ".agentcenter"
       }
     ],
     "commands": [
       {
         "id": "agentCenter.toggle",
-        "title": "Agent Center: Show or Hide the Panel"
+        "title": "Agent Tavern: Show or Hide the Panel"
       },
       {
         "id": "agentCenter.url",
-        "title": "Agent Center: External View Address"
+        "title": "Agent Tavern: External View Address"
       }
     ],
     "events": [
@@ -151,7 +151,7 @@
         "id": "summary",
         "text": "Agents",
         "icon": "bot",
-        "tooltip": "Agent Center",
+        "tooltip": "Agent Tavern",
         "command": "agentCenter.toggle"
       }
     ]

@@ -1,4 +1,4 @@
-# Contributing to Agent Center
+# Contributing to Agent Tavern
 
 Thanks for wanting to help. This page gets you from a clone to a merged pull request. For how
 issues are triaged and pull requests are merged, see [docs/MAINTAINING.md](docs/MAINTAINING.md).

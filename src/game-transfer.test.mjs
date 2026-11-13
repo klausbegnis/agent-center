@@ -182,7 +182,7 @@ test('a refused import changes nothing', async () => {
 
 test('a value that is not a save file is refused', () => {
   for (const value of [null, 'text', [], {}, { format: 'something-else', save: emptySave() }]) {
-    assert.deepEqual(readSaveFile(value, reading), { ok: false, reason: 'this is not an Agent Center save file' })
+    assert.deepEqual(readSaveFile(value, reading), { ok: false, reason: 'this is not an Agent Tavern save file' })
   }
   const noSave = readSaveFile({ format: SAVE_FILE_FORMAT, version: 1 }, reading)
   assert.equal(noSave.ok, false)

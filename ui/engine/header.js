@@ -52,7 +52,7 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
   // The title and the counters share a row that never wraps, so a control put at its end stays
   // on the first line whatever the tools do. Without such a control the row lays out as before.
   const titleRow = el('div', 'ac-title-row')
-  titleRow.append(el('h1', 'ac-title', 'Agent Center'), counts)
+  titleRow.append(el('h1', 'ac-title', 'Agent Tavern'), counts)
   element.append(titleRow, tools)
 
   function addChip(count, label, tone) {

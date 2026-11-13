@@ -1,9 +1,12 @@
 <div align="center">
 
-# Agent Center & Auto-Battler
+# Agent Tavern
 
-**A live room for every project in [Orca](https://github.com/stablyai/orca), where your coding
-agents are characters acting out their work, and an idle auto-battler that runs on what they do.**
+### Where your Orca agents hang out, and an auto-battler that runs on their work
+
+**A tavern for every project in [Orca](https://github.com/stablyai/orca): each coding agent is a
+character acting out what it is doing right now. Leave them be, or turn on game mode and the
+party heads out to fight.**
 
 ![Six project rooms in game mode: each room's party of agents fights its monster](docs/screenshots/game-gallery.png)
 
@@ -108,7 +111,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 ### Turning it on
 
-Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
+Open Orca's Settings, go to Plugins, then Agent Tavern, and turn on **Game mode**. The panel
 gains three tabs: **Rooms**, **Arsenal** (chest, party and camp) and **Skills**. The cog in the
 panel's header opens the game's own settings: worlds, auto-spend and the save file.
 
@@ -184,8 +187,8 @@ listed at the bottom, one click away.
 
 | Place | How to open it |
 |---|---|
-| Orca's sidebar | the **Agent Center** panel; **Collapse** leaves only the counters |
-| A tab, next to the terminals | the tabs' **+** menu, **Agent Center** |
+| Orca's sidebar | the **Agent Tavern** panel; **Collapse** leaves only the counters |
+| A tab, next to the terminals | the tabs' **+** menu, **Agent Tavern** |
 | Status bar | the item with the agent count shows or hides the sidebar |
 | Detached window | **Pop out** opens the external view in your browser; there, **Window** |
 | Fullscreen on another monitor | in the external view, **Fullscreen** |
@@ -207,7 +210,7 @@ names and change the themes. [SECURITY.md](SECURITY.md) lists everything the pag
 
 ## Install
 
-Find **Agent Center & Auto-Battler** in Orca's plugin directory, or open its page:
+Find **Agent Tavern** in Orca's plugin directory, or open its page:
 <https://orca.dev/plugins/klausbegnis/agent-center>.
 
 To run it from a checkout instead:

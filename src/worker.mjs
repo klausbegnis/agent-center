@@ -145,10 +145,10 @@ export default async function activate(orca) {
 
   orca.commands.register('agentCenter.toggle', async () => {
     await safe('commands.run', () => orca.host.call('commands.run', { action: 'sidebar.right.toggle' }))
-    return 'Agent Center'
+    return 'Agent Tavern'
   })
   orca.commands.register('agentCenter.url', () =>
-    server ? `Agent Center external view: ${server.url}` : 'The external view is turned off (port 0).'
+    server ? `Agent Tavern external view: ${server.url}` : 'The external view is turned off (port 0).'
   )
 
   const port = Number(settings.port ?? DEFAULT_PORT)

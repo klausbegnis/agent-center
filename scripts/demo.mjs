@@ -182,10 +182,10 @@ controller = createController({
 
 server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: false, controller })
 if (!server) {
-  console.error('Agent Center (demo): no free port. Pick another one with PORT=…')
+  console.error('Agent Tavern (demo): no free port. Pick another one with PORT=…')
   process.exit(1)
 }
-console.log(`Agent Center (demo): ${server.url}`)
+console.log(`Agent Tavern (demo): ${server.url}`)
 console.log(`  with emotes every few seconds: ${server.url}?emotes=fast`)
 // The monster contact sheet, for reviewing the monster art, on the next port.
 const sheet = await startMonsterSheet({ root: ROOT, port: server.port + 1 })

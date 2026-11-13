@@ -39,7 +39,7 @@ const actions = [
     onClick: async () => {
       const { webUrl } = await transport.getState()
       if (!webUrl) {
-        await orca.host.call('notifications.show', { title: 'Agent Center', body: 'The external view is turned off.' }).catch(() => {})
+        await orca.host.call('notifications.show', { title: 'Agent Tavern', body: 'The external view is turned off.' }).catch(() => {})
         return
       }
       await orca.shell.openExternal(webUrl)
