@@ -25,8 +25,9 @@ const PAUSING_STATES = new Set(['waiting', 'blocked'])
  * @param {{ enabled: boolean, newerSave: boolean }} facts
  * @returns {GameStatus}
  */
-export function gameStatus({ enabled, newerSave }) {
+export function gameStatus({ enabled, newerSave, loaded = true }) {
   if (!enabled) return 'off'
+  if (!loaded) return 'loading-save'
   if (newerSave) return 'newer-save'
   return 'running'
 }

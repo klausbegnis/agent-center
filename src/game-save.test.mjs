@@ -5,6 +5,7 @@ import { SAVE_VERSION, emptySave, migrate } from './game/worlds.mjs'
 
 /** A storage in memory that can be told to fail, and a timer the test fires by hand. */
 function setup({ stored, failGet = false } = {}) {
+  let failingGets = failGet === true ? Infinity : Number(failGet)
   const values = new Map(stored === undefined ? [] : [[GAME_STORAGE_KEY, stored]])
   const writes = []
   const logs = []
@@ -12,7 +13,7 @@ function setup({ stored, failGet = false } = {}) {
   const storage = {
     failSet: false,
     get: async (key) => {
-      if (failGet) throw new Error('disk asleep')
+      if (failingGets-- > 0) throw new Error('disk asleep')
       return values.get(key) ?? null
     },
     set: async (key, value) => {
@@ -103,14 +104,30 @@ test('a wrapper from a newer plugin is never overwritten either', async () => {
   assert.equal(writes.length, 0)
 })
 
-test('a storage that cannot be read leaves the game playing and the stored value untouched', async () => {
+test('a storage that cannot be read is not loaded, is reported once and is never written over', async () => {
   const { gameSave, writes, logs } = setup({ failGet: true })
   const data = await gameSave.load()
+  await gameSave.load()
   assert.deepEqual(data.save, emptySave())
+  assert.equal(gameSave.isLoaded(), false)
   gameSave.set(data)
   await gameSave.flush()
   assert.equal(writes.length, 0)
   assert.equal(logs.length, 1)
+})
+
+test('a read that fails at first is tried again and then brings the stored game back', async () => {
+  const stored = { version: STORED_VERSION, save: progressed(), bridge: {} }
+  const { gameSave, writes } = setup({ stored, failGet: 2 })
+  await gameSave.load()
+  await gameSave.load()
+  assert.equal(gameSave.isLoaded(), false)
+  const data = await gameSave.load()
+  assert.equal(gameSave.isLoaded(), true)
+  assert.deepEqual(data.save.projectWorld, progressed().projectWorld)
+  gameSave.set(data)
+  await gameSave.flush()
+  assert.equal(writes.length, 1)
 })
 
 test('a failed write is reported once and tried again on the next flush', async () => {

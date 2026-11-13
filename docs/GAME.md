@@ -313,6 +313,7 @@ the view state's `game.status` says why:
 | `status` | Meaning |
 |---|---|
 | `off` | The `gameMode` setting is off (the default). |
+| `loading-save` | The stored save has not been read yet; the read is tried again each round and nothing is written until it works. |
 | `newer-save` | The stored save was written by a newer plugin; it is left untouched. |
 | `unsupported` | The game cannot run here at all: its content files did not load. |
 | `running` | Playing. |

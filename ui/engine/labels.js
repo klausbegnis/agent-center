@@ -143,6 +143,9 @@ export function gameUnavailable(status) {
       lines: ['Its content files did not load. Reinstalling the plugin should bring them back.', rooms]
     }
   }
+  if (status === 'loading-save') {
+    return { title: 'Opening the saved game', lines: ['Your progress shows in a moment.', rooms] }
+  }
   if (status === 'newer-save') {
     return {
       title: 'The game was saved by a newer version',

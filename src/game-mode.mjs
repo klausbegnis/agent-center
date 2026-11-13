@@ -115,7 +115,11 @@ export function createGameMode(dependencies) {
     keepTitles = settings.gameKeepTitles === true
     await gameSave.load()
     const { supported, granted } = access()
-    const next = gameStatus({ enabled: settings.gameMode === true, newerSave: gameSave.isFromNewerVersion() })
+    const next = gameStatus({
+      enabled: settings.gameMode === true,
+      newerSave: gameSave.isFromNewerVersion(),
+      loaded: gameSave.isLoaded()
+    })
     const nextSource = tokenSourceOf({ supported, granted: granted && !isDenied })
     if (next !== status || nextSource !== tokenSource) cachedView = null
     status = next

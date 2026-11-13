@@ -123,31 +123,38 @@ export function createGameSave({
   /** @type {GameData} */
   let data = { save: migrate(null), bridge: emptyBridge() }
   let isLoaded = false
-  let isWritable = true
+  // Nothing is written before the stored game has been read: an empty game must never replace it.
+  let isWritable = false
+  let failedReads = 0
   let isFromNewerVersion = false
   let isDirty = false
   let timer = null
   let failedWrites = 0
 
-  /** Reads the stored game once. Later calls return what is in memory. */
+  /**
+   * Reads the stored game once. Later calls return what is in memory. A read that fails is tried
+   * again on the next call: right after the plugin is reloaded Orca refuses the storage for a
+   * moment, and a game started empty then would show all progress as gone.
+   */
   async function load() {
     if (isLoaded) return data
-    isLoaded = true
     let stored
     try {
       stored = await storage.get(GAME_STORAGE_KEY)
     } catch (error) {
-      // What is stored may be fine; overwriting it with a fresh game would lose it.
-      isWritable = false
-      log(`game: could not read the save, playing without saving: ${error?.message ?? error}`)
+      failedReads += 1
+      // Report the first failure of a run of them, not every round.
+      if (failedReads === 1) log(`game: could not read the save, trying again: ${error?.message ?? error}`)
       return data
     }
+    isLoaded = true
+    failedReads = 0
     if (isNewer(stored, saveVersion)) {
       isFromNewerVersion = true
-      isWritable = false
       log('game: the save is from a newer version of the plugin; it is left as it is')
       return data
     }
+    isWritable = true
     const wrapper = stored && typeof stored === 'object' ? stored : {}
     data = { save: migrate(wrapper.save ?? null), bridge: normalizeBridge(wrapper.bridge) }
     return data
@@ -196,6 +203,8 @@ export function createGameSave({
     flush,
     /** @returns {GameData} */
     get: () => data,
+    /** False until the stored game has been read; the game waits for it. */
+    isLoaded: () => isLoaded,
     /** True when the stored save is from a newer plugin, which this one must not touch. */
     isFromNewerVersion: () => isFromNewerVersion
   }
