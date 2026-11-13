@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { createEngine } from './engine.mjs'
 import { cleanSave } from './save-check.mjs'
-import { emptySave } from './worlds.mjs'
+import { assignProject, emptySave, emptyWorld } from './worlds.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
 const content = { monsters: readJson('../../game/monsters.json'), items: readJson('../../game/items.json') }
@@ -120,4 +120,62 @@ test('a generated monster keeps its rank and look, and a made-up look is refused
     delete project.monster.sprite
   })
   assert.equal(cleanSave(nothingToDraw).ok, false)
+})
+
+test('more worlds than there can be are refused, counting those only a room names', () => {
+  const save = structuredClone(playedSave())
+  for (const worldId of ['one', 'two', 'three', 'four', 'five', 'six', 'seven']) save.worlds[worldId] = emptyWorld()
+  assert.equal(cleanSave(save).ok, true)
+  save.projectWorld['local:/work/turbo-waffle'] = 'eight'
+  assert.match(cleanSave(save).problem, /worlds are more than the 8 there can be/)
+})
+
+test('a world id the actions would not accept is refused, as a key or as a room\'s world', () => {
+  for (const worldId of ['Side Projects', 'side_projects', '-side', 'x'.repeat(33), '']) {
+    const asKey = structuredClone(playedSave())
+    asKey.worlds[worldId] = emptyWorld()
+    assert.equal(cleanSave(asKey).ok, false, `world ${worldId}`)
+    const asValue = structuredClone(playedSave())
+    asValue.projectWorld['local:/work/turbo-waffle'] = worldId
+    assert.equal(cleanSave(asValue).ok, false, `projectWorld ${worldId}`)
+  }
+})
+
+test('a project kept in another world than its own is refused', () => {
+  const moved = structuredClone(playedSave())
+  moved.worlds.side = { ...emptyWorld(), projects: moved.worlds.main.projects }
+  moved.worlds.main.projects = {}
+  assert.match(cleanSave(moved).problem, /projects\.local:\/work\/rumble-banana is not in its own world, main/)
+  const assignedElsewhere = structuredClone(playedSave())
+  assignedElsewhere.projectWorld[ROOM] = 'side'
+  assert.match(cleanSave(assignedElsewhere).problem, /is not in its own world, side/)
+})
+
+test('the saves the engine writes when a room changes world or leaves the game come back unchanged', () => {
+  const outOfGame = assignProject(playedSave(), ROOM, null)
+  assert.deepEqual(cleanSave(outOfGame), { ok: true, save: outOfGame })
+  const moved = assignProject(playedSave(), ROOM, 'side-projects')
+  assert.ok(moved.worlds['side-projects'].projects[ROOM])
+  assert.deepEqual(cleanSave(moved), { ok: true, save: moved })
+  // A room put in a new world names it before its first tokens create it.
+  const named = assignProject(playedSave(), 'local:/work/turbo-waffle', 'later')
+  assert.equal(named.worlds.later, undefined)
+  assert.deepEqual(cleanSave(named), { ok: true, save: named })
+})
+
+test('a key that would reach an object\'s prototype is refused wherever an id is a key', () => {
+  const json = JSON.stringify(playedSave())
+  const sessionId = Object.keys(playedSave().worlds.main.projects[ROOM].characters)[0]
+  for (const key of ['__proto__', 'constructor', 'prototype']) {
+    const cases = {
+      world: json.replace('"worlds":{"main":', `"worlds":{"${key}":`),
+      project: json.replace(`"projects":{"${ROOM}":`, `"projects":{"${key}":`),
+      character: json.replace(`"characters":{"${sessionId}":`, `"characters":{"${key}":`),
+      projectWorld: json.replace('"projectWorld":{}', `"projectWorld":{"${key}":"main"}`)
+    }
+    for (const [where, text] of Object.entries(cases)) {
+      assert.notEqual(text, json, `${where} was replaced`)
+      assert.match(cleanSave(JSON.parse(text)).problem ?? '', /is not a name the game uses/, `${key} as a ${where}`)
+    }
+  }
 })

@@ -4,6 +4,7 @@
 // would have written. Pure.
 import { ITEM_MAX_TIER, MONSTER_KINDS, MONSTER_RANKS } from './constants.mjs'
 import { AFFIXES } from './monsters.mjs'
+import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
 import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS } from './spending.mjs'
 import { SAVE_VERSION } from './worlds.mjs'
@@ -67,6 +68,7 @@ function boolean(value, path) {
 /** An object whose keys pass `key` and whose values pass `entry`, rebuilt from them. */
 function entries(value, path, { key, entry }) {
   return Object.fromEntries(Object.entries(record(value, path)).map(([id, item]) => {
+    if (isReservedKey(id)) fail(`${path}.${id}`, 'is not a name the game uses')
     key(id, `${path}.${id}`)
     return [id, entry(item, `${path}.${id}`, id)]
   }))
@@ -282,17 +284,6 @@ function world(value, path) {
   }
 }
 
-/** A project kept in two worlds would be played twice. */
-function checkProjectsOnce(worlds) {
-  const seen = new Set()
-  for (const [worldId, kept] of Object.entries(worlds)) {
-    for (const projectId of Object.keys(kept.projects)) {
-      if (seen.has(projectId)) fail(`worlds.${worldId}.projects.${projectId}`, 'is in two worlds')
-      seen.add(projectId)
-    }
-  }
-}
-
 /**
  * A save from outside the plugin, rebuilt from the fields the engine writes, or the first part
  * that is not what the engine writes. Run it after `migrate`, which brings an older version up.
@@ -305,8 +296,10 @@ export function cleanSave(value) {
     const source = record(value, 'the save')
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', { key: text, entry: world })
-    checkProjectsOnce(worlds)
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
+    // A project in two worlds, or in one it does not belong to, would be played twice.
+    const layoutProblem = worldLayoutProblem(worlds, projectWorld)
+    if (layoutProblem) fail(...layoutProblem)
     const settings = record(source.settings, 'settings')
     const save = { version: SAVE_VERSION, worlds, projectWorld, settings: { keepTitles: boolean(settings.keepTitles, 'settings.keepTitles') } }
     return { ok: true, save }

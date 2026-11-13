@@ -6,13 +6,8 @@ import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
+import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
 import { SAVE_VERSION, assignProject, migrate, resetWorld, worldIdOf } from './game/worlds.mjs'
-
-/** A world's id: lower-case words joined by dashes, short enough for a label. */
-const WORLD_ID = /^[a-z0-9]+(-[a-z0-9]+)*$/
-const WORLD_ID_LIMIT = 32
-/** Worlds split progress on purpose; a handful is plenty, and it bounds the save. */
-export const MAX_WORLDS = 8
 const SKILL_IDS = new Set([...WORK_SKILLS, ...GATHERING_SKILLS])
 
 /** An error whose message names what was refused, cut so a long input cannot flood the log. */
@@ -101,8 +96,7 @@ export function createGameActions(dependencies) {
         if (worldId !== null) {
           const worlds = new Set([...Object.keys(save.worlds), ...Object.values(save.projectWorld).filter(Boolean)])
           const isKnown = worlds.has(worldId)
-          const isWellFormed = typeof worldId === 'string' && worldId.length <= WORLD_ID_LIMIT && WORLD_ID.test(worldId)
-          if (!isKnown && !isWellFormed) throw refuse('not a world name', worldId)
+          if (!isKnown && !isWorldId(worldId)) throw refuse('not a world name', worldId)
           if (!isKnown && worlds.size >= MAX_WORLDS) throw new Error(`at most ${MAX_WORLDS} worlds`)
         }
         if (worldIdOf(save, roomId) === worldId) return save

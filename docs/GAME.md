@@ -26,7 +26,7 @@ milliseconds the caller passes.
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
-| `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds). Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
+| `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key). Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
@@ -673,7 +673,13 @@ changes, when the game is not running or the stored save is from a newer plugin,
 is not an object with that `format`, when its `version` or its save's `version` is newer than
 this plugin reads (the rule the storage uses), when its JSON is larger than the 240 KiB the
 storage keeps, or when its save, brought up to this version by `migrate`, does not pass
-`cleanSave`. Otherwise the save, `autoSpend` and `travel` are taken from the file (a file
+`cleanSave`. A world a room names in `projectWorld` that the save does not hold yet is not a
+problem: the engine writes that when a room is put in a new world before its first tokens. The
+titles and monster names of a save that passes are then cleaned like live titles
+(`displayText` in `src/domain/display-text.mjs`: control and bidi characters removed, at most
+`TITLE_LIMIT`, 80, characters); a monster whose name has nothing left is dropped, and the next
+round brings another. What the plugin exported is already clean and comes back unchanged.
+Otherwise the save, `autoSpend` and `travel` are taken from the file (a file
 without `travel` turns it off), the baselines and
 `watchedUntil` are forgotten as when the game is turned off, and the bridge forgets the last
 round, its links and the meters it read, so the next round counts from then and fights nothing,

@@ -243,3 +243,44 @@ test('made-up fields are not kept, and made-up values refuse the file', () => {
   })
   assert.equal(read.autoSpend, true)
 })
+
+/** The banana room of a save file. */
+const bananaOf = (file) => file.save.worlds.main.projects[BANANA]
+
+test('titles and monster names in a save file are cleaned like every label the plugin shows', async () => {
+  const { game } = await playedGame()
+  const file = JSON.parse(JSON.stringify(await game.exportSave()))
+  const room = bananaOf(file)
+  assert.ok(room.monster, 'the played game has a monster standing')
+  const [member] = Object.values(room.characters)
+  member.title = 'Fix‮ checkout\nrounding\u0007'
+  room.monster.name = `Morvash,⁦ the Bog Tyrant${'!'.repeat(200)}`
+  room.retirees.push({ sessionId: 'gone', nameId: 1, class: 'magical', level: 2, xp: 0, attributes: {}, tokens: 5,
+    mainSkill: null, retiredAt: 0, title: '‏retired\ttitle', trade: null, bornAt: null })
+  const read = readSaveFile(file, reading)
+  assert.equal(read.ok, true)
+  const cleaned = read.save.worlds.main.projects[BANANA]
+  assert.equal(Object.values(cleaned.characters)[0].title, 'Fix checkout rounding')
+  assert.equal(cleaned.retirees.at(-1).title, 'retired title')
+  assert.equal([...cleaned.monster.name].length, 80)
+  assert.match(cleaned.monster.name, /^Morvash, the Bog Tyrant!+…$/)
+})
+
+test('a monster whose name is nothing but control characters is dropped, and the fight goes on', async () => {
+  const { game } = await playedGame()
+  const file = JSON.parse(JSON.stringify(await game.exportSave()))
+  bananaOf(file).monster.name = '‮\u0007'
+  const read = readSaveFile(file, reading)
+  assert.equal(read.ok, true)
+  assert.equal(read.save.worlds.main.projects[BANANA].monster, null)
+})
+
+test('an exported game with kept titles comes back unchanged', async () => {
+  const played = await playedGame()
+  await played.game.setKeepTitles(true)
+  const file = JSON.parse(JSON.stringify(await played.game.exportSave()))
+  Object.values(bananaOf(file).characters)[0].title = 'Fix checkout rounding'
+  const read = readSaveFile(file, reading)
+  assert.equal(read.ok, true)
+  assert.deepEqual(read.save, file.save)
+})

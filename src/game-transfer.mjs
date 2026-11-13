@@ -1,5 +1,6 @@
 // The saved game as a file a person keeps or moves to another computer: what an export holds, and
 // whether a file brought back can replace the game. Pure; the actions in game-actions.mjs apply it.
+import { TITLE_LIMIT, displayText } from './domain/display-text.mjs'
 import { MAX_STORED_BYTES, STORED_VERSION, isNewer } from './game-save.mjs'
 
 /** Names what the file is, so a file of anything else is refused before it is read. */
@@ -38,6 +39,34 @@ function sizeOf(value) {
   }
 }
 
+/** A project with its titles and its monster's name cleaned like every label the plugin shows. */
+function withCleanLabels(project) {
+  const title = (holder) => ({ ...holder, title: displayText(holder.title, TITLE_LIMIT) })
+  const name = project.monster ? displayText(project.monster.name, TITLE_LIMIT) : null
+  return {
+    ...project,
+    monster: project.monster && name ? { ...project.monster, name } : null,
+    characters: Object.fromEntries(Object.entries(project.characters).map(([sessionId, member]) => [sessionId, title(member)])),
+    retirees: project.retirees.map(title)
+  }
+}
+
+/**
+ * A checked save with every text it shows cleaned: a file may hold any characters, but what the
+ * plugin shows is cleaned of control and bidi characters and cut to TITLE_LIMIT, as live titles
+ * are. What the engine wrote is already clean, so a save exported here comes back unchanged. A
+ * monster whose name has nothing left is dropped; the next round brings another.
+ *
+ * @param {object} save the save as `cleanSave` rebuilt it
+ */
+export function withCleanSaveLabels(save) {
+  const worlds = Object.fromEntries(Object.entries(save.worlds).map(([worldId, world]) => [worldId, {
+    ...world,
+    projects: Object.fromEntries(Object.entries(world.projects).map(([projectId, project]) => [projectId, withCleanLabels(project)]))
+  }]))
+  return { ...save, worlds }
+}
+
 /**
  * Reads a save file brought back (already parsed). It is refused when it is not one, when it is
  * from a newer plugin, when it is larger than the plugin can store, or when any part of its save
@@ -73,5 +102,5 @@ export function readSaveFile(value, { saveVersion, migrate, cleanSave, maxBytes 
   }
   const cleaned = cleanSave(migrated)
   if (!cleaned.ok) return { ok: false, reason: `the save file is damaged: ${cleaned.problem}` }
-  return { ok: true, save: cleaned.save, autoSpend: value.autoSpend === true, travel: value.travel === true }
+  return { ok: true, save: withCleanSaveLabels(cleaned.save), autoSpend: value.autoSpend === true, travel: value.travel === true }
 }

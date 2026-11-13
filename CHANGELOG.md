@@ -77,6 +77,11 @@ All notable changes to this project are recorded here. The format follows
   auto-spend, travel, keeping titles, export and import) to a connection that does not come
   from this machine, and that page gets the game without session ids or retirees' titles and
   shows **View only**. `LAN=1` opens the demo to the network to try it.
+- An imported save file is checked as strictly as the actions check what they are given: it is
+  refused with more than eight worlds, with a world id the game would not create, with a
+  project kept in another world than its own, or with `__proto__`, `constructor` or `prototype`
+  as an id. Its titles and monster names are cleaned like live titles (no control or bidi
+  characters, at most 80 characters).
 
 ## 0.1.0 - 2026-11-12
 

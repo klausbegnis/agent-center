@@ -2,6 +2,9 @@
 // Any program can set its terminal's title, so a label is cleaned and kept short before it is
 // stored, served or drawn.
 
+/** Long enough for a conversation title, short enough for a label under a character. */
+export const TITLE_LIMIT = 80
+
 /** Control characters: line breaks, tabs, bells, escapes. They become a space. */
 const CONTROL = /\p{Cc}/gu
 /**
