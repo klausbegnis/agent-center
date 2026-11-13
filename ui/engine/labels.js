@@ -171,3 +171,94 @@ export function gameActionFailed(action) {
 export function gameActionUnchanged(action) {
   return `${ACTION_NAMES[action] ?? 'That'} changed nothing: the game has moved on since this was drawn.`
 }
+
+/** The four classes, by their id in the game. */
+export const CLASS_LABEL = { physical: 'Fighter', magical: 'Mage', defense: 'Guardian', support: 'Healer' }
+
+/** Work and gathering skills; a gathering trade is called by its skill. */
+export const SKILL_LABEL = {
+  forge: 'Forge',
+  lore: 'Lore',
+  engineering: 'Engineering',
+  arcana: 'Arcana',
+  command: 'Command',
+  mining: 'Mining',
+  fishing: 'Fishing',
+  farming: 'Farming',
+  woodcutting: 'Woodcutting',
+  hunting: 'Hunting',
+  runecraft: 'Runecraft'
+}
+
+/** What a room's party is doing, and the longer reason given on hover. */
+export const PARTY_LABEL = { fighting: 'Fighting', resting: 'Resting', paused: 'Paused', idle: 'Idle' }
+const PARTY_REASON = {
+  fighting: 'The working agents are fighting.',
+  resting: 'The party ran out of stamina and is resting before it fights on.',
+  paused: 'An agent is waiting for you, so this room\'s fight waits too.',
+  idle: 'No agent is working; idle characters gather materials.'
+}
+
+const MONSTER_KIND_LABEL = { common: 'Common', armored: 'Armored', ethereal: 'Ethereal', boss: 'Boss' }
+const AFFIX_LABEL = {
+  regenerating: 'Regenerating',
+  enraged: 'Enraged',
+  thorny: 'Thorny',
+  swift: 'Swift',
+  armored: 'Armored',
+  ethereal: 'Ethereal'
+}
+
+const labelOf = (table, id) => table[id] ?? id ?? ''
+export const classLabel = (classId) => labelOf(CLASS_LABEL, classId)
+export const skillLabel = (skillId) => labelOf(SKILL_LABEL, skillId)
+export const partyLabel = (party) => labelOf(PARTY_LABEL, party)
+export const partyReason = (party) => PARTY_REASON[party] ?? ''
+
+/** "Wave 15". */
+export const waveLabel = (wave) => `Wave ${wave}`
+
+/** "2/16" kills towards the next wave, spelled out as "2 of 16 kills to pass wave 15". */
+export function waveKillsLabel({ wave, waveKills, killsToPass }) {
+  return {
+    short: `${waveKills}/${killsToPass}`,
+    full: `${waveKills} of ${killsToPass} ${killsToPass === 1 ? 'kill' : 'kills'} to pass wave ${wave}`
+  }
+}
+
+/** The tag a monster wears when it is not a common one: "Boss", "Elite · Thorny", or null. */
+export function monsterTag(monster) {
+  if (!monster) return null
+  if (monster.kind === 'boss') return MONSTER_KIND_LABEL.boss
+  if (monster.affix) return `Elite · ${labelOf(AFFIX_LABEL, monster.affix)}`
+  return null
+}
+
+/** "Lv 15". */
+export const levelShort = (level) => `Lv ${level}`
+
+/** What a screen reader says for a monster: "Iron-Bound Practice Dummy, level 15, armored, 12% health". */
+export function monsterDescription(monster, healthText) {
+  const parts = [monster.name, `level ${monster.level}`]
+  if (monster.kind === 'boss') parts.push('boss')
+  else if (monster.kind && monster.kind !== 'common') parts.push(labelOf(MONSTER_KIND_LABEL, monster.kind).toLowerCase())
+  if (monster.affix && monster.kind !== 'boss') parts.push(`elite, ${labelOf(AFFIX_LABEL, monster.affix).toLowerCase()}`)
+  parts.push(`${healthText} health`)
+  return parts.join(', ')
+}
+
+/** The labels of a room's fight that are not the monster's. */
+export const NO_MONSTER = 'No foe in sight'
+export const HEALTH_NAME = 'Health'
+export const STAMINA_NAME = 'Stamina'
+export const GUEST_MARK = 'guest'
+
+/**
+ * What a character's mark adds to its description: "level 9 Healer", "level 9 Healer,
+ * gathering Fishing", or "guest, keeps no progress".
+ */
+export function badgeDescription(badge) {
+  if (badge.kind === 'guest') return 'guest, keeps no progress'
+  const base = `level ${badge.level} ${classLabel(badge.classId)}`
+  return badge.isGathering ? `${base}, gathering ${skillLabel(badge.trade)}` : base
+}

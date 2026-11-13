@@ -5,7 +5,9 @@ import { playEmote, stopEmote } from './emote-view.js'
 import { createEmoteSchedule } from './emotes.js'
 import { createFamiliarMarker, drawFamiliar, drawFamiliarMarker, placeFamiliar } from './familiar-view.js'
 import { familiarPoints, household, subagentScale } from './familiars.js'
+import { gameModeOf } from './game-model.js'
 import { occupancy, roomThemeOptions } from './labels.js'
+import { createRoomGame } from './room-game-view.js'
 import { ROOM_ASPECT, slotPoint, stationFor } from './stations.js'
 
 /**
@@ -76,6 +78,7 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   /** @type {Map<string, HTMLElement>} "+N" markers by the id of the agent they belong to */
   const markers = new Map()
   const emoteSchedule = emotePace ? createEmoteSchedule(theme, emotePace) : null
+  const game = createRoomGame({ scene, theme })
 
   function updateThemePicker(state) {
     if (!themePicker) return
@@ -191,6 +194,7 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
       section.classList.toggle('ac-room-pinned', isPinned)
       updateThemePicker(state)
       const cast = updateActors(current.agents, selectedAgentId)
+      game.update(current, gameModeOf(state.game) === 'running' ? state.game : null, (id) => actors.get(id))
       emoteSchedule?.observe([...cast.values()], now).forEach(stopEmoteOf)
     },
     /** Starts the emotes that are due at `now` and ends the ones that are over. */

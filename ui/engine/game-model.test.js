@@ -1,6 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GAME_TABS, gameModeOf, isEstimated, tabAfterKey, tabOrDefault } from './game-model.js'
+import {
+  characterBadge,
+  GAME_TABS,
+  gameModeOf,
+  isEstimated,
+  monsterAccent,
+  roomFight,
+  tabAfterKey,
+  tabOrDefault
+} from './game-model.js'
 
 const running = { status: 'running', worlds: [], rooms: {}, characters: {}, recent: [] }
 
@@ -42,4 +51,55 @@ test('progress is estimated only when the worker says so; a missing source means
   assert.equal(isEstimated({ ...running, tokenSource: 'estimated' }), true)
   assert.equal(isEstimated({ ...running, tokenSource: 'measured' }), false)
   assert.equal(isEstimated(running), false)
+})
+
+const fightingRoom = {
+  worldId: 'main',
+  joined: true,
+  wave: 15,
+  waveKills: 2,
+  killsToPass: 16,
+  monster: { id: 'dummy', name: 'Practice Dummy', kind: 'boss', affix: null, level: 15, healthShare: 0.12, sprite: { body: 'wide', accent: '#7D8590' } },
+  party: 'fighting',
+  stamina: 0.8
+}
+
+test('a room that has not joined, or is out of the game, has no fight', () => {
+  const game = { rooms: { a: { worldId: 'main', joined: false }, b: { worldId: null, joined: false } } }
+  assert.equal(roomFight(game, 'a'), null)
+  assert.equal(roomFight(game, 'b'), null)
+  assert.equal(roomFight(game, 'missing'), null)
+})
+
+test('a joined room shows its wave, its monster and its party', () => {
+  const fight = roomFight({ rooms: { a: fightingRoom } }, 'a')
+  assert.equal(fight.wave, 15)
+  assert.equal(fight.health, 0.12)
+  assert.equal(fight.isBoss, true)
+  assert.equal(fight.isElite, false)
+  assert.equal(fight.party, 'fighting')
+})
+
+test('a joined room between monsters still shows its wave and party', () => {
+  const fight = roomFight({ rooms: { a: { ...fightingRoom, monster: null, party: 'paused' } } }, 'a')
+  assert.equal(fight.monster, null)
+  assert.equal(fight.health, 0)
+})
+
+test('a character is marked with its level and class, a guest only as a guest', () => {
+  assert.equal(characterBadge(undefined), null)
+  assert.deepEqual(characterBadge({ guest: true, level: 1 }), { kind: 'guest' })
+  const badge = characterBadge({ guest: false, level: 9, class: 'support', trade: 'fishing', state: 'working' })
+  assert.deepEqual(badge, { kind: 'member', level: 9, classId: 'support', trade: 'fishing', isGathering: false })
+})
+
+test('an idle character shows the trade it gathers', () => {
+  const badge = characterBadge({ guest: false, level: 3, class: 'magical', trade: 'mining', state: 'idle' })
+  assert.equal(badge.isGathering, true)
+})
+
+test('a monster is drawn in its own colour only when that is a plain hex colour', () => {
+  assert.equal(monsterAccent({ sprite: { accent: '#7D8590' } }), '#7D8590')
+  assert.equal(monsterAccent({ sprite: { accent: 'red; background: url(x)' } }), '#8a8f99')
+  assert.equal(monsterAccent(null), '#8a8f99')
 })

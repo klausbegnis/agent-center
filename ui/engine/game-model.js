@@ -1,5 +1,6 @@
 // What the game part of the view state means for the screen: whether the game shows, which tab
 // is open, and the facts each part draws, picked out of the state. Never touches the DOM.
+import { clampShare } from './game-format.js'
 
 /** The game's tabs, in the order they are shown. */
 export const GAME_TABS = /** @type {const} */ (['rooms', 'arsenal', 'skills'])
@@ -37,4 +38,59 @@ export function tabAfterKey(current, key) {
 /** Whether progress is estimated from working time rather than measured in tokens. */
 export function isEstimated(game) {
   return game?.tokenSource === 'estimated'
+}
+
+/**
+ * The fight of a room that has joined the game, or null for a room that has not or is out of it.
+ *
+ * @param {object} game the view state's `game`
+ * @param {string} roomId
+ * @returns {null | { wave: number, waveKills: number, killsToPass: number, party: string,
+ *   stamina: number, monster: object | null, health: number, isElite: boolean, isBoss: boolean }}
+ */
+export function roomFight(game, roomId) {
+  const room = game?.rooms?.[roomId]
+  if (!room?.joined) return null
+  const monster = room.monster ?? null
+  return {
+    wave: room.wave,
+    waveKills: room.waveKills,
+    killsToPass: room.killsToPass,
+    party: room.party,
+    stamina: clampShare(room.stamina),
+    monster,
+    health: clampShare(monster?.healthShare),
+    isElite: Boolean(monster?.affix),
+    isBoss: monster?.kind === 'boss'
+  }
+}
+
+/**
+ * What the mark on a character shows: nothing, "guest", or its level and class, with its
+ * gathering trade while its agent is idle.
+ *
+ * @param {object | undefined} character an entry of the view state's `game.characters`
+ * @returns {null | { kind: 'guest' } | { kind: 'member', level: number, classId: string,
+ *   trade: string | null, isGathering: boolean }}
+ */
+export function characterBadge(character) {
+  if (!character) return null
+  if (character.guest) return { kind: 'guest' }
+  return {
+    kind: 'member',
+    level: character.level,
+    classId: character.class,
+    trade: character.trade ?? null,
+    isGathering: character.state === 'idle' && Boolean(character.trade)
+  }
+}
+
+/** A monster's accent colour when it is a plain hex colour, so nothing else reaches the page's CSS. */
+const HEX_COLOUR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+const DEFAULT_ACCENT = '#8a8f99'
+
+/** The accent colour to draw a monster with. */
+export function monsterAccent(monster) {
+  const accent = monster?.sprite?.accent
+  return typeof accent === 'string' && HEX_COLOUR.test(accent) ? accent : DEFAULT_ACCENT
 }

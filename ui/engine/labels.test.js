@@ -94,3 +94,35 @@ test('the marker for subagents that are not shown counts them', () => {
   assert.deepEqual(hiddenSubagents(1), { short: '+1', full: '1 more subagent' })
   assert.deepEqual(hiddenSubagents(4), { short: '+4', full: '4 more subagents' })
 })
+
+test('kills towards the next wave are short on screen and spelled out for screen readers', async () => {
+  const { waveKillsLabel } = await import('./labels.js')
+  assert.deepEqual(waveKillsLabel({ wave: 15, waveKills: 2, killsToPass: 16 }), {
+    short: '2/16',
+    full: '2 of 16 kills to pass wave 15'
+  })
+  assert.equal(waveKillsLabel({ wave: 3, waveKills: 0, killsToPass: 1 }).full, '0 of 1 kill to pass wave 3')
+})
+
+test('only a boss or an elite wears a tag, and an elite names its affix', async () => {
+  const { monsterTag } = await import('./labels.js')
+  assert.equal(monsterTag({ kind: 'common', affix: null }), null)
+  assert.equal(monsterTag({ kind: 'boss', affix: null }), 'Boss')
+  assert.equal(monsterTag({ kind: 'armored', affix: 'thorny' }), 'Elite · Thorny')
+})
+
+test('a monster is described with its level, kind and health', async () => {
+  const { monsterDescription } = await import('./labels.js')
+  const monster = { name: 'Practice Dummy', kind: 'armored', affix: 'swift', level: 15 }
+  assert.equal(monsterDescription(monster, '12%'), 'Practice Dummy, level 15, armored, elite, swift, 12% health')
+})
+
+test('a character\'s mark adds its level and class, or that it is a guest', async () => {
+  const { badgeDescription } = await import('./labels.js')
+  assert.equal(badgeDescription({ kind: 'member', level: 9, classId: 'support', isGathering: false }), 'level 9 Healer')
+  assert.equal(
+    badgeDescription({ kind: 'member', level: 2, classId: 'magical', trade: 'fishing', isGathering: true }),
+    'level 2 Mage, gathering Fishing'
+  )
+  assert.equal(badgeDescription({ kind: 'guest' }), 'guest, keeps no progress')
+})

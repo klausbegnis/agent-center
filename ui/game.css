@@ -111,3 +111,177 @@
 .ac-collapsed .ac-game-bar,
 .ac-collapsed .ac-game-notice,
 .ac-collapsed .ac-game-panel { display: none !important; }
+
+/* The fight over a room: a band along the top, above every station, under every character. Sizes
+   follow the room's width (the scene is a size container) so Gallery cells scale it down. */
+.ac-game-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 1.2cqw;
+  padding: 1cqw 1.2cqw;
+  pointer-events: none;
+  font-family: var(--ac-font);
+  font-size: clamp(8px, 2.5cqw, 12px);
+  line-height: 1.2;
+  color: var(--ac-label);
+}
+.ac-game-pill {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25em;
+  padding: 0.25em 0.55em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ac-label-shadow) 80%, transparent);
+}
+.ac-game-wave {
+  flex: none;
+  align-items: center;
+  text-align: center;
+}
+.ac-game-wave-number { font-weight: 700; white-space: nowrap; }
+.ac-game-wave-kills { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.ac-game-foe {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.ac-game-foe-info { flex: 1 1 auto; min-width: 0; }
+/* Without a monster the line saying so is only as wide as its words. */
+.ac-game-foe-info.ac-game-foe-none { flex: 0 1 auto; font-weight: 400; }
+.ac-game-foe-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+}
+.ac-game-foe-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.ac-game-foe-tag {
+  flex: none;
+  padding: 0 0.35em;
+  border-radius: 2px;
+  background: var(--ac-game-gold);
+  color: #171a21;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ac-game-foe-tag[hidden] { display: none; }
+.ac-game-foe-boss .ac-game-foe-tag { background: var(--ac-game-bad); }
+.ac-game-foe-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.ac-game-foe-row[hidden] { display: none; }
+.ac-game-foe-level { flex: none; white-space: nowrap; }
+.ac-game-party {
+  flex: none;
+  width: 21cqw;
+}
+.ac-game-party-state { font-weight: 700; white-space: nowrap; }
+.ac-game-party[data-party='paused'] .ac-game-party-state { color: var(--ac-bubble-wait); }
+
+/* A monster stands on the band's floor; its size is a share of the band (a boss fills it). */
+.ac-monster {
+  flex: none;
+  align-self: flex-end;
+  height: calc(var(--ac-monster-size, 0.8) * 100%);
+  aspect-ratio: 1;
+}
+.ac-monster[hidden] { display: none; }
+.ac-monster-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.45));
+}
+.ac-ink-o, .ac-ink-p { fill: #0b0e13; }
+.ac-ink-b { fill: var(--ac-monster-accent, #8a8f99); }
+.ac-ink-h { fill: color-mix(in srgb, var(--ac-monster-accent, #8a8f99) 55%, #ffffff); }
+.ac-ink-s { fill: color-mix(in srgb, var(--ac-monster-accent, #8a8f99) 60%, #000000); }
+.ac-ink-e { fill: #f4f1e8; }
+/* An elite glows; the glow is a halo round its outline, and its tag says so in words. */
+.ac-monster-elite .ac-monster-art {
+  filter: drop-shadow(0 0 1px var(--ac-game-gold)) drop-shadow(0 0 2px var(--ac-game-gold));
+}
+.ac-monster-boss .ac-monster-art {
+  filter: drop-shadow(0 0 1px var(--ac-game-bad)) drop-shadow(0 1px 0 rgb(0 0 0 / 0.6));
+}
+
+/* Bars with their value beside them. */
+.ac-game-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  flex: 1;
+}
+.ac-game-meter-track {
+  flex: 1;
+  min-width: 2.5em;
+  height: 0.55em;
+  border-radius: 1px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+.ac-game-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--ac-game-good);
+}
+.ac-game-health .ac-game-meter-fill { background: var(--ac-game-bad); }
+.ac-game-meter-text { flex: none; font-variant-numeric: tabular-nums; }
+
+/* A character's mark: level and class, on the lower corner of its sprite, clear of the bubble
+   above its head and the name below its feet. */
+.ac-game-badge {
+  position: absolute;
+  left: -14%;
+  bottom: 2%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
+  padding: 0.1em 0.25em;
+  border-radius: 2px;
+  background: var(--ac-label-shadow);
+  color: var(--ac-label);
+  font-family: var(--ac-font);
+  font-size: clamp(7px, 2.2cqw, 11px);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+.ac-game-badge-icon {
+  width: 0.9em;
+  height: 0.9em;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+.ac-game-badge-guest { font-weight: 400; font-style: italic; opacity: 0.9; }
+.ac-game-badge-gathering { color: var(--ac-game-gold); }
+
+/* Narrow rooms (a small Gallery cell): the band keeps the monster and the bars, not the words. */
+@container (max-width: 300px) {
+  .ac-game-wave-kills,
+  .ac-game-foe-title,
+  .ac-game-party-state { display: none; }
+}
+.ac-mini .ac-game-pill,
+.ac-mini .ac-game-badge { display: none; }
