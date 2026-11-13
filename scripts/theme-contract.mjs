@@ -79,6 +79,7 @@ export const THEME_FIELDS = [
   'actors.species.*.parts',
   'actors.species.*.colors',
   'stations.enter',
+  'stations.monster',
   ...OTHER_ACTIVITIES.map((activity) => `stations.${activity}`),
   'ui.pixelated',
   ...UI_VARS.map((name) => `ui.vars.${name}`)

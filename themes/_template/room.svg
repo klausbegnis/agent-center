@@ -27,27 +27,34 @@
 
   <!-- Top row: the name of each station is a sign on the wall. -->
   <!-- "write" station: 2 slots. -->
-  <rect x="37" y="133" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
-  <circle cx="56" cy="142" r="2" fill="#4F8FBF"/>
-  <circle cx="100" cy="142" r="2" fill="#4F8FBF"/>
-  <rect x="58" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
-  <text x="78" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">write</text>
+  <rect x="21" y="133" width="78" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="40" cy="142" r="2" fill="#4F8FBF"/>
+  <circle cx="80" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="40" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="60" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">write</text>
   <!-- "read" station: 1 slot. -->
-  <rect x="147" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
-  <circle cx="166" cy="142" r="2" fill="#4F8FBF"/>
-  <rect x="148.8" y="64" width="34.4" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
-  <text x="166" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">read</text>
+  <rect x="109" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="128" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="111" y="64" width="34" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="128" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">read</text>
   <!-- "run" station: 1 slot. -->
-  <rect x="213" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
-  <circle cx="232" cy="142" r="2" fill="#4F8FBF"/>
-  <rect x="217.6" y="64" width="28.8" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
-  <text x="232" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">run</text>
+  <rect x="155" y="133" width="38" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="174" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="159.6" y="64" width="28.8" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="174" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">run</text>
   <!-- "sleep" station: 2 slots. -->
-  <rect x="281" y="133" width="82" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
-  <circle cx="300" cy="142" r="2" fill="#4F8FBF"/>
-  <circle cx="344" cy="142" r="2" fill="#4F8FBF"/>
-  <rect x="302" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
-  <text x="322" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">sleep</text>
+  <rect x="203" y="133" width="78" height="18" rx="9" fill="#2F3A48" stroke="#8FA3B8" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="222" cy="142" r="2" fill="#4F8FBF"/>
+  <circle cx="262" cy="142" r="2" fill="#4F8FBF"/>
+  <rect x="222" y="64" width="40" height="14" rx="2" fill="#364252" stroke="#4F8FBF" stroke-width="1"/>
+  <text x="242" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">sleep</text>
+  <!-- "monster" station: one point, where game mode's monster stands. It is drawn a character
+       and a half tall and as wide (a boss about twice a character), so the pad marks the floor
+       it covers; keep it clear of every other station. -->
+  <rect x="310" y="138" width="68" height="20" rx="10" fill="#3A2F48" stroke="#C39BE0" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="344" cy="150" r="2" fill="#C39BE0"/>
+  <rect x="318" y="64" width="52" height="14" rx="2" fill="#364252" stroke="#C39BE0" stroke-width="1"/>
+  <text x="344" y="74" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="9" text-anchor="middle" fill="#C9D6E3">monster</text>
 
   <!-- Bottom row: the name of each station is written on the floor below it. -->
   <!-- "blocked" station: 1 slot. -->

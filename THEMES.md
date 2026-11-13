@@ -239,6 +239,13 @@ the left of the last slot. An activity without a station falls back to another: 
 `write`, `delegate` to `think`, and everything to `idle` last. `enter` is a single point, not a
 list: where a new character appears before walking to its slot.
 
+`monster` is optional and also a single point: where the monster of game mode stands, feet on
+it, while the room's party fights. A common monster is drawn a character and a half tall and as
+wide, an elite a little larger and a boss about twice a character's height, with a small health
+bar above its head. Put it on open floor, in front of nothing a character stands at, and away
+from `enter`. Without it the engine picks the free stretch of floor with the most room around
+it, between the highest and the lowest station, which may not be where your scenery suggests.
+
 ### ui
 
 - `pixelated`: `true` keeps hard pixels when scaled up. Use `false` for vector themes.
