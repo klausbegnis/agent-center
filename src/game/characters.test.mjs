@@ -1,15 +1,24 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { SKILL_CAP } from './constants.mjs'
+import {
+  CHARACTER_LEVEL_BASE,
+  NEWCOMER_SHARE,
+  SEASONED_LEVEL,
+  SKILL_CAP,
+  STARTING_LUCK_SPREAD,
+  VETERAN_BONUS_PER_LEVEL
+} from './constants.mjs'
 import {
   createCharacter,
+  fortuneAttribute,
   grantCharacterXp,
   pickClass,
   seasoning,
   startingAttributes,
+  startingLuck,
   tradeFor
 } from './characters.mjs'
-import { emptySkill } from './progression.mjs'
+import { characterXpToNext, emptySkill } from './progression.mjs'
 import { CLASSES, GATHERING_SKILLS } from './skills.mjs'
 
 function newCharacter(sessionId = 'session-1', className = 'physical') {
@@ -72,34 +81,56 @@ test('a new character has the save shape at level 1', () => {
 })
 
 test('experience below the next level is tallied by activity', () => {
-  const character = grantCharacterXp(grantCharacterXp(newCharacter(), 30, 'read'), 20, 'write')
+  const character = grantCharacterXp(grantCharacterXp(newCharacter(), 15, 'read'), 10, 'write')
   assert.equal(character.level, 1)
-  assert.equal(character.xp, 50)
-  assert.deepEqual(character.levelActivityXp, { read: 30, write: 20 })
+  assert.equal(character.xp, 25)
+  assert.deepEqual(character.levelActivityXp, { read: 15, write: 10 })
 })
 
-test('a level gives two points to the class attribute and one to the dominant activity', () => {
-  let character = grantCharacterXp(newCharacter('session-1', 'physical'), 60, 'run')
-  character = grantCharacterXp(character, 30, 'write')
-  character = grantCharacterXp(character, 10, 'think')
+test('a level gives a point to the class attribute, the dominant activity and fortune', () => {
+  const first = CHARACTER_LEVEL_BASE
+  let character = grantCharacterXp(newCharacter('session-1', 'physical'), first * 0.6, 'run')
+  character = grantCharacterXp(character, first * 0.3, 'write')
+  character = grantCharacterXp(character, first * 0.1, 'think')
   assert.equal(character.level, 2)
-  assert.equal(character.attributes.strength, 3)
+  assert.equal(character.attributes.strength, 2)
   assert.equal(character.attributes.agility, 2)
+  assert.equal(character.attributes.precision, 2)
   assert.equal(character.attributes.arcane, 1)
 })
 
+test('the fortune point alternates between precision and luck', () => {
+  assert.deepEqual([2, 3, 4, 5].map(fortuneAttribute), ['precision', 'luck', 'precision', 'luck'])
+})
+
 test('levelling up starts a new tally with the experience left over', () => {
-  const character = grantCharacterXp(newCharacter(), 130, 'delegate')
+  const character = grantCharacterXp(newCharacter(), CHARACTER_LEVEL_BASE + 30, 'delegate')
   assert.equal(character.xp, 30)
   assert.deepEqual(character.levelActivityXp, { delegate: 30 })
 })
 
 test('one big grant climbs several levels and gives points for each', () => {
-  const character = grantCharacterXp(newCharacter('session-1', 'support'), 100 + 303 + 580, 'wait')
+  const xp = characterXpToNext(1) + characterXpToNext(2) + characterXpToNext(3)
+  const before = newCharacter('session-1', 'support')
+  const character = grantCharacterXp(before, xp, 'wait')
   assert.equal(character.level, 4)
-  assert.equal(character.attributes.medicine, 1 + 3 * 2)
-  assert.equal(character.attributes.precision, 1 + 3)
+  assert.equal(character.attributes.medicine, 1 + 3)
+  assert.equal(character.attributes.precision, 1 + 3 + 2)
+  assert.equal(character.attributes.luck, before.attributes.luck + 1)
   assert.deepEqual(character.levelActivityXp, {})
+})
+
+test('a character has its own curve, far below a skill\'s, and no cap', () => {
+  assert.equal(characterXpToNext(1), CHARACTER_LEVEL_BASE)
+  assert.ok(characterXpToNext(SKILL_CAP + 50) > characterXpToNext(SKILL_CAP))
+})
+
+test('a new character is born with one to four points of luck by its session id', () => {
+  const lucks = new Set(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map(startingLuck))
+  assert.ok([...lucks].every((luck) => luck >= 1 && luck <= STARTING_LUCK_SPREAD))
+  assert.ok(lucks.size > 1)
+  const character = createCharacter({ sessionId: 'rumble-banana', livingClasses: [], skills: {}, now: 0 })
+  assert.equal(character.attributes.luck, startingLuck('rumble-banana'))
 })
 
 test('granting experience leaves the original character untouched', () => {
@@ -108,15 +139,16 @@ test('granting experience leaves the original character untouched', () => {
   assert.deepEqual(character, newCharacter())
 })
 
-test('a newcomer does three quarters of a seasoned character’s work', () => {
-  assert.equal(seasoning(1), 0.75)
+test('a newcomer starts at the newcomer share of a seasoned character’s seasoning', () => {
+  assert.equal(seasoning(1), NEWCOMER_SHARE)
 })
 
-test('a character is fully seasoned at level 11', () => {
-  assert.equal(seasoning(11), 1)
-  assert.equal(seasoning(6), 0.875)
+test('a character is fully seasoned at the seasoned level, rising evenly before it', () => {
+  assert.equal(seasoning(SEASONED_LEVEL), 1)
+  const middle = (1 + SEASONED_LEVEL) / 2
+  assert.ok(Math.abs(seasoning(middle) - (1 + NEWCOMER_SHARE) / 2) < 1e-9)
 })
 
-test('a veteran gains half a percent per level past 11', () => {
-  assert.equal(seasoning(21), 1.05)
+test('a veteran gains a little per level past the seasoned level', () => {
+  assert.ok(Math.abs(seasoning(SEASONED_LEVEL + 10) - (1 + 10 * VETERAN_BONUS_PER_LEVEL)) < 1e-9)
 })

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { SKILL_CAP } from './constants.mjs'
+import { LEVEL_BASE, LEVEL_EXPONENT, SKILL_CAP, TOKENS_PER_XP } from './constants.mjs'
 import {
   canPrestige,
   effectMultiplier,
@@ -22,24 +22,24 @@ function totalXpTo(level) {
 
 const cappedSkill = (banked = 0, stars = 0) => ({ level: SKILL_CAP, xp: 0, banked, stars })
 
-test('a thousand tokens make one experience point', () => {
-  assert.equal(xpFromTokens(2500), 2.5)
+test('TOKENS_PER_XP tokens make one experience point', () => {
+  assert.equal(xpFromTokens(2.5 * TOKENS_PER_XP), 2.5)
   assert.equal(xpFromTokens(-10), 0)
   assert.equal(xpFromTokens(Number.NaN), 0)
 })
 
-test('going from level 1 to 2 costs 100 experience', () => {
-  assert.equal(xpToNext(1), 100)
+test('going from level 1 to 2 costs the level base', () => {
+  assert.equal(xpToNext(1), LEVEL_BASE)
 })
 
-test('reaching level 10 costs 13,372 experience in all', () => {
-  assert.equal(totalXpTo(10), 13_372)
+test('reaching a level costs the sum of the curve below it', () => {
+  let expected = 0
+  for (let level = 1; level < 10; level++) expected += Math.round(LEVEL_BASE * level ** LEVEL_EXPONENT)
+  assert.equal(totalXpTo(10), expected)
 })
 
-test('past the cap each character level costs one percent more than the one before', () => {
-  assert.equal(xpToNext(SKILL_CAP), 155_961)
-  assert.equal(xpToNext(SKILL_CAP + 1), Math.round(155_961 * 1.01))
-  assert.equal(xpToNext(SKILL_CAP + 10), Math.round(155_961 * 1.01 ** 10))
+test('every level costs more than the one before', () => {
+  for (let level = 1; level < SKILL_CAP; level++) assert.ok(xpToNext(level + 1) > xpToNext(level))
 })
 
 test('a new skill starts at level 1 with nothing banked and no stars', () => {

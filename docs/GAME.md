@@ -40,8 +40,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 - A star multiplies experience gained in that skill by `1 + STAR_XP_BONUS * stars`.
 - `effectiveLevel(skill) = stars * SKILL_CAP + level`. Power always uses the effective level,
   so prestige never makes anything weaker. Effects scale by `1 + STAR_EFFECT_BONUS * stars`.
-- A character has no cap: past `SKILL_CAP`, `xpToNext(n) = xpToNext(SKILL_CAP) *
-  POST_CAP_GROWTH ** (n - SKILL_CAP)`.
+- A character lives hours to a couple of days, so it has its own, faster curve with no cap:
+  `characterXpToNext(n) = round(CHARACTER_LEVEL_BASE * n ** CHARACTER_LEVEL_EXPONENT)`.
 - `worldLevel = floor(mean of the effective levels of the five work skills)`, at least 1.
 
 ## Characters
@@ -50,9 +50,12 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
   project's living characters; ties are broken by a hash of the session id. The same session
   id in the same party always gets the same class.
 - Starting attributes: 1 each, plus `floor(effectiveLevel(classSkill) / 2)` in the class
-  attribute ("trained by those who came before").
-- Each character level gives `ATTRIBUTE_POINTS_PER_LEVEL` points: two to the class attribute
-  and one to the attribute of the activity that earned most experience during that level.
+  attribute ("trained by those who came before"). Luck starts at `1 + hash(sessionId) mod
+  STARTING_LUCK_SPREAD`.
+- Each character level gives `CLASS_POINTS_PER_LEVEL` to the class attribute,
+  `ACTIVITY_POINTS_PER_LEVEL` to the attribute of the activity that earned most experience
+  during that level, and `FORTUNE_POINTS_PER_LEVEL` to precision on even levels and luck on odd
+  ones. So every attribute has a source that needs no input.
 - Gathering trade: `hash(sessionId) mod 6` over the gathering skills.
 
 ## Power

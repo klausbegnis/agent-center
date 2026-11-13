@@ -1,14 +1,16 @@
 // Characters: one per agent session. Their class, trade, attributes and levels, all worked out
 // from ids and experience so the same save always gives the same character.
 import {
-  ATTRIBUTE_POINTS_PER_LEVEL,
+  ACTIVITY_POINTS_PER_LEVEL,
   CLASS_POINTS_PER_LEVEL,
+  FORTUNE_POINTS_PER_LEVEL,
   NEWCOMER_SHARE,
   SEASONED_LEVEL,
+  STARTING_LUCK_SPREAD,
   VETERAN_BONUS_PER_LEVEL
 } from './constants.mjs'
 import { hashOf } from './hash.mjs'
-import { effectiveLevel, emptySkill, xpToNext } from './progression.mjs'
+import { characterXpToNext, effectiveLevel, emptySkill } from './progression.mjs'
 import {
   ATTRIBUTES,
   CLASSES,
@@ -18,12 +20,12 @@ import {
   skillOfClass
 } from './skills.mjs'
 
-const ACTIVITY_POINTS_PER_LEVEL = ATTRIBUTE_POINTS_PER_LEVEL - CLASS_POINTS_PER_LEVEL
 /**
  * Salt for the class tie-break, so it is not the same number as the trade's `hash mod 6`.
  * Without it, class and trade would share the hash's parity and half the pairs could never occur.
  */
 const CLASS_HASH_SALT = '|class'
+const LUCK_HASH_SALT = '|luck'
 
 /**
  * @typedef {import('./progression.mjs').Skill} Skill
@@ -77,6 +79,16 @@ export function startingAttributes(className, skills) {
 }
 
 /**
+ * The luck a character is born with: 1 to STARTING_LUCK_SPREAD, by a hash of its session id.
+ *
+ * @param {string} sessionId
+ * @returns {number}
+ */
+export function startingLuck(sessionId) {
+  return 1 + (hashOf(sessionId + LUCK_HASH_SALT) % STARTING_LUCK_SPREAD)
+}
+
+/**
  * @param {{ sessionId: string, livingClasses: string[], skills: { [skillId: string]: Skill },
  *   now: number }} options
  * @returns {Character}
@@ -88,7 +100,7 @@ export function createCharacter({ sessionId, livingClasses, skills, now }) {
     class: className,
     level: 1,
     xp: 0,
-    attributes: startingAttributes(className, skills),
+    attributes: { ...startingAttributes(className, skills), luck: startingLuck(sessionId) },
     levelActivityXp: {},
     equipment: { weapon: null, outfit: null, tool: null },
     trade: tradeFor(sessionId),
@@ -107,18 +119,31 @@ function dominantActivity(levelActivityXp) {
   return chosen
 }
 
-function addLevelPoints(attributes, className, activity) {
+/**
+ * The attribute that a level's fortune point goes to: precision on even levels, luck on odd ones.
+ *
+ * @param {number} level the level just reached
+ * @returns {'precision' | 'luck'}
+ */
+export function fortuneAttribute(level) {
+  return level % 2 === 0 ? 'precision' : 'luck'
+}
+
+function addLevelPoints(attributes, { className, activity, level }) {
   const next = { ...attributes }
-  const classAttribute = attributeOfClass(className)
-  const activityAttribute = attributeForActivity(activity)
-  next[classAttribute] = (next[classAttribute] ?? 0) + CLASS_POINTS_PER_LEVEL
-  next[activityAttribute] = (next[activityAttribute] ?? 0) + ACTIVITY_POINTS_PER_LEVEL
+  const add = (attribute, points) => {
+    next[attribute] = (next[attribute] ?? 0) + points
+  }
+  add(attributeOfClass(className), CLASS_POINTS_PER_LEVEL)
+  add(attributeForActivity(activity), ACTIVITY_POINTS_PER_LEVEL)
+  add(fortuneAttribute(level), FORTUNE_POINTS_PER_LEVEL)
   return next
 }
 
 /**
- * Adds experience earned on an activity, levelling up as far as it allows. Each level gives its
- * attribute points by the activity that earned most during that level. Experience left over
+ * Adds experience earned on an activity, levelling up on the character curve as far as it
+ * allows. Each level gives its attribute points: the class attribute, the attribute of the
+ * activity that earned most during that level, and the fortune point. Experience left over
  * after a level up was all earned by this grant, so it opens the next level's tally.
  *
  * @param {Character} character
@@ -132,10 +157,11 @@ export function grantCharacterXp(character, xp, activity) {
   let pool = character.xp + xp
   const earlierOnActivity = character.levelActivityXp[activity] ?? 0
   let levelActivityXp = { ...character.levelActivityXp, [activity]: earlierOnActivity + xp }
-  while (pool >= xpToNext(level)) {
-    pool -= xpToNext(level)
+  while (pool >= characterXpToNext(level)) {
+    pool -= characterXpToNext(level)
     level += 1
-    attributes = addLevelPoints(attributes, character.class, dominantActivity(levelActivityXp))
+    const dominant = dominantActivity(levelActivityXp)
+    attributes = addLevelPoints(attributes, { className: character.class, activity: dominant, level })
     levelActivityXp = pool > 0 ? { [activity]: pool } : {}
   }
   return { ...character, level, xp: pool, attributes, levelActivityXp }

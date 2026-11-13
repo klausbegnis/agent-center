@@ -1,9 +1,10 @@
 // Experience, levels and prestige for skills and characters. Every function returns a new
 // object; nothing here mutates what it is given.
 import {
+  CHARACTER_LEVEL_BASE,
+  CHARACTER_LEVEL_EXPONENT,
   LEVEL_BASE,
   LEVEL_EXPONENT,
-  POST_CAP_GROWTH,
   SKILL_CAP,
   STAR_EFFECT_BONUS,
   STAR_XP_BONUS,
@@ -25,15 +26,24 @@ export function xpFromTokens(tokens) {
 }
 
 /**
- * Experience needed to go from `level` to `level + 1`. Skills never pass SKILL_CAP; characters
- * do, and past it every level costs POST_CAP_GROWTH times the one before.
+ * Experience a skill needs to go from `level` to `level + 1`. Skills never pass SKILL_CAP.
  *
  * @param {number} level
  * @returns {number}
  */
 export function xpToNext(level) {
-  if (level <= SKILL_CAP) return Math.round(LEVEL_BASE * level ** LEVEL_EXPONENT)
-  return Math.round(xpToNext(SKILL_CAP) * POST_CAP_GROWTH ** (level - SKILL_CAP))
+  return Math.round(LEVEL_BASE * level ** LEVEL_EXPONENT)
+}
+
+/**
+ * Experience a character needs to go from `level` to `level + 1`. A character lives hours to
+ * days, so its curve is its own, faster one, and it has no cap.
+ *
+ * @param {number} level
+ * @returns {number}
+ */
+export function characterXpToNext(level) {
+  return Math.round(CHARACTER_LEVEL_BASE * level ** CHARACTER_LEVEL_EXPONENT)
 }
 
 /** @returns {Skill} */

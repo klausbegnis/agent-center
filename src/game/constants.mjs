@@ -10,8 +10,13 @@ export const LEVEL_BASE = 100
 export const LEVEL_EXPONENT = 1.6
 /** A skill stops at this level and banks further experience until it is prestiged. */
 export const SKILL_CAP = 99
-/** Past the cap a character's next level costs the cap's cost times this, per level. */
-export const POST_CAP_GROWTH = 1.01
+/**
+ * A character is one session and lives hours to a couple of days, so it has its own, faster
+ * curve with no cap: level n to n + 1 costs CHARACTER_LEVEL_BASE * n ** CHARACTER_LEVEL_EXPONENT.
+ * SEASONED_LEVEL then takes about 1.6 million tokens, a few hours of real work.
+ */
+export const CHARACTER_LEVEL_BASE = 30
+export const CHARACTER_LEVEL_EXPONENT = 1
 /** Each prestige star: more experience in that skill, and a stronger effect. */
 export const STAR_XP_BONUS = 0.05
 export const STAR_EFFECT_BONUS = 0.02
@@ -22,8 +27,11 @@ export const BASE_HIT = 10
 /** Damage added per point of the class attribute, and per upgrade level of a weapon. */
 export const ATTRIBUTE_HIT_BONUS = 0.02
 export const GEAR_LEVEL_BONUS = 0.05
-/** A new character does this share of a seasoned one's work, reaching 1 at SEASONED_LEVEL. */
-export const NEWCOMER_SHARE = 0.75
+/**
+ * seasoning(1), rising to 1 at SEASONED_LEVEL. With the attribute points it has not earned yet,
+ * a level 1 character does about three quarters of a seasoned one's work.
+ */
+export const NEWCOMER_SHARE = 0.88
 export const SEASONED_LEVEL = 11
 export const VETERAN_BONUS_PER_LEVEL = 0.005
 /** Tokens per minute that count as a normal working pace, and the limits of the pace factor. */
@@ -40,9 +48,18 @@ export const CRIT_PER_PRECISION = 0.005
 export const CRIT_MAX = 0.5
 export const CRIT_DAMAGE = 2
 export const HASTE_PER_AGILITY = 0.01
-/** Of the points a level gives, this many go to the class attribute; the rest to the activity's. */
-export const CLASS_POINTS_PER_LEVEL = 2
-export const ATTRIBUTE_POINTS_PER_LEVEL = 3
+/**
+ * Points a character level gives: to the class attribute, to the attribute of the activity that
+ * earned most during the level, and to "fortune", which alternates between precision (even
+ * levels) and luck (odd levels) so crits and item drops grow without any input.
+ */
+export const CLASS_POINTS_PER_LEVEL = 1
+export const ACTIVITY_POINTS_PER_LEVEL = 1
+export const FORTUNE_POINTS_PER_LEVEL = 1
+export const ATTRIBUTE_POINTS_PER_LEVEL =
+  CLASS_POINTS_PER_LEVEL + ACTIVITY_POINTS_PER_LEVEL + FORTUNE_POINTS_PER_LEVEL
+/** A new character's luck is 1 plus a hash of its session id modulo this: 1 to 4. */
+export const STARTING_LUCK_SPREAD = 4
 /** The reference party's weapon gains one upgrade level every this many monster levels. */
 export const REFERENCE_LEVELS_PER_WEAPON_LEVEL = 5
 

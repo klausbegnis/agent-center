@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { POWER_GROWTH } from './constants.mjs'
+import { NEWCOMER_SHARE, POWER_GROWTH } from './constants.mjs'
 import { characterHit, critChance, pace, partyHits, referencePartyHit } from './power.mjs'
 import { emptySkill } from './progression.mjs'
 import { ATTRIBUTES } from './skills.mjs'
@@ -63,12 +63,12 @@ test('the class skill, attribute, weapon, pace and agility all raise the hit', (
   close(trained / base, POWER_GROWTH * 1.2 * 1.5 * 2 * 1.1)
 })
 
-test('a newcomer hits for three quarters of a seasoned character', () => {
+test('with the same attributes a newcomer hits for the newcomer share of a seasoned character', () => {
   const skills = {}
   const newcomerCharacter = character('defense', { level: 1 })
   const newcomer = characterHit({ character: newcomerCharacter, skills, tokensPerMinute: 20_000 })
   const seasoned = characterHit({ character: character('defense'), skills, tokensPerMinute: 20_000 })
-  close(newcomer.amount / seasoned.amount, 0.75)
+  close(newcomer.amount / seasoned.amount, NEWCOMER_SHARE)
 })
 
 test('a support raises every other member’s hit but not its own', () => {
