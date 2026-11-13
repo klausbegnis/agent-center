@@ -10,7 +10,10 @@ import { button, el } from './dom.js'
  */
 export function card(title, lines = []) {
   const node = el('section', 'ac-game-card')
-  node.append(el('h2', 'ac-game-card-title', title), ...lines.map((line) => el('p', 'ac-game-card-line', line)))
+  node.append(
+    el('h2', 'ac-game-card-title', title),
+    ...lines.map((line) => el('p', 'ac-game-card-line', line))
+  )
   return node
 }
 
@@ -84,11 +87,13 @@ export function switchControl({ label, hint, onChange }) {
  * caller, so a redraw does not close a question someone is reading.
  *
  * @param {{ label: string, ariaLabel?: string, question: string, confirm: string,
- *   className?: string, confirmClassName?: string, key: string, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void,
+ *   className?: string, confirmClassName?: string, key: string, isOpen?: boolean,
+ *   onOpenChange?: (isOpen: boolean) => void,
  *   onConfirm: () => void }} options `key` names the opening button for replaceKeepingFocus
  */
 export function confirmButton(options) {
-  const { label, ariaLabel, question, confirm, className = '', confirmClassName = 'ac-game-danger', key, isOpen = false, onOpenChange, onConfirm } = options
+  const { label, ariaLabel, question, confirm, key, onOpenChange, onConfirm } = options
+  const { className = '', confirmClassName = 'ac-game-danger', isOpen = false } = options
   const element = el('div', 'ac-game-confirm')
   const open = button(label, `ac-button ${className}`.trim(), { onClick: () => show(true, true) })
   open.dataset.key = key

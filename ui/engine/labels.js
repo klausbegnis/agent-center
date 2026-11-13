@@ -149,7 +149,7 @@ export function gameUnavailable(status) {
       lines: ['Update Agent Center to carry on. Nothing in the save was changed.', rooms]
     }
   }
-  return { title: 'The game is not running', lines: ['Game mode is on, but the game cannot run right now.', rooms] }
+  return { title: 'The game is not running', lines: ['Game mode is on, but the game cannot run now.', rooms] }
 }
 
 const ACTION_NAMES = {
@@ -167,7 +167,7 @@ export function gameActionFailed(action) {
   return `${ACTION_NAMES[action] ?? 'That'} did not go through. Try again in a moment.`
 }
 
-/** What is said when the worker took an action but nothing changed, such as an upgrade it could not pay for. */
+/** What is said when the worker took an action but nothing changed, such as an unpaid upgrade. */
 export function gameActionUnchanged(action) {
   return `${ACTION_NAMES[action] ?? 'That'} changed nothing: the game has moved on since this was drawn.`
 }
@@ -241,8 +241,12 @@ export const levelShort = (level) => `Lv ${level}`
 export function monsterDescription(monster, healthText) {
   const parts = [monster.name, `level ${monster.level}`]
   if (monster.kind === 'boss') parts.push('boss')
-  else if (monster.kind && monster.kind !== 'common') parts.push(labelOf(MONSTER_KIND_LABEL, monster.kind).toLowerCase())
-  if (monster.affix && monster.kind !== 'boss') parts.push(`elite, ${labelOf(AFFIX_LABEL, monster.affix).toLowerCase()}`)
+  else if (monster.kind && monster.kind !== 'common') {
+    parts.push(labelOf(MONSTER_KIND_LABEL, monster.kind).toLowerCase())
+  }
+  if (monster.affix && monster.kind !== 'boss') {
+    parts.push(`elite, ${labelOf(AFFIX_LABEL, monster.affix).toLowerCase()}`)
+  }
   parts.push(`${healthText} health`)
   return parts.join(', ')
 }
@@ -309,7 +313,8 @@ export function missingText(entries, format) {
 
 /** "Weapon · magical · Tier 2 · Lv 3". */
 export function itemFacts(item) {
-  return [labelOf(SLOT_LABEL, item.slot), DAMAGE_LABEL[item.damageType], `Tier ${item.tier}`, levelShort(item.level)]
+  const slot = labelOf(SLOT_LABEL, item.slot)
+  return [slot, DAMAGE_LABEL[item.damageType], `Tier ${item.tier}`, levelShort(item.level)]
     .filter(Boolean)
     .join(' · ')
 }
@@ -329,7 +334,8 @@ export function equipmentText(item) {
 export function upgradeEffectText(upgrade, formatShare) {
   const effect = upgrade.effect ?? {}
   if (upgrade.id === 'campfire') {
-    return upgrade.level ? `Restores ${formatShare(effect.staminaAfterKill)} of missing stamina after each kill`
+    return upgrade.level
+      ? `Restores ${formatShare(effect.staminaAfterKill)} of missing stamina after each kill`
       : 'Once built, restores stamina after each kill'
   }
   if (upgrade.id === 'workbench') {
@@ -350,7 +356,8 @@ export function retireeBonusText(bonus, count, formatShare) {
 
 /** "Mage · Lv 10 · mostly Command". */
 export function retireeFacts(retiree) {
-  return [classLabel(retiree.class), levelShort(retiree.level), retiree.mainSkill ? `mostly ${skillLabel(retiree.mainSkill)}` : null]
+  const skill = retiree.mainSkill ? `mostly ${skillLabel(retiree.mainSkill)}` : null
+  return [classLabel(retiree.class), levelShort(retiree.level), skill]
     .filter(Boolean)
     .join(' · ')
 }
@@ -391,7 +398,14 @@ const WORK_SKILL_EFFECT = {
   lore: 'Grows while agents read. Strengthens the Guardians\' defence.',
   command: 'Grows while agents delegate. Strengthens the Healers\' support.'
 }
-const TRADE_MATERIAL = { mining: 'ore', fishing: 'fish', farming: 'crops', woodcutting: 'logs', hunting: 'hides', runecraft: 'runes' }
+const TRADE_MATERIAL = {
+  mining: 'ore',
+  fishing: 'fish',
+  farming: 'crops',
+  woodcutting: 'logs',
+  hunting: 'hides',
+  runecraft: 'runes'
+}
 
 /**
  * What a skill does: "Grows while agents write code. Strengthens physical attacks."
@@ -416,15 +430,16 @@ export function starsLabel(stars) {
 
 /** "Lv 27", or "Lv 3 · effective 102" once a skill has stars. */
 export function skillLevelText(skill) {
-  return skill.stars ? `${levelShort(skill.level)} · effective ${skill.effectiveLevel}` : levelShort(skill.level)
+  const level = levelShort(skill.level)
+  return skill.stars ? `${level} · effective ${skill.effectiveLevel}` : level
 }
 
 /** What prestiging a skill does, said before it is done. */
 export function prestigeQuestion(skill) {
   const name = skillLabel(skill.id)
-  return `${name} goes back to level 1 and earns a star (${plural(skill.stars + 1, 'star')} in all). Nothing ` +
-    `gets weaker: its effective level stays ${skill.effectiveLevel}, the experience banked at the cap is ` +
-    'poured back in, and every star makes it grow faster.'
+  return `${name} goes back to level 1 and earns a star (${plural(skill.stars + 1, 'star')} in all). ` +
+    `Nothing gets weaker: its effective level stays ${skill.effectiveLevel}, the experience banked at ` +
+    'the cap is poured back in, and every star makes it grow faster.'
 }
 
 export const SKILLS = {
@@ -451,7 +466,8 @@ export const SETTINGS = {
   keepTitlesHint: 'Off: a retiree keeps only a generated name, its level and what it did. Turning it off ' +
     'forgets the titles already kept.',
   worlds: 'Worlds',
-  worldsNote: 'Each world keeps its own skills, materials and upgrades. A room out of the game counts no tokens.',
+  worldsNote: 'Each world keeps its own skills, materials and upgrades. A room out of the game counts ' +
+    'no tokens.',
   roomWorld: (room) => `World for the ${room} room`,
   outOfGame: 'Out of the game',
   newWorld: 'New world…',
@@ -465,8 +481,8 @@ export const SETTINGS = {
   },
   reset: 'Reset this world',
   resetWorld: 'World to reset',
-  resetQuestion: (worldId) => `Reset world "${worldId}"? Its skills, materials and group upgrades, and every ` +
-    'room\'s wave, chest and retirees in it, go back to the start. This cannot be undone.',
+  resetQuestion: (worldId) => `Reset world "${worldId}"? Its skills, materials and group upgrades, and ` +
+    'every room\'s wave, chest and retirees in it, go back to the start. This cannot be undone.',
   resetConfirm: (worldId) => `Reset ${worldId}`,
   local: 'Everything stays on this computer.'
 }
@@ -481,7 +497,8 @@ export const EFFECT = {
   loot: (text) => `+ ${text}`,
   level: (level) => `Level ${level}!`,
   retired: (name, level) => `${name} retired at level ${level}`,
-  arrived: (name, items) => (items.length ? `${name} arrived and took ${items.join(', ')}` : `${name} arrived`),
+  arrived: (name, items) =>
+    (items.length ? `${name} arrived and took ${items.join(', ')}` : `${name} arrived`),
   found: (name) => `Found ${name}`,
   upgraded: (name, level) => `Upgraded ${name} to Lv ${level}`,
   built: (name, level) => `Built ${name} level ${level}`

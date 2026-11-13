@@ -12,7 +12,10 @@ test('a refused action says so in a short message and does not reject', async ()
   const original = console.error
   console.error = () => {}
   try {
-    const actions = createGameActions({ resetWorld: async () => { throw new Error('refused') } }, (text) => messages.push(text))
+    const refuse = async () => {
+      throw new Error('refused')
+    }
+    const actions = createGameActions({ resetWorld: refuse }, (text) => messages.push(text))
     assert.equal(await actions.resetWorld('main'), false)
   } finally {
     console.error = original
@@ -24,7 +27,8 @@ test('a refused action says so in a short message and does not reject', async ()
 test('an upgrade the worker could not make is reported, a switch set to its own value is not', async () => {
   const messages = []
   const unchanged = async () => ({ changed: false })
-  const actions = createGameActions({ upgradeItem: unchanged, setAutoSpend: unchanged }, (text) => messages.push(text))
+  const transport = { upgradeItem: unchanged, setAutoSpend: unchanged }
+  const actions = createGameActions(transport, (text) => messages.push(text))
   assert.equal(await actions.upgradeItem('room', 'item'), false)
   assert.equal(await actions.setAutoSpend(true), true)
   assert.equal(messages.length, 1)

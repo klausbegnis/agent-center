@@ -46,7 +46,9 @@ export function createArsenalView({ panel, actions, prefs }) {
   })
   roomField.append(el('span', 'ac-game-field-label', ARSENAL.room), roomSelect)
   head.append(roomField)
-  const autoSpend = actions.setAutoSpend ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend) : null
+  const autoSpend = actions.setAutoSpend
+    ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend)
+    : null
   if (autoSpend) head.append(autoSpend.element)
   const body = el('div', 'ac-game-panel-body')
   panel.append(head, body)
@@ -61,7 +63,10 @@ export function createArsenalView({ panel, actions, prefs }) {
     const grid = el('div', 'ac-game-materials')
     for (const id of Object.keys(MATERIAL_LABEL)) {
       const cell = el('div', 'ac-game-material')
-      cell.append(el('span', 'ac-game-material-name', MATERIAL_LABEL[id]), el('strong', 'ac-game-amount', formatAmount(world.materials?.[id])))
+      cell.append(
+        el('span', 'ac-game-material-name', MATERIAL_LABEL[id]),
+        el('strong', 'ac-game-amount', formatAmount(world.materials?.[id]))
+      )
       grid.append(cell)
     }
     return section(ARSENAL.materials(world.id, world.level), [grid])
@@ -70,7 +75,10 @@ export function createArsenalView({ panel, actions, prefs }) {
   function characterCard({ agent, character }) {
     const node = el('article', 'ac-game-entry')
     const title = el('div', 'ac-game-entry-head')
-    title.append(el('strong', 'ac-game-entry-name', agent.name), el('span', 'ac-muted', characterFacts(character)))
+    title.append(
+      el('strong', 'ac-game-entry-name', agent.name),
+      el('span', 'ac-muted', characterFacts(character))
+    )
     const attributes = el('dl', 'ac-game-facts')
     for (const [id, label] of Object.entries(ATTRIBUTE_LABEL)) {
       const pair = el('div', 'ac-game-fact')
@@ -98,7 +106,8 @@ export function createArsenalView({ panel, actions, prefs }) {
   /** The price of a purchase, and either its button or, when it cannot be paid, what is missing. */
   function purchase({ cost, affordable, materials, label, ariaLabel, key, onBuy }) {
     const node = el('div', 'ac-game-buy')
-    node.append(el('span', 'ac-game-cost', ARSENAL.upgradeCost(materialsText(costEntries(cost), formatAmount))))
+    const price = materialsText(costEntries(cost), formatAmount)
+    node.append(el('span', 'ac-game-cost', ARSENAL.upgradeCost(price)))
     if (!onBuy) return node
     const action = button(label, 'ac-button ac-game-buy-button', { onClick: onBuy })
     action.dataset.key = key
@@ -159,18 +168,24 @@ export function createArsenalView({ panel, actions, prefs }) {
   }
 
   function retireesCard(room) {
-    const children = [el('p', 'ac-game-card-line', retireeBonusText(room.bonus ?? 0, room.retiredCount ?? 0, formatShare))]
+    const bonus = retireeBonusText(room.bonus ?? 0, room.retiredCount ?? 0, formatShare)
+    const children = [el('p', 'ac-game-card-line', bonus)]
     const list = el('ul', 'ac-game-retirees')
     for (const retiree of room.retirees ?? []) {
       const item = el('li', 'ac-game-retiree')
-      item.append(el('strong', '', retireeName(retiree.nameId)), el('span', 'ac-muted', retireeFacts(retiree)))
+      item.append(
+        el('strong', '', retireeName(retiree.nameId)),
+        el('span', 'ac-muted', retireeFacts(retiree))
+      )
       if (retiree.title) item.append(el('span', 'ac-game-retiree-title', ARSENAL.title(retiree.title)))
       list.append(item)
     }
     if (room.retirees?.length) children.push(list)
     else children.push(el('p', 'ac-game-card-line', ARSENAL.noRetirees))
     const older = (room.retiredCount ?? 0) - (room.retirees?.length ?? 0)
-    if (older > 0 && room.retirees?.length) children.push(el('p', 'ac-game-card-line', ARSENAL.moreRetirees(older)))
+    if (older > 0 && room.retirees?.length) {
+      children.push(el('p', 'ac-game-card-line', ARSENAL.moreRetirees(older)))
+    }
     return section(ARSENAL.retirees, children)
   }
 

@@ -47,7 +47,8 @@ export function createSkillsView({ panel, actions }) {
     }
     title.append(label, el('span', 'ac-muted', skillLevelText(skill)))
     const progress = meter('ac-game-progress', SKILLS.progress(name))
-    progress.set(clampShare(skill.progress), skill.canPrestige ? SKILLS.atCap : formatShare(clampShare(skill.progress)))
+    const share = clampShare(skill.progress)
+    progress.set(share, skill.canPrestige ? SKILLS.atCap : formatShare(share))
     node.append(title, progress.element, el('span', 'ac-game-card-line', skillEffect(skill.id, speedText)))
     if (skill.canPrestige && actions.prestigeSkill) {
       const key = `prestige:${skill.id}`

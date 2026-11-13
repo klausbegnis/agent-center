@@ -66,7 +66,15 @@ const fightingRoom = {
   wave: 15,
   waveKills: 2,
   killsToPass: 16,
-  monster: { id: 'dummy', name: 'Practice Dummy', kind: 'boss', affix: null, level: 15, healthShare: 0.12, sprite: { body: 'wide', accent: '#7D8590' } },
+  monster: {
+    id: 'dummy',
+    name: 'Practice Dummy',
+    kind: 'boss',
+    affix: null,
+    level: 15,
+    healthShare: 0.12,
+    sprite: { body: 'wide', accent: '#7D8590' }
+  },
   party: 'fighting',
   stamina: 0.8
 }
@@ -96,8 +104,10 @@ test('a joined room between monsters still shows its wave and party', () => {
 test('a character is marked with its level and class, a guest only as a guest', () => {
   assert.equal(characterBadge(undefined), null)
   assert.deepEqual(characterBadge({ guest: true, level: 1 }), { kind: 'guest' })
-  const badge = characterBadge({ guest: false, level: 9, class: 'support', trade: 'fishing', state: 'working' })
-  assert.deepEqual(badge, { kind: 'member', level: 9, classId: 'support', trade: 'fishing', isGathering: false })
+  const character = { guest: false, level: 9, class: 'support', trade: 'fishing', state: 'working' }
+  const badge = characterBadge(character)
+  const expected = { kind: 'member', level: 9, classId: 'support', trade: 'fishing', isGathering: false }
+  assert.deepEqual(badge, expected)
 })
 
 test('an idle character shows the trade it gathers', () => {
@@ -178,5 +188,6 @@ test('every room the game knows of is listed with its world, a room out of the g
     rooms: [{ id: 'a' }, { id: 'b' }, { id: 'none' }],
     game: { rooms: { a: { worldId: 'main', joined: true }, b: { worldId: null, joined: false } } }
   }
-  assert.deepEqual(roomWorlds(state).map(({ room, worldId }) => [room.id, worldId]), [['a', 'main'], ['b', null]])
+  const listed = roomWorlds(state).map(({ room, worldId }) => [room.id, worldId])
+  assert.deepEqual(listed, [['a', 'main'], ['b', null]])
 })

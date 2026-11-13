@@ -9,7 +9,9 @@ function state() {
       status: 'running',
       worlds: [{ id: 'main', roomIds: ['room'], upgrades: [{ id: 'campfire', level: 4 }] }],
       rooms: { room: { joined: true, chest: [{ id: 'ashwood-wand-2', name: 'Ashwood Wand', level: 3 }] } },
-      characters: { 'pane-1': { guest: false, equipment: { weapon: { name: 'Whittled Cudgel' }, outfit: null } } }
+      characters: {
+        'pane-1': { guest: false, equipment: { weapon: { name: 'Whittled Cudgel' }, outfit: null } }
+      }
     }
   }
 }
@@ -27,7 +29,9 @@ test('kills in one state are told once, with everything they paid', () => {
 test('a level up shows on the character, only its highest level', () => {
   const level = (value) => ({ type: 'level', roomId: 'room', agentId: 'pane-1', level: value })
   const effects = gameEffects({ ...none, events: [level(4), level(5)] }, state())
-  assert.deepEqual(effects, [{ roomId: 'room', target: 'agent', agentId: 'pane-1', text: 'Level 5!', tone: 'level' }])
+  assert.deepEqual(effects, [
+    { roomId: 'room', target: 'agent', agentId: 'pane-1', text: 'Level 5!', tone: 'level' }
+  ])
 })
 
 test('an arrival says who came and what it took from the chest', () => {
@@ -45,7 +49,8 @@ test('a drop is named after the chest item it became, a retiree by its generated
 })
 
 test('a group purchase shows in every room of its world', () => {
-  const [effect] = gameEffects({ ...none, events: [{ type: 'purchase', kind: 'group', worldId: 'main', upgradeId: 'campfire' }] }, state())
+  const purchase = { type: 'purchase', kind: 'group', worldId: 'main', upgradeId: 'campfire' }
+  const [effect] = gameEffects({ ...none, events: [purchase] }, state())
   assert.equal(effect.text, 'Built Campfire level 4')
 })
 
@@ -55,12 +60,14 @@ test('damage shows on the monster as the share of health lost', () => {
 })
 
 test('a busy room shows only its newest lines', () => {
-  const events = Array.from({ length: 6 }, (_, index) => ({ type: 'retire', roomId: 'room', nameId: index, level: index }))
+  const retire = (index) => ({ type: 'retire', roomId: 'room', nameId: index, level: index })
+  const events = Array.from({ length: 6 }, (_, index) => retire(index))
   const effects = gameEffects({ ...none, events }, state())
   assert.equal(effects.length, MAX_ROOM_LINES)
   assert.match(effects.at(-1).text, /level 5$/)
 })
 
 test('events of a room that is not on screen are left out', () => {
-  assert.deepEqual(gameEffects({ ...none, events: [{ type: 'kill', roomId: 'elsewhere', materials: {} }] }, state()), [])
+  const kill = { type: 'kill', roomId: 'elsewhere', materials: {} }
+  assert.deepEqual(gameEffects({ ...none, events: [kill] }, state()), [])
 })

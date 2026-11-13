@@ -1,6 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CLASS_MARKS, MONSTER_INKS, MONSTER_SHAPES, monsterShape, pixelPath, TRADE_MARKS, viewBoxOf } from './pixel-art.js'
+import {
+  CLASS_MARKS,
+  MONSTER_INKS,
+  MONSTER_SHAPES,
+  monsterShape,
+  pixelPath,
+  TRADE_MARKS,
+  viewBoxOf
+} from './pixel-art.js'
 
 const isRectangular = (rows) => rows.every((row) => row.length === rows[0].length)
 
@@ -26,7 +34,8 @@ test('monsters use only their own inks, and every one has an outline and eyes', 
 
 test('every class and every gathering trade has a mark', () => {
   assert.deepEqual(Object.keys(CLASS_MARKS).sort(), ['defense', 'magical', 'physical', 'support'])
-  assert.deepEqual(Object.keys(TRADE_MARKS).sort(), ['farming', 'fishing', 'hunting', 'mining', 'runecraft', 'woodcutting'])
+  const trades = ['farming', 'fishing', 'hunting', 'mining', 'runecraft', 'woodcutting']
+  assert.deepEqual(Object.keys(TRADE_MARKS).sort(), trades)
 })
 
 test('a run of pixels along a row becomes one rectangle', () => {

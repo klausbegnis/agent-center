@@ -42,7 +42,10 @@ function killEffects(events, rooms) {
   for (const [roomId, { count, materials }] of byRoom) {
     effects.push({ roomId, target: 'monster', text: EFFECT.defeated(count), tone: 'kill' })
     const loot = Object.entries(materials).map(([id, amount]) => ({ id, amount }))
-    if (loot.length) effects.push({ roomId, target: 'room', text: EFFECT.loot(materialsText(loot, formatAmount)), tone: 'loot' })
+    if (loot.length) {
+      const text = EFFECT.loot(materialsText(loot, formatAmount))
+      effects.push({ roomId, target: 'room', text, tone: 'loot' })
+    }
   }
   return effects
 }
@@ -55,8 +58,8 @@ function levelEffects(events, rooms) {
     const previous = levels.get(event.agentId)
     if (!previous || event.level > previous.level) levels.set(event.agentId, event)
   }
-  return [...levels.values()].map((event) =>
-    ({ roomId: event.roomId, target: 'agent', agentId: event.agentId, text: EFFECT.level(event.level), tone: 'level' }))
+  return [...levels.values()].map(({ roomId, agentId, level }) =>
+    ({ roomId, target: 'agent', agentId, text: EFFECT.level(level), tone: 'level' }))
 }
 
 function purchaseEffects(event, game) {
@@ -83,7 +86,8 @@ function lineEffects(events, game) {
       const text = EFFECT.retired(retireeName(event.nameId), event.level)
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'retire' })
     } else if (event.type === 'drop' && room && event.item) {
-      effects.push({ roomId: event.roomId, target: 'room', text: EFFECT.found(itemName(room, event.item)), tone: 'drop' })
+      const text = EFFECT.found(itemName(room, event.item))
+      effects.push({ roomId: event.roomId, target: 'room', text, tone: 'drop' })
     } else if (event.type === 'purchase') {
       effects.push(...purchaseEffects(event, game))
     }

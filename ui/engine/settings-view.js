@@ -37,7 +37,9 @@ export function createSettingsView({ actions, onClose }) {
   const keepTitles = actions.setKeepTitles
     ? settingSwitch(SETTINGS.keepTitles, SETTINGS.keepTitlesHint, actions.setKeepTitles)
     : null
-  const autoSpend = actions.setAutoSpend ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend) : null
+  const autoSpend = actions.setAutoSpend
+    ? settingSwitch(ARSENAL.autoSpend, ARSENAL.autoSpendHint, actions.setAutoSpend)
+    : null
   for (const control of [keepTitles, autoSpend]) if (control) switches.append(control.element)
   switches.append(el('p', 'ac-game-card-line', SETTINGS.local))
   const body = el('div', 'ac-game-panel-body')
@@ -119,7 +121,8 @@ export function createSettingsView({ actions, onClose }) {
     const chosen = worlds.find((world) => world.id === resetWorldId) ?? worlds[0]
     if (worlds.length > 1) {
       const field = el('label', 'ac-game-field')
-      const picker = select('ac-select', SETTINGS.resetWorld, worlds.map((world) => [world.id, worldChoice(world)]))
+      const choices = worlds.map((world) => [world.id, worldChoice(world)])
+      const picker = select('ac-select', SETTINGS.resetWorld, choices)
       picker.removeAttribute('aria-label')
       picker.dataset.key = 'reset-world'
       picker.value = chosen.id
@@ -153,8 +156,12 @@ export function createSettingsView({ actions, onClose }) {
     autoSpend?.set(game.autoSpend === true)
     const worlds = game.worlds ?? []
     const rooms = roomWorlds(state)
-    const signature = JSON.stringify([worlds.map((world) => [world.id, world.level]), rooms.map(({ room, worldId }) =>
-      [room.id, worldId]), naming?.roomId, resetWorldId])
+    const signature = JSON.stringify([
+      worlds.map((world) => [world.id, world.level]),
+      rooms.map(({ room, worldId }) => [room.id, worldId]),
+      naming?.roomId,
+      resetWorldId
+    ])
     if (signature === drawn) return
     drawn = signature
     const list = el('div', 'ac-game-list')

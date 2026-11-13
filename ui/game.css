@@ -418,7 +418,11 @@
 .ac-game-stars { color: var(--ac-game-gold); letter-spacing: 1px; }
 .ac-game-progress { font-size: 11px; }
 .ac-game-progress .ac-game-meter-track { height: 6px; }
-.ac-game-progress .ac-game-meter-text { min-width: 3.5em; text-align: right; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-progress .ac-game-meter-text {
+  min-width: 3.5em;
+  text-align: right;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
 .ac-game-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .ac-game-confirm-box[hidden],
 .ac-game-confirm .ac-button[hidden] { display: none; }

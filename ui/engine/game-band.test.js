@@ -2,7 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { BAND_MAX, BAND_MIN, bandHeight, monsterSize } from './game-band.js'
 
-const theme = (stations) => ({ room: { width: 400, height: 250 }, actors: { width: 36, height: 45 }, stations })
+const theme = (stations) => ({
+  room: { width: 400, height: 250 },
+  actors: { width: 36, height: 45 },
+  stations
+})
 
 test('the band ends above the highest head at any station, with room for a bubble', () => {
   const height = bandHeight(theme({ write: [{ x: 100, y: 100 }], sleep: [{ x: 300, y: 200 }] }))

@@ -5,8 +5,10 @@
 const MIN_HIT_SHARE = 0.005
 
 /** What identifies the monster a room is fighting, so a new one is not taken for a hit. */
-const monsterKey = (room) =>
-  room?.joined && room.monster ? `${room.wave}|${room.waveKills}|${room.monster.id}|${room.monster.level}` : null
+function monsterKey(room) {
+  if (!room?.joined || !room.monster) return null
+  return `${room.wave}|${room.waveKills}|${room.monster.id}|${room.monster.level}`
+}
 
 /**
  * Remembers what the last state held and tells what is new in the next one.

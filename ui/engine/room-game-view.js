@@ -123,7 +123,9 @@ export function createRoomGame({ scene, theme }) {
       node.replaceChildren(...markFor(badge))
       node.classList.toggle('ac-game-badge-guest', badge.kind === 'guest')
       node.classList.toggle('ac-game-badge-gathering', badge.kind === 'member' && badge.isGathering)
-      node.title = badge.kind === 'member' ? `${levelShort(badge.level)} ${classLabel(badge.classId)}` : GUEST_MARK
+      node.title = badge.kind === 'member'
+        ? `${levelShort(badge.level)} ${classLabel(badge.classId)}`
+        : GUEST_MARK
     }
     // drawActor wrote the character's description in this same update; the mark adds to it.
     const note = badgeDescription(badge)
@@ -170,7 +172,8 @@ export function createRoomGame({ scene, theme }) {
       for (const effect of effects) {
         const place = placeFor(effect, actorOf)
         if (!place) continue
-        const node = el('span', `ac-game-pop ac-game-pop-${effect.target} ac-game-tone-${effect.tone}`, effect.text)
+        const className = `ac-game-pop ac-game-pop-${effect.target} ac-game-tone-${effect.tone}`
+        const node = el('span', className, effect.text)
         node.setAttribute('aria-hidden', 'true')
         place.append(node)
         playing.set(node, now + EFFECT_MS)

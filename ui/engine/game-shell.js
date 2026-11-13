@@ -56,7 +56,9 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
 
   const actions = createGameActions(transport, showNotice)
   // The cog that opens the settings sits in the header; it shows only while the game runs.
-  const settingsButton = button('', 'ac-button ac-game-settings-button', { onClick: () => setSettingsOpen(!isSettingsOpen) })
+  const settingsButton = button('', 'ac-button ac-game-settings-button', {
+    onClick: () => setSettingsOpen(!isSettingsOpen)
+  })
   settingsButton.append(svgIcon('ac-game-settings-icon', SETTINGS_MARK.length, pixelPath(SETTINGS_MARK, '#')))
   settingsButton.setAttribute('aria-label', SETTINGS.open)
   settingsButton.title = SETTINGS.open
