@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { createAgentStore } from './domain/agent-store.mjs'
 import { loadGameEngine } from './game-files.mjs'
 import { createGameMode } from './game-mode.mjs'
+import { estimateTokens } from './game/estimate.mjs'
 import { GAME_STORAGE_KEY, createGameSave } from './game-save.mjs'
 import { SAVE_VERSION, migrate } from './game/worlds.mjs'
 
@@ -22,7 +23,7 @@ function setup({ storage = new Map(), settings = { gameMode: true }, access = { 
   let clock = 1_000 * MINUTE
   const store = createAgentStore({ now: () => clock })
   store.setWorkspaces(WORKSPACES)
-  const history = { sessions: [], truncated: false, failure: null }
+  const history = { sessions: [], truncated: false, failure: null, reads: 0 }
   const writtenSettings = []
   const logs = []
   let changes = 0
@@ -43,7 +44,10 @@ function setup({ storage = new Map(), settings = { gameMode: true }, access = { 
       settings[key] = value
     },
     access: () => access,
-    readHistory: async () => (history.failure ?? { ok: true, sessions: history.sessions, truncated: history.truncated }),
+    readHistory: async () => {
+      history.reads += 1
+      return history.failure ?? { ok: true, sessions: history.sessions, truncated: history.truncated }
+    },
     readWorkspaces: async () => [],
     store,
     preferences: { snapshot: () => ({ theme: 'pixel-dark', roomThemes: {} }) },
@@ -54,7 +58,7 @@ function setup({ storage = new Map(), settings = { gameMode: true }, access = { 
   const session = (sessionId, totalTokens, extra = {}) =>
     ({ sessionId, title: null, workspaceId: 'w-banana', totalTokens, createdAt: 0, running: true, ...extra })
   return {
-    game, store, history, storage, settings, writtenSettings, logs, session,
+    game, store, history, storage, settings, writtenSettings, logs, session, access,
     tick: (ms) => (clock += ms),
     now: () => clock,
     changes: () => changes
@@ -66,26 +70,36 @@ const partyOf = (game) => Object.keys(game.getView().rooms?.[BANANA]?.joined ? g
 
 test('the game is off until the person turns it on, and says so', async () => {
   const { game, history } = setup({ settings: {} })
-  history.failure = { ok: false, denied: false, message: 'should not be read' }
   await game.round()
-  assert.deepEqual(game.getView(), { status: 'off', autoSpend: false, keepTitles: false })
+  assert.deepEqual(game.getView(), { status: 'off', tokenSource: null, autoSpend: false, keepTitles: false })
+  assert.equal(history.reads, 0)
 })
 
-test('the game says when this Orca has no session history or the person did not grant it', async () => {
-  const unsupported = setup({ access: { supported: false, granted: true } })
-  await unsupported.game.round()
-  assert.equal(unsupported.game.getView().status, 'unsupported')
-  const refused = setup({ access: { supported: true, granted: false } })
-  await refused.game.round()
-  assert.equal(refused.game.getView().status, 'needs-permission')
+test('without session totals from Orca the game runs on the estimate and never reads the history', async () => {
+  for (const access of [{ supported: false, granted: true }, { supported: true, granted: false }]) {
+    const { game, history } = setup({ access })
+    await game.round()
+    assert.equal(game.getView().status, 'running')
+    assert.equal(game.getView().tokenSource, 'estimated')
+    assert.equal(history.reads, 0)
+  }
 })
 
-test('a history read refused for lack of permission switches the game to needs-permission', async () => {
+test('with session totals from Orca the game reads them', async () => {
+  const { game, history } = setup()
+  await game.round()
+  assert.equal(game.getView().tokenSource, 'history')
+  assert.equal(history.reads, 1)
+})
+
+test('a history read refused for lack of permission switches the game to the estimate', async () => {
   const { game, history } = setup()
   history.failure = { ok: false, denied: true, message: 'capability_denied' }
   await game.round()
   await game.round()
-  assert.equal(game.getView().status, 'needs-permission')
+  assert.equal(game.getView().status, 'running')
+  assert.equal(game.getView().tokenSource, 'estimated')
+  assert.equal(history.reads, 1)
 })
 
 test('turning the game on pays nothing for history, then counts what sessions spend', async () => {
@@ -264,4 +278,149 @@ test('the view state of a busy save stays far below the panel post limit', async
   const size = Buffer.byteLength(JSON.stringify(game.getView()))
   assert.ok(size < 64 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
+})
+
+const ESTIMATED = { supported: false, granted: true }
+const PANE = { workspaceId: 'w-banana', paneKey: 'pane-1', terminalId: 'term-1' }
+
+/** The saved tokens of a character of the banana room, or undefined when it has none. */
+async function savedTokens({ game, storage }, sessionId) {
+  await game.flush()
+  return storage.get(GAME_STORAGE_KEY)?.save.worlds.main?.projects[BANANA]?.characters[sessionId]?.tokens
+}
+
+let callCount = 0
+/** One minute of writing with four tool calls, as the store sees it. */
+function writeForAMinute({ store, tick }) {
+  store.status({ ...PANE, state: 'working' })
+  for (let call = 0; call < 4; call++) {
+    store.toolBefore({ ...PANE, tool: 'Edit', input: {}, callId: `call-${++callCount}` })
+    tick(MINUTE / 4)
+  }
+}
+const MINUTE_OF_WRITING = estimateTokens({ workedMs: { write: MINUTE }, toolCalls: 4, minutes: 1 })
+
+test('the estimate pays nothing for work done before the game watched, then counts what agents do', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, tick } = setupResult
+  store.status({ ...PANE, state: 'working' })
+  tick(30 * MINUTE)
+  await game.round()
+  assert.equal(game.getView().rooms[BANANA].joined, false)
+  writeForAMinute(setupResult)
+  await game.round()
+  const view = game.getView()
+  assert.equal(view.characters['pane-1'].sessionId, 'estimated:pane-1')
+  assert.equal(view.characters['pane-1'].link, 'agent')
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), MINUTE_OF_WRITING)
+})
+
+test('an agent that only waits earns nothing from the estimate', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, tick } = setupResult
+  store.status({ ...PANE, state: 'waiting' })
+  await game.round()
+  tick(10 * MINUTE)
+  await game.round()
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), undefined)
+})
+
+test('an agent that opened after the last round earns from its first minute', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, tick } = setupResult
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), MINUTE_OF_WRITING)
+})
+
+test('an estimated character retires once its agent has left the room', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, tick } = setupResult
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  // Two snapshots without the agent: its terminal closed.
+  tick(20_000)
+  store.sync('local', [])
+  store.sync('local', [])
+  await game.round()
+  assert.equal(game.getView().rooms[BANANA].retirees.length, 0)
+  tick(MINUTE)
+  await game.round()
+  assert.equal(game.getView().rooms[BANANA].retirees.length, 1)
+  assert.ok(game.getView().recent.some((event) => event.type === 'retire' && event.sessionId === 'estimated:pane-1'))
+})
+
+test('after a restart the same agent continues its character and the time the worker was down earns nothing', async () => {
+  const storage = new Map()
+  const first = setup({ storage, access: ESTIMATED })
+  await first.game.round()
+  first.tick(1)
+  writeForAMinute(first)
+  await first.game.round()
+  assert.equal(await savedTokens(first, 'estimated:pane-1'), MINUTE_OF_WRITING)
+
+  const second = setup({ storage, access: ESTIMATED })
+  second.tick(2 * MINUTE)
+  second.store.status({ ...PANE, state: 'working' })
+  await second.game.round()
+  writeForAMinute(second)
+  await second.game.round()
+  assert.equal(await savedTokens(second, 'estimated:pane-1'), 2 * MINUTE_OF_WRITING)
+  assert.equal(second.game.getView().rooms[BANANA].retirees.length, 0)
+})
+
+test('when real totals arrive, estimated characters retire and nothing is counted twice', async () => {
+  const setupResult = setup({ access: ESTIMATED })
+  const { game, store, history, session, access, tick, now } = setupResult
+  await game.round()
+  tick(1)
+  writeForAMinute(setupResult)
+  await game.round()
+  access.supported = true
+  store.status({ ...PANE, state: 'working', sessionId: 's1' })
+  // A session that started while the estimate was counting it: its total is already paid.
+  history.sessions = [session('s1', 900_000, { createdAt: now() - 30_000 })]
+  tick(MINUTE)
+  await game.round()
+  const view = game.getView()
+  assert.equal(view.tokenSource, 'history')
+  assert.equal(view.debug.tokenSource, 'history')
+  assert.equal(view.rooms[BANANA].retirees.length, 1)
+  assert.equal(await savedTokens(setupResult, 's1'), undefined)
+  tick(MINUTE)
+  history.sessions = [session('s1', 1_000_000, { createdAt: now() - 90_000 })]
+  await game.round()
+  assert.equal(await savedTokens(setupResult, 's1'), 100_000)
+})
+
+test('when real totals go away, the estimate starts from nothing and history characters retire', async () => {
+  const setupResult = setup()
+  const { game, store, history, session, access, tick } = setupResult
+  store.status({ ...PANE, state: 'working', sessionId: 's1' })
+  history.sessions = [session('s1', 0)]
+  await game.round()
+  tick(MINUTE)
+  history.sessions = [session('s1', 300_000)]
+  await game.round()
+  access.supported = false
+  writeForAMinute(setupResult)
+  await game.round()
+  assert.equal(game.getView().tokenSource, 'estimated')
+  assert.equal(game.getView().rooms[BANANA].retirees.length, 1)
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), undefined)
+  writeForAMinute(setupResult)
+  await game.round()
+  assert.equal(await savedTokens(setupResult, 'estimated:pane-1'), MINUTE_OF_WRITING)
+})
+
+test('an agent on another computer is a guest of the estimate too', async () => {
+  const { game, store } = setup({ access: ESTIMATED })
+  store.status({ workspaceId: 'w-waffle', paneKey: 'pane-9', state: 'working' })
+  await game.round()
+  assert.deepEqual(game.getView().characters['pane-9'], { sessionId: null, link: 'guest', guest: true, level: 1 })
+  assert.equal(game.getView().debug.guests, 1)
 })

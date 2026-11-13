@@ -11,22 +11,34 @@ export const RECENT_EVENTS_KEPT = 20
 const PAUSING_STATES = new Set(['waiting', 'blocked'])
 
 /**
- * @typedef {'running' | 'off' | 'needs-permission' | 'unsupported' | 'newer-save'} GameStatus
+ * @typedef {'running' | 'off' | 'unsupported' | 'newer-save'} GameStatus `unsupported` only when
+ *   the game cannot run here at all (its content did not load)
+ * @typedef {'history' | 'estimated'} TokenSource where the tokens come from: Orca's session
+ *   totals, or the estimate from working time and tool calls
  */
 
 /**
- * Whether the game runs, and if not, why. It runs only when the person turned it on, this Orca
- * offers the session history and the person granted reading it.
+ * Whether the game runs, and if not, why. It runs when the person turned it on and its save is
+ * not from a newer plugin; without session totals from Orca it runs on the estimate.
  *
- * @param {{ enabled: boolean, supported: boolean, granted: boolean, newerSave: boolean }} facts
+ * @param {{ enabled: boolean, newerSave: boolean }} facts
  * @returns {GameStatus}
  */
-export function gameStatus({ enabled, supported, granted, newerSave }) {
+export function gameStatus({ enabled, newerSave }) {
   if (!enabled) return 'off'
-  if (!supported) return 'unsupported'
-  if (!granted) return 'needs-permission'
   if (newerSave) return 'newer-save'
   return 'running'
+}
+
+/**
+ * Where the tokens come from: real session totals when this Orca offers the session history and
+ * the person granted reading it, the estimate otherwise.
+ *
+ * @param {{ supported: boolean, granted: boolean }} access
+ * @returns {TokenSource}
+ */
+export function tokenSourceOf({ supported, granted }) {
+  return supported && granted ? 'history' : 'estimated'
 }
 
 /**
@@ -127,6 +139,7 @@ function characterView(member, link) {
  *
  * @param {object} input
  * @param {GameStatus} input.status
+ * @param {TokenSource | null} input.tokenSource null when the game is not running
  * @param {boolean} input.autoSpend
  * @param {boolean} input.keepTitles
  * @param {{ worlds: object[], projectWorld: Record<string, string | null> } | null} input.engineView
@@ -134,7 +147,8 @@ function characterView(member, link) {
  * @param {string} input.defaultWorldId the world of a room that was never assigned one
  * @param {string[]} input.roomIds the rooms the store shows now
  * @param {Map<string, { sessionId: string | null, roomId: string, how: string }>} input.links by agent
- *   id: the session each character on screen runs, `how` the way it was matched or 'guest'
+ *   id: the session each character on screen runs, `how` the way it was matched ('session',
+ *   'title', 'only', 'agent' for the estimate) or 'guest'
  * @param {Record<string, { state: string }[]>} input.statesByRoom the last round's session states
  * @param {object[]} input.recent
  * @param {object} input.debug counters from the last round
@@ -142,7 +156,8 @@ function characterView(member, link) {
  */
 export function buildGameView(input) {
   const { status, autoSpend, keepTitles, engineView, defaultWorldId, roomIds, links, statesByRoom, recent, debug } = input
-  if (status !== 'running' || !engineView) return { status, autoSpend, keepTitles }
+  if (status !== 'running' || !engineView) return { status, tokenSource: null, autoSpend, keepTitles }
+  const { tokenSource } = input
   const projects = new Map()
   for (const world of engineView.worlds) {
     for (const project of world.projects) projects.set(project.id, { project, worldId: world.id })
@@ -173,5 +188,5 @@ export function buildGameView(input) {
     ...world,
     roomIds: worldProjects.map((project) => project.id).filter((id) => roomIds.includes(id))
   }))
-  return { status, autoSpend, keepTitles, worlds, rooms, characters, recent, debug }
+  return { status, tokenSource, autoSpend, keepTitles, worlds, rooms, characters, recent, debug }
 }

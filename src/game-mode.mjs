@@ -1,12 +1,14 @@
-// The bridge between the plugin and the game engine. Each round it reads the session history,
-// turns token totals into readings for the rooms on screen, moves the engine forward, keeps the
+// The bridge between the plugin and the game engine. Each round it reads what sessions spent
+// (Orca's session token totals, or the estimate from working time and tool calls when Orca has
+// none), turns it into readings for the rooms on screen, moves the engine forward, keeps the
 // save, and builds the game part of the view state. Every Orca call comes in as a function, so
 // the demo and the tests run it without Orca.
-import { readTokenDeltas } from './domain/game-tokens.mjs'
-import { buildReadings, mainAgents, matchSessions, placeSessions, sessionsToClose } from './domain/game-sessions.mjs'
-import { buildGameView, gameStatus, keepRecent } from './domain/game-view.mjs'
+import { estimatedToClose } from './domain/game-estimate.mjs'
+import { buildReadings, mainAgents, sessionsToClose } from './domain/game-sessions.mjs'
+import { buildGameView, gameStatus, keepRecent, tokenSourceOf } from './domain/game-view.mjs'
 import { createGameActions } from './game-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
+import { readFromEstimate, readFromHistory } from './game-sources.mjs'
 import { DEFAULT_WORLD } from './game/worlds.mjs'
 import { RANDOM_THEME } from './preferences.mjs'
 
@@ -18,6 +20,7 @@ export const MAX_ROUND_GAP_MS = 5 * 60_000
 
 /**
  * @typedef {import('./domain/game-view.mjs').GameStatus} GameStatus
+ * @typedef {import('./domain/game-view.mjs').TokenSource} TokenSource
  * @typedef {{ ok: true, sessions: object[], truncated: boolean } | { ok: false, denied: boolean,
  *   message: string }} HistoryReading
  */
@@ -57,18 +60,25 @@ function levelsOf(save) {
  *   access: () => { supported: boolean, granted: boolean },
  *   readHistory: () => Promise<HistoryReading>,
  *   readWorkspaces: () => Promise<{ id: string, path: string, hostId: string | null }[]>,
+ *   readWorkMeters?: () => Record<string, import('./domain/work-meter.mjs').MeterReading>,
  *   store: { snapshot: () => { rooms: object[] }, sessionLinks: () => Record<string, string>,
- *     describeWorkspaces: () => object[] },
+ *     describeWorkspaces: () => object[], workMeters: () => Record<string, object> },
  *   preferences: { snapshot: () => { theme: string, roomThemes: Record<string, string> } },
  *   now?: () => number,
  *   log: (message: string) => void,
  *   onChange: () => void
- * }} dependencies
+ * }} dependencies `readWorkMeters` is what the estimate reads, the store's meters unless given
  */
 export function createGameMode(dependencies) {
   const { engine, gameSave, readSettings, writeSetting, access, readHistory, readWorkspaces } = dependencies
   const { store, preferences, now = Date.now, log, onChange } = dependencies
+  const readWorkMeters = dependencies.readWorkMeters ?? (() => store.workMeters())
   let status = /** @type {GameStatus} */ ('off')
+  let tokenSource = /** @type {TokenSource} */ ('estimated')
+  /** The work meters as last read. Kept in memory only: the meters start again with the worker. */
+  let meterBaselines = {}
+  /** When each estimated character's agent was first missed from the room. */
+  let missingSince = new Map()
   let keepTitles = false
   let isDenied = false
   let lastRoundAt = null
@@ -102,10 +112,17 @@ export function createGameMode(dependencies) {
     keepTitles = settings.gameKeepTitles === true
     await gameSave.load()
     const { supported, granted } = access()
-    const enabled = settings.gameMode === true
-    const next = gameStatus({ enabled, supported, granted: granted && !isDenied, newerSave: gameSave.isFromNewerVersion() })
-    if (next !== status) cachedView = null
+    const next = gameStatus({ enabled: settings.gameMode === true, newerSave: gameSave.isFromNewerVersion() })
+    const nextSource = tokenSourceOf({ supported, granted: granted && !isDenied })
+    if (next !== status || nextSource !== tokenSource) cachedView = null
     status = next
+    tokenSource = nextSource
+  }
+
+  /** Forgets what the estimate read, so nothing it saw before counts again. */
+  function forgetMeters() {
+    meterBaselines = {}
+    missingSince = new Map()
   }
 
   /** Stops watching: when the game runs again, history from now on is counted, not the gap. */
@@ -113,6 +130,7 @@ export function createGameMode(dependencies) {
     lastRoundAt = null
     links = new Map()
     statesByRoom = {}
+    forgetMeters()
     const { save, bridge } = data()
     if (bridge.watchedUntil === null || gameSave.isFromNewerVersion()) return
     commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend } })
@@ -169,34 +187,70 @@ export function createGameMode(dependencies) {
     return { save: spent.save, events }
   }
 
-  /** One round of a running game: read, match, advance, count, close, spend, keep. */
-  async function playRound() {
+  /**
+   * The bridge for this round's source. When the source changed, the other source's baselines
+   * and `watchedUntil` mean nothing here: they are forgotten, so the first reading of the new
+   * source earns nothing and no token is counted by both.
+   */
+  function bridgeFor(source) {
+    const { bridge } = data()
+    if (bridge.tokenSource === source) return bridge
+    forgetMeters()
+    return { ...bridge, baselines: {}, watchedUntil: null, tokenSource: source }
+  }
+
+  /** Reads what sessions spent from this round's source, or null when the history failed. */
+  async function readSource(source, bridge, agents) {
+    if (source === 'estimated') {
+      const meters = readWorkMeters()
+      const at = now()
+      const reading = readFromEstimate({ meters, agents, baselines: meterBaselines, watchedUntil: bridge.watchedUntil, at })
+      return { at, reading }
+    }
     const history = await readHistory()
     if (!history.ok) {
       if (history.denied) isDenied = true
       // A history that cannot be read is reported once, not every round.
       failedReads += 1
       if (failedReads === 1) log(`game: session history: ${history.message}`)
-      return
+      return null
     }
     failedReads = 0
     const at = now()
     const listed = await readWorkspaces()
-    const { rooms } = store.snapshot()
-    const agents = mainAgents(rooms)
-    const { sessions, truncated } = history
-    const { bridge } = data()
-    const read = readTokenDeltas(bridge.baselines, sessions, { now: at, watchedUntil: bridge.watchedUntil })
-    const places = placeSessions(sessions, { workspaces: store.describeWorkspaces(), listed })
-    const { agentOf, how } = matchSessions({ sessions, places, agents, links: store.sessionLinks() })
-    const deltas = new Map(read.deltas.map((delta) => [delta.sessionId, delta]))
+    const workspaces = store.describeWorkspaces()
+    const reading = readFromHistory({ history, listed, workspaces, links: store.sessionLinks(), agents, bridge, at })
+    return { at, reading }
+  }
+
+  /** The characters whose session is over, by the rules of the source. */
+  function charactersToClose(source, save, reading, at) {
+    const characters = livingCharacters(save)
+    if (source === 'history') {
+      const { sessions, agentOf, truncated } = reading
+      return sessionsToClose({ characters, sessions, agentOf, truncated, now: at })
+    }
+    const present = new Set(reading.sessions.map((session) => session.sessionId))
+    const closed = estimatedToClose({ characters, present, missingSince, now: at })
+    missingSince = closed.missingSince
+    return closed.closing
+  }
+
+  /** One round of a running game: read, match, advance, count, close, spend, keep. */
+  async function playRound() {
+    const source = tokenSource
+    const bridge = bridgeFor(source)
+    const agents = mainAgents(store.snapshot().rooms)
+    const read = await readSource(source, bridge, agents)
+    if (!read) return
+    const { at, reading } = read
+    const { sessions, places, agentOf, how, deltas } = reading
     const readings = buildReadings({ sessions, places, agentOf, agents, deltas, themeOf })
 
     let save = syncKeepTitles(data().save)
     const advanced = advance(save, readings.states, at)
     const counted = countTokens(advanced.save, readings.tokens, agentOf, at)
-    const closing = sessionsToClose({ characters: livingCharacters(counted.save), sessions, agentOf, truncated, now: at })
-    const closed = closeSessions(counted.save, closing, at)
+    const closed = closeSessions(counted.save, charactersToClose(source, counted.save, reading, at), at)
     const spent = spendIfAsked(closed.save, bridge.autoSpend)
     save = spent.save
 
@@ -206,15 +260,19 @@ export function createGameMode(dependencies) {
       links.set(agentId, { sessionId, roomId: roomOfAgent.get(agentId), how: how.get(sessionId) })
     }
     statesByRoom = {}
-    for (const reading of readings.states) {
-      if (reading.guest) links.set(reading.agentId, { sessionId: null, roomId: reading.projectId, how: 'guest' })
-      ;(statesByRoom[reading.projectId] ??= []).push({ state: reading.state })
+    for (const state of readings.states) {
+      if (state.guest) links.set(state.agentId, { sessionId: null, roomId: state.projectId, how: 'guest' })
+      ;(statesByRoom[state.projectId] ??= []).push({ state: state.state })
     }
     const events = [...advanced.events, ...counted.events, ...closed.events, ...spent.events]
     recent = keepRecent(recent, stamp(events, at))
-    debug = { readAt: at, sessionsRead: sessions.length, truncated, resets: read.resets, ...readings.counters }
+    const { truncated, resets } = reading
+    debug = { tokenSource: source, readAt: at, sessionsRead: sessions.length, truncated, resets, ...readings.counters }
     lastRoundAt = at
-    commit({ save, bridge: { ...bridge, baselines: read.baselines, watchedUntil: at } })
+    // The estimate's baselines are the meters, which start again with the worker: never saved.
+    if (source === 'estimated') meterBaselines = reading.baselines
+    const baselines = source === 'history' ? reading.baselines : {}
+    commit({ save, bridge: { ...bridge, baselines, watchedUntil: at } })
   }
 
   /** Reads the settings and, while the game runs, plays one round. Never throws. */
@@ -241,6 +299,7 @@ export function createGameMode(dependencies) {
     const { save, bridge } = data()
     cachedView = buildGameView({
       status,
+      tokenSource: running ? tokenSource : null,
       autoSpend: bridge.autoSpend,
       keepTitles,
       engineView: running ? engine.view(save) : null,
@@ -284,7 +343,7 @@ export function createGameMode(dependencies) {
  * @param {GameStatus} status
  */
 export function createUnavailableGame(status) {
-  const view = { status, autoSpend: false, keepTitles: false }
+  const view = { status, tokenSource: null, autoSpend: false, keepTitles: false }
   const refuse = async () => {
     throw new Error('the game is not available')
   }
