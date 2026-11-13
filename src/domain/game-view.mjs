@@ -162,6 +162,51 @@ function currentStatesByRoom({ links, agentStates, agentlessStates }) {
   return byRoom
 }
 
+/** How many purchases of the same thing come after the one at `index` in the kept events. */
+function laterPurchases(recent, index, isSame) {
+  return recent.slice(index + 1).filter((event) => event.type === 'purchase' && isSame(event)).length
+}
+
+/**
+ * A purchase with what a UI shows of it: the room and the item's name for an item upgrade, and
+ * the level it reached, worked back from the level now and the purchases of the same thing kept
+ * after it. An upgrade made by hand after it is not an event, so it is not counted.
+ */
+function describePurchase(event, index, recent, { projects, worlds }) {
+  if (event.kind === 'group') {
+    const world = worlds.find((item) => item.id === event.worldId)
+    const upgrade = world?.upgrades?.find((item) => item.id === event.upgradeId)
+    if (!upgrade) return event
+    const later = laterPurchases(recent, index, (other) => other.kind === 'group' &&
+      other.worldId === event.worldId && other.upgradeId === event.upgradeId)
+    return { ...event, roomId: null, level: upgrade.level - later }
+  }
+  const item = projects.get(event.projectId)?.project.chest.find((entry) => entry.id === event.itemId)
+  const described = { ...event, roomId: event.projectId }
+  if (!item) return described
+  const later = laterPurchases(recent, index, (other) =>
+    other.projectId === event.projectId && other.itemId === event.itemId)
+  return { ...described, name: item.name, level: item.level - later }
+}
+
+/**
+ * The kept events with the names and levels a UI shows: a kill's monster level (its wave: a
+ * monster's level is the wave it comes on), a drop's item name and tier, and a purchase's room,
+ * name and level. A kill's monster name is not known here: the bridge's kill events do not
+ * carry it.
+ */
+function describeEvents(recent, { projects, worlds, itemEntries }) {
+  return recent.map((event, index) => {
+    if (event.type === 'kill') return { ...event, level: event.wave }
+    if (event.type === 'drop') {
+      const entry = itemEntries[event.item]
+      return entry ? { ...event, name: entry.name, tier: entry.tier } : event
+    }
+    if (event.type === 'purchase') return describePurchase(event, index, recent, { projects, worlds })
+    return event
+  })
+}
+
 /**
  * The game part of the view state.
  *
@@ -221,5 +266,9 @@ export function buildGameView(input) {
     ...world,
     roomIds: worldProjects.map((project) => project.id).filter((id) => roomIds.includes(id))
   }))
-  return { status, tokenSource, autoSpend, keepTitles, worlds, rooms, characters, recent, debug }
+  const tickSeconds = engineView.tickSeconds ?? null
+  const described = describeEvents(recent, { projects, worlds, itemEntries: engineView.itemEntries ?? {} })
+  return {
+    status, tokenSource, autoSpend, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug
+  }
 }

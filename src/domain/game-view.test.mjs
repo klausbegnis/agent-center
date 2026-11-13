@@ -132,3 +132,39 @@ test('a character whose agent left the room is not sent, and a session without a
   assert.deepEqual(view.characters, {})
   assert.equal(view.rooms[BANANA].party, 'fighting')
 })
+
+test('the game says how long a round of its fights lasts', () => {
+  assert.equal(buildGameView(input({ ...engineView(), tickSeconds: 10 })).tickSeconds, 10)
+})
+
+test('a drop is named from the game content, and a kill gives the level of the monster it was', () => {
+  const recent = [
+    { id: 1, type: 'kill', roomId: BANANA, wave: 7, kind: 'common', affix: null },
+    { id: 2, type: 'drop', roomId: BANANA, item: 'ashwood-wand' }
+  ]
+  const itemEntries = { 'ashwood-wand': { name: 'Ashwood Wand', tier: 2 } }
+  const [kill, drop] = buildGameView(input({ ...engineView(), itemEntries }, { recent })).recent
+  assert.equal(kill.level, 7)
+  assert.equal(drop.name, 'Ashwood Wand')
+  assert.equal(drop.tier, 2)
+})
+
+test('an item upgrade says its room, its name and the level each purchase reached', () => {
+  const chest = [{ ...item('spark-rod', 5, 's1'), name: 'Spark Rod', level: 5 }]
+  const recent = [
+    { id: 1, type: 'purchase', kind: 'weapon', worldId: 'main', projectId: BANANA, itemId: 'spark-rod', cost: {} },
+    { id: 2, type: 'purchase', kind: 'weapon', worldId: 'main', projectId: BANANA, itemId: 'spark-rod', cost: {} }
+  ]
+  const [first, second] = buildGameView(input(engineView({ chest }), { recent })).recent
+  assert.deepEqual([first.roomId, first.name, first.level], [BANANA, 'Spark Rod', 4])
+  assert.equal(second.level, 5)
+})
+
+test('a group upgrade says the level it reached and belongs to no single room', () => {
+  const view = engineView()
+  view.worlds[0].upgrades = [{ id: 'campfire', level: 3 }]
+  const recent = [{ id: 1, type: 'purchase', kind: 'group', worldId: 'main', upgradeId: 'campfire', cost: {} }]
+  const [purchase] = buildGameView(input(view, { recent })).recent
+  assert.equal(purchase.level, 3)
+  assert.equal(purchase.roomId, null)
+})

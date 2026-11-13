@@ -536,6 +536,7 @@ running; `keepTitles` writes the setting, and the save follows.
 ```
 {
   status: 'running', tokenSource: 'estimated', autoSpend: false, keepTitles: false,
+  tickSeconds: 10,                  // the length of one tick of every fight, in game time
   worlds: [{
     id: 'main', level: 11, attackSpeed: 1.12,
     workSkills: [{ id: 'forge', level, stars, effectiveLevel, progress, canPrestige }, ...],
@@ -547,7 +548,8 @@ running; `keepTitles` writes the setting, and the save follows.
   rooms: {
     'local:/work/sneaky-pancake': {
       worldId: 'main', joined: true, wave: 15, waveKills: 0, killsToPass: 16,
-      monster: { id, name, kind, affix, level, healthShare: 0.12, sprite: { body, accent } },
+      monster: { id, name, kind, affix, level, healthShare: 0.12, hp: 412, maxHp: 3430,
+        sprite: { body, accent } }, // hp rounded up, so a monster still standing never reads 0
       party: 'fighting',            // fighting | resting | paused | idle
       pausedBy: null,               // blocked | waiting while paused, otherwise null
       stamina: 0.8,                 // share of the party's pool
@@ -578,8 +580,17 @@ running; `keepTitles` writes the setting, and the save follows.
   estimate: one character per agent, on this computer or a paired one) or `guest` (a paired
   machine's agent while the game reads real totals).
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
-  kind, affix, ticks, rested, materials, item), `drop` (item), `level` (agentId, level), `retire`
-  (sessionId, nameId, level) and `purchase` (worldId, kind and what was bought).
+  kind, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
+  `drop` (item, with its `name` and `tier`), `level` (agentId, level), `retire` (sessionId,
+  nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
+  upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
+  purchase's level is worked back from the level now and the purchases of the same thing kept
+  after it; an upgrade bought by hand is not an event and is not counted. A kill does not name
+  its monster: the bridge's kill events do not carry the name, so a UI names it from the monster
+  it showed last. There is no `arrive` event and no gain per hour: the bridge does not record
+  who joined a party, and materials come from kills and gathering at rates that change with every
+  state, so no honest hourly figure exists. A UI sees a new character in `characters`, with the
+  items it holds.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
   chest shows the items in use and the strongest free ones, 12 at most (`chestSize` is the
   whole count); retirees show the newest 8 (`retiredCount` counts all).

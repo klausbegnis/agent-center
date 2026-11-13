@@ -2,7 +2,7 @@
 // progress, materials, upgrades with their next cost, and each project's fight and party.
 import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
-import { WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
+import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
 import { killsToPass } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
@@ -85,6 +85,9 @@ function monsterView(monster) {
     affix: monster.affix,
     level: monster.level,
     healthShare: monster.maxHp > 0 ? monster.hp / monster.maxHp : 0,
+    // Whole points: rounded up, so a monster still standing never reads 0.
+    hp: Math.ceil(monster.hp),
+    maxHp: Math.ceil(monster.maxHp),
     sprite: { ...monster.sprite }
   }
 }
@@ -136,13 +139,18 @@ function worldView(worldId, world, names) {
  *
  * @param {object} save
  * @param {{ items: { items: object[] } }} content for item names
- * @returns {{ worlds: object[], projectWorld: Record<string, string | null>, keepTitles: boolean }}
+ * @returns {{ worlds: object[], projectWorld: Record<string, string | null>, keepTitles: boolean,
+ *   tickSeconds: number, itemEntries: Record<string, { name: string, tier: number }> }} `itemEntries`
+ *   names the content's items by entry id, for telling what a drop was
  */
 export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
   return {
     worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names)),
     projectWorld: { ...save.projectWorld },
-    keepTitles: save.settings.keepTitles
+    keepTitles: save.settings.keepTitles,
+    tickSeconds: TICK_SECONDS,
+    itemEntries: Object.fromEntries(content.items.items
+      .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }]))
   }
 }

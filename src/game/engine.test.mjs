@@ -297,7 +297,14 @@ test('the view shows each world\'s skills and each project\'s fight and party', 
   const [shown] = world.projects
   assert.equal(shown.party.length, 4)
   assert.ok(shown.monster.healthShare > 0 && shown.monster.healthShare <= 1)
+  assert.ok(shown.monster.hp > 0 && shown.monster.hp <= shown.monster.maxHp)
   assert.ok(shown.party.every((member) => member.equipment.weapon && member.equipment.weapon.name))
+})
+
+test('the view gives the length of a fight\'s tick and the name of every item a kill can drop', () => {
+  const view = engine.view(emptySave())
+  assert.equal(view.tickSeconds, TICK_SECONDS)
+  assert.equal(view.itemEntries['whittled-cudgel'].name, 'Whittled Cudgel')
 })
 
 test('the view shows the party\'s attack speed from the world\'s Engineering', () => {
