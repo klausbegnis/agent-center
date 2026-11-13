@@ -78,6 +78,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 12px;
   align-content: start;
+  align-items: start;
 }
 
 /* Cards */
@@ -120,8 +121,11 @@
   left: 0;
   right: 0;
   z-index: 1;
+  /* In a large room the band stops growing: a full-screen room gets a bigger monster, not a
+     taller strip of empty panels. */
+  max-height: 84px;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 1.2cqw;
   padding: 1cqw 1.2cqw;
   pointer-events: none;
@@ -148,9 +152,10 @@
 .ac-game-wave-kills { font-variant-numeric: tabular-nums; opacity: 0.85; }
 .ac-game-foe {
   flex: 1 1 auto;
+  align-self: stretch;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.6em;
 }
 .ac-game-foe-info { flex: 1 1 auto; min-width: 0; }
@@ -197,7 +202,7 @@
 /* A monster stands on the band's floor; its size is a share of the band (a boss fills it). */
 .ac-monster {
   flex: none;
-  align-self: flex-end;
+  align-self: center;
   height: calc(var(--ac-monster-size, 0.8) * 100%);
   aspect-ratio: 1;
 }
@@ -452,6 +457,7 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 12px;
   align-content: start;
+  align-items: start;
 }
 .ac-game-settings[hidden] { display: none; }
 .ac-game-settings-head {
