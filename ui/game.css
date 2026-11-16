@@ -82,7 +82,11 @@
 .ac-root.ac-gallery[data-game-tab='skills'],
 .ac-root.ac-gallery[data-game-tab='market'] { overflow: auto; }
 .ac-game-panel[hidden] { display: none !important; }
+/* A panel is the containing block of what is positioned inside it (the visually hidden labels):
+   otherwise those hang off the page itself, below the fold, and the page grows a second scroll
+   bar next to the panel's own. */
 .ac-game-panel {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 12px;
