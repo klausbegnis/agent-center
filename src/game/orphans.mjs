@@ -3,6 +3,7 @@
 import { addToChest, isBetter } from './chest.mjs'
 import { COPIES_PER_ITEM } from './constants.mjs'
 import { upgradeCost } from './items.mjs'
+import { mergeLegendary, withLegendary } from './legendary.mjs'
 import { worldLevel } from './progression.mjs'
 import { retire } from './retirement.mjs'
 import { mainSkillOf } from './sessions.mjs'
@@ -65,8 +66,9 @@ function mergeChests(target, incoming) {
  * first one from the world and from `projectWorld`. Its characters retire first, so no item is
  * held. Every item goes into the target's chest, free, but an entry never ends above
  * COPIES_PER_ITEM copies there: the lowest copies past that are salvaged into the world's
- * materials as a drop would be (what one upgrade of a fresh copy costs). Its retirees, kept and
- * folded alike, are added to the target's `retiredCount`, which the retiree bonus counts.
+ * materials as a drop would be (what one upgrade of a fresh copy costs). Its relics and legendary
+ * equipment join the target's, one of each (`mergeLegendary`). Its retirees, kept and folded
+ * alike, are added to the target's `retiredCount`, which the retiree bonus counts.
  *
  * @param {object} save
  * @param {{ fromProjectId: string, toProjectId: string, now?: number }} move `now` dates the
@@ -81,12 +83,19 @@ export function moveProjectItems(save, { fromProjectId, toProjectId, now }) {
   const source = retireEveryone(world.projects[fromProjectId], now)
   const target = world.projects[toProjectId]
   const incoming = [...source.chest].sort(bestFirst)
-  const { chest, salvaged } = mergeChests(target.chest, incoming)
+  const merged = mergeChests(target.chest, incoming.filter((item) => !item.legendary))
+  // Relics and legendary equipment follow their own rules: one of each per room (legendary.mjs).
+  const loot = mergeLegendary(
+    { ...target, chest: merged.chest },
+    { items: incoming.filter((item) => item.legendary), legendary: source.legendary }
+  )
+  const { chest } = loot
+  const salvaged = [...merged.salvaged, ...loot.salvaged]
   const level = worldLevel(world.skills)
   let materials = world.materials
   for (const item of salvaged) materials = addMaterials(materials, upgradeCost({ ...item, level: 0 }, { worldLevel: level }))
   const retiredCount = target.retiredCount + source.retirees.length + source.retiredCount
-  const projects = { ...world.projects, [toProjectId]: { ...target, chest, retiredCount } }
+  const projects = { ...world.projects, [toProjectId]: withLegendary({ ...target, chest, retiredCount }, loot.legendary) }
   delete projects[fromProjectId]
   const projectWorld = { ...save.projectWorld }
   delete projectWorld[fromProjectId]

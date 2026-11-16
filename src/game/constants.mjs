@@ -394,3 +394,23 @@ export const LEGENDARY_EFFECT_CAPS = {
  * ahead. A legendary item's buff is worth about that much, and its upgrades then keep it level.
  */
 export const LEGENDARY_PICK_MARGIN = 2
+/**
+ * A pool relic (one a city sells) drops from a boss wave's boss with this chance by its rank, plus
+ * RELIC_PITY_STEP for every such kill since the room's last pool relic. A legendary boss is the
+ * main source; a plain boss gives one now and then. A room that owns no relic at all gets one
+ * from its first boss for certain, so even a light user, who meets a boss every few weeks, sees
+ * a relic within about two weeks.
+ */
+export const RELIC_CHANCE = { boss: 0.08, legendary: 0.5 }
+export const RELIC_PITY_STEP = 0.08
+/**
+ * A named boss's own relic or legendary equipment drops with this chance by rank, plus
+ * BOSS_ITEM_PITY_STEP for every kill of a boss whose item the room lacks that gave nothing. A
+ * room's first boss-owned item is certain: the first such boss it beats gives it. A boss comes
+ * back to a room only after the whole roster (550 waves), so pity counts kills of any boss with
+ * an item, not of the same one.
+ */
+export const BOSS_ITEM_CHANCE = { boss: 0.05, legendary: 0.15 }
+export const BOSS_ITEM_PITY_STEP = 0.05
+/** Pity counters stop here; the chance is certain long before. Bounds what an imported save may hold. */
+export const LEGENDARY_PITY_MAX = 1000

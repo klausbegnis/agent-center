@@ -4,6 +4,7 @@ import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
+import { rollLegendaryDrops } from './legendary-drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import {
   heldEffects,
@@ -137,8 +138,21 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
 }
 
 /**
- * What a kill changes: reward, drop, campfire, the wave's and the room's counts, the scene of a
- * travelling room, and the next monster, which fits that scene.
+ * A boss kill's legendary drops, put in the fight's working copy of the project: relics and pity
+ * in its `legendary`, equipment in its chest. Returns what dropped.
+ */
+function settleLegendaryDrops(state, { monster, seed, content }) {
+  const found = rollLegendaryDrops(state, { monster, seed, index: legendaryIndexOf(content) })
+  if (found.project === state) return []
+  state.chest = found.project.chest
+  if (found.project.legendary) state.legendary = found.project.legendary
+  else delete state.legendary
+  return found.drops
+}
+
+/**
+ * What a kill changes: reward, drop, legendary drops, campfire, the wave's and the room's counts,
+ * the scene of a travelling room, and the next monster, which fits that scene.
  */
 function settleKill(state, context) {
   const { worldId, projectId, world, content, party, worldLevel, events } = context
@@ -157,10 +171,12 @@ function settleKill(state, context) {
     salvage = dropped.salvage
     state.materials = addMaterials(state.materials, salvage)
   }
+  const legendary = settleLegendaryDrops(state, { monster, seed, content })
   events.push({
     type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
     affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
-    materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null
+    materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null,
+    ...(legendary.length ? { legendary } : {})
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
   state.stamina = Math.min(1, state.stamina + (loot?.staminaPerKill ?? 0))
