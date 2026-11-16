@@ -4,6 +4,7 @@
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
+import { buyMaterial, sellMaterial, tradeMaterial } from './market.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
 import { moveProjectItems } from './orphans.mjs'
 import { canPrestige, prestige as prestigeSkill, worldLevel } from './progression.mjs'
@@ -11,15 +12,17 @@ import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
+import { buyStallOffer } from './stall.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { viewOf } from './view.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
 /**
  * @typedef {{ monsters: { monsters: object[] }, items: { items: object[] },
- *   races?: { palettes: object, races: object[] }, bosses?: { bosses: object[] } }} Content the
- *   parsed game/monsters.json, game/items.json, game/races.json and game/bosses.json; without
- *   races every monster is a hand-made entry
+ *   races?: { palettes: object, races: object[] }, bosses?: { bosses: object[] },
+ *   cities?: { cities: object[] } }} Content the parsed game/monsters.json, game/items.json,
+ *   game/races.json, game/bosses.json and game/cities.json; without races every monster is a
+ *   hand-made entry, without cities the market has none
  */
 
 /**
@@ -109,6 +112,35 @@ function autoSpendWithPurchases(save) {
 }
 
 /**
+ * Applies a change to one existing world: the same save when the world is missing or the change
+ * gives back the same world.
+ */
+function inWorld(save, worldId, change) {
+  const world = Object.hasOwn(save.worlds, worldId) ? save.worlds[worldId] : null
+  if (!world) return save
+  const next = change(world)
+  return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
+}
+
+/**
+ * The market's actions over a save, each unchanged when it cannot be made (see market.mjs and
+ * stall.mjs).
+ *
+ * @param {Content} content
+ */
+function marketActions(content) {
+  const cities = content.cities?.cities ?? []
+  return {
+    sellMaterial: (save, { worldId, ...sale }) => inWorld(save, worldId, (world) => sellMaterial(world, cities, sale)),
+    buyMaterial: (save, { worldId, ...purchase }) =>
+      inWorld(save, worldId, (world) => buyMaterial(world, cities, purchase)),
+    tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, cities, trade)),
+    buyStallOffer: (save, { worldId, ...purchase }) => inWorld(save, worldId, (world) =>
+      buyStallOffer(world, { worldId, cities, items: content.items }, purchase))
+  }
+}
+
+/**
  * Creates the engine for a set of content.
  *
  * @param {{ content: Content }} options
@@ -136,7 +168,8 @@ export function createEngine({ content }) {
     autoSpend: (save) => autoSpendWithPurchases(save).save,
     autoSpendWithPurchases,
     view: (save) => viewOf(save, content),
-    cleanSave,
-    moveProjectItems
+    cleanSave: (save) => cleanSave(save, { cityIds: (content.cities?.cities ?? []).map((city) => city.id) }),
+    moveProjectItems,
+    ...marketActions(content)
   }
 }

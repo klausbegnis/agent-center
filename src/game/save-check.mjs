@@ -2,7 +2,16 @@
 // from the fields the engine writes, so nothing made up can be stored. `migrate` repairs what the
 // plugin's own storage holds; a file is refused instead as soon as one part is not what the engine
 // would have written. Pure.
-import { ITEM_MAX_TIER, MONSTER_KINDS, MONSTER_RANKS } from './constants.mjs'
+import {
+  ITEM_MAX_TIER,
+  MARKET_MAX_COINS,
+  MARKET_PRESSURE_MAX,
+  MARKET_PRESSURE_MIN,
+  MONSTER_KINDS,
+  MONSTER_RANKS,
+  STALL_OFFERS
+} from './constants.mjs'
+import { emptyMarket } from './market.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
 import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
@@ -273,7 +282,34 @@ function project(value, path) {
   }
 }
 
-function world(value, path) {
+/** The day's offers bought in a city: each offer once, by its index. */
+function soldToday(value, path) {
+  const source = record(value, path)
+  const offers = list(source.offers, `${path}.offers`)
+    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS - 1 }))
+  if (new Set(offers).size !== offers.length) fail(`${path}.offers`, 'names an offer twice')
+  return { day: whole(source.day, `${path}.day`), offers }
+}
+
+/** A world's market: pressures by city and material within their bounds, the stall's sales. */
+function market(value, path, cityIds) {
+  if (value === undefined) return emptyMarket()
+  const source = record(value, path)
+  const cityKey = (id, at) => oneOf(id, cityIds, at)
+  return {
+    clock: numberOrNull(source.clock, `${path}.clock`),
+    pressure: entries(source.pressure, `${path}.pressure`, {
+      key: cityKey,
+      entry: (materials, at) => entries(materials, at, {
+        key: (id, materialAt) => oneOf(id, MATERIALS, materialAt),
+        entry: (pressure, pressureAt) => number(pressure, pressureAt, { min: MARKET_PRESSURE_MIN, max: MARKET_PRESSURE_MAX })
+      })
+    }),
+    sold: entries(source.sold, `${path}.sold`, { key: cityKey, entry: soldToday })
+  }
+}
+
+function world(value, path, cityIds) {
   const source = record(value, path)
   return {
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
@@ -283,7 +319,10 @@ function world(value, path) {
       entry: (level, at) => whole(level, at)
     }),
     projects: entries(source.projects, `${path}.projects`, { key: text, entry: project }),
-    lastTokenAt: numberOrNull(source.lastTokenAt, `${path}.lastTokenAt`)
+    lastTokenAt: numberOrNull(source.lastTokenAt, `${path}.lastTokenAt`),
+    // A save from before the market has neither coins nor market.
+    coins: whole(source.coins ?? 0, `${path}.coins`, { max: MARKET_MAX_COINS }),
+    market: market(source.market, `${path}.market`, cityIds)
   }
 }
 
@@ -292,13 +331,14 @@ function world(value, path) {
  * that is not what the engine writes. Run it after `migrate`, which brings an older version up.
  *
  * @param {unknown} value
+ * @param {{ cityIds?: string[] }} [content] the ids of the market's cities, which a market may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value) {
+export function cleanSave(value, { cityIds = [] } = {}) {
   try {
     const source = record(value, 'the save')
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
-    const worlds = entries(source.worlds, 'worlds', { key: text, entry: world })
+    const worlds = entries(source.worlds, 'worlds', { key: text, entry: (item, at) => world(item, at, cityIds) })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.
     const layoutProblem = worldLayoutProblem(worlds, projectWorld)

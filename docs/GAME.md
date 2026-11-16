@@ -7,8 +7,9 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items, races, bosses } })` takes the parsed
-`game/monsters.json`, `game/items.json`, `game/races.json` and `game/bosses.json` and returns
+`createEngine({ content: { monsters, items, races, bosses, cities } })` takes the parsed
+`game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json` and
+`game/cities.json` and returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -28,13 +29,18 @@ milliseconds the caller passes.
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
-| `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key). Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
-| `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost; per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
+| `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
+| `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
+| `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
+| `buyMaterial(save, { worldId, cityId, materialId, amount })` | Buys a material an open city produces with the world's coins. The engine's own (the simulator uses it); no surface offers it in this version. |
+| `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall"). |
+| `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost, coins and the market (see "View state"); per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
-upgrades and `autoSpend`), `drops.mjs` (item drops) and `view.mjs`, over the rule modules
-described below.
+upgrades and `autoSpend`), `drops.mjs` (item drops), `market.mjs`, `market-prices.mjs` and
+`stall.mjs` (the market), and `view.mjs` with `market-view.mjs`, over the rule modules described
+below.
 
 Every number lives in `src/game/constants.mjs`. Formulas below name those constants.
 
@@ -42,9 +48,11 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 
 - Experience comes from tokens only. Kills and gathering give materials, never experience
   for work skills.
-- Nothing is ever lost: no death, no stolen materials, no decay.
+- Nothing is ever lost: no death, no stolen materials, no decay. The market only trades what a
+  person chooses to trade, at a loss in base value every time (see "Market").
 - No input is needed. Prestige is the one choice the game offers by itself; a person may also
-  choose what idle characters gather (see "Gathering"), and Auto plays as well.
+  choose what idle characters gather (see "Gathering") and trade at the market, and Auto plays
+  as well.
 - A character is one agent session. It is short lived, so most power is accumulated in the
   world and the project, not in the character.
 - Everything is deterministic: the same save and the same inputs give the same result. Anything
@@ -339,6 +347,7 @@ before any comes again. Adding or removing a theme reshuffles the order.
 - A monster entry is picked by hash among the entries of its kind that match the room's theme,
   falling back to the generic ones. The room's theme is the last `themeId` a reading gave. The
   entry gives the monster its loot table, whatever it looks like.
+- `game/cities.json` describes the market's cities (see "Market").
 - `game/races.json` describes 20 races of generated monsters, `game/bosses.json` the fixed
   roster of named bosses. Both are looks and names only: health, attack, reward and loot never
   depend on them, and `npm run simulate` gives the same result with or without them. They are
@@ -394,6 +403,134 @@ every boss once before any comes back: with 55 bosses, after 550 waves.
 3. Generic entries never show as themselves while races are loaded; they lend their loot.
    Content without races (older tests) shows every entry as itself.
 
+## Market
+
+Coins and five cities, per world. Materials pile up unevenly (one kind runs short while another
+is in the thousands); the market turns the surplus into coins, the coins into gear, and one
+material into another, always at a loss in what they are worth.
+
+### Cities
+
+`game/cities.json` lists them, checked by `src/game/content-cities.mjs` (`npm run check` and
+the worker refuse a file with problems; every city's banner must exist). An entry is
+`{ id, name, tagline, opensAt, produces, wants, banner, bannerAlt }`: a city trades with a world
+from world level `opensAt`, sells only what it `produces`, pays most for what it `wants` (never
+something it produces), and its `banner` is a PNG under `ui/cities/`, where the panel, the tab
+and the external view all reach it, with `bannerAlt` describing it.
+
+| City | Tagline | Opens at | Produces | Wants |
+|---|---|---|---|---|
+| Goldmill | Wheat fields and windmills | 1 | crops, fish | ore, bars |
+| Deepforge | The dwarven mine and foundry | 5 | ore, bars, gears | crops, logs |
+| Brinehaven | Harbour of fishers and traders | 10 | fish, hides | runes, seals |
+| Tallwood | Tree houses, sawmill and hunters | 15 | logs, hides | gears, pages |
+| Runespire | City of scribes, crystals and seals | 25 | runes, crystals, pages, seals | ore, fish |
+
+Every material is produced somewhere, so each can be had by trade once its city is open.
+
+### Base values
+
+A material's base value (`MATERIAL_BASE_VALUES`) is what it is worth in coins. It is the
+inverse of the material's share of what the three simulated players earn in a year from kills
+and gathering (`npm run simulate`, before the market), scaled to a mean of 10 and rounded: the
+recipes ask for every material in equal amounts, so what comes in rarely is worth more.
+
+| Material | Share of income | Base value |
+|---|---|---|
+| bars | 10.1% | 9 |
+| pages | 7.9% | 12 |
+| gears | 7.5% | 12 |
+| crystals | 14.1% | 6 |
+| seals | 5.0% | 18 |
+| ore | 12.2% | 7 |
+| fish | 5.5% | 17 |
+| crops | 7.3% | 13 |
+| logs | 11.8% | 8 |
+| hides | 10.1% | 9 |
+| runes | 8.6% | 11 |
+
+### Prices
+
+For a material of base value `b` in a city, with the world at level `L`:
+
+```
+usual    = b * MARKET_CITY_FACTORS[stance]       stance: wanted 1, neutral 0.8, produced 0.6
+price(p) = usual * e ** -p                        p: the pressure on it in that city
+sell(p)  = min(price(p), b) * (1 - MARKET_FEE)    what one more unit sold is paid
+buy(p)   = max(price(p), b) * (1 + MARKET_FEE)    what one more unit bought costs
+depth    = MARKET_DEPTH_BASE * REWARD_GROWTH ** L
+```
+
+- A sale of `q` units moves the pressure from `p` to `p + q / depth` and pays every unit at the
+  price it meets on the way: `floor(depth * ∫ sell(y) dy)` over that span. A purchase moves it
+  from `p` down to `p - q / depth` and costs `ceil(depth * ∫ buy(y) dy)`. Selling in two steps
+  pays what selling at once does, within a coin of rounding.
+- The pressure stays between `MARKET_PRESSURE_MIN` (-2: a city sells nothing that would push
+  its price past `e ** 2` times the usual) and `MARKET_PRESSURE_MAX` (10), so a huge sale is paid
+  at most about `b * depth` however large it is: a stock of 1e17 seals sells for a bounded sum.
+- A trade is a sale of `amount` units of one material followed by the purchase of as many whole
+  units of another (one the city produces) as the sale paid for, both with the fee; the coins
+  the purchase leaves go to the world's coins. It is refused when it would give nothing.
+- Amounts are whole numbers from 1 to `MARKET_MAX_AMOUNT` and never more than the world holds;
+  coins are whole, at least 0 and at most `MARKET_MAX_COINS`. Both bounds (1e100) are far past
+  anything played and keep every number finite. Like materials, coins past 2 ** 53 are not
+  counted to the unit.
+- Prices recover: whenever the world is advanced (`advance`, every round, for every world),
+  every pressure is multiplied by `0.5 ** (elapsed / MARKET_RECOVERY_HALF_LIFE_MS)` (six hours),
+  and one smaller than `MARKET_PRESSURE_FORGOTTEN` is dropped. The elapsed time is game time:
+  what `advance` covers, which the bridge caps per round, so prices recover while the game
+  plays, not while the computer sleeps. Many short advances recover exactly as far as one long
+  one.
+
+| Constant | Value | Why |
+|---|---|---|
+| `MARKET_CITY_FACTORS` | wanted 1, neutral 0.8, produced 0.6 | A city pays most for what it wants; none pays more than the base value. |
+| `MARKET_FEE` | 0.1 | Every sale pays 10% less, every purchase costs 10% more: the spread that keeps trading from paying. |
+| `MARKET_DEPTH_BASE` | 1000 | The units that move a price by a factor of e at level 0: about two and a half reference upgrades at every level. |
+| `MARKET_PRESSURE_MIN`, `MARKET_PRESSURE_MAX` | -2, 10 | The ceiling on a city's price when bought out, and the floor of a dumped one. |
+| `MARKET_RECOVERY_HALF_LIFE_MS` | 6 hours | A price pushed in the morning is mostly back the next day of play. |
+
+### Why no trade can make money
+
+Value every holding at its base value: `wealth = coins + Σ materials × b`. A sale of `q` units
+pays at most `q * b * (1 - MARKET_FEE)` (no city's price is above `b` for a sale, and the coins
+are rounded down), so wealth falls by at least the fee. A purchase costs at least
+`q * b * (1 + MARKET_FEE)` (no price is below `b` for a purchase, rounded up), so wealth falls
+again. A trade is one of each, a stall offer turns coins into gear, and the recovery of prices
+changes no holding. Every step lowers wealth or leaves it, so no sequence of them, in any
+cities, in any order, with any wait between them, ends with more: the best price any city pays
+for a material is always below the best price any city asks for it. "Buy where it is produced,
+sell where it is wanted" loses at least the two fees.
+
+`src/game/market.test.mjs` checks it: from 150 random price states (every city and material at
+a random pressure in range, random stocks and coins, world levels 25 to 99) it plays 60 random
+steps each (sales, purchases and trades of random sizes in random cities, and waits for
+recovery) and asserts wealth never rises, coins and stocks stay whole and at least 0, and
+pressures stay in range; that the best sell price is below the best buy price for every
+material in every state; that every buy-here-sell-there round trip loses coins for amounts
+from 1 to 40,000, with or without waiting for prices to recover; and that a sale of 1e17 units
+is bounded.
+
+### The stall
+
+Each open city offers `STALL_OFFERS` (3) pieces of generic gear a game day, each of a different
+kind (a physical weapon, a magical weapon, an outfit or a tool, in an order hashed from world,
+city and day), at `stallTier(L) = min(ITEM_MAX_TIER, dropTier(L) + 1)`: one tier above what the
+world's monsters drop. The game day is `floor(clock / MARKET_DAY_MS)`, the clock being the time
+the world was last advanced to, so offers change at midnight UTC of the time the rounds read.
+
+A piece costs `round(STALL_MARKUP * Σ upgradeCost(level l) * (b1 + b2))` coins, at least 1: the
+base value of the two recipe materials that would upgrade a fresh tier 1 copy level by level up
+to the piece's gear level in that world (at least one upgrade's worth), times `STALL_MARKUP`
+(1.5). It follows the tier (each gear level doubles it) and the world level (like upgrade
+costs), so a piece ahead of the world's reference gear is dear and one behind it cheap.
+
+`buyStallOffer` puts the piece into the chosen project's chest at level 0, as a drop would, and
+records the offer as sold for that day. It is refused when the city is closed, the offer is not
+today's (the caller names the entry it saw), it was sold already, the coins do not cover it, or
+the chest already keeps `COPIES_PER_ITEM` copies of that entry: a purchase is never salvaged.
+Offers have a `kind` (`item` in this version) so later kinds can join them.
+
 ## Save shape
 
 One JSON value:
@@ -402,7 +539,10 @@ One JSON value:
 Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: worldId | null },
             settings: { keepTitles } }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
-            upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt }
+            upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
+            coins, market: Market }
+Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
+            sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount }
@@ -412,6 +552,10 @@ Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
 ```
+
+`coins` are the world's, whole; a save from before the market has none and reads as 0, with a
+market at rest (`{ clock: null, pressure: {}, sold: {} }`). `market.pressure` keeps only prices
+that moved; `sold` the offers bought on the day it names.
 
 A monster keeps the part ids and colours it was given, not a seed, so it never changes looks
 when parts or races are added later; a look is about 300 bytes. A monster saved before ranks and

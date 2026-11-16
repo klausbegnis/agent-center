@@ -1,8 +1,9 @@
-// The game's content files as `npm run check` enforces them: game/monsters.json, races.json and
-// bosses.json must exist and be valid, and game/items.json must be valid once it exists. The
-// rules are in src/game/content.mjs and src/game/content-races.mjs.
+// The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
+// bosses.json and cities.json must exist and be valid, and game/items.json must be valid once it
+// exists. The rules are in src/game/content.mjs, content-races.mjs and content-cities.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
+import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
 
@@ -23,6 +24,7 @@ export function checkGameContent({ root, report, readJson }) {
     if (monsters !== null) for (const problem of validateMonsters(monsters)) report(monstersFile, problem)
   }
   checkRacesAndBosses({ root, report, readJson })
+  checkCities({ root, report, readJson })
   const itemsFile = path.join(root, 'game', 'items.json')
   if (!fs.existsSync(itemsFile)) return
   const items = readJson(itemsFile)
@@ -43,4 +45,18 @@ function checkRacesAndBosses({ root, report, readJson }) {
   if (!fs.existsSync(bossesFile)) return
   const bosses = readJson(bossesFile)
   if (bosses !== null) for (const problem of validateBosses(bosses, races)) report(bossesFile, problem)
+}
+
+/** game/cities.json, the market's cities, and that each city's banner is there. */
+function checkCities({ root, report, readJson }) {
+  const citiesFile = path.join(root, 'game', 'cities.json')
+  if (!fs.existsSync(citiesFile)) return report(citiesFile, 'is missing; the market needs its cities')
+  const cities = readJson(citiesFile)
+  if (cities === null) return
+  const problems = validateCities(cities)
+  for (const problem of problems) report(citiesFile, problem)
+  if (problems.length) return
+  for (const city of cities.cities) {
+    if (!fs.existsSync(path.join(root, city.banner))) report(citiesFile, `the banner ${city.banner} is missing`)
+  }
 }
