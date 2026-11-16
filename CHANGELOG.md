@@ -6,6 +6,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Added
+
+- A small star at the right of the header's title opens the project's GitHub repository: in the
+  browser from Orca's panel and tab (Orca may ask once before opening the site), in a new tab
+  from the external view. The title, the counters and the header's icon buttons now always keep
+  one row, with the other controls wrapping below it.
+
 ## 0.2.0 - 2026-11-16
 
 ### Added

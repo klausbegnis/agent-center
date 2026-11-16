@@ -185,6 +185,9 @@ Copy `themes/_template`, run `node scripts/demo.mjs <your-theme>` and draw: the 
 
 The panel, the tab and the external view each remember their own choice.
 
+The star at the right of the title opens the project's GitHub page, in case you want to leave a
+star.
+
 Rooms you do not care about can be hidden: hover the title and click **hide**. Hidden rooms are
 listed at the bottom, one click away.
 

@@ -1,4 +1,5 @@
 // Connects the scene engine to Orca: used by the sidebar panel and the editor tab.
+import { REPOSITORY_URL } from '../engine/project-link.js'
 import { mountStage } from '../engine/stage.js'
 
 const orca = window.orca
@@ -13,6 +14,8 @@ const transport = {
   setTheme: (id) => orca.plugin.request('theme.set', { id }),
   setRoomHidden: (id, hidden) => orca.plugin.request('room.hide', { id, hidden }),
   setRoomTheme: (id, theme) => orca.plugin.request('room.theme', { id, theme }),
+  // The frame cannot navigate away from the plugin folder; Orca opens the browser on a click.
+  openRepository: () => orca.shell.openExternal(REPOSITORY_URL),
   openWorkspace: (workspaceId, agentId) => orca.plugin.request('workspace.open', { workspaceId, agentId }),
   // The game. The worker checks every value and answers { changed }.
   prestigeSkill: (worldId, skillId) => orca.plugin.request('game.prestige', { worldId, skillId }),

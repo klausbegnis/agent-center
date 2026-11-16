@@ -10,20 +10,11 @@
   --ac-game-track: color-mix(in srgb, var(--orca-foreground, #e8eaf0) 14%, transparent);
 }
 
-/* The header while the game shows: the title, counters and the settings cog keep one row that
-   never wraps, the cog at its right end, and the tools wrap below it when they do not fit. The
-   page keeps room for a scrollbar at all times, so a tab that scrolls does not narrow the panel
-   and move the header. */
+/* The header while the game shows: the settings cog joins the star at the title row's right end
+   (see stage.css). The page keeps room for a scrollbar at all times, so a tab that scrolls does
+   not narrow the panel and move the header. */
 .ac-root[data-game-tab] { scrollbar-gutter: stable; }
-.ac-root[data-game-tab] .ac-title-row {
-  display: flex;
-  flex: 1 1 260px;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.ac-root[data-game-tab] .ac-title-row .ac-counts { min-width: 0; }
-.ac-root[data-game-tab] .ac-title-row .ac-game-settings-button { flex: none; margin-left: auto; }
+.ac-title-row .ac-game-settings-button { flex: none; }
 
 /* Tabs */
 .ac-game-bar {
