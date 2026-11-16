@@ -2,7 +2,7 @@
 // running keeps working in its terminal, but Orca no longer lists it as an agent and sends no
 // events for it until it is started again. Its terminal still tells enough to show it: the
 // title an agent CLI sets, and when the terminal last printed something.
-import { displayText } from '../domain/display-text.mjs'
+import { TITLE_LIMIT, displayText } from '../domain/display-text.mjs'
 
 /**
  * Agent CLIs mark their terminal title with a symbol and a space in front of the conversation
@@ -11,8 +11,6 @@ import { displayText } from '../domain/display-text.mjs'
  * name is only ever shown as a label, cleaned and cut by `displayText`.
  */
 const AGENT_TITLE = /^[✳✴✶✻✽✢·⠀-⣿]\s+(\S.*)$/u
-/** Same as a conversation title from Orca. */
-const NAME_LIMIT = 80
 
 /** A terminal that printed within this long is taken as working; a spinner prints constantly. */
 const WORKING_WITHIN_MS = 30_000
@@ -31,7 +29,7 @@ export function withUntrackedSessions(rows, terminals, now) {
   const tracked = new Set(rows.flatMap((row) => row.agents.map((agent) => agent.paneKey)))
   const extraByPath = new Map()
   for (const terminal of terminals ?? []) {
-    const name = displayText(AGENT_TITLE.exec(terminal.title ?? '')?.[1], NAME_LIMIT)
+    const name = displayText(AGENT_TITLE.exec(terminal.title ?? '')?.[1], TITLE_LIMIT)
     if (!name || !terminal.worktreePath || tracked.has(terminal.paneKey)) continue
     const isWorking = terminal.lastOutputAt !== null && now - terminal.lastOutputAt < WORKING_WITHIN_MS
     const extra = extraByPath.get(terminal.worktreePath) ?? []

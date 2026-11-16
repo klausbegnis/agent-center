@@ -1,0 +1,174 @@
+{
+  "monsters": [
+    {
+      "id": "ink-slime",
+      "name": "Ink Slime",
+      "kind": "common",
+      "loot": { "pages": 2, "seals": 1 },
+      "sprite": { "body": "blob", "accent": "#3B4A8C" }
+    },
+    {
+      "id": "gnat-cloud",
+      "name": "Gnat Cloud",
+      "kind": "common",
+      "loot": { "hides": 2, "logs": 1 },
+      "sprite": { "body": "swarm", "accent": "#7A8B3C" }
+    },
+    {
+      "id": "mossback-toad",
+      "name": "Mossback Toad",
+      "kind": "common",
+      "loot": { "fish": 1, "crops": 1, "logs": 1 },
+      "sprite": { "body": "wide", "accent": "#4F7A3A" }
+    },
+    {
+      "id": "rust-shell-beetle",
+      "name": "Rust-Shell Beetle",
+      "kind": "armored",
+      "loot": { "ore": 2, "gears": 1, "bars": 1 },
+      "sprite": { "body": "wide", "accent": "#A0522D" }
+    },
+    {
+      "id": "lantern-wisp",
+      "name": "Lantern Wisp",
+      "kind": "ethereal",
+      "loot": { "crystals": 2, "runes": 1 },
+      "sprite": { "body": "floating", "accent": "#F2C14E" }
+    },
+    {
+      "id": "thornroot-colossus",
+      "name": "Thornroot Colossus",
+      "kind": "boss",
+      "loot": { "logs": 2, "seals": 2, "bars": 1 },
+      "sprite": { "body": "tall", "accent": "#5C3A21" }
+    },
+    {
+      "id": "backlog-heap",
+      "name": "Backlog Heap",
+      "kind": "common",
+      "loot": { "pages": 3, "seals": 1 },
+      "sprite": { "body": "blob", "accent": "#C9C2A6" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "flaky-test-swarm",
+      "name": "Flaky Test Swarm",
+      "kind": "common",
+      "loot": { "gears": 2, "crystals": 1, "bars": 1 },
+      "sprite": { "body": "swarm", "accent": "#E05D5D" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "stale-ticket",
+      "name": "Stale Ticket",
+      "kind": "common",
+      "loot": { "pages": 2, "gears": 1, "seals": 1 },
+      "sprite": { "body": "tall", "accent": "#E8D45A" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "merge-tangle",
+      "name": "Merge Tangle",
+      "kind": "armored",
+      "loot": { "bars": 3, "gears": 2 },
+      "sprite": { "body": "wide", "accent": "#E07A2E" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "race-condition-wisp",
+      "name": "Race Condition Wisp",
+      "kind": "ethereal",
+      "loot": { "crystals": 3, "runes": 1 },
+      "sprite": { "body": "floating", "accent": "#5AD1E8" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "legacy-monolith",
+      "name": "Legacy Monolith",
+      "kind": "boss",
+      "loot": { "bars": 2, "pages": 2, "seals": 1 },
+      "sprite": { "body": "tall", "accent": "#6B6F7A" },
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "straw-sparring-dummy",
+      "name": "Straw Sparring Dummy",
+      "kind": "common",
+      "loot": { "crops": 2, "logs": 2 },
+      "sprite": { "body": "tall", "accent": "#D9B45A" },
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "pantry-rat-pack",
+      "name": "Pantry Rat Pack",
+      "kind": "common",
+      "loot": { "hides": 2, "seals": 1 },
+      "sprite": { "body": "swarm", "accent": "#8A7560" },
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "iron-bound-dummy",
+      "name": "Iron-Bound Practice Dummy",
+      "kind": "armored",
+      "loot": { "ore": 3, "bars": 1 },
+      "sprite": { "body": "wide", "accent": "#7D8590" },
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "hearth-smoke-sprite",
+      "name": "Hearth Smoke Sprite",
+      "kind": "ethereal",
+      "loot": { "crystals": 2, "logs": 1 },
+      "sprite": { "body": "floating", "accent": "#B8B0A8" },
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "rival-guildmaster",
+      "name": "Rival Guildmaster",
+      "kind": "boss",
+      "loot": { "seals": 2, "bars": 1, "hides": 1 },
+      "sprite": { "body": "tall", "accent": "#8C2F39" },
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "restless-bone-heap",
+      "name": "Restless Bone Heap",
+      "kind": "common",
+      "loot": { "hides": 2, "ore": 1, "seals": 1 },
+      "sprite": { "body": "blob", "accent": "#E6DFC8" },
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "candle-mite-swarm",
+      "name": "Candle Mite Swarm",
+      "kind": "common",
+      "loot": { "runes": 2, "logs": 1 },
+      "sprite": { "body": "swarm", "accent": "#F0A43A" },
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "sarcophagus-crawler",
+      "name": "Sarcophagus Crawler",
+      "kind": "armored",
+      "loot": { "ore": 3, "bars": 1 },
+      "sprite": { "body": "wide", "accent": "#5E5A4E" },
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "crypt-shade",
+      "name": "Crypt Shade",
+      "kind": "ethereal",
+      "loot": { "runes": 3, "crystals": 1 },
+      "sprite": { "body": "floating", "accent": "#6A4C9C" },
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "ossuary-warden",
+      "name": "Ossuary Warden",
+      "kind": "boss",
+      "loot": { "runes": 2, "seals": 2, "ore": 1 },
+      "sprite": { "body": "tall", "accent": "#9C2A2A" },
+      "themes": ["gothic-dungeon"]
+    }
+  ]
+}

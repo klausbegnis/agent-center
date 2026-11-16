@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { isAllowedHost, isSameOrigin, pathnameOf } from './request-guard.mjs'
+import { isAllowedHost, isLocalOnlyRoute, isLoopbackAddress, isSameOrigin, pathnameOf } from './request-guard.mjs'
 
 test('pathnameOf decodes a path and drops the query', () => {
   assert.equal(pathnameOf('/themes/pixel-dark/room.svg?v=2'), '/themes/pixel-dark/room.svg')
@@ -52,4 +52,30 @@ test('a request from another site, another port or an opaque origin is refused',
   assert.equal(isSameOrigin({ host, origin: 'http://127.0.0.1:3000' }), false)
   assert.equal(isSameOrigin({ host, origin: 'null' }), false)
   assert.equal(isSameOrigin({ host, 'sec-fetch-site': 'cross-site' }), false)
+})
+
+test('a connection from a loopback address comes from this machine', () => {
+  for (const address of ['127.0.0.1', '127.0.0.53', '::1', '::ffff:127.0.0.1']) {
+    assert.equal(isLoopbackAddress(address), true, address)
+  }
+})
+
+test('a connection from any other address, or none, does not come from this machine', () => {
+  for (const address of [undefined, '', '192.168.1.20', '10.0.0.7', '::ffff:192.168.1.20', 'fe80::1', '::', '0.0.0.0',
+    '128.0.0.1', 'localhost']) {
+    assert.equal(isLoopbackAddress(address), false, String(address))
+  }
+})
+
+test('every game route is for this machine only', () => {
+  for (const route of ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
+    'travel', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']) {
+    assert.equal(isLocalOnlyRoute(`/api/game/${route}`), true, route)
+  }
+})
+
+test('the routes that change how the page looks are open to the local network', () => {
+  for (const route of ['/api/state', '/api/events', '/api/refresh', '/api/theme', '/api/room', '/']) {
+    assert.equal(isLocalOnlyRoute(route), false, route)
+  }
 })

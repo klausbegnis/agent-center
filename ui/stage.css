@@ -45,6 +45,8 @@ body {
   align-items: center;
   gap: 8px;
 }
+/* The title and counters: laid out as part of the header, unless game mode gives it a control. */
+.ac-title-row { display: contents; }
 .ac-title {
   margin: 0;
   font-size: 14px;
@@ -372,6 +374,21 @@ body {
 /* The card lies over the bottom edge of the selected agent's room, like a dialogue box, so
    opening it does not change the size or place of anything. */
 .ac-stage { position: relative; }
+/* A room moving to another theme (a travelling room's next scene): the old scene lies over the
+   new one and fades away (SCENE_FADE_MS in scene-swap.js). Below the agent's card, above the
+   characters and the game's effects of the new scene. */
+.ac-scene-leaving {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  z-index: 9995;
+  pointer-events: none;
+  animation: ac-scene-leave 1s ease-in 1 both;
+}
+@keyframes ac-scene-leave {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 .ac-detail {
   position: absolute;
   left: 6px;
@@ -497,6 +514,8 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .ac-actor, .ac-familiar-more { transition: none; }
+  /* The engine swaps scenes at once under this setting; this covers one caught half way. */
+  .ac-scene-leaving { display: none; }
   .ac-actor .ac-sprite, .ac-bubble { animation: none !important; }
   /* The engine plays no emote under this setting; this covers one caught half way. */
   .ac-emote-effect { display: none; }

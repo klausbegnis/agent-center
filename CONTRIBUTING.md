@@ -47,6 +47,12 @@ themes; add a theme id (`npm run demo guild-hall`) to show every room on that th
 Useful address options: `?view=gallery`, `?view=list`, and `?only=<text>` to show only matching
 rooms.
 
+The demo also serves the monster contact sheet on the next port,
+`http://127.0.0.1:47701/monsters.html`: every race of game mode in a row of generated variants
+(an elite, a champion and one of its bosses among them), the rank ladder with its glows,
+chimeras and the whole boss roster, each at room size and at three times that, on light and dark
+grounds. Look at it after changing monster parts, races or bosses.
+
 To try it inside Orca (1.4.248 or later):
 
 ```bash
@@ -109,8 +115,13 @@ with Ctrl+C. The other shots use `--window-size=500,1180` with `?view=list`, and
 
 The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
 with `--window-size=1280,800` and `?view=gallery` for all rooms, or `?view=gallery&only=rumble`,
-`only=cosmic` and `only=turbo` for one room each. The cover is the gallery shot scaled to
-1600×1000. `assets/icon.png` is `assets/icon.svg` drawn at 256×256. The size limits are in
+`only=cosmic` and `only=turbo` for one room each. The cover is the game-mode gallery
+(`GAME=1 FREEZE=1`, `?view=gallery`) on Guild Hall at 1280×800, and `assets/screenshot-game.png`
+the same on Gothic Dungeon, so the listing never shows one picture twice. The bestiary
+(`assets/screenshot-bestiary.png`, exactly 1280×800) and the README's `game-bosses.png` and
+`game-ranks.png` come from the contact sheet (`?part=bosses`, `?part=races`) with everything but
+the cards shown removed, so no heading or half row is cut at an edge; crop and pad with `sips`
+(`sips -c`, `sips -p … --padColor 1D2027`). `assets/icon.png` is `assets/icon.svg` drawn at 256×256. The size limits are in
 [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 ## Reporting a security problem

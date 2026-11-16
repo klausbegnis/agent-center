@@ -1,0 +1,136 @@
+{
+  "items": [
+    {
+      "id": "whittled-cudgel", "name": "Whittled Cudgel",
+      "slot": "weapon", "damageType": "physical", "tier": 1, "recipe": ["logs", "bars"]
+    },
+    {
+      "id": "tempered-shortsword", "name": "Tempered Shortsword",
+      "slot": "weapon", "damageType": "physical", "tier": 3, "recipe": ["bars", "hides"]
+    },
+    {
+      "id": "riveted-warpick", "name": "Riveted Warpick",
+      "slot": "weapon", "damageType": "physical", "tier": 5, "recipe": ["bars", "ore"]
+    },
+    {
+      "id": "thunder-tempered-glaive", "name": "Thunder-Tempered Glaive",
+      "slot": "weapon", "damageType": "physical", "tier": 7, "recipe": ["bars", "gears"]
+    },
+    {
+      "id": "meteor-iron-greatblade", "name": "Meteor-Iron Greatblade",
+      "slot": "weapon", "damageType": "physical", "tier": 9, "recipe": ["ore", "crystals"]
+    },
+    {
+      "id": "ashwood-wand", "name": "Ashwood Wand",
+      "slot": "weapon", "damageType": "magical", "tier": 1, "recipe": ["logs", "crystals"]
+    },
+    {
+      "id": "inscribed-codex", "name": "Inscribed Codex",
+      "slot": "weapon", "damageType": "magical", "tier": 3, "recipe": ["pages", "runes"]
+    },
+    {
+      "id": "glimmer-orb", "name": "Glimmer Orb",
+      "slot": "weapon", "damageType": "magical", "tier": 5, "recipe": ["crystals", "runes"]
+    },
+    {
+      "id": "brinesong-scepter", "name": "Brinesong Scepter",
+      "slot": "weapon", "damageType": "magical", "tier": 7, "recipe": ["crystals", "fish"]
+    },
+    {
+      "id": "eclipse-sigil-staff", "name": "Eclipse Sigil Staff",
+      "slot": "weapon", "damageType": "magical", "tier": 9, "recipe": ["runes", "seals"]
+    },
+    {
+      "id": "padded-jerkin", "name": "Padded Jerkin",
+      "slot": "outfit", "tier": 1, "recipe": ["hides", "crops"]
+    },
+    {
+      "id": "scaled-brigandine", "name": "Scaled Brigandine",
+      "slot": "outfit", "tier": 4, "recipe": ["hides", "ore"]
+    },
+    {
+      "id": "wardweave-mantle", "name": "Wardweave Mantle",
+      "slot": "outfit", "tier": 7, "recipe": ["pages", "seals"]
+    },
+    {
+      "id": "aurora-plate", "name": "Aurora Plate",
+      "slot": "outfit", "tier": 10, "recipe": ["bars", "crystals"]
+    },
+    {
+      "id": "trusty-pocketknife", "name": "Trusty Pocketknife",
+      "slot": "tool", "tier": 1, "recipe": ["ore", "logs"]
+    },
+    {
+      "id": "brass-multitool", "name": "Brass Multitool",
+      "slot": "tool", "tier": 4, "recipe": ["gears", "ore"]
+    },
+    {
+      "id": "surveyors-kit", "name": "Surveyor's Kit",
+      "slot": "tool", "tier": 7, "recipe": ["gears", "pages"]
+    },
+    {
+      "id": "clockwork-harvester", "name": "Clockwork Harvester",
+      "slot": "tool", "tier": 10, "recipe": ["gears", "seals"]
+    },
+    {
+      "id": "clacking-keyboard", "name": "Clacking Mechanical Keyboard",
+      "slot": "weapon", "damageType": "physical", "tier": 4, "recipe": ["gears", "bars"],
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "prismatic-laser-pointer", "name": "Prismatic Laser Pointer",
+      "slot": "weapon", "damageType": "magical", "tier": 4, "recipe": ["crystals", "gears"],
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "night-shift-hoodie", "name": "Night-Shift Hoodie",
+      "slot": "outfit", "tier": 3, "recipe": ["crops", "hides"],
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "cable-crimper", "name": "Cable Crimper",
+      "slot": "tool", "tier": 3, "recipe": ["gears", "ore"],
+      "themes": ["pixel-dark"]
+    },
+    {
+      "id": "cinder-forge-hammer", "name": "Cinder Forge Hammer",
+      "slot": "weapon", "damageType": "physical", "tier": 6, "recipe": ["bars", "logs"],
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "rootbound-oak-staff", "name": "Rootbound Oak Staff",
+      "slot": "weapon", "damageType": "magical", "tier": 6, "recipe": ["logs", "runes"],
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "waxed-guild-tabard", "name": "Waxed Guild Tabard",
+      "slot": "outfit", "tier": 5, "recipe": ["hides", "seals"],
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "prospectors-pick", "name": "Prospector's Pick",
+      "slot": "tool", "tier": 5, "recipe": ["ore", "logs"],
+      "themes": ["guild-hall"]
+    },
+    {
+      "id": "bone-hilted-ritual-blade", "name": "Bone-Hilted Ritual Blade",
+      "slot": "weapon", "damageType": "physical", "tier": 8, "recipe": ["bars", "hides"],
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "whispering-reliquary", "name": "Whispering Reliquary",
+      "slot": "weapon", "damageType": "magical", "tier": 8, "recipe": ["seals", "runes"],
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "ossuary-keepers-shroud", "name": "Ossuary Keeper's Shroud",
+      "slot": "outfit", "tier": 6, "recipe": ["hides", "runes"],
+      "themes": ["gothic-dungeon"]
+    },
+    {
+      "id": "pale-crypt-lantern", "name": "Pale Crypt Lantern",
+      "slot": "tool", "tier": 6, "recipe": ["crystals", "logs"],
+      "themes": ["gothic-dungeon"]
+    }
+  ]
+}

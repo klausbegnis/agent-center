@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { assignThemes, defaultThemeIds, RANDOM_THEME, themeIdsToLoad } from './room-themes.js'
+import { assignThemes, defaultThemeIds, RANDOM_THEME, sceneThemesOf, themeIdsToLoad } from './room-themes.js'
 
 const THEME_IDS = ['meadow', 'harbour', 'attic']
 const rooms = (count) =>
@@ -102,4 +102,47 @@ test('the themes to load are the default and the ones rooms picked, without unkn
 
 test('under Random, every theme is loaded', () => {
   assert.deepEqual(themeIdsToLoad(state(RANDOM_THEME, { a: 'attic' })), THEME_IDS)
+})
+
+const travelling = (rooms, travel = true, status = 'running') => ({ status, travel, rooms })
+
+test('a travelling room is drawn in its scene, under a real default and under Random', () => {
+  const list = rooms(3)
+  const sceneThemes = { [list[0].id]: 'attic' }
+  const fixed = assignThemes(list, { defaultTheme: 'meadow', sceneThemes, usableThemeIds: THEME_IDS })
+  assert.equal(fixed.get(list[0].id), 'attic')
+  assert.equal(fixed.get(list[1].id), 'meadow')
+  assert.equal(assignThemes(list, { ...random(), sceneThemes }).get(list[0].id), 'attic')
+})
+
+test('a travelling room never moves the Random theme of the rooms that do not travel', () => {
+  const list = rooms(5)
+  const still = assignThemes(list, random())
+  for (const scene of THEME_IDS) {
+    const moved = assignThemes(list, { ...random(), sceneThemes: { [list[2].id]: scene } })
+    const others = list.filter((room) => room.id !== list[2].id)
+    for (const room of others) assert.equal(moved.get(room.id), still.get(room.id))
+  }
+})
+
+test('a scene that did not load leaves the room on its usual theme', () => {
+  const list = rooms(1)
+  const sceneThemes = { [list[0].id]: 'gone' }
+  const assigned = assignThemes(list, { defaultTheme: 'meadow', sceneThemes, usableThemeIds: THEME_IDS })
+  assert.equal(assigned.get(list[0].id), 'meadow')
+})
+
+test('scenes are read only from a running game with the setting on', () => {
+  const gameRooms = { a: { joined: true, sceneTheme: 'attic' }, b: { joined: true }, c: { joined: false } }
+  assert.deepEqual(sceneThemesOf({ game: travelling(gameRooms) }), { a: 'attic' })
+  assert.deepEqual(sceneThemesOf({ game: travelling(gameRooms, false) }), {})
+  assert.deepEqual(sceneThemesOf({ game: travelling(gameRooms, true, 'off') }), {})
+  assert.deepEqual(sceneThemesOf({}), {})
+})
+
+test('while rooms travel every theme is loaded, so the next scene is ready before it is needed', () => {
+  const travel = { ...state('meadow'), game: travelling({ a: { joined: true, sceneTheme: 'attic' } }) }
+  assert.deepEqual(themeIdsToLoad(travel).sort(), [...THEME_IDS].sort())
+  const still = { ...state('meadow'), game: travelling({ a: { joined: true } }) }
+  assert.deepEqual(themeIdsToLoad(still), ['meadow'])
 })

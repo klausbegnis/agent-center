@@ -1,0 +1,1158 @@
+{
+  "palettes": {
+    "cloth": [
+      { "id": "crimson", "word": "Crimson", "colour": "#8c2f39" },
+      { "id": "moss", "word": "Moss", "colour": "#4f6b3a" },
+      { "id": "indigo", "word": "Indigo", "colour": "#3b4a8c" },
+      { "id": "ochre", "word": "Ochre", "colour": "#b8862e" },
+      { "id": "ashen", "word": "Ashen", "colour": "#6b6f7a" },
+      { "id": "plum", "word": "Plum", "colour": "#6a3d6e" },
+      { "id": "teal", "word": "Teal", "colour": "#2f7a78" },
+      { "id": "rust", "word": "Rust", "colour": "#9a4a24" },
+      { "id": "pale", "word": "Pale", "colour": "#cfc6ae" },
+      { "id": "sable", "word": "Sable", "colour": "#34303a" }
+    ],
+    "metal": [
+      { "id": "iron", "colour": "#8e959e" },
+      { "id": "steel", "colour": "#b3bcc6" },
+      { "id": "bronze", "colour": "#b07a3c" },
+      { "id": "blackiron", "colour": "#5c616b" },
+      { "id": "gilt", "colour": "#cfae4a" }
+    ],
+    "leather": [
+      { "id": "tan", "colour": "#8a5e34" },
+      { "id": "brown", "colour": "#6b4a2b" },
+      { "id": "dark", "colour": "#4a3426" },
+      { "id": "dun", "colour": "#7a6a4a" }
+    ],
+    "accent": [
+      { "id": "gold", "colour": "#d4a73a" },
+      { "id": "red", "colour": "#b8322f" },
+      { "id": "blue", "colour": "#3f6fc0" },
+      { "id": "green", "colour": "#4f9a4a" },
+      { "id": "violet", "colour": "#8a4ab8" },
+      { "id": "white", "colour": "#e6e0d0" },
+      { "id": "orange", "colour": "#d8742a" }
+    ],
+    "bone": [
+      { "id": "ivory", "colour": "#e8dcc0" },
+      { "id": "yellowed", "colour": "#d6c38e" },
+      { "id": "chalk", "colour": "#f2eee2" }
+    ],
+    "hair": [
+      { "id": "black", "colour": "#2e2622" },
+      { "id": "brown", "colour": "#5a3a24" },
+      { "id": "red", "colour": "#8a3a20" },
+      { "id": "grey", "colour": "#8a8a86" },
+      { "id": "blond", "colour": "#c8a050" },
+      { "id": "white", "colour": "#e0dcd0" }
+    ],
+    "eye": [
+      { "id": "yellow", "colour": "#f0d040" },
+      { "id": "red", "colour": "#e8463c" },
+      { "id": "green", "colour": "#7ae05a" },
+      { "id": "blue", "colour": "#64c8f4" },
+      { "id": "violet", "colour": "#c47cf4" },
+      { "id": "orange", "colour": "#f49a34" }
+    ]
+  },
+  "races": [
+    {
+      "id": "goblin",
+      "noun": "Goblin",
+      "rig": "humanoid",
+      "build": "small",
+      "palettes": {
+        "skin": [
+          { "id": "bog", "word": "Bog", "colour": "#6f8f3a" },
+          { "id": "cave", "word": "Cave", "colour": "#8f9a62" },
+          { "id": "ash", "word": "Ash", "colour": "#7c8a7a" },
+          { "id": "rust", "word": "Rust", "colour": "#a0743a" },
+          { "id": "sallow", "word": "Sallow", "colour": "#a8a84e" }
+        ]
+      },
+      "parts": {
+        "head": ["goblin-pointy", "goblin-warty", "goblin-grin"],
+        "torso": ["small-scrawny", "small-potbelly", "small-hunched"],
+        "legs": ["small-short", "small-bowed"],
+        "outfit": ["rags", "leather", "loincloth", "furs", "bone-armour"],
+        "headgear": ["none", "none", "bandana", "hood", "feathers", "skull-mask", "helm"],
+        "held": ["dagger", "club", "spear", "bow", "torch", "staff"],
+        "extras": ["warpaint", "glowing-eyes", "bone-necklace", "cape"]
+      },
+      "roles": [
+        {
+          "id": "sneak",
+          "word": "Sneak",
+          "held": ["dagger"],
+          "headgear": ["hood", "bandana", "none"]
+        },
+        {
+          "id": "archer",
+          "word": "Archer",
+          "held": ["bow"]
+        },
+        {
+          "id": "spearman",
+          "word": "Spearman",
+          "held": ["spear"]
+        },
+        {
+          "id": "thug",
+          "word": "Thug",
+          "held": ["club"]
+        },
+        {
+          "id": "firebug",
+          "word": "Firebug",
+          "held": ["torch"]
+        },
+        {
+          "id": "shaman",
+          "word": "Shaman",
+          "held": ["staff"],
+          "outfit": ["bone-armour", "furs"],
+          "headgear": ["feathers", "skull-mask"]
+        }
+      ],
+      "marks": ["Sly", "Grim"]
+    },
+    {
+      "id": "orc",
+      "noun": "Orc",
+      "rig": "humanoid",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "bog", "word": "Bog", "colour": "#5f8a35" },
+          { "id": "ashen", "word": "Ashen", "colour": "#6f7a66" },
+          { "id": "ochre", "word": "Ochre", "colour": "#a08a4a" },
+          { "id": "moss", "word": "Moss", "colour": "#4a7a4a" },
+          { "id": "blood", "word": "Blood", "colour": "#8a5038" }
+        ]
+      },
+      "parts": {
+        "head": ["orc-tusked", "orc-scarred", "orc-topknot"],
+        "torso": ["medium-lean", "medium-broad", "medium-hunched"],
+        "legs": ["medium-straight", "medium-stance"],
+        "outfit": ["leather", "chain", "furs", "bone-armour", "rags", "loincloth", "plate"],
+        "headgear": ["none", "none", "helm", "horned-helm", "bandana", "skull-mask", "feathers"],
+        "held": ["axe", "club", "spear", "bow", "hammer", "mace-shield", "sword", "staff"],
+        "extras": ["warpaint", "bone-necklace", "chains", "glowing-eyes", "cape"]
+      },
+      "roles": [
+        {
+          "id": "brute",
+          "word": "Brute",
+          "held": ["club", "hammer"]
+        },
+        {
+          "id": "raider",
+          "word": "Raider",
+          "held": ["axe"]
+        },
+        {
+          "id": "archer",
+          "word": "Archer",
+          "held": ["bow"],
+          "outfit": ["leather", "furs", "rags"]
+        },
+        {
+          "id": "warrior",
+          "word": "Warrior",
+          "held": ["sword", "mace-shield"],
+          "outfit": ["chain", "plate", "leather"]
+        },
+        {
+          "id": "skirmisher",
+          "word": "Skirmisher",
+          "held": ["spear"]
+        },
+        {
+          "id": "shaman",
+          "word": "Shaman",
+          "held": ["staff"],
+          "outfit": ["furs", "bone-armour"],
+          "headgear": ["skull-mask", "feathers"]
+        }
+      ],
+      "marks": ["Dread", "Iron-Tusk"]
+    },
+    {
+      "id": "troll",
+      "noun": "Troll",
+      "rig": "humanoid",
+      "build": "large",
+      "palettes": {
+        "skin": [
+          { "id": "bog", "word": "Bog", "colour": "#4f7a5a" },
+          { "id": "cave", "word": "Cave", "colour": "#6a7a7a" },
+          { "id": "frost", "word": "Frost", "colour": "#8ab0b8" },
+          { "id": "moss", "word": "Moss", "colour": "#5a8a3a" },
+          { "id": "stone", "word": "Stone", "colour": "#7a7468" }
+        ]
+      },
+      "parts": {
+        "head": ["troll-long-nose", "troll-tusked", "troll-shaggy"],
+        "torso": ["large-hulking", "large-stooped", "large-potbelly"],
+        "legs": ["large-thick", "large-stance"],
+        "outfit": ["loincloth", "furs", "rags", "bone-armour"],
+        "headgear": ["none", "none", "none", "bandana", "skull-mask"],
+        "held": ["club", "hammer", "spear", "axe", "staff"],
+        "extras": ["moss", "blotches", "bone-necklace", "glowing-eyes"]
+      },
+      "roles": [
+        {
+          "id": "brute",
+          "word": "Brute",
+          "held": ["club", "hammer"]
+        },
+        {
+          "id": "hunter",
+          "word": "Hunter",
+          "held": ["spear"]
+        },
+        {
+          "id": "mauler",
+          "word": "Mauler",
+          "held": ["axe"]
+        },
+        {
+          "id": "shaman",
+          "word": "Shaman",
+          "held": ["staff"],
+          "outfit": ["bone-armour", "furs"],
+          "headgear": ["skull-mask"]
+        }
+      ],
+      "marks": ["Elder", "Savage"]
+    },
+    {
+      "id": "ogre",
+      "noun": "Ogre",
+      "rig": "humanoid",
+      "build": "large",
+      "palettes": {
+        "skin": [
+          { "id": "dun", "word": "Dun", "colour": "#b0906a" },
+          { "id": "grey", "word": "Grey", "colour": "#8a8478" },
+          { "id": "swamp", "word": "Swamp", "colour": "#7a8a5a" },
+          { "id": "ruddy", "word": "Ruddy", "colour": "#b07a5a" }
+        ]
+      },
+      "parts": {
+        "head": ["ogre-dull", "ogre-underbite"],
+        "torso": ["large-potbelly", "large-hulking"],
+        "legs": ["large-thick", "large-stance"],
+        "outfit": ["loincloth", "furs", "rags", "leather", "chain"],
+        "headgear": ["none", "none", "helm", "bandana"],
+        "held": ["club", "hammer", "axe", "mace-shield"],
+        "extras": ["blotches", "chains", "bone-necklace", "warpaint"]
+      },
+      "roles": [
+        {
+          "id": "brute",
+          "word": "Brute",
+          "held": ["club"]
+        },
+        {
+          "id": "smasher",
+          "word": "Smasher",
+          "held": ["hammer"]
+        },
+        {
+          "id": "butcher",
+          "word": "Butcher",
+          "held": ["axe"],
+          "outfit": ["leather", "rags"]
+        },
+        {
+          "id": "bruiser",
+          "word": "Bruiser",
+          "held": ["mace-shield"],
+          "outfit": ["chain", "leather"]
+        }
+      ],
+      "marks": ["Hulking", "Grim"]
+    },
+    {
+      "id": "human",
+      "noun": "",
+      "rig": "humanoid",
+      "build": "medium",
+      "descriptor": "cloth",
+      "palettes": {
+        "skin": [
+          { "id": "fair", "colour": "#f0c8a0" },
+          { "id": "olive", "colour": "#d0a070" },
+          { "id": "tan", "colour": "#b07850" },
+          { "id": "umber", "colour": "#7a4a30" },
+          { "id": "rose", "colour": "#e8b090" }
+        ]
+      },
+      "parts": {
+        "head": ["human-bearded", "human-shaven", "human-long-hair"],
+        "torso": ["medium-lean", "medium-broad"],
+        "legs": ["medium-straight", "medium-stance"],
+        "outfit": ["leather", "chain", "plate", "robe", "cultist-robe", "noble-coat", "tabard", "rags"],
+        "headgear": ["none", "helm", "hood", "cowl", "bandana", "pointed-hat"],
+        "held": ["sword", "dagger", "bow", "spear", "staff", "mace-shield", "torch", "hammer", "axe"],
+        "extras": ["cape", "chains"]
+      },
+      "roles": [
+        {
+          "id": "bandit",
+          "word": "Bandit",
+          "held": ["dagger", "axe", "bow"],
+          "outfit": ["leather", "rags"],
+          "headgear": ["bandana", "hood", "none"]
+        },
+        {
+          "id": "cultist",
+          "word": "Cultist",
+          "held": ["staff", "dagger", "torch"],
+          "outfit": ["cultist-robe"],
+          "headgear": ["cowl", "hood"]
+        },
+        {
+          "id": "knight",
+          "word": "Knight",
+          "held": ["sword", "mace-shield", "hammer"],
+          "outfit": ["plate", "tabard", "chain"],
+          "headgear": ["helm", "none"]
+        },
+        {
+          "id": "hedge-mage",
+          "word": "Hedge Mage",
+          "held": ["staff"],
+          "outfit": ["robe"],
+          "headgear": ["pointed-hat", "hood"]
+        },
+        {
+          "id": "poacher",
+          "word": "Poacher",
+          "held": ["bow", "spear"],
+          "outfit": ["leather"],
+          "headgear": ["hood", "none"]
+        },
+        {
+          "id": "duelist",
+          "word": "Duelist",
+          "held": ["sword", "dagger"],
+          "outfit": ["noble-coat"],
+          "headgear": ["none"]
+        }
+      ],
+      "marks": ["Notorious", "Sworn"]
+    },
+    {
+      "id": "skeleton",
+      "noun": "Skeleton",
+      "rig": "humanoid",
+      "build": "medium",
+      "themes": ["gothic-dungeon"],
+      "palettes": {
+        "skin": [
+          { "id": "ashen", "word": "Ashen", "colour": "#d8d0b8" },
+          { "id": "yellowed", "word": "Yellowed", "colour": "#d0bf86" },
+          { "id": "blackened", "word": "Blackened", "colour": "#6e6862" },
+          { "id": "grave", "word": "Grave", "colour": "#b4b6a6" }
+        ]
+      },
+      "parts": {
+        "head": ["skull-plain", "skull-cracked", "skull-horned"],
+        "torso": ["medium-ribcage"],
+        "legs": ["medium-bony"],
+        "outfit": ["none", "none", "rags", "chain", "robe", "tabard"],
+        "headgear": ["none", "none", "helm", "hood", "horned-helm"],
+        "held": ["sword", "spear", "bow", "scythe", "mace-shield", "axe", "staff"],
+        "extras": ["glowing-eyes", "cape", "chains"]
+      },
+      "roles": [
+        {
+          "id": "warrior",
+          "word": "Warrior",
+          "held": ["sword", "mace-shield", "axe"]
+        },
+        {
+          "id": "archer",
+          "word": "Archer",
+          "held": ["bow"]
+        },
+        {
+          "id": "spearman",
+          "word": "Spearman",
+          "held": ["spear"]
+        },
+        {
+          "id": "reaper",
+          "word": "Reaper",
+          "held": ["scythe"],
+          "outfit": ["robe", "rags"],
+          "headgear": ["hood"]
+        },
+        {
+          "id": "mage",
+          "word": "Mage",
+          "held": ["staff"],
+          "outfit": ["robe"],
+          "headgear": ["hood", "none"]
+        }
+      ],
+      "marks": ["Ancient", "Dread"]
+    },
+    {
+      "id": "zombie",
+      "noun": "Zombie",
+      "rig": "humanoid",
+      "build": "medium",
+      "themes": ["gothic-dungeon"],
+      "palettes": {
+        "skin": [
+          { "id": "grave", "word": "Grave", "colour": "#8a9a6a" },
+          { "id": "bloated", "word": "Bloated", "colour": "#9aa58a" },
+          { "id": "rotting", "word": "Rotting", "colour": "#7a8a52" },
+          { "id": "pallid", "word": "Pallid", "colour": "#b0b8a0" }
+        ]
+      },
+      "parts": {
+        "head": ["zombie-slack", "zombie-stitched"],
+        "torso": ["medium-lean", "medium-hunched"],
+        "legs": ["medium-straight", "medium-stance"],
+        "outfit": ["rags", "rags", "chain", "noble-coat", "leather", "robe"],
+        "headgear": ["none", "none", "helm", "bandana", "hood"],
+        "held": ["none", "club", "torch", "axe", "scythe"],
+        "extras": ["blotches", "glowing-eyes", "chains"]
+      },
+      "roles": [
+        {
+          "id": "shambler",
+          "word": "Shambler",
+          "held": ["none"]
+        },
+        {
+          "id": "brute",
+          "word": "Brute",
+          "held": ["club"]
+        },
+        {
+          "id": "hewer",
+          "word": "Hewer",
+          "held": ["axe"]
+        },
+        {
+          "id": "torchbearer",
+          "word": "Torchbearer",
+          "held": ["torch"]
+        },
+        {
+          "id": "harvester",
+          "word": "Harvester",
+          "held": ["scythe"],
+          "outfit": ["rags"]
+        }
+      ],
+      "marks": ["Ravenous", "Dread"]
+    },
+    {
+      "id": "vampire",
+      "noun": "Vampire",
+      "rig": "humanoid",
+      "build": "medium",
+      "themes": ["gothic-dungeon"],
+      "palettes": {
+        "skin": [
+          { "id": "pallid", "word": "Pallid", "colour": "#d8d4d0" },
+          { "id": "ashen", "word": "Ashen", "colour": "#b8b4b8" },
+          { "id": "moonlit", "word": "Moonlit", "colour": "#c0c8d8" },
+          { "id": "bloodless", "word": "Bloodless", "colour": "#e0d8d0" }
+        ],
+        "hair": [
+          { "id": "black", "colour": "#262028" },
+          { "id": "white", "colour": "#e8e4e0" },
+          { "id": "red", "colour": "#7a2a2a" }
+        ],
+        "eye": [
+          { "id": "red", "colour": "#e8463c" },
+          { "id": "gold", "colour": "#f0c040" }
+        ],
+        "cloth": [
+          { "id": "crimson", "word": "Crimson", "colour": "#8c2f39" },
+          { "id": "sable", "word": "Sable", "colour": "#34303a" },
+          { "id": "plum", "word": "Plum", "colour": "#6a3d6e" },
+          { "id": "midnight", "word": "Midnight", "colour": "#2c3458" }
+        ]
+      },
+      "parts": {
+        "head": ["vampire-widows-peak", "vampire-fanged"],
+        "torso": ["medium-lean"],
+        "legs": ["medium-straight"],
+        "outfit": ["noble-coat", "noble-coat", "robe", "cultist-robe", "plate"],
+        "headgear": ["none", "none", "crown", "hood"],
+        "held": ["sword", "dagger", "staff", "none"],
+        "extras": ["cape", "cape", "glowing-eyes", "bat-wings"]
+      },
+      "roles": [
+        {
+          "id": "noble",
+          "word": "Noble",
+          "held": ["sword", "none"],
+          "outfit": ["noble-coat"]
+        },
+        {
+          "id": "duelist",
+          "word": "Duelist",
+          "held": ["sword", "dagger"]
+        },
+        {
+          "id": "blood-mage",
+          "word": "Blood Mage",
+          "held": ["staff"],
+          "outfit": ["robe", "cultist-robe"]
+        },
+        {
+          "id": "thrall",
+          "word": "Thrall",
+          "held": ["dagger"],
+          "outfit": ["robe", "noble-coat"]
+        }
+      ],
+      "marks": ["Elder", "Ancient"]
+    },
+    {
+      "id": "werewolf",
+      "noun": "Werewolf",
+      "rig": "humanoid",
+      "build": "large",
+      "descriptor": "hair",
+      "palettes": {
+        "skin": [
+          { "id": "dun", "colour": "#b8a088" },
+          { "id": "grey", "colour": "#9a948c" },
+          { "id": "pale", "colour": "#d0c4b4" }
+        ],
+        "hair": [
+          { "id": "grey", "word": "Grey", "colour": "#7a7a78" },
+          { "id": "black", "word": "Black", "colour": "#3a3634" },
+          { "id": "russet", "word": "Russet", "colour": "#8a4a2a" },
+          { "id": "silver", "word": "Silver", "colour": "#b8b8c0" },
+          { "id": "brown", "word": "Brown", "colour": "#6a4a30" }
+        ]
+      },
+      "parts": {
+        "head": ["wolf-snarl", "wolf-grizzled"],
+        "torso": ["large-wolf", "large-furred"],
+        "legs": ["large-wolf-legs", "large-digitigrade"],
+        "outfit": ["none", "none", "rags", "loincloth", "leather"],
+        "headgear": ["none"],
+        "held": ["none", "none", "axe", "club"],
+        "extras": ["glowing-eyes", "chains", "blotches"]
+      },
+      "roles": [
+        {
+          "id": "prowler",
+          "word": "Prowler",
+          "held": ["none"]
+        },
+        {
+          "id": "hunter",
+          "word": "Hunter",
+          "held": ["none"]
+        },
+        {
+          "id": "ravager",
+          "word": "Ravager",
+          "held": ["axe", "club"]
+        }
+      ],
+      "marks": ["Moon-Mad", "Elder"]
+    },
+    {
+      "id": "demon",
+      "noun": "Demon",
+      "rig": "humanoid",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "ember", "word": "Ember", "colour": "#a8342a" },
+          { "id": "ashen", "word": "Ashen", "colour": "#5e4e5e" },
+          { "id": "brimstone", "word": "Brimstone", "colour": "#b86a2a" },
+          { "id": "abyssal", "word": "Abyssal", "colour": "#3c3c70" },
+          { "id": "bile", "word": "Bile", "colour": "#6a8a3a" }
+        ],
+        "eye": [
+          { "id": "yellow", "colour": "#f0d040" },
+          { "id": "orange", "colour": "#f49a34" },
+          { "id": "white", "colour": "#f4f1e8" }
+        ]
+      },
+      "parts": {
+        "head": ["demon-horned", "demon-ram"],
+        "torso": ["medium-broad", "medium-lean"],
+        "legs": ["medium-digitigrade", "medium-stance"],
+        "outfit": ["none", "loincloth", "plate", "cultist-robe", "bone-armour"],
+        "headgear": ["none", "none", "none", "crown"],
+        "held": ["scythe", "sword", "staff", "axe", "none", "torch"],
+        "extras": ["demon-wings", "demon-tail", "glowing-eyes", "warpaint", "chains"]
+      },
+      "roles": [
+        {
+          "id": "fiend",
+          "word": "Fiend",
+          "held": ["none"]
+        },
+        {
+          "id": "reaver",
+          "word": "Reaver",
+          "held": ["scythe", "axe"]
+        },
+        {
+          "id": "warlock",
+          "word": "Warlock",
+          "held": ["staff"],
+          "outfit": ["cultist-robe", "loincloth"]
+        },
+        {
+          "id": "tormentor",
+          "word": "Tormentor",
+          "held": ["torch"],
+          "outfit": ["loincloth", "bone-armour"]
+        },
+        {
+          "id": "knight",
+          "word": "Knight",
+          "held": ["sword"],
+          "outfit": ["plate"]
+        }
+      ],
+      "marks": ["Infernal", "Dread"]
+    },
+    {
+      "id": "lizardfolk",
+      "noun": "Lizard",
+      "rig": "humanoid",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "marsh", "word": "Marsh", "colour": "#4a8a5a" },
+          { "id": "sand", "word": "Sand", "colour": "#b0a05a" },
+          { "id": "jade", "word": "Jade", "colour": "#3a9a7a" },
+          { "id": "ochre", "word": "Ochre", "colour": "#a07a3a" },
+          { "id": "ember", "word": "Ember", "colour": "#b05a3a" }
+        ]
+      },
+      "parts": {
+        "head": ["lizard-crested", "lizard-frilled"],
+        "torso": ["medium-scaled"],
+        "legs": ["medium-digitigrade"],
+        "outfit": ["none", "loincloth", "leather", "bone-armour"],
+        "headgear": ["none", "none", "feathers", "skull-mask", "bandana"],
+        "held": ["spear", "bow", "club", "dagger", "staff", "mace-shield"],
+        "extras": ["warpaint", "bone-necklace", "glowing-eyes"]
+      },
+      "always": ["lizard-tail"],
+      "roles": [
+        {
+          "id": "hunter",
+          "word": "Hunter",
+          "held": ["spear"]
+        },
+        {
+          "id": "archer",
+          "word": "Archer",
+          "held": ["bow"]
+        },
+        {
+          "id": "shaman",
+          "word": "Shaman",
+          "held": ["staff"],
+          "headgear": ["feathers", "skull-mask"],
+          "outfit": ["bone-armour", "loincloth"]
+        },
+        {
+          "id": "warrior",
+          "word": "Warrior",
+          "held": ["mace-shield", "club"]
+        },
+        {
+          "id": "stalker",
+          "word": "Stalker",
+          "held": ["dagger"]
+        }
+      ],
+      "marks": ["Elder", "Venom-Fang"]
+    },
+    {
+      "id": "minotaur",
+      "noun": "Minotaur",
+      "rig": "humanoid",
+      "build": "large",
+      "palettes": {
+        "skin": [
+          { "id": "russet", "word": "Russet", "colour": "#8a4a2a" },
+          { "id": "dun", "word": "Dun", "colour": "#a08060" },
+          { "id": "black", "word": "Black", "colour": "#4a3e3a" },
+          { "id": "pale", "word": "Pale", "colour": "#c0b0a0" },
+          { "id": "brindle", "word": "Brindle", "colour": "#6a4a3a" }
+        ]
+      },
+      "parts": {
+        "head": ["bull-horned", "bull-ringed"],
+        "torso": ["large-hulking", "large-furred"],
+        "legs": ["large-hooves"],
+        "outfit": ["loincloth", "leather", "chain", "plate", "furs"],
+        "headgear": ["none"],
+        "held": ["axe", "hammer", "club", "spear"],
+        "extras": ["warpaint", "chains", "bone-necklace"]
+      },
+      "roles": [
+        {
+          "id": "brute",
+          "word": "Brute",
+          "held": ["club", "hammer"]
+        },
+        {
+          "id": "axeman",
+          "word": "Axeman",
+          "held": ["axe"]
+        },
+        {
+          "id": "lancer",
+          "word": "Lancer",
+          "held": ["spear"]
+        }
+      ],
+      "marks": ["Raging", "Elder"]
+    },
+    {
+      "id": "dragon",
+      "noun": "",
+      "rig": "dragon",
+      "build": "large",
+      "palettes": {
+        "skin": [
+          { "id": "ember", "word": "Ember", "colour": "#b03a2a" },
+          { "id": "jade", "word": "Jade", "colour": "#3a8a4a" },
+          { "id": "azure", "word": "Azure", "colour": "#3a5aa8" },
+          { "id": "obsidian", "word": "Obsidian", "colour": "#3a3842" },
+          { "id": "gilded", "word": "Gilded", "colour": "#c0a040" },
+          { "id": "amethyst", "word": "Amethyst", "colour": "#7a4a8a" }
+        ],
+        "accent": [
+          { "id": "gold", "colour": "#d8a03a" },
+          { "id": "red", "colour": "#a83030" },
+          { "id": "blue", "colour": "#4a8ad0" },
+          { "id": "violet", "colour": "#8a5ab8" },
+          { "id": "teal", "colour": "#3aa8a0" }
+        ]
+      },
+      "parts": {
+        "body": ["dragon-body-crouched", "dragon-body-rearing", "dragon-body-stout"],
+        "head": ["dragon-head-horned", "dragon-head-frilled", "dragon-head-blunt"],
+        "wings": ["dragon-wings-bat", "dragon-wings-tattered", "dragon-wings-folded"],
+        "tail": ["dragon-tail-spade", "dragon-tail-spiked"],
+        "extras": ["dragon-spines", "dragon-belly-glow", "dragon-scales", "dragon-smoke"]
+      },
+      "roles": [
+        {
+          "id": "drake",
+          "word": "Drake",
+          "body": ["dragon-body-crouched", "dragon-body-stout"]
+        },
+        {
+          "id": "dragon",
+          "word": "Dragon",
+          "body": ["dragon-body-rearing"]
+        },
+        {
+          "id": "whelp",
+          "word": "Whelp",
+          "body": ["dragon-body-stout"],
+          "wings": ["dragon-wings-folded"]
+        }
+      ],
+      "marks": ["Elder", "Ancient"]
+    },
+    {
+      "id": "spider",
+      "noun": "Spider",
+      "rig": "spider",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "cave", "word": "Cave", "colour": "#3e3448" },
+          { "id": "ash", "word": "Ash", "colour": "#5c5c60" },
+          { "id": "bog", "word": "Bog", "colour": "#4a5a2a" },
+          { "id": "tawny", "word": "Tawny", "colour": "#7a5a2a" },
+          { "id": "pale", "word": "Pale", "colour": "#a8a0a0" }
+        ],
+        "accent": [
+          { "id": "red", "colour": "#c83a30" },
+          { "id": "gold", "colour": "#e0c040" },
+          { "id": "white", "colour": "#e8e4dc" },
+          { "id": "teal", "colour": "#3ab0a0" }
+        ]
+      },
+      "parts": {
+        "legs": ["spider-legs-long", "spider-legs-hairy"],
+        "abdomen": ["spider-abdomen-round", "spider-abdomen-striped", "spider-abdomen-spiked"],
+        "head": ["spider-head-eyed", "spider-head-fanged", "spider-head-crowned"],
+        "extras": ["spider-mark-skull", "spider-web", "spider-bristles", "spider-glow-eyes"]
+      },
+      "roles": [
+        {
+          "id": "weaver",
+          "word": "Weaver",
+          "extras": ["spider-web"]
+        },
+        {
+          "id": "stalker",
+          "word": "Stalker"
+        },
+        {
+          "id": "lurker",
+          "word": "Lurker",
+          "legs": ["spider-legs-hairy"]
+        }
+      ],
+      "marks": ["Brood-Mother", "Elder"]
+    },
+    {
+      "id": "insect",
+      "noun": "",
+      "rig": "insect",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "ink", "word": "Ink", "colour": "#2e2e40" },
+          { "id": "rust", "word": "Rust", "colour": "#6e2e2a" },
+          { "id": "amber", "word": "Amber", "colour": "#8a5a1a" },
+          { "id": "jade", "word": "Jade", "colour": "#3a7a3a" },
+          { "id": "sand", "word": "Sand", "colour": "#9a8a4a" }
+        ],
+        "accent": [
+          { "id": "blue", "colour": "#4a7a9a" },
+          { "id": "red", "colour": "#c04030" },
+          { "id": "yellow", "colour": "#e0c030" },
+          { "id": "lime", "colour": "#9ac050" },
+          { "id": "violet", "colour": "#7a4aa8" }
+        ],
+        "cloth": [
+          { "id": "glass", "colour": "#d4e4ec" },
+          { "id": "smoke", "colour": "#a8b0b8" },
+          { "id": "amber", "colour": "#e8d8a8" }
+        ]
+      },
+      "parts": {
+        "head": ["insect-head-beetle", "insect-head-wasp", "insect-head-mantis"],
+        "thorax": ["insect-thorax-plated", "insect-thorax-slender", "insect-thorax-raptor"],
+        "abdomen": ["insect-abdomen-shell", "insect-abdomen-stinger", "insect-abdomen-long"],
+        "wings": ["none", "insect-wings-clear", "insect-wings-twin", "insect-wings-shell-open"],
+        "extras": ["insect-spots", "insect-sheen", "insect-bands", "insect-glow"]
+      },
+      "roles": [
+        {
+          "id": "beetle",
+          "word": "Beetle",
+          "head": ["insect-head-beetle"],
+          "thorax": ["insect-thorax-plated"],
+          "abdomen": ["insect-abdomen-shell"],
+          "wings": ["none", "insect-wings-shell-open"],
+          "extras": ["insect-spots", "insect-sheen", "insect-glow"]
+        },
+        {
+          "id": "wasp",
+          "word": "Wasp",
+          "head": ["insect-head-wasp"],
+          "thorax": ["insect-thorax-slender", "insect-thorax-plated"],
+          "abdomen": ["insect-abdomen-stinger"],
+          "wings": ["insect-wings-clear", "insect-wings-twin"],
+          "extras": ["insect-bands", "insect-glow"]
+        },
+        {
+          "id": "mantis",
+          "word": "Mantis",
+          "head": ["insect-head-mantis"],
+          "thorax": ["insect-thorax-raptor"],
+          "abdomen": ["insect-abdomen-long"],
+          "wings": ["none", "insect-wings-clear"],
+          "extras": ["insect-sheen", "insect-glow"]
+        }
+      ],
+      "marks": ["Giant", "Elder"]
+    },
+    {
+      "id": "slime",
+      "noun": "",
+      "rig": "slime",
+      "build": "small",
+      "palettes": {
+        "skin": [
+          { "id": "moss", "word": "Moss", "colour": "#5ab04a" },
+          { "id": "tide", "word": "Tide", "colour": "#4a8ad0" },
+          { "id": "rose", "word": "Rose", "colour": "#c04a8a" },
+          { "id": "amber", "word": "Amber", "colour": "#d0a030" },
+          { "id": "ink", "word": "Ink", "colour": "#545478" },
+          { "id": "acid", "word": "Acid", "colour": "#a0c030" }
+        ]
+      },
+      "parts": {
+        "body": ["slime-dome", "slime-drippy", "slime-stack"],
+        "face": ["slime-face-dots", "slime-face-grin", "slime-face-scowl"],
+        "extras": ["slime-bubbles", "slime-bones", "slime-core", "slime-drops"]
+      },
+      "roles": [
+        {
+          "id": "slime",
+          "word": "Slime",
+          "body": ["slime-dome"]
+        },
+        {
+          "id": "ooze",
+          "word": "Ooze",
+          "body": ["slime-drippy"]
+        },
+        {
+          "id": "jelly",
+          "word": "Jelly",
+          "body": ["slime-stack"]
+        }
+      ],
+      "marks": ["Gorged", "Elder"]
+    },
+    {
+      "id": "elemental",
+      "noun": "Elemental",
+      "rig": "elemental",
+      "build": "medium",
+      "palettes": {
+        "skin": [
+          { "id": "ember", "word": "Ember", "colour": "#e06a2a" },
+          { "id": "blaze", "word": "Blaze", "colour": "#d84030" },
+          { "id": "tide", "word": "Tide", "colour": "#3a7ad0" },
+          { "id": "brine", "word": "Brine", "colour": "#3a9aa0" },
+          { "id": "boulder", "word": "Boulder", "colour": "#8a6a4a" },
+          { "id": "clay", "word": "Clay", "colour": "#a0704a" },
+          { "id": "gale", "word": "Gale", "colour": "#b8e0e8" },
+          { "id": "mist", "word": "Mist", "colour": "#c8ccd8" },
+          { "id": "cinder", "word": "Cinder", "colour": "#c84a1a" },
+          { "id": "deep", "word": "Deep", "colour": "#2a5a9a" },
+          { "id": "granite", "word": "Granite", "colour": "#7a7068" },
+          { "id": "storm", "word": "Storm", "colour": "#9aa8c0" }
+        ],
+        "eye": [
+          { "id": "gold", "colour": "#ffe060" },
+          { "id": "white", "colour": "#f4fbff" },
+          { "id": "amber", "colour": "#f0c040" }
+        ]
+      },
+      "parts": {
+        "body": ["elemental-flame", "elemental-column", "elemental-vortex", "elemental-hulk"],
+        "face": ["elemental-face-eyes", "elemental-face-maw", "elemental-face-brow", "elemental-face-cyclops"],
+        "extras": ["elemental-sparks", "elemental-stones", "elemental-drops", "elemental-gusts", "elemental-core", "elemental-crackle"]
+      },
+      "roles": [
+        {
+          "id": "fire",
+          "word": "",
+          "palettes": {
+            "skin": ["ember", "blaze", "cinder"]
+          },
+          "body": ["elemental-flame"],
+          "extras": ["elemental-sparks", "elemental-crackle", "elemental-core"]
+        },
+        {
+          "id": "water",
+          "word": "",
+          "palettes": {
+            "skin": ["tide", "brine", "deep"]
+          },
+          "body": ["elemental-column", "elemental-vortex"],
+          "extras": ["elemental-drops", "elemental-core"]
+        },
+        {
+          "id": "earth",
+          "word": "",
+          "palettes": {
+            "skin": ["boulder", "clay", "granite"]
+          },
+          "body": ["elemental-hulk"],
+          "extras": ["elemental-stones", "elemental-crackle"]
+        },
+        {
+          "id": "air",
+          "word": "",
+          "palettes": {
+            "skin": ["gale", "mist", "storm"]
+          },
+          "body": ["elemental-vortex"],
+          "extras": ["elemental-gusts"]
+        }
+      ],
+      "marks": ["Elder", "Raging"]
+    },
+    {
+      "id": "golem",
+      "noun": "Golem",
+      "rig": "golem",
+      "build": "large",
+      "palettes": {
+        "skin": [
+          { "id": "granite", "word": "Granite", "colour": "#8a8a8a" },
+          { "id": "clay", "word": "Clay", "colour": "#a06a4a" },
+          { "id": "iron", "word": "Iron", "colour": "#5e6474" },
+          { "id": "sandstone", "word": "Sandstone", "colour": "#c0a080" },
+          { "id": "obsidian", "word": "Obsidian", "colour": "#40384a" },
+          { "id": "marble", "word": "Marble", "colour": "#d0ccc4" }
+        ],
+        "eye": [
+          { "id": "cyan", "colour": "#60e0f0" },
+          { "id": "amber", "colour": "#f0a030" },
+          { "id": "red", "colour": "#e8463c" },
+          { "id": "green", "colour": "#70e050" }
+        ]
+      },
+      "parts": {
+        "legs": ["golem-legs-pillars", "golem-legs-stumps"],
+        "torso": ["golem-torso-block", "golem-torso-barrel", "golem-torso-hunched"],
+        "arms": ["golem-arms-fists", "golem-arms-slabs"],
+        "head": ["golem-head-slab", "golem-head-dome", "golem-head-horned"],
+        "extras": ["golem-runes", "golem-cracks", "golem-bands", "golem-chains", "moss"]
+      },
+      "roles": [
+        {
+          "id": "sentinel",
+          "word": "Sentinel"
+        },
+        {
+          "id": "guardian",
+          "word": "Guardian",
+          "arms": ["golem-arms-slabs"]
+        },
+        {
+          "id": "brute",
+          "word": "Brute",
+          "arms": ["golem-arms-fists"],
+          "torso": ["golem-torso-hunched", "golem-torso-block"]
+        }
+      ],
+      "marks": ["Ancient", "Runebound"]
+    },
+    {
+      "id": "ghost",
+      "noun": "",
+      "rig": "ghost",
+      "build": "medium",
+      "themes": ["gothic-dungeon"],
+      "palettes": {
+        "skin": [
+          { "id": "pale", "word": "Pale", "colour": "#c8d8e8" },
+          { "id": "mist", "word": "Misty", "colour": "#a8c8b8" },
+          { "id": "wan", "word": "Wan", "colour": "#d0c8e8" },
+          { "id": "grave", "word": "Grave", "colour": "#a8aea4" }
+        ],
+        "cloth": [
+          { "id": "sable", "word": "Sable", "colour": "#34303a" },
+          { "id": "ashen", "word": "Ashen", "colour": "#5a5a66" },
+          { "id": "grave", "word": "Grave", "colour": "#3a4a40" }
+        ],
+        "eye": [
+          { "id": "blue", "colour": "#64c8f4" },
+          { "id": "green", "colour": "#7ae05a" },
+          { "id": "violet", "colour": "#c47cf4" },
+          { "id": "white", "colour": "#f4f1e8" }
+        ]
+      },
+      "parts": {
+        "body": ["ghost-sheet", "ghost-wisp", "ghost-wraith"],
+        "face": ["ghost-face-hollow", "ghost-face-glare", "ghost-face-wail", "ghost-face-hooded"],
+        "extras": ["ghost-chains", "ghost-lantern", "ghost-motes", "ghost-tatters"]
+      },
+      "roles": [
+        {
+          "id": "spirit",
+          "word": "Spirit",
+          "body": ["ghost-sheet"],
+          "face": ["ghost-face-hollow", "ghost-face-glare", "ghost-face-wail"]
+        },
+        {
+          "id": "phantom",
+          "word": "Phantom",
+          "body": ["ghost-wisp"],
+          "face": ["ghost-face-hollow", "ghost-face-glare", "ghost-face-wail"]
+        },
+        {
+          "id": "wraith",
+          "word": "Wraith",
+          "body": ["ghost-wraith"],
+          "face": ["ghost-face-hooded"],
+          "descriptor": "cloth"
+        }
+      ],
+      "marks": ["Wailing", "Ancient"]
+    },
+    {
+      "id": "treant",
+      "noun": "Wood Warden",
+      "rig": "treant",
+      "build": "large",
+      "descriptor": "hair",
+      "palettes": {
+        "skin": [
+          { "id": "bark", "colour": "#7a5a3a" }
+        ],
+        "leather": [
+          { "id": "oak", "colour": "#7a5a3a" },
+          { "id": "birch", "colour": "#b8aa8c" },
+          { "id": "ash", "colour": "#6a6058" },
+          { "id": "elder", "colour": "#5a4a3a" }
+        ],
+        "hair": [
+          { "id": "spring", "word": "Spring", "colour": "#4f8a3a" },
+          { "id": "autumn", "word": "Autumn", "colour": "#c07030" },
+          { "id": "summer", "word": "Summer", "colour": "#2f6a40" },
+          { "id": "blossom", "word": "Blossom", "colour": "#c05a8a" },
+          { "id": "withered", "word": "Withered", "colour": "#8a7a4a" }
+        ],
+        "accent": [
+          { "id": "pink", "colour": "#e8a0c0" },
+          { "id": "red", "colour": "#c84030" },
+          { "id": "gold", "colour": "#e0c040" }
+        ]
+      },
+      "parts": {
+        "roots": ["treant-roots-spread", "treant-roots-gnarled"],
+        "trunk": ["treant-trunk-stout", "treant-trunk-twisted", "treant-trunk-hollow"],
+        "crown": ["treant-crown-leafy", "treant-crown-bare", "treant-crown-pine"],
+        "face": ["treant-face-knots", "treant-face-scowl", "treant-face-sleepy"],
+        "extras": ["treant-mushrooms", "treant-fireflies", "treant-moss", "treant-blossoms"]
+      },
+      "roles": [
+        {
+          "id": "warden",
+          "word": "",
+          "crown": ["treant-crown-leafy", "treant-crown-pine"],
+          "noun": "Wood Warden"
+        },
+        {
+          "id": "grove-keeper",
+          "word": "",
+          "crown": ["treant-crown-leafy"],
+          "extras": ["treant-fireflies", "treant-blossoms"],
+          "noun": "Grove Keeper"
+        },
+        {
+          "id": "deadwood",
+          "word": "",
+          "crown": ["treant-crown-bare"],
+          "palettes": {
+            "hair": ["withered"]
+          },
+          "extras": ["treant-moss", "treant-mushrooms"],
+          "noun": "Deadwood"
+        }
+      ],
+      "marks": ["Elder", "Ancient"]
+    }
+  ]
+}

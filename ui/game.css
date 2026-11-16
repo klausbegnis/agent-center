@@ -1,0 +1,1387 @@
+/* Game mode: the tabs, the Arsenal and Skills panels, the settings and the fight drawn over each
+   room. Loaded after stage.css. Nothing here applies while the game is off: every rule hangs on
+   an element only the game draws, or on the root's data-game-tab, which is set only while the
+   game's tabs show. Colours come from Orca's theme (--orca-*) with dark defaults. */
+.ac-root {
+  --ac-game-good: #6fe0d2;
+  --ac-game-warn: #f8b366;
+  --ac-game-bad: #ff9a9a;
+  --ac-game-gold: #f2c14e;
+  --ac-game-track: color-mix(in srgb, var(--orca-foreground, #e8eaf0) 14%, transparent);
+}
+
+/* The header while the game shows: the title, counters and the settings cog keep one row that
+   never wraps, the cog at its right end, and the tools wrap below it when they do not fit. The
+   page keeps room for a scrollbar at all times, so a tab that scrolls does not narrow the panel
+   and move the header. */
+.ac-root[data-game-tab] { scrollbar-gutter: stable; }
+.ac-root[data-game-tab] .ac-title-row {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ac-root[data-game-tab] .ac-title-row .ac-counts { min-width: 0; }
+.ac-root[data-game-tab] .ac-title-row .ac-game-settings-button { flex: none; margin-left: auto; }
+
+/* Tabs */
+.ac-game-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-bar[hidden] { display: none; }
+.ac-game-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ac-game-tab {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ac-game-tab:hover { color: var(--orca-foreground, #e8eaf0); }
+/* The open tab is underlined and bold, not only coloured. */
+.ac-game-tab[aria-selected='true'] {
+  border-bottom-color: var(--orca-ring, #6fe0d2);
+  color: var(--orca-foreground, #e8eaf0);
+}
+.ac-game-tab:focus-visible {
+  outline: 2px solid var(--orca-ring, #6fe0d2);
+  outline-offset: -2px;
+}
+.ac-game-estimated {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  cursor: help;
+}
+.ac-game-estimated[hidden] { display: none; }
+.ac-game-notice {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ac-game-warn);
+}
+.ac-game-notice:empty { display: none; }
+
+/* Which part shows: the rooms on the Rooms tab, a panel on the others. */
+.ac-root[data-game-tab='arsenal'] .ac-rooms,
+.ac-root[data-game-tab='skills'] .ac-rooms,
+.ac-root[data-game-tab='arsenal'] .ac-shelf,
+.ac-root[data-game-tab='skills'] .ac-shelf { display: none; }
+/* Gallery fits the rooms without scrolling; a panel scrolls like List. */
+.ac-root.ac-gallery[data-game-tab='arsenal'],
+.ac-root.ac-gallery[data-game-tab='skills'] { overflow: auto; }
+.ac-game-panel[hidden] { display: none !important; }
+.ac-game-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-content: start;
+  align-items: start;
+}
+
+/* Cards */
+.ac-game-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 8px;
+  background: var(--orca-card, #1f232c);
+}
+.ac-game-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ac-game-card-line {
+  margin: 0;
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+
+/* Mini: the rooms only, whatever tab was open. */
+.ac-mini .ac-game-bar,
+.ac-mini .ac-game-notice,
+.ac-mini .ac-game-panel { display: none !important; }
+.ac-mini.ac-root[data-game-tab] .ac-rooms { display: grid; }
+/* Collapsed tray: only the header strip. */
+.ac-collapsed .ac-game-bar,
+.ac-collapsed .ac-game-notice,
+.ac-collapsed .ac-game-panel { display: none !important; }
+
+/* The fight over a room: a band along the top, above every station, under every character. Sizes
+   follow the room's width (the scene is a size container) so Gallery cells scale it down. */
+.ac-game-band {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  /* In a large room the band stops growing: a full-screen room gets a bigger monster, not a
+     taller strip of empty panels. */
+  max-height: 84px;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2cqw;
+  padding: 1cqw 1.2cqw;
+  pointer-events: none;
+  font-family: var(--ac-font);
+  font-size: clamp(8px, 2.5cqw, 12px);
+  line-height: 1.2;
+  color: var(--ac-label);
+}
+.ac-game-pill {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25em;
+  padding: 0.25em 0.55em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ac-label-shadow) 80%, transparent);
+}
+.ac-game-wave {
+  flex: none;
+  align-items: center;
+  text-align: center;
+}
+.ac-game-wave-number { font-weight: 700; white-space: nowrap; }
+.ac-game-wave-kills { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.ac-game-foe-info { position: relative; flex: 1 1 auto; min-width: 0; }
+/* Without a monster the line saying so is only as wide as its words. */
+.ac-game-foe-info.ac-game-foe-none { flex: 0 1 auto; font-weight: 400; }
+.ac-game-foe-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+}
+.ac-game-foe-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.ac-game-foe-tag {
+  flex: none;
+  padding: 0 0.35em;
+  border-radius: 2px;
+  background: var(--ac-game-gold);
+  color: #171a21;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ac-game-foe-tag[hidden] { display: none; }
+.ac-game-foe-boss .ac-game-foe-tag { background: var(--ac-game-bad); }
+.ac-game-foe-info[data-rank='veteran'] .ac-game-foe-tag { background: #e6e0cf; }
+.ac-game-foe-info[data-rank='legendary'] .ac-game-foe-tag {
+  background: linear-gradient(90deg, var(--ac-game-bad), var(--ac-game-gold));
+}
+.ac-game-foe-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.ac-game-foe-row[hidden] { display: none; }
+.ac-game-foe-level { flex: none; white-space: nowrap; }
+.ac-game-party {
+  flex: none;
+  width: 21cqw;
+}
+.ac-game-party-state { font-weight: 700; white-space: nowrap; }
+.ac-game-party[data-party='waiting'] .ac-game-party-state { color: var(--ac-bubble-wait); }
+.ac-game-party[data-party='blocked'] .ac-game-party-state { color: var(--ac-bubble-blocked); }
+
+.ac-ink-o, .ac-ink-p { fill: #0b0e13; }
+.ac-ink-b { fill: var(--ac-monster-accent, #8a8f99); }
+.ac-ink-h { fill: color-mix(in srgb, var(--ac-monster-accent, #8a8f99) 55%, #ffffff); }
+.ac-ink-s { fill: color-mix(in srgb, var(--ac-monster-accent, #8a8f99) 60%, #000000); }
+.ac-ink-e { fill: #f4f1e8; }
+/* Bars with their value beside them. */
+.ac-game-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  flex: 1;
+}
+.ac-game-meter-track {
+  flex: 1;
+  min-width: 2.5em;
+  height: 0.55em;
+  border-radius: 1px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+.ac-game-meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--ac-game-good);
+}
+.ac-game-health .ac-game-meter-fill { background: var(--ac-game-bad); }
+.ac-game-meter-text { flex: none; font-variant-numeric: tabular-nums; }
+
+/* A character's mark: level and class, on the lower corner of its sprite, clear of the bubble
+   above its head and the name below its feet. */
+.ac-game-badge {
+  position: absolute;
+  left: -14%;
+  bottom: 2%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.15em;
+  /* No plate behind it: an outline in the label's shadow colour keeps it readable on any
+     scenery without a box hanging off the character. */
+  color: var(--ac-label);
+  font-family: var(--ac-font);
+  font-size: clamp(8px, 2.5cqw, 12px);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    1px 0 0 var(--ac-label-shadow), -1px 0 0 var(--ac-label-shadow),
+    0 1px 0 var(--ac-label-shadow), 0 -1px 0 var(--ac-label-shadow);
+  pointer-events: none;
+}
+.ac-game-badge-icon {
+  width: 1.35em;
+  height: 1.35em;
+  shape-rendering: crispEdges;
+  filter:
+    drop-shadow(1px 0 0 var(--ac-label-shadow)) drop-shadow(-1px 0 0 var(--ac-label-shadow))
+    drop-shadow(0 1px 0 var(--ac-label-shadow)) drop-shadow(0 -1px 0 var(--ac-label-shadow));
+}
+.ac-game-badge-guest { font-weight: 400; font-style: italic; opacity: 0.9; }
+.ac-game-badge-gathering { color: var(--ac-game-gold); }
+
+/* Narrow rooms (a small Gallery cell): the band keeps the monster and the bars, not the words. */
+@container (max-width: 300px) {
+  .ac-game-wave-kills,
+  .ac-game-foe-title,
+  .ac-game-foe-level,
+  .ac-game-party { display: none; }
+  .ac-foe-plate .ac-foe-tag,
+  .ac-foe-state { display: none; }
+}
+.ac-mini .ac-game-pill,
+.ac-mini .ac-game-badge,
+.ac-mini .ac-foe-plate { display: none !important; }
+
+/* Panels: cards in one column at the panel's width, more side by side when there is room. */
+.ac-game-panel-content,
+.ac-game-panel-body { display: contents; }
+.ac-game-panel-content[hidden] { display: none; }
+.ac-game-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ac-game-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ac-game-field[hidden] { display: none; }
+.ac-game-field-label { font-size: 12px; font-weight: 600; }
+.ac-game-field .ac-select { flex: 1; min-width: 0; }
+.ac-game-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+.ac-game-switch-input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--orca-ring, #6fe0d2);
+}
+.ac-game-switch-input:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+.ac-game-switch-text { display: flex; flex-direction: column; gap: 1px; }
+.ac-game-switch-label { font-size: 12px; font-weight: 600; }
+.ac-game-switch-hint,
+.ac-game-card-line,
+.ac-game-cost {
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-game-amount { font-variant-numeric: tabular-nums; }
+.ac-game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ac-game-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--orca-border, #2a2f3a);
+  font-size: 12px;
+}
+.ac-game-entry:first-child { padding-top: 0; border-top: 0; }
+.ac-game-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+}
+.ac-game-entry-name { font-size: 12px; }
+.ac-game-buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ac-game-buy .ac-game-cost { flex: none; }
+.ac-game-missing { font-size: 11px; color: var(--ac-game-warn); }
+.ac-game-buy-button { margin-left: auto; }
+.ac-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.ac-game-danger { border-color: var(--ac-game-bad); color: var(--ac-game-bad); }
+.ac-game-retirees {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+/* Skills */
+.ac-game-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.ac-game-summary .ac-game-card-line { flex-basis: 100%; margin: 0; }
+.ac-game-summary-level { font-size: 15px; }
+
+/* Icons: pixel drawings in their own colours, always next to a word. */
+.ac-icon {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  shape-rendering: crispEdges;
+}
+.ac-icon-label { display: inline-flex; align-items: center; gap: 0.35em; }
+.ac-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Skills: a row per skill. Icon, name and stars, then the level; the bar in the skill's colour
+   with the share written beside it; one line of what the skill does. */
+.ac-game-summary-item { display: flex; flex-direction: column; gap: 1px; min-width: 7em; }
+.ac-game-summary-label { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-summary-value { font-size: 15px; font-variant-numeric: tabular-nums; }
+.ac-game-skill-list { display: flex; flex-direction: column; gap: 10px; }
+.ac-game-skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 10px;
+  font-size: 12px;
+}
+.ac-game-skill-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ac-game-skill-icon { width: 20px; height: 20px; }
+.ac-game-skill-name { color: var(--ac-skill-color); font-size: 13px; }
+.ac-game-skill-level { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; white-space: nowrap; }
+.ac-game-skill-bar {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--ac-game-track);
+}
+.ac-game-skill-fill { display: block; height: 100%; background: var(--ac-skill-color); }
+.ac-game-skill-percent {
+  min-width: 4.5em;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-game-skill-effect,
+.ac-game-skill-prestige { grid-column: 1 / -1; }
+.ac-game-skill-effect { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-stars { display: inline-flex; align-items: center; gap: 1px; color: var(--ac-game-gold); }
+.ac-game-star { width: 11px; height: 11px; }
+.ac-game-stars-count { margin-left: 2px; font-size: 11px; font-weight: 700; }
+
+/* Arsenal: a head that stays in view (room, world, materials strip, section tabs) over the open
+   section. The head spans the panel and covers what scrolls under it. */
+.ac-game-arsenal-head[hidden],
+.ac-game-arsenal-section[hidden],
+.ac-game-arsenal-empty[hidden] { display: none; }
+.ac-game-arsenal-head {
+  grid-column: 1 / -1;
+  position: sticky;
+  /* The root's padding: the head sticks to the very top edge, so nothing shows above it. */
+  top: -12px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0 -12px;
+  padding: 6px 12px 0;
+  background: var(--orca-background, #171a21);
+  container: ac-arsenal-head / inline-size;
+}
+.ac-game-arsenal-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ac-game-arsenal-row .ac-game-field { flex: 1 1 180px; min-width: 0; max-width: 420px; }
+.ac-game-arsenal-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
+
+/* The materials strip: icon and amount per tile, six to a row at 380 px, one row when wide. */
+.ac-game-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 4px;
+}
+.ac-game-strip:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+.ac-game-strip-tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 2px 3px;
+  border-radius: 4px;
+  border-bottom: 2px solid var(--ac-tile-color, transparent);
+  background: var(--orca-secondary, #262b35);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.ac-game-strip-shown { display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
+.ac-game-strip-icon { width: 13px; height: 13px; }
+.ac-game-strip-tile .ac-game-amount { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+/* All eleven in one row once they fit, never wider than a tile needs. */
+@container ac-arsenal-head (min-width: 620px) {
+  .ac-game-strip { grid-template-columns: repeat(11, minmax(0, 96px)); }
+}
+/* Names are written out while the strip has the focus; otherwise the tooltip carries them. */
+.ac-game-strip-name {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-game-strip:focus .ac-game-strip-name { display: block; }
+/* Short of a price on screen: a dashed frame and a "!", not only the colour. */
+.ac-game-strip-short { outline: 1px dashed var(--ac-game-warn); outline-offset: -1px; }
+.ac-game-strip-short .ac-game-amount { color: var(--ac-game-warn); }
+.ac-game-strip-mark { margin-left: auto; font-weight: 800; color: var(--ac-game-warn); }
+
+/* Section tabs: a smaller segmented row under the game's tabs. The open one is filled and
+   framed, not only coloured. */
+.ac-game-subtabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-subtab {
+  flex: 1 1 0;
+  max-width: 160px;
+  min-width: 0;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: none;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ac-game-subtab:hover { color: var(--orca-foreground, #e8eaf0); }
+.ac-game-subtab[aria-selected='true'] {
+  border-color: var(--orca-ring, #6fe0d2);
+  background: var(--orca-secondary, #262b35);
+  color: var(--orca-foreground, #e8eaf0);
+  box-shadow: inset 0 -2px 0 var(--orca-ring, #6fe0d2);
+}
+.ac-game-subtab:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+
+/* Sections span the panel and lay themselves out by their own width. */
+.ac-game-arsenal-section { grid-column: 1 / -1; min-width: 0; container-type: inline-size; }
+.ac-game-chest-section,
+.ac-game-party-section,
+.ac-game-camp-section { display: grid; gap: 10px; align-items: start; min-width: 0; }
+@container (min-width: 640px) {
+  .ac-game-chest-section { grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr); }
+  .ac-game-party-section { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
+}
+.ac-game-camp-upgrades {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 10px;
+}
+
+/* Item tiers, from common to rare: one ladder, used by every slot. The tier is also written in
+   the slot's corner, so it never rests on colour alone. */
+.ac-root {
+  --ac-tier-1: #7d8492;
+  --ac-tier-2: #c9ced8;
+  --ac-tier-3: #6fcf72;
+  --ac-tier-4: #3fc9b8;
+  --ac-tier-5: #5b9cff;
+  --ac-tier-6: #a77bff;
+  --ac-tier-7: #e46bd6;
+  --ac-tier-8: #f5953f;
+  --ac-tier-9: #f2c14e;
+  --ac-tier-10: #ff5f5f;
+}
+
+/* The chest: a framed box with a lid and a grid of square slots. */
+.ac-game-chest {
+  min-width: 0;
+  padding: 0 8px 8px;
+  border: 2px solid #5b4630;
+  border-radius: 8px;
+  background: #16130f;
+  box-shadow: inset 0 0 0 1px #000;
+}
+.ac-game-chest-lid {
+  position: relative;
+  margin: 0 -8px 8px;
+  padding: 6px 10px 7px;
+  border-bottom: 2px solid #5b4630;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(#4b3a28, #30251a);
+  font-size: 13px;
+  font-weight: 700;
+}
+/* The lock on the lid. */
+.ac-game-chest-lid::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  bottom: -6px;
+  width: 10px;
+  height: 12px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: var(--ac-game-gold);
+}
+.ac-game-chest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 4px;
+}
+.ac-game-chest-empty { margin-top: 6px; }
+.ac-game-chest-legend { margin: 6px 0 0; font-size: 10px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-chest-empty[hidden],
+.ac-game-item-detail[hidden] { display: none; }
+
+/* One slot: the item's icon in its own ink, the tier as the frame's colour and in the top left
+   corner, the level at the bottom right, "●" when held and "▲" when it can be upgraded now. */
+.ac-game-slotbox {
+  --ac-tier: var(--orca-border, #3a4150);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 2px solid var(--ac-tier);
+  border-radius: 4px;
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--ac-tier) 24%, #1b1f27), #0f1116 78%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6);
+  color: #f4f1e8;
+  font: inherit;
+  line-height: 1;
+}
+button.ac-game-slotbox { cursor: pointer; }
+button.ac-game-slotbox:hover { filter: brightness(1.15); }
+.ac-game-slotbox[data-tier='1'] { --ac-tier: var(--ac-tier-1); }
+.ac-game-slotbox[data-tier='2'] { --ac-tier: var(--ac-tier-2); }
+.ac-game-slotbox[data-tier='3'] { --ac-tier: var(--ac-tier-3); }
+.ac-game-slotbox[data-tier='4'] { --ac-tier: var(--ac-tier-4); }
+.ac-game-slotbox[data-tier='5'] { --ac-tier: var(--ac-tier-5); }
+.ac-game-slotbox[data-tier='6'] { --ac-tier: var(--ac-tier-6); }
+.ac-game-slotbox[data-tier='7'] { --ac-tier: var(--ac-tier-7); }
+.ac-game-slotbox[data-tier='8'] { --ac-tier: var(--ac-tier-8); }
+.ac-game-slotbox[data-tier='9'] { --ac-tier: var(--ac-tier-9); }
+.ac-game-slotbox[data-tier='10'] { --ac-tier: var(--ac-tier-10); }
+.ac-game-slotbox-icon { width: 60%; height: 60%; filter: hue-rotate(var(--ac-item-turn, 0deg)); }
+.ac-game-slotbox-empty .ac-game-slotbox-icon { opacity: 0.25; filter: grayscale(1); }
+.ac-game-slotbox-free {
+  border: 1px dashed color-mix(in srgb, #5b4630 70%, transparent);
+  background: #0f0d0a;
+  box-shadow: none;
+}
+.ac-game-slotbox-tier,
+.ac-game-slotbox-level,
+.ac-game-slotbox-held,
+.ac-game-slotbox-ready-mark {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 800;
+  text-shadow: 0 1px 0 #000, 0 0 2px #000;
+}
+.ac-game-slotbox-tier { top: 2px; left: 3px; color: var(--ac-tier); }
+.ac-game-slotbox-level { right: 3px; bottom: 2px; font-size: 10px; }
+.ac-game-slotbox-held { bottom: 2px; left: 3px; }
+.ac-game-slotbox-ready-mark { top: 2px; right: 3px; color: var(--ac-game-good); }
+.ac-game-slotbox-ready { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 0 0 1px var(--ac-game-good); }
+/* The chosen slot is framed twice, and the focused one has the ring. */
+.ac-game-slotbox[aria-pressed='true'] { outline: 2px solid var(--orca-foreground, #e8eaf0); outline-offset: 1px; }
+.ac-game-slotbox:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+.ac-game-slotbox-small { flex: none; width: 30px; border-width: 1px; }
+.ac-game-slotbox-small .ac-game-slotbox-tier { top: 0; left: 1px; font-size: 8px; }
+.ac-game-slotbox-small .ac-game-slotbox-level { right: 1px; bottom: 0; font-size: 8px; }
+
+/* The chosen item's details, under the chest or beside it when wide. */
+.ac-game-item-detail { font-size: 12px; }
+/* Chests left behind: one row per room no longer on screen, its facts beside its move button. */
+.ac-game-orphans-card[hidden] { display: none; }
+.ac-game-orphans-card { margin-top: 10px; font-size: 12px; }
+.ac-game-orphan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.ac-game-orphan-what { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-orphan-name { font-weight: 700; overflow-wrap: anywhere; }
+.ac-game-item-detail .ac-game-slotbox { flex: none; width: 44px; }
+.ac-game-item-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ac-game-item-icon { width: 24px; height: 24px; }
+.ac-game-item-what { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-item-what-inline { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.ac-game-item-name { margin: 0; font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.ac-game-item-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+.ac-game-item-fact { display: contents; }
+.ac-game-item-fact dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-item-fact dd { margin: 0; }
+.ac-game-camp-upgrade { font-size: 12px; }
+/* A price in the Arsenal: its label, the materials stacked as they need, the button at the right. */
+.ac-game-arsenal-section .ac-game-buy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ac-game-arsenal-section .ac-game-buy-button { margin: 0; }
+
+/* Party: characters as small cards, then the retirees. */
+.ac-game-heroes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: 8px;
+}
+.ac-game-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--orca-secondary, #262b35);
+  font-size: 12px;
+}
+.ac-game-hero-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ac-game-hero-icon { width: 28px; height: 28px; }
+.ac-game-hero-who { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-hero-who .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-game-hero-progress { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-attributes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 2px 6px;
+  margin: 0;
+  font-size: 11px;
+}
+.ac-game-attribute {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--orca-background, #171a21);
+}
+.ac-game-attribute dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-attribute abbr { text-decoration: none; }
+.ac-game-attribute dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+/* A character's three slots side by side, each with its item's name beside it, cut short when
+   narrow; the slot's tooltip and label carry the whole name. */
+.ac-game-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-game-slot { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ac-game-slot-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: break-word;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.ac-game-price {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-game-price-entry { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.ac-game-price-short .ac-game-amount { color: var(--ac-game-warn); }
+.ac-game-missing-mark { font-weight: 800; color: var(--ac-game-warn); }
+.ac-game-retiree { display: flex; align-items: flex-start; gap: 6px; }
+.ac-game-retiree-icon { width: 16px; height: 16px; margin-top: 1px; }
+.ac-game-retiree-facts { display: flex; flex-wrap: wrap; gap: 0 8px; min-width: 0; }
+.ac-game-retiree-title { flex-basis: 100%; font-style: italic; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ac-game-confirm-box[hidden],
+.ac-game-confirm .ac-button[hidden] { display: none; }
+.ac-game-confirm-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: var(--orca-background, #171a21);
+}
+
+/* Settings: they take the place of the open tab's content until closed. */
+.ac-root[data-game-settings] .ac-rooms,
+.ac-root[data-game-settings] .ac-shelf,
+.ac-root[data-game-settings] .ac-game-panel { display: none !important; }
+.ac-root.ac-gallery[data-game-settings] { overflow: auto; }
+.ac-game-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+}
+.ac-game-settings-button[hidden] { display: none; }
+.ac-game-settings-button[aria-expanded='true'] { border-color: var(--orca-ring, #6fe0d2); }
+.ac-game-settings-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
+.ac-game-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  align-content: start;
+  align-items: start;
+}
+.ac-game-settings[hidden] { display: none; }
+.ac-game-settings-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ac-game-settings-title { margin: 0; font-size: 14px; font-weight: 700; }
+.ac-game-settings-title:focus { outline: none; }
+.ac-game-settings-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-game-settings-note[hidden] { display: none; }
+.ac-game-room-world {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  font-size: 12px;
+}
+.ac-game-room-world-name {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-game-room-world .ac-select { flex: 0 1 180px; min-width: 0; }
+.ac-game-new-world { flex-basis: 100%; }
+.ac-game-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: var(--orca-radius, 6px);
+  background: var(--orca-background, #171a21);
+  color: var(--orca-foreground, #e8eaf0);
+  font: inherit;
+  font-size: 12px;
+}
+.ac-game-input:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-game-new-world .ac-game-missing:empty { display: none; }
+/* The save file card: an export to copy and a file or text to import, each in its own block. */
+.ac-game-save-part {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-game-save-shown { display: flex; flex-direction: column; gap: 6px; align-self: stretch; }
+.ac-game-save-shown[hidden] { display: none; }
+.ac-game-save-field { flex-direction: column; align-items: stretch; gap: 4px; align-self: stretch; }
+.ac-game-save-text {
+  min-height: 72px;
+  max-height: 160px;
+  padding: 6px 8px;
+  resize: vertical;
+  font-family: var(--orca-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  white-space: pre;
+}
+.ac-game-save-picker { font: inherit; font-size: 12px; max-width: 100%; }
+.ac-game-save-picker:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-game-save-status { font-size: 12px; }
+.ac-game-save-status:empty,
+.ac-game-save-error:empty { display: none; }
+.ac-mini .ac-game-settings,
+.ac-collapsed .ac-game-settings { display: none !important; }
+.ac-mini.ac-root[data-game-settings] .ac-rooms { display: grid !important; }
+
+/* Events: each plays once and is taken away by the stage's clock. Under reduced motion they
+   only appear and disappear, without moving. */
+.ac-game-pop {
+  pointer-events: none;
+  font-family: var(--ac-font);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ac-label);
+  text-shadow: 0 1px 0 var(--ac-label-shadow), 0 0 3px var(--ac-label-shadow);
+  animation: ac-game-rise 2.6s ease-out 1 both;
+}
+.ac-game-pop-monster {
+  position: absolute;
+  left: 0;
+  bottom: 30%;
+  font-size: clamp(9px, 3cqw, 14px);
+}
+.ac-game-pop-monster + .ac-game-pop-monster { left: 1.2em; bottom: 60%; }
+/* Over the monster in the room: a kill's word, centred over its body. */
+.ac-foe-marks .ac-game-pop-monster { left: -50%; right: -50%; bottom: 70%; text-align: center; }
+.ac-game-tone-hit { color: var(--ac-game-bad); }
+.ac-game-tone-kill { color: var(--ac-game-gold); }
+.ac-game-pop-agent {
+  position: absolute;
+  right: 60%;
+  bottom: 100%;
+  z-index: 2;
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+  background: var(--ac-label-shadow);
+  color: var(--ac-game-gold);
+  font-size: clamp(8px, 2.6cqw, 12px);
+  text-shadow: none;
+}
+.ac-game-lines {
+  position: absolute;
+  left: 50%;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  max-width: 92%;
+  margin-top: 0.6cqw;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ac-game-pop-room {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0.2em 0.6em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ac-label-shadow) 88%, transparent);
+  font-size: clamp(9px, 2.6cqw, 12px);
+  font-weight: 600;
+  text-shadow: none;
+  animation-name: ac-game-line;
+}
+.ac-game-tone-loot,
+.ac-game-tone-drop { color: var(--ac-game-gold); }
+.ac-game-tone-arrive,
+.ac-game-tone-purchase { color: var(--ac-game-good); }
+@keyframes ac-game-rise {
+  0% { opacity: 0; transform: translateY(30%); }
+  15%, 70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-80%); }
+}
+@keyframes ac-game-line {
+  0% { opacity: 0; transform: translateY(-20%); }
+  12%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-game-pop { animation: none !important; }
+}
+.ac-mini .ac-game-lines,
+.ac-mini .ac-game-pop-agent { display: none; }
+
+/* The monster in the room: it stands on its spot like a character, feet on the point, drawn in
+   front of what stands behind it (its z-index is its feet's height). Its size is set by the
+   engine as a share of the room's width; the body keeps the drawing square. */
+.ac-foe {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  font-family: var(--ac-font);
+  color: var(--ac-label);
+  outline: none;
+}
+.ac-foe[hidden] { display: none; }
+.ac-foe:focus-visible .ac-foe-body {
+  outline: 2px solid var(--orca-ring, #6fe0d2);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.ac-foe:hover,
+.ac-foe:focus-visible { z-index: 9998 !important; }
+.ac-foe-plate {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
+  padding-bottom: 0.2em;
+  transform: translate(-50%, -100%);
+  color: var(--ac-label);
+  font-family: var(--ac-font);
+  font-size: clamp(7px, 2.3cqw, 11px);
+  line-height: 1.15;
+  pointer-events: none;
+}
+.ac-foe-tag,
+.ac-foe-state {
+  padding: 0 0.35em;
+  border-radius: 2px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ac-foe-tag { background: var(--ac-game-gold); color: #171a21; }
+.ac-foe-plate[data-rank='veteran'] .ac-foe-tag { background: #e6e0cf; }
+.ac-foe-plate[data-rank='boss'] .ac-foe-tag { background: var(--ac-game-bad); }
+.ac-foe-plate[data-rank='legendary'] .ac-foe-tag {
+  background: linear-gradient(90deg, var(--ac-game-bad), var(--ac-game-gold));
+}
+.ac-foe-state { background: var(--ac-label-shadow); color: var(--ac-label); font-weight: 600; }
+.ac-foe-tag[hidden],
+.ac-foe-state[hidden] { display: none; }
+.ac-foe-health {
+  display: block;
+  width: 100%;
+  height: max(3px, 0.9cqw);
+  overflow: hidden;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ac-label-shadow) 85%, transparent);
+  box-shadow: 0 0 0 1px var(--ac-label-shadow);
+}
+.ac-foe-health-fill {
+  display: block;
+  height: 100%;
+  background: var(--ac-game-bad);
+  transform-origin: left center;
+  transition: transform 0.6s ease-out;
+}
+.ac-foe-body {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+}
+.ac-foe-art { position: relative; display: block; width: 100%; height: 100%; }
+.ac-monster-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.5));
+}
+/* The rank ladder reads by its glow, the tag over the health bar says it in words:
+   veteran   a faint pale outline, still;
+   elite     an outline and a slow pulsing halo in the colour of its affix;
+   champion  a double outline (affix colour inside, gold outside) and a larger, quicker halo;
+   boss      a deep red outline and a slow red halo;
+   legendary a gold outline, the affix's glow and a turning ring of light.
+   An affix tints the glow and never repaints the monster. Without motion the glows stay. */
+.ac-foe { --ac-foe-glow: #f2d36b; --ac-foe-gold: #ffd75e; --ac-foe-blood: #e0362c; }
+.ac-foe[data-affix='regenerating'] { --ac-foe-glow: #6fe07a; }
+.ac-foe[data-affix='enraged'] { --ac-foe-glow: #ff5a4a; }
+.ac-foe[data-affix='thorny'] { --ac-foe-glow: #c8d84a; }
+.ac-foe[data-affix='swift'] { --ac-foe-glow: #5ad8f5; }
+.ac-foe[data-affix='armored'] { --ac-foe-glow: #c9d3e3; }
+.ac-foe[data-affix='ethereal'] { --ac-foe-glow: #b98bff; }
+.ac-foe-aura {
+  position: absolute;
+  inset: -14%;
+  display: none;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 60%, transparent), transparent);
+  pointer-events: none;
+}
+.ac-foe[data-rank='veteran'] .ac-monster-art {
+  filter: drop-shadow(0 0 0.6px #f6f1e2) drop-shadow(0 0 1.5px rgb(246 241 226 / 0.75));
+}
+.ac-foe[data-rank='elite'] .ac-foe-aura { display: block; animation: ac-foe-aura 1.8s ease-in-out infinite; }
+.ac-foe[data-rank='elite'] .ac-monster-art {
+  filter: drop-shadow(0 0 1px var(--ac-foe-glow)) drop-shadow(0 0 3px var(--ac-foe-glow));
+}
+.ac-foe[data-rank='champion'] .ac-foe-aura {
+  display: block;
+  inset: -24%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 70%, transparent) 45%,
+    color-mix(in srgb, var(--ac-foe-gold) 45%, transparent) 70%, transparent);
+  animation: ac-foe-aura 1.1s ease-in-out infinite;
+}
+.ac-foe[data-rank='champion'] .ac-monster-art {
+  filter: drop-shadow(1px 0 0 var(--ac-foe-glow)) drop-shadow(-1px 0 0 var(--ac-foe-glow))
+    drop-shadow(0 1px 0 var(--ac-foe-glow)) drop-shadow(0 -1px 0 var(--ac-foe-glow))
+    drop-shadow(0 0 1.5px var(--ac-foe-gold)) drop-shadow(0 0 3px var(--ac-foe-gold));
+}
+.ac-foe[data-rank='boss'] .ac-monster-art {
+  filter: drop-shadow(0 0 1px var(--ac-foe-blood)) drop-shadow(0 0 4px #9c1a22);
+}
+.ac-foe[data-rank='boss'] .ac-foe-aura {
+  display: block;
+  inset: -12%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-blood) 55%, transparent), transparent);
+  animation: ac-foe-aura 2.6s ease-in-out infinite;
+}
+.ac-foe[data-rank='legendary'] .ac-monster-art {
+  filter: drop-shadow(1px 0 0 var(--ac-foe-gold)) drop-shadow(-1px 0 0 var(--ac-foe-gold))
+    drop-shadow(0 1px 0 var(--ac-foe-gold)) drop-shadow(0 -1px 0 var(--ac-foe-gold))
+    drop-shadow(0 0 4px var(--ac-foe-glow));
+}
+.ac-foe[data-rank='legendary'] .ac-foe-aura {
+  display: block;
+  inset: -26%;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--ac-foe-glow) 65%, transparent) 40%, transparent 72%),
+    repeating-conic-gradient(color-mix(in srgb, var(--ac-foe-gold) 55%, transparent) 0deg 10deg, transparent 10deg 30deg);
+  -webkit-mask: radial-gradient(closest-side, #000 60%, transparent);
+  mask: radial-gradient(closest-side, #000 60%, transparent);
+  animation: ac-foe-spin 7s linear infinite;
+}
+.ac-foe[data-affix='enraged'] .ac-foe-aura { animation-duration: 0.7s; }
+.ac-foe[data-rank='legendary'][data-affix='enraged'] .ac-foe-aura { animation-duration: 3s; }
+.ac-foe-name {
+  position: absolute;
+  top: 100%;
+  display: none;
+  margin-top: 2px;
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+  background: var(--ac-label-shadow);
+  font-size: clamp(9px, 3cqw, 12px);
+  white-space: nowrap;
+}
+.ac-foe:hover .ac-foe-name,
+.ac-foe:focus-visible .ac-foe-name { display: block; }
+.ac-foe-marks {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+/* Standing there it breathes; on hold it stands still. */
+.ac-foe[data-phase='present']:not([data-still='true']) .ac-foe-art { animation: ac-foe-breathe 2.4s steps(2) infinite; }
+.ac-foe[data-phase='arriving'] { animation: ac-foe-arrive 0.9s ease-out 1 both; }
+.ac-foe[data-phase='leaving'] { animation: ac-foe-leave 0.9s ease-in 1 both; }
+.ac-foe[data-phase='dying'] .ac-foe-body { animation: ac-foe-fall 1.2s ease-in 1 both; }
+.ac-foe-plate[hidden] { display: none; }
+.ac-foe-plate[data-phase='dying'] { opacity: 0.4; }
+
+/* Fight moves. A character's sprite moves, never its button, and ends where it began, so names,
+   bubbles and stations stay where they are. Directions come from the engine as --ac-fight-x/y. */
+.ac-actor[data-fight] .ac-sprite { transform-origin: 50% 100%; }
+.ac-actor[data-fight='strike'] .ac-sprite { animation: ac-fight-lunge 0.9s ease-in-out 1 both; }
+.ac-actor[data-fight='cast'] .ac-sprite { animation: ac-fight-cast 0.9s ease-in-out 1 both; }
+.ac-actor[data-fight='heal'] .ac-sprite { animation: ac-fight-cast 1.3s ease-in-out 1 both; }
+.ac-actor[data-fight='guard'] .ac-sprite { animation: ac-fight-brace 1s ease-in-out 1 both; }
+.ac-actor[data-fight='hurt'] .ac-sprite,
+.ac-actor[data-fight='thorns'] .ac-sprite { animation: ac-emote-shake 0.5s ease-in-out 1 both; }
+.ac-foe-body[data-fight='pounce'] { animation: ac-fight-lunge 0.9s ease-in-out 1 both; }
+.ac-foe-body[data-fight='flinch'] { animation: ac-fight-flinch 0.45s ease-out 1 both; }
+.ac-fight-bolt {
+  position: absolute;
+  z-index: 9000;
+  width: 2cqw;
+  height: 2cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0 30%, #d9c6ff 45%, rgb(201 166 255 / 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: ac-fight-bolt var(--ac-bolt-ms, 400ms) linear var(--ac-bolt-delay, 250ms) 1 both;
+}
+.ac-fight-guard {
+  position: absolute;
+  left: 30%;
+  top: 30%;
+  width: 40%;
+  height: auto;
+  shape-rendering: crispEdges;
+  filter: drop-shadow(0 0 1px var(--ac-label-shadow));
+  pointer-events: none;
+  animation: ac-fight-guard 1s ease-out 1 both;
+}
+.ac-fight-glow {
+  position: absolute;
+  left: 15%;
+  bottom: 10%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(140 240 160 / 0.75), rgb(140 240 160 / 0));
+  pointer-events: none;
+  animation: ac-fight-glow 1.3s ease-out 1 both;
+}
+.ac-fight-glow::after {
+  content: '+';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 700 clamp(9px, 3cqw, 14px) / 1 var(--ac-font);
+  color: #e8f8e0;
+}
+.ac-fight-thorns {
+  position: absolute;
+  left: 30%;
+  top: 25%;
+  width: 40%;
+  aspect-ratio: 1;
+  background: #ff6a5a;
+  clip-path: polygon(50% 0, 60% 38%, 100% 50%, 60% 62%, 50% 100%, 40% 62%, 0 50%, 40% 38%);
+  pointer-events: none;
+  animation: ac-fight-impact 0.6s ease-out 1 both;
+}
+.ac-fight-impact {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  width: 50%;
+  aspect-ratio: 1;
+  background: #fff2c2;
+  clip-path: polygon(50% 0, 62% 35%, 100% 30%, 70% 55%, 90% 100%, 50% 72%, 10% 100%, 30% 55%, 0 30%, 38% 35%);
+  animation: ac-fight-impact 0.45s ease-out 1 both;
+}
+.ac-foe-damage {
+  position: absolute;
+  left: 50%;
+  top: 5%;
+  margin-left: var(--ac-damage-shift, 0%);
+  font: 700 clamp(9px, 3.4cqw, 15px) / 1 var(--ac-font);
+  color: #ffd56b;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 var(--ac-label-shadow), 0 0 3px var(--ac-label-shadow);
+  animation: ac-foe-damage 1.4s ease-out 1 both;
+}
+.ac-fight-regen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 20%;
+  text-align: center;
+  font: 700 clamp(10px, 4cqw, 18px) / 1 var(--ac-font);
+  color: #8cf0a0;
+  text-shadow: 0 0 4px rgb(140 240 160 / 0.9), 0 1px 0 var(--ac-label-shadow);
+  animation: ac-foe-damage 1s ease-out 1 both;
+}
+@keyframes ac-foe-breathe { 50% { transform: translateY(-2%) scaleY(1.02); } }
+@keyframes ac-foe-aura { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes ac-foe-spin { to { transform: rotate(1turn); } }
+@keyframes ac-foe-arrive {
+  0% { opacity: 0; transform: translate(-10%, -100%); }
+  100% { opacity: 1; transform: translate(-50%, -100%); }
+}
+@keyframes ac-foe-leave {
+  0% { opacity: 1; transform: translate(-50%, -100%); }
+  100% { opacity: 0; transform: translate(-10%, -100%); }
+}
+@keyframes ac-foe-fall {
+  0% { opacity: 1; transform: none; }
+  15% { transform: translateX(-5%); }
+  30% { transform: translateX(5%); }
+  45% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(12%) scale(0.85, 0.6); }
+}
+@keyframes ac-fight-lunge {
+  0%, 100% { transform: translate(0, 0); }
+  35%, 45% { transform: translate(var(--ac-fight-x, 0), var(--ac-fight-y, 0)); }
+}
+@keyframes ac-fight-cast {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30%, 55% { transform: translateY(-8%) scale(0.95, 1.08); }
+}
+@keyframes ac-fight-brace {
+  0%, 100% { transform: scale(1, 1); }
+  20%, 70% { transform: scale(1.04, 0.94); }
+  40% { transform: translateX(-4%) scale(1.04, 0.94); }
+}
+@keyframes ac-fight-flinch {
+  0%, 100% { transform: translate(0, 0); }
+  30% { transform: translate(calc(var(--ac-fight-x, 0%) * 0.25), calc(var(--ac-fight-y, 0%) * 0.25)); }
+}
+@keyframes ac-fight-bolt {
+  0% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 1; transform: translate(calc(-50% + var(--ac-bolt-x, 0)), calc(-50% + var(--ac-bolt-y, 0))); }
+}
+@keyframes ac-fight-guard {
+  0% { opacity: 0; transform: translateY(25%); }
+  20% { opacity: 1; transform: translateY(0); }
+  40% { transform: scale(1.3); }
+  55% { transform: scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes ac-fight-glow {
+  0% { opacity: 0; transform: translateY(10%); }
+  25%, 60% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-60%); }
+}
+@keyframes ac-fight-impact {
+  0% { opacity: 1; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@keyframes ac-foe-damage {
+  0% { opacity: 0; transform: translate(-50%, 20%); }
+  15%, 65% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -120%); }
+}
+/* Nothing moves for a person who asked for less motion: the monster simply appears and goes,
+   and the engine plays no blows. */
+@media (prefers-reduced-motion: reduce) {
+  .ac-foe,
+  .ac-foe *,
+  .ac-actor[data-fight] .ac-sprite { animation: none !important; transition: none !important; }
+  .ac-fight-bolt,
+  .ac-fight-guard,
+  .ac-fight-glow,
+  .ac-fight-thorns,
+  .ac-fight-impact,
+  .ac-foe-damage,
+  .ac-fight-regen { display: none; }
+}
+.ac-mini .ac-foe-damage { display: none; }
+
+/* The selected agent's card, while the game runs: its character in two short rows under the
+   agent's facts. The card lies over the room, so it may grow without moving anything. */
+.ac-detail-game {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--orca-border, #333a47);
+  font-size: 11px;
+}
+.ac-detail-hero { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ac-detail-facts { flex: none; font-size: 12px; }
+.ac-detail-progress { flex: 1 1 60px; max-width: 120px; }
+.ac-detail-trade { flex: none; white-space: nowrap; }
+.ac-detail-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ac-detail-attribute { display: flex; gap: 3px; }
+.ac-detail-attribute dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-detail-attribute dd { margin: 0; font-weight: 700; }
+.ac-detail-attribute abbr { text-decoration: none; }
+.ac-detail-equipment {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-detail-slot { display: flex; flex: 0 1 auto; align-items: center; gap: 3px; min-width: 0; }
+.ac-detail-slot-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-detail-slot-level { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ac-detail-icon { width: 12px; height: 12px; }
+/* A card over a small Gallery cell keeps the class and level; the Arsenal has the rest. */
+.ac-detail { container-type: inline-size; }
+@container (max-width: 300px) {
+  .ac-detail-attributes,
+  .ac-detail-equipment,
+  .ac-detail-trade { display: none; }
+}

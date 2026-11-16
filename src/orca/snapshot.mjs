@@ -16,7 +16,8 @@ const FAILED_READS_BEFORE_OFFLINE = 3
  * @param {{
  *   cli: string,
  *   store: { setWorkspaces: (list: any[]) => void, sync: (hostId: string, rows: any[]) => void,
- *     linkTerminals: (links: { terminalId: string, paneKey: string }[]) => void },
+ *     linkTerminals: (links: { terminalId: string, paneKey: string }[]) => void,
+ *     setUnreachableHosts: (hostIds: string[]) => void },
  *   listLocalWorkspaces: () => Promise<any[] | null>,
  *   log: (message: string) => void,
  *   reader?: Pick<typeof orcaCli, 'listEnvironments' | 'readHost' | 'readTerminals'>
@@ -31,8 +32,19 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
   const terminalsByHost = new Map()
   /** @type {Map<string, number>} failed reads in a row, by host label */
   const failedReads = new Map()
+  /** Whether the last list of paired machines failed: then none of them was read. */
+  let isEnvironmentListDown = false
   let running = null
   let runningIncludesRemote = false
+
+  /**
+   * The paired machines whose rows are not current: the last read failed, or the machines could
+   * not even be listed. Their rows are kept for a few reads, but they earn no working time.
+   */
+  function unreachableHosts() {
+    const remote = [...rowsByHost.keys()].filter((hostId) => hostId !== LOCAL)
+    return isEnvironmentListDown ? remote : remote.filter((hostId) => failedReads.has(hostId))
+  }
 
   /** Keeps the host known with nothing in it, so the store is told its agents are gone. */
   function markOffline(hostId) {
@@ -67,9 +79,11 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
     try {
       environments = await listEnvironments(cli)
     } catch (error) {
-      log(`environment list: ${error?.message ?? error}`)
+      if (!isEnvironmentListDown) log(`environment list: ${error?.message ?? error}`)
+      isEnvironmentListDown = true
       return
     }
+    isEnvironmentListDown = false
     // A machine that is no longer paired is gone at once.
     for (const hostId of rowsByHost.keys()) {
       if (hostId !== LOCAL && !environments.includes(hostId)) markOffline(hostId)
@@ -80,6 +94,7 @@ export function createSnapshotSync({ cli, store, listLocalWorkspaces, log, reade
 
   async function applyToStore() {
     if (rowsByHost.size > 0) {
+      store.setUnreachableHosts(unreachableHosts())
       store.setWorkspaces([...rowsByHost.values()].flatMap((rows) => rows.map((row) => row.workspace)))
       for (const links of terminalsByHost.values()) store.linkTerminals(links)
       for (const [hostId, rows] of rowsByHost) store.sync(hostId, rows)

@@ -14,6 +14,18 @@ const transport = {
   setRoomHidden: (id, hidden) => orca.plugin.request('room.hide', { id, hidden }),
   setRoomTheme: (id, theme) => orca.plugin.request('room.theme', { id, theme }),
   openWorkspace: (workspaceId, agentId) => orca.plugin.request('workspace.open', { workspaceId, agentId }),
+  // The game. The worker checks every value and answers { changed }.
+  prestigeSkill: (worldId, skillId) => orca.plugin.request('game.prestige', { worldId, skillId }),
+  upgradeItem: (roomId, itemId) => orca.plugin.request('game.upgradeItem', { roomId, itemId }),
+  buyGroupUpgrade: (worldId, upgradeId) => orca.plugin.request('game.buyUpgrade', { worldId, upgradeId }),
+  moveRoomToWorld: (roomId, worldId) => orca.plugin.request('game.assignRoom', { roomId, worldId }),
+  resetWorld: (worldId) => orca.plugin.request('game.resetWorld', { worldId }),
+  setAutoSpend: (on) => orca.plugin.request('game.autoSpend', { on }),
+  setTravel: (on) => orca.plugin.request('game.travel', { on }),
+  setKeepTitles: (on) => orca.plugin.request('game.keepTitles', { on }),
+  exportSave: () => orca.plugin.request('game.exportSave'),
+  importSave: (file) => orca.plugin.request('game.importSave', { file }),
+  moveOrphanItems: (fromRoomId, toRoomId) => orca.plugin.request('game.moveOrphanItems', { fromRoomId, toRoomId }),
   // The panel and the tab keep their own view choice.
   prefs: {
     get: (key) => orca.storage.get(`${key}:${isTab ? 'tab' : 'panel'}`),

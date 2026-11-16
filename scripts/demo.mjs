@@ -7,18 +7,32 @@
 //   node scripts/demo.mjs _template    the theme template, which no picker offers otherwise
 //   PORT=47700    port to serve on
 //   FREEZE=1      keep the scene still instead of looping the script
+//   GAME=1        turn game mode on, with a made-up stream of tokens (see demo-game.mjs); with
+//                 FREEZE=1 the game is a fixed save after a day of play
+//   GAME=estimated  the same through the token estimate, as on an Orca without session totals
+//   TRAVEL=1      with GAME, turn on "new scene after each monster": every room without a theme
+//                 of its own (all of them with `random` or a theme id) moves on to another
+//                 theme each time its monster dies
+//   LAN=1         open the demo to the local network, as the "Open to the local network" setting
+//                 does: open it from another machine, or from this one by its network address, to
+//                 see the game as view only
 //
 // Add ?emotes=fast to the address to see a theme's emotes every few seconds instead of waiting
-// for them; the demo prints that address too.
+// for them; the demo prints that address too. The monster contact sheet (every race, rank and
+// boss) is served on the next port at /monsters.html; see scripts/monster-sheet.mjs.
 //
 // Every project, host and conversation name here is made up.
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createController } from '../src/controller.mjs'
 import { createAgentStore } from '../src/domain/agent-store.mjs'
+import { loadGameEngine } from '../src/game-files.mjs'
+import { createUnavailableGame } from '../src/game-mode.mjs'
 import { RANDOM_THEME } from '../src/preferences.mjs'
 import { startServer } from '../src/server/http-server.mjs'
 import { listThemes, TEMPLATE_THEME } from '../src/themes.mjs'
+import { createDemoGame } from './demo-game.mjs'
+import { startMonsterSheet } from './monster-sheet.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const store = createAgentStore()
@@ -146,24 +160,44 @@ const preferences = {
 }
 
 let server = null
-const publish = () => server?.broadcast(controller.getState())
-const controller = createController({
+let controller = null
+const publish = () => {
+  if (controller) server?.broadcast(controller.getState())
+}
+const engine = process.env.GAME ? loadGameEngine(ROOT, console.error) : null
+const game = engine
+  ? await createDemoGame({
+    engine,
+    store,
+    preferences,
+    onChange: publish,
+    frozen: Boolean(process.env.FREEZE),
+    estimated: process.env.GAME === 'estimated',
+    travel: Boolean(process.env.TRAVEL),
+    listThemeIds: () => demoThemes().map((listed) => listed.id)
+  })
+  : createUnavailableGame('off')
+controller = createController({
   store,
   preferences,
   snapshotSync: { sync: async () => {} },
   listThemes: demoThemes,
   externalView: () => server,
   openWorkspace: async () => {},
+  game,
   onChange: publish
 })
 
-server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: false, controller })
+server = await startServer({ root: ROOT, port: Number(process.env.PORT ?? 47700), lan: process.env.LAN === '1', controller })
 if (!server) {
   console.error('Agent Center (demo): no free port. Pick another one with PORT=…')
   process.exit(1)
 }
 console.log(`Agent Center (demo): ${server.url}`)
 console.log(`  with emotes every few seconds: ${server.url}?emotes=fast`)
+// The monster contact sheet, for reviewing the monster art, on the next port.
+const sheet = await startMonsterSheet({ root: ROOT, port: server.port + 1 })
+if (sheet) console.log(`  monster contact sheet: ${sheet.url}`)
 
 if (!process.env.FREEZE) {
   // A looping script: agents change tools, delegate and finish, so the rooms keep moving.

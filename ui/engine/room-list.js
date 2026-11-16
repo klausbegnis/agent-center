@@ -1,8 +1,10 @@
-// The set of rooms on screen: creates and removes room views as rooms come and go, and sizes
-// them for the current view.
+// The set of rooms on screen: creates and removes room views as rooms come and go, swaps a
+// room's view when its theme changes (a travelling room's next scene included), and sizes them
+// for the current view.
 import { evenGrid, GALLERY_GAP, pinnedGrid } from './gallery.js'
-import { assignThemes } from './room-themes.js'
+import { assignThemes, sceneThemesOf } from './room-themes.js'
 import { createRoomView } from './room-view.js'
+import { LEAVING_SCENE_MS, swapRoomView } from './scene-swap.js'
 import { ROOM_ASPECT } from './stations.js'
 import { assignVariants } from './variants.js'
 
@@ -13,29 +15,33 @@ import { assignVariants } from './variants.js'
  *   transport: object,
  *   emotePace: object | null,
  *   onSelectAgent: (agentId: string) => void,
- *   onTogglePin: (roomId: string) => void
- * }} options `emotePace` is a pace from emotes.js, or null for rooms without emotes
+ *   onTogglePin: (roomId: string) => void,
+ *   isMotionWanted?: () => boolean
+ * }} options `emotePace` is a pace from emotes.js, or null for rooms without emotes;
+ *   `isMotionWanted` says whether a change of scene may fade (false under reduced motion or
+ *   while the page is hidden)
  */
-export function createRoomList({ container, library, transport, emotePace, onSelectAgent, onTogglePin }) {
+export function createRoomList(options) {
+  const { container, library, transport, emotePace, onSelectAgent, onTogglePin } = options
+  const isMotionWanted = options.isMotionWanted ?? (() => false)
   /** @type {Map<string, ReturnType<typeof createRoomView>>} */
   const views = new Map()
+  /** Old scenes fading over the new ones, with the time they are taken away at the latest. */
+  const leavingScenes = new Map()
 
   /** The theme of every room, hidden ones too, among the themes that loaded. */
   function themeIdsFor(state) {
     return assignThemes(state.rooms, {
       defaultTheme: state.theme,
       roomThemes: state.roomThemes,
+      sceneThemes: sceneThemesOf(state),
       usableThemeIds: state.themes.map((theme) => theme.id).filter((id) => library.has(id))
     })
   }
 
   function viewFor(room, themeId, variants) {
-    const existing = views.get(room.id)
-    if (existing && existing.themeId === themeId) return existing
-    // A room that switched themes is rebuilt.
-    existing?.section.remove()
     const theme = library.get(themeId)
-    const view = createRoomView({
+    return createRoomView({
       room,
       theme,
       variant: variants.get(room.id),
@@ -44,8 +50,6 @@ export function createRoomList({ container, library, transport, emotePace, onSel
       onSelectAgent,
       onTogglePin
     })
-    views.set(room.id, view)
-    return view
   }
 
   /**
@@ -68,8 +72,24 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     }
     const sections = []
     for (const room of rooms) {
-      const view = viewFor(room, themeIds.get(room.id), variants)
-      view.update(room, state, { selectedAgentId, isPinned: room.id === pinnedRoomId, now })
+      const options = { selectedAgentId, isPinned: room.id === pinnedRoomId, now }
+      const themeId = themeIds.get(room.id)
+      let view = views.get(room.id)
+      if (view?.themeId === themeId) {
+        view.update(room, state, options)
+      } else {
+        const previous = view
+        view = viewFor(room, themeId, variants)
+        view.update(room, state, options)
+        views.set(room.id, view)
+        // A room that switched themes is rebuilt in place. The old view is told the state once
+        // more first, so a monster just killed falls in the scene that fades away.
+        if (previous) {
+          previous.update(room, state, options)
+          const leaving = swapRoomView(previous, view, { fade: isMotionWanted() })
+          if (leaving) leavingScenes.set(leaving, now + LEAVING_SCENE_MS)
+        }
+      }
       // The pinned room is shown first, whatever its place in the list.
       if (room.id === pinnedRoomId) sections.unshift(view.section)
       else sections.push(view.section)
@@ -132,6 +152,29 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     for (const view of views.values()) view.tickEmotes(now)
   }
 
+  /**
+   * Plays the game's new events in the rooms on screen.
+   *
+   * @param {import('./game-effects.js').Effect[]} effects
+   * @param {number} now
+   */
+  function playGame(effects, now) {
+    for (const [roomId, view] of views) {
+      const own = effects.filter((effect) => effect.roomId === roomId)
+      if (own.length) view.playGame(own, now)
+    }
+  }
+
+  /** @param {boolean} isMoving false while the page is hidden or motion is unwanted */
+  function tickGame(now, isMoving) {
+    for (const view of views.values()) view.tickGame(now, isMoving)
+    for (const [scene, until] of leavingScenes) {
+      if (now < until && scene.isConnected) continue
+      scene.remove()
+      leavingScenes.delete(scene)
+    }
+  }
+
   function stopEmotes() {
     for (const view of views.values()) view.stopEmotes()
   }
@@ -148,6 +191,8 @@ export function createRoomList({ container, library, transport, emotePace, onSel
     overlay,
     tickEmotes,
     stopEmotes,
+    playGame,
+    tickGame,
     has: (roomId) => views.has(roomId),
     gap: GALLERY_GAP
   }

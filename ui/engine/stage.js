@@ -7,6 +7,9 @@
 import { createDetail } from './detail.js'
 import { el } from './dom.js'
 import { paceFor } from './emotes.js'
+import { gameEffects } from './game-effects.js'
+import { createGameFeed } from './game-events.js'
+import { createGameShell } from './game-shell.js'
 import { createHeader, VIEWS } from './header.js'
 import { themeLoadFailure } from './labels.js'
 import { watchMiniMode } from './mini-mode.js'
@@ -39,6 +42,16 @@ const EMOTE_TICK_MS = 250
  *   workspace on the agent's terminal
  * @property {{ get: (key: string) => unknown, set: (key: string, value: string) => unknown }} [prefs]
  *   per-surface choices such as the view; values are strings
+ * @property {(worldId: string, skillId: string) => Promise<unknown>} [prestigeSkill] the game's
+ *   actions, each answering `{ changed }`; see GAME_ACTION_METHODS in game-actions.js
+ * @property {(roomId: string, itemId: string) => Promise<unknown>} [upgradeItem]
+ * @property {(worldId: string, upgradeId: string) => Promise<unknown>} [buyGroupUpgrade]
+ * @property {(roomId: string, worldId: string | null) => Promise<unknown>} [moveRoomToWorld] null
+ *   takes the room out of the game; a new kebab-case id makes a new world
+ * @property {(worldId: string) => Promise<unknown>} [resetWorld]
+ * @property {(on: boolean) => Promise<unknown>} [setAutoSpend]
+ * @property {(on: boolean) => Promise<unknown>} [setTravel] "new scene after each monster"
+ * @property {(on: boolean) => Promise<unknown>} [setKeepTitles]
  */
 
 /**
@@ -57,6 +70,8 @@ export async function mountStage(root, transport, options = {}) {
   let selectedAgentId = null
   let view = DEFAULT_VIEW
   let pinnedRoomId = null
+  // Which of the game's events are new; the first state only sets where the page starts.
+  const gameFeed = createGameFeed()
 
   // One update at a time: loading themes is async and state arrives in bursts.
   let queue = Promise.resolve()
@@ -80,11 +95,26 @@ export async function mountStage(root, transport, options = {}) {
     onRefreshed: enqueue
   })
   const roomsElement = el('main', 'ac-rooms')
-  const detail = createDetail(transport)
+  const detail = createDetail(transport, {
+    // The person is leaving for the workspace: the card has done its job.
+    onOpenWorkspace: () => {
+      selectedAgentId = null
+      render()
+    }
+  })
   const shelf = createShelf(transport)
-  root.append(header.element, sprites, roomsElement, shelf.element)
+  const game = createGameShell({ root, roomsElement, transport, onTabChange: () => layout() })
+  header.addTitleTool(game.settingsButton)
+  root.append(header.element, game.bar, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
+
+  // Emotes, the game's blows and fading scenes rest while nobody can see them and for people who
+  // asked for less motion. The page is looked up each time because the mini view moves the root
+  // to another window.
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const isMotionWanted = () => !root.ownerDocument.hidden && !reducedMotion.matches
 
   const roomList = createRoomList({
+    isMotionWanted,
     container: roomsElement,
     library,
     transport,
@@ -126,7 +156,7 @@ export async function mountStage(root, transport, options = {}) {
     // The card sits over the bottom of the agent's own room, so selecting moves nothing.
     const room = agent && state.rooms.find((item) => item.agents.includes(agent))
     if (room) roomList.overlay(room.id, detail.element)
-    detail.show(agent, agent?.parentId ? agents.find((item) => item.id === agent.parentId) : null)
+    detail.show(agent, agent?.parentId ? agents.find((item) => item.id === agent.parentId) : null, state)
   }
 
   /** Whether a theme loaded for the rooms that have not picked their own. */
@@ -141,6 +171,7 @@ export async function mountStage(root, transport, options = {}) {
     const hiddenRooms = state.rooms.filter((room) => hiddenIds.has(room.id))
 
     header.update(state)
+    game.update(state)
     roomList.render(visibleRooms, state, { selectedAgentId, pinnedRoomId, now: Date.now() })
     showEmptyMessage(visibleRooms.length, hiddenRooms.length)
     shelf.update(hiddenRooms)
@@ -150,6 +181,7 @@ export async function mountStage(root, transport, options = {}) {
 
   async function update(next) {
     state = next
+    const gameChanges = gameFeed.take(next.game)
     // Load every theme a room can end up with before drawing anything. One that fails to load
     // is left out; the rooms are drawn as long as there is a theme for the default.
     await Promise.all(themeIdsToLoad(next).map((id) => library.ensure(id)))
@@ -158,12 +190,14 @@ export async function mountStage(root, transport, options = {}) {
       return
     }
     render()
+    roomList.playGame(gameEffects(gameChanges, next), Date.now())
   }
 
   const savedView = await Promise.resolve(transport.prefs?.get('view')).catch(() => null)
   if (VIEWS.includes(savedView)) view = savedView
   const savedPin = await Promise.resolve(transport.prefs?.get('pinned')).catch(() => null)
   if (typeof savedPin === 'string' && savedPin) pinnedRoomId = savedPin
+  await game.restoreTab()
 
   transport.onState(enqueue)
   await enqueue(await transport.getState())
@@ -171,12 +205,13 @@ export async function mountStage(root, transport, options = {}) {
     if (state && selectedAgentId) showSelectedAgent()
   }, DETAIL_REFRESH_MS)
 
-  // Emotes rest while nobody can see them and for people who asked for less motion. The page
-  // is looked up each time because the mini view moves the root to another window.
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
   setInterval(() => {
-    if (root.ownerDocument.hidden || reducedMotion.matches) roomList.stopEmotes()
-    else roomList.tickEmotes(Date.now())
+    const now = Date.now()
+    const isMoving = isMotionWanted()
+    game.tick(now)
+    roomList.tickGame(now, isMoving)
+    if (isMoving) roomList.tickEmotes(now)
+    else roomList.stopEmotes()
   }, EMOTE_TICK_MS)
 
   return { root, refresh: async () => enqueue(await transport.getState()) }

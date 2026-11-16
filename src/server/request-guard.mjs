@@ -65,3 +65,30 @@ export function isSameOrigin(headers) {
     return false
   }
 }
+
+/**
+ * Whether a connection comes from this machine. With the local-network setting on, the server
+ * also answers other machines; the address the connection comes from tells them apart, and
+ * unlike a header it cannot be made up by whoever sends the request.
+ *
+ * @param {string | undefined} remoteAddress the socket's `remoteAddress`
+ */
+export function isLoopbackAddress(remoteAddress) {
+  if (typeof remoteAddress !== 'string') return false
+  const address = remoteAddress.replace(/^::ffff:/i, '')
+  if (net.isIPv4(address)) return address.startsWith('127.')
+  return address === '::1'
+}
+
+/**
+ * Routes only this machine may use. Every game route changes the saved game, some for good
+ * (reset, import, prestige, spending), turns on keeping conversation titles, or answers the whole
+ * save (export), which holds folder paths, paired machines' names and session ids. A page on
+ * another machine may change themes and hidden rooms, which only change how this page looks, and
+ * watch the game, never play it.
+ *
+ * @param {string} pathname
+ */
+export function isLocalOnlyRoute(pathname) {
+  return pathname.startsWith('/api/game/')
+}

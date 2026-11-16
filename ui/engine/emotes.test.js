@@ -242,3 +242,14 @@ test('going to sleep after being seen does not play the finishing emote again', 
   schedule.observe([character('a', 'sleep')], 5_000)
   assert.deepEqual(run(schedule, 5_000, HOUR_MS / 6), [])
 })
+
+test('a character whose party fights plays no emote, and one playing stops when the fight starts', () => {
+  const schedule = createEmoteSchedule(themeWith([stretch]), paceFor('fast'))
+  schedule.observe([character('pane-1')], 0)
+  const before = run(schedule, 0, 20_000)
+  assert.ok(before.length > 0)
+  const playing = before.at(-1)
+  const interrupted = schedule.observe([{ ...character('pane-1'), isFighting: true }], playing.at + 100)
+  assert.deepEqual(interrupted, ['pane-1'])
+  assert.deepEqual(run(schedule, 20_000, 60_000), [])
+})

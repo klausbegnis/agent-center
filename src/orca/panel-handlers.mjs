@@ -25,4 +25,17 @@ export function registerPanelHandlers(orca, controller) {
     await controller.openWorkspace(String(input?.workspaceId), input?.agentId ? String(input.agentId) : null)
     return ok
   })
+  // The game. The controller checks every value; these only pick the fields out.
+  orca.panels.handle('game.prestige', (input) => controller.gamePrestige(input?.worldId, input?.skillId))
+  orca.panels.handle('game.upgradeItem', (input) => controller.gameUpgradeItem(input?.roomId, input?.itemId))
+  orca.panels.handle('game.buyUpgrade', (input) => controller.gameBuyUpgrade(input?.worldId, input?.upgradeId))
+  orca.panels.handle('game.assignRoom', (input) => controller.gameAssignRoom(input?.roomId, input?.worldId ?? null))
+  orca.panels.handle('game.resetWorld', (input) => controller.gameResetWorld(input?.worldId))
+  orca.panels.handle('game.autoSpend', (input) => controller.gameSetAutoSpend(input?.on))
+  orca.panels.handle('game.travel', (input) => controller.gameSetTravel(input?.on))
+  orca.panels.handle('game.keepTitles', (input) => controller.gameSetKeepTitles(input?.on))
+  orca.panels.handle('game.exportSave', () => controller.gameExportSave())
+  orca.panels.handle('game.importSave', (input) => controller.gameImportSave(input?.file))
+  orca.panels.handle('game.moveOrphanItems', (input) =>
+    controller.gameMoveOrphanItems(input?.fromRoomId, input?.toRoomId))
 }

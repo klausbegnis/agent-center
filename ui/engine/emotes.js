@@ -167,8 +167,10 @@ export function createEmoteSchedule(theme, pace) {
   /**
    * Tells the schedule who is in the room now. Call it whenever the room is drawn.
    *
-   * @param {{ id: string, activity: string, place: string, isFamiliar: boolean }[]} characters
-   *   `place` is any text that changes when the character is sent somewhere else
+   * @param {{ id: string, activity: string, place: string, isFamiliar: boolean, isFighting?: boolean }[]}
+   *   characters `place` is any text that changes when the character is sent somewhere else;
+   *   `isFighting` is true while the character's party fights in game mode: it plays its fight
+   *   moves then, never an emote
    * @param {number} now
    * @returns {string[]} the ids whose emote has to stop: they left, or set off walking
    */
@@ -183,8 +185,8 @@ export function createEmoteSchedule(theme, pace) {
         known.set(character.id, { ...character, movedAt: now, startPending: false, playingUntil: null })
         continue
       }
-      if (entry.place !== character.place) {
-        entry.movedAt = now
+      if (entry.place !== character.place || (character.isFighting && !entry.isFighting)) {
+        if (entry.place !== character.place) entry.movedAt = now
         if (entry.playingUntil !== null) interrupted.push(character.id)
         entry.playingUntil = null
       }
@@ -231,7 +233,7 @@ export function createEmoteSchedule(theme, pace) {
         entry.playingUntil = null
         ended.push(entry.id)
       }
-      if (now - entry.movedAt < WALK_MS) continue
+      if (now - entry.movedAt < WALK_MS || entry.isFighting) continue
       const emote = nextEmote(entry, from, now)
       if (!emote) continue
       entry.playingUntil = now + emoteSeconds(emote) * 1000

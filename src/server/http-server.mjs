@@ -2,7 +2,8 @@
 // detached window, fullscreen on another monitor or tablet, and mini mode (picture-in-picture).
 import http from 'node:http'
 import os from 'node:os'
-import { isAllowedHost, isSameOrigin, pathnameOf } from './request-guard.mjs'
+import { createNetworkView } from './network-view.mjs'
+import { isAllowedHost, isLocalOnlyRoute, isLoopbackAddress, isSameOrigin, pathnameOf } from './request-guard.mjs'
 import { sendJson, send, serveFile } from './static-files.mjs'
 
 const LOOPBACK = '127.0.0.1'
@@ -10,6 +11,12 @@ const ALL_INTERFACES = '0.0.0.0'
 /** How many ports after the configured one are tried when it is taken. */
 const PORT_ATTEMPTS = 10
 const MAX_BODY_BYTES = 1024
+/**
+ * Routes whose body is a whole saved game. The plugin keeps at most 240 KiB of it, and a file
+ * larger than that is refused by the game with a reason; this leaves room for that answer.
+ */
+const LARGE_BODY_BYTES = 512 * 1024
+const LARGE_BODY_ROUTES = new Set(['/api/game/import-save'])
 /**
  * A page that stopped reading (a sleeping tablet) lets its updates pile up in memory. Past this
  * much unsent data its stream is closed; the page reconnects by itself when it wakes.
@@ -23,13 +30,15 @@ const MAX_CONNECTIONS = 128
 const REQUEST_TIMEOUT_MS = 10_000
 /** Keeps idle event streams from being closed by proxies and sleeping tabs. */
 const HEARTBEAT_MS = 25_000
+/** Why a game route is refused to a page on another machine; the page shows it. */
+const LOCAL_ONLY_REASON = 'the game can only be played on the computer that runs Orca'
 
-function readJsonBody(request) {
+function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let body = ''
     request.on('data', (chunk) => {
       body += chunk
-      if (body.length > MAX_BODY_BYTES) {
+      if (body.length > maxBytes) {
         // Stop keeping what arrives, but let it drain so the refusal can still be answered.
         request.removeAllListeners('data')
         request.resume()
@@ -70,31 +79,38 @@ function listen(server, port, host) {
  *   broadcast: (state: object) => void, close: () => Promise<void> }>} null when no port is free
  */
 export async function startServer({ root, port, lan, controller, log = () => {} }) {
-  /** Open event streams, one per connected page. */
-  const streams = new Set()
+  /** Open event streams, one per connected page, each with whether the page is on this machine. */
+  const streams = new Map()
+  const networkView = createNetworkView()
+  /** The state as the page asking gets it: a page on another machine gets the network view. */
+  const stateFor = (isLocal, state) => (isLocal ? state : networkView(state))
 
-  function openEventStream(request, response) {
+  function openEventStream(request, response, isLocal) {
     if (streams.size >= MAX_STREAMS) return send(response, 503, 'too many open pages')
     response.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-store',
       connection: 'keep-alive'
     })
-    response.write(`data: ${JSON.stringify(controller.getState())}\n\n`)
-    streams.add(response)
+    response.write(`data: ${JSON.stringify(stateFor(isLocal, controller.getState()))}\n\n`)
+    streams.set(response, isLocal)
     request.on('close', () => streams.delete(response))
     // A page that went away mid-write must not take the worker down.
     response.on('error', () => streams.delete(response))
   }
 
-  /** Sends a frame to every page, dropping the ones that have stopped reading. */
-  function sendToStreams(frame) {
-    for (const stream of streams) {
+  /**
+   * Sends a frame to every page, dropping the ones that have stopped reading.
+   *
+   * @param {(isLocal: boolean) => string} frameFor the frame for a page on this machine or not
+   */
+  function sendToStreams(frameFor) {
+    for (const [stream, isLocal] of streams) {
       if (stream.writableLength > MAX_STREAM_BACKLOG_BYTES) {
         streams.delete(stream)
         stream.destroy()
       } else {
-        stream.write(frame)
+        stream.write(frameFor(isLocal))
       }
     }
   }
@@ -110,23 +126,45 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
       if ('theme' in input) await controller.setRoomTheme(String(input.id), input.theme)
       else await controller.setRoomHidden(String(input.id), input.hidden !== false)
       return { ok: true }
-    }
+    },
+    // The game. The controller checks every value; these only pick the fields out.
+    '/api/game/prestige': (input) => controller.gamePrestige(input.worldId, input.skillId),
+    '/api/game/upgrade-item': (input) => controller.gameUpgradeItem(input.roomId, input.itemId),
+    '/api/game/buy-upgrade': (input) => controller.gameBuyUpgrade(input.worldId, input.upgradeId),
+    '/api/game/assign-room': (input) => controller.gameAssignRoom(input.roomId, input.worldId ?? null),
+    '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
+    '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
+    '/api/game/travel': (input) => controller.gameSetTravel(input.on),
+    '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on),
+    '/api/game/export-save': () => controller.gameExportSave(),
+    '/api/game/import-save': (input) => controller.gameImportSave(input.file),
+    '/api/game/move-orphan-items': (input) => controller.gameMoveOrphanItems(input.fromRoomId, input.toRoomId)
   }
 
-  async function handlePost(pathname, request, response) {
+  async function handlePost(pathname, request, response, isLocal) {
     const route = postRoutes[pathname]
     if (!route) return send(response, 404, 'not found')
+    if (!isLocal && isLocalOnlyRoute(pathname)) return sendJson(response, 403, { ok: false, error: LOCAL_ONLY_REASON })
+    let input
     try {
-      const input = pathname === '/api/refresh' ? {} : await readJsonBody(request)
-      sendJson(response, 200, await route(input))
+      const maxBytes = LARGE_BODY_ROUTES.has(pathname) ? LARGE_BODY_BYTES : MAX_BODY_BYTES
+      input = pathname === '/api/refresh' ? {} : await readJsonBody(request, maxBytes)
     } catch {
-      sendJson(response, 400, { ok: false })
+      return sendJson(response, 400, { ok: false })
+    }
+    try {
+      const answer = await route(input)
+      sendJson(response, 200, pathname === '/api/refresh' ? stateFor(isLocal, answer) : answer)
+    } catch (error) {
+      // A game action says why it refused, so the page can tell the person; others only refuse.
+      const reason = pathname.startsWith('/api/game/') ? String(error?.message ?? error).slice(0, 200) : undefined
+      sendJson(response, 400, { ok: false, error: reason })
     }
   }
 
-  function handleGet(pathname, request, response) {
-    if (pathname === '/api/state') return sendJson(response, 200, controller.getState())
-    if (pathname === '/api/events') return openEventStream(request, response)
+  function handleGet(pathname, request, response, isLocal) {
+    if (pathname === '/api/state') return sendJson(response, 200, stateFor(isLocal, controller.getState()))
+    if (pathname === '/api/events') return openEventStream(request, response, isLocal)
     if (pathname === '/') return serveFile(response, root, 'ui/web.html')
     if (pathname.startsWith('/ui/') || pathname.startsWith('/themes/')) {
       return serveFile(response, root, pathname.slice(1))
@@ -143,8 +181,9 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     if (pathname === null) return send(response, 400, 'bad request')
     if (!isAllowedHost(request.headers.host, { lan, machineNames })) return send(response, 403, 'forbidden')
     if (pathname.startsWith('/api/') && !isSameOrigin(request.headers)) return send(response, 403, 'forbidden')
-    if (request.method === 'POST') return handlePost(pathname, request, response)
-    if (request.method === 'GET') return handleGet(pathname, request, response)
+    const isLocal = isLoopbackAddress(request.socket.remoteAddress)
+    if (request.method === 'POST') return handlePost(pathname, request, response, isLocal)
+    if (request.method === 'GET') return handleGet(pathname, request, response, isLocal)
     send(response, 405, 'method not allowed')
   }
 
@@ -178,7 +217,7 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
   server.on('error', (error) => log(`external view: ${error?.message ?? error}`))
   server.on('clientError', (error, socket) => socket.destroy())
 
-  const heartbeat = setInterval(() => sendToStreams(': ping\n\n'), HEARTBEAT_MS)
+  const heartbeat = setInterval(() => sendToStreams(() => ': ping\n\n'), HEARTBEAT_MS)
   heartbeat.unref?.()
 
   return {
@@ -186,11 +225,16 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     port: boundPort,
     lan,
     broadcast(state) {
-      sendToStreams(`data: ${JSON.stringify(state)}\n\n`)
+      // Each frame is written once, and only when a page of its kind is open.
+      const frames = new Map()
+      sendToStreams((isLocal) => {
+        if (!frames.has(isLocal)) frames.set(isLocal, `data: ${JSON.stringify(stateFor(isLocal, state))}\n\n`)
+        return frames.get(isLocal)
+      })
     },
     close() {
       clearInterval(heartbeat)
-      for (const stream of streams) stream.destroy()
+      for (const stream of streams.keys()) stream.destroy()
       streams.clear()
       return new Promise((resolve) => {
         server.close(() => resolve())

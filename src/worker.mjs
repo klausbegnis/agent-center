@@ -4,9 +4,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createController } from './controller.mjs'
 import { createAgentStore } from './domain/agent-store.mjs'
+import { loadGameEngine } from './game-files.mjs'
+import { createGameMode, createUnavailableGame } from './game-mode.mjs'
+import { createGameSave } from './game-save.mjs'
+import { SAVE_VERSION, migrate } from './game/worlds.mjs'
 import { findCli } from './orca/cli.mjs'
 import { createOpenWorkspace } from './orca/open-workspace.mjs'
 import { registerPanelHandlers } from './orca/panel-handlers.mjs'
+import { historyAccess, readListedWorkspaces, readSessionHistory } from './orca/session-history.mjs'
 import { createSnapshotSync } from './orca/snapshot.mjs'
 import { summarize } from './orca/status-bar.mjs'
 import { createPreferences } from './preferences.mjs'
@@ -25,9 +30,16 @@ const UNREACHABLE_RETRY_EVERY = 4
 const DEFAULT_PORT = 47600
 const DEFAULT_SLEEP_MINUTES = 30
 const STATUS_BAR_ITEM = 'summary'
+/**
+ * How often the game reads the session history. Twice the snapshot interval: tokens add up over
+ * minutes, and reading the history is more work for Orca than listing terminals.
+ */
+const GAME_ROUND_MS = 30_000
 
 let server = null
 let snapshotTimer = null
+let gameTimer = null
+let game = null
 let cancelPublish = () => {}
 /** Set when the plugin is unloaded, so an activation still under way stops starting things. */
 let disposed = false
@@ -68,6 +80,28 @@ export default async function activate(orca) {
   }, log)
   cancelPublish = publish.cancel
 
+  const engine = loadGameEngine(ROOT, log)
+  game = engine
+    ? createGameMode({
+      engine,
+      gameSave: createGameSave({ storage: orca.storage, migrate, saveVersion: SAVE_VERSION, log }),
+      readSettings: () => safe('settings.get', () => orca.settings.get(), {}),
+      // Not through safe(): a setting that was not written must reach the person as a failure.
+      writeSetting: (key, value) => orca.host.call('settings.set', { key, value }),
+      access: () => historyAccess(orca),
+      readHistory: () => readSessionHistory(orca),
+      readWorkspaces: () => readListedWorkspaces(orca),
+      // Without session totals from Orca, the game estimates tokens from these.
+      readWorkMeters: () => store.workMeters(),
+      store,
+      preferences,
+      // The themes the surfaces draw, which a travelling room moves through.
+      listThemeIds: () => listThemes(ROOT).map((theme) => theme.id),
+      log,
+      onChange: () => publish()
+    })
+    : createUnavailableGame('unsupported')
+
   const controller = createController({
     store,
     preferences,
@@ -75,6 +109,7 @@ export default async function activate(orca) {
     listThemes: () => listThemes(ROOT),
     externalView: () => server,
     openWorkspace: createOpenWorkspace({ orca, cli, store, log }),
+    game,
     onChange: publish
   })
 
@@ -141,10 +176,14 @@ export default async function activate(orca) {
     refresh({ remote: true, onlyReachable: round % UNREACHABLE_RETRY_EVERY !== 0 })
   }, SNAPSHOT_INTERVAL_MS)
   snapshotTimer.unref?.()
+  // The game reads its setting every round, so turning it on or off needs no restart.
+  gameTimer = setInterval(() => game.round(), GAME_ROUND_MS)
+  gameTimer.unref?.()
 
   await refresh()
   if (disposed) return
   publish()
+  game.round()
 }
 
 async function closeServer() {
@@ -158,5 +197,9 @@ export async function deactivate() {
   cancelPublish()
   if (snapshotTimer) clearInterval(snapshotTimer)
   snapshotTimer = null
+  if (gameTimer) clearInterval(gameTimer)
+  gameTimer = null
+  await game?.flush()
+  game = null
   await closeServer()
 }

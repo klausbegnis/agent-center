@@ -1,5 +1,6 @@
 // External view: the same scene served by the worker at http://127.0.0.1:<port>/. The detached
 // window, fullscreen (another monitor or a tablet) and the always-on-top mini mode start here.
+import { GAME_ACTION_METHODS } from '../engine/game-actions.js'
 import { mountStage } from '../engine/stage.js'
 
 const app = document.getElementById('app')
@@ -9,6 +10,8 @@ const listeners = new Set()
 //   ?view=gallery|list   start in that view
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
+//   ?tab=rooms|arsenal|skills   open that tab of game mode
+//   ?section=items|party|camp   open that section of the Arsenal
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>
@@ -19,10 +22,34 @@ const narrow = (state) =>
 const post = (url, body) =>
   fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
+/**
+ * A game action: the worker answers { changed } (or what was asked for), or an error status with
+ * the reason it refused, which becomes the error's message.
+ */
+async function postGame(route, body) {
+  const response = await post(`/api/game/${route}`, body)
+  if (!response.ok) {
+    const answer = await response.json().catch(() => null)
+    throw new Error(answer?.error ?? `${route}: HTTP ${response.status}`)
+  }
+  return response.json()
+}
+
 const transport = {
   base: '/',
   setRoomHidden: (id, hidden) => post('/api/room', { id, hidden }),
   setRoomTheme: (id, theme) => post('/api/room', { id, theme }),
+  prestigeSkill: (worldId, skillId) => postGame('prestige', { worldId, skillId }),
+  upgradeItem: (roomId, itemId) => postGame('upgrade-item', { roomId, itemId }),
+  buyGroupUpgrade: (worldId, upgradeId) => postGame('buy-upgrade', { worldId, upgradeId }),
+  moveRoomToWorld: (roomId, worldId) => postGame('assign-room', { roomId, worldId }),
+  resetWorld: (worldId) => postGame('reset-world', { worldId }),
+  setAutoSpend: (on) => postGame('auto-spend', { on }),
+  setTravel: (on) => postGame('travel', { on }),
+  setKeepTitles: (on) => postGame('keep-titles', { on }),
+  exportSave: () => postGame('export-save', {}),
+  importSave: (file) => postGame('import-save', { file }),
+  moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
   prefs: {
     get: (key) => params.get(key) ?? localStorage.getItem(`agent-center:${key}`),
     set: (key, value) => localStorage.setItem(`agent-center:${key}`, value)
@@ -33,6 +60,11 @@ const transport = {
   setTheme: (id) =>
     fetch('/api/theme', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) })
 }
+
+// A page opened from another machine may watch the game but not play it: the worker refuses its
+// game actions, so the controls are left out instead of failing when used.
+const firstState = await fetch('/api/state').then((response) => response.json()).catch(() => null)
+if (firstState?.game?.viewOnly === true) for (const name of GAME_ACTION_METHODS) delete transport[name]
 
 // EventSource reconnects on its own if Orca restarts the worker.
 const events = new EventSource('/api/events')

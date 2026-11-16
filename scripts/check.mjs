@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkGameContent } from './game-content.mjs'
 import { checkEmoteMotions, checkThemeGuide, checkThemes } from './theme-contract.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -102,6 +103,7 @@ checkRulesCopy()
 checkThemes({ root: ROOT, report, readJson })
 checkThemeGuide({ root: ROOT, report })
 checkEmoteMotions({ root: ROOT, report })
+checkGameContent({ root: ROOT, report, readJson })
 
 if (problems.length) {
   console.error(problems.map((problem) => `  ${problem}`).join('\n'))

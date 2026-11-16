@@ -1,0 +1,178 @@
+// The game's frame around the rooms: the tabs, the Arsenal and Skills panels and a line for
+// short messages. While the game is off it shows nothing and the panel is as it always was.
+import { createArsenalView } from './arsenal-view.js'
+import { button, el, svgIcon } from './dom.js'
+import { createGameActions } from './game-actions.js'
+import { card } from './game-controls.js'
+import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
+import { createGameTabs, panelId, tabId } from './game-tabs.js'
+import { createSkillsView } from './skills-view.js'
+import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
+import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
+import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
+import { createSettingsView } from './settings-view.js'
+
+/** How long a short message stays, so it can be read but does not linger. */
+const NOTICE_MS = 6000
+
+/**
+ * @param {{
+ *   root: HTMLElement,
+ *   roomsElement: HTMLElement,
+ *   transport: object,
+ *   onTabChange: () => void
+ * }} options `onTabChange` is called after the open tab changed, so the rooms can be laid out
+ */
+export function createGameShell({ root, roomsElement, transport, onTabChange }) {
+  let tab = 'rooms'
+  let mode = 'off'
+  let state = null
+  let noticeUntil = 0
+  let isSettingsOpen = false
+
+  const bar = el('div', 'ac-game-bar')
+  const tabs = createGameTabs({ onSelect: (next) => select(next) })
+  const estimated = el('span', 'ac-game-estimated', ESTIMATED_MARKER)
+  estimated.title = ESTIMATED_NOTE
+  estimated.setAttribute('aria-label', `${ESTIMATED_MARKER}: ${ESTIMATED_NOTE}`)
+  // On a page opened from another machine the worker refuses the game's actions: say so.
+  const viewOnly = el('span', 'ac-game-estimated ac-game-view-only', VIEW_ONLY_MARKER)
+  viewOnly.title = VIEW_ONLY_NOTE
+  viewOnly.setAttribute('aria-label', `${VIEW_ONLY_MARKER}: ${VIEW_ONLY_NOTE}`)
+  bar.append(tabs.element, estimated, viewOnly)
+
+  const notice = el('p', 'ac-game-notice')
+  notice.setAttribute('role', 'status')
+
+  // Each panel holds what its view draws while the game runs, and a card for when it cannot.
+  const panels = {}
+  const contents = {}
+  const unavailableCards = {}
+  for (const name of ['arsenal', 'skills']) {
+    const panel = el('section', `ac-game-panel ac-game-panel-${name}`)
+    panel.id = panelId(name)
+    panel.setAttribute('role', 'tabpanel')
+    panel.setAttribute('aria-labelledby', tabId(name))
+    contents[name] = el('div', 'ac-game-panel-content')
+    unavailableCards[name] = el('div', 'ac-game-panel-content')
+    panel.append(contents[name], unavailableCards[name])
+    panels[name] = panel
+  }
+
+  const actions = createGameActions(transport, showNotice)
+  // The cog that opens the settings sits in the header; it shows only while the game runs.
+  const settingsButton = button('', 'ac-button ac-game-settings-button', {
+    onClick: () => setSettingsOpen(!isSettingsOpen)
+  })
+  settingsButton.append(svgIcon('ac-game-settings-icon', SETTINGS_MARK.length, pixelPath(SETTINGS_MARK, '#')))
+  settingsButton.setAttribute('aria-label', SETTINGS.open)
+  settingsButton.title = SETTINGS.open
+  const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
+
+  /** What draws each panel while the game runs. */
+  const views = {
+    arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs }),
+    skills: createSkillsView({ panel: contents.skills, actions })
+  }
+
+  function showNotice(message, action) {
+    notice.textContent = message
+    noticeUntil = Date.now() + NOTICE_MS
+    // The line above the panels may be scrolled away while the settings are read: say it there too.
+    if (action) settings.showMessage(action, message)
+  }
+
+  function setSettingsOpen(isOpen, returnFocus = false) {
+    isSettingsOpen = isOpen
+    show()
+    onTabChange()
+    if (isOpen) settings.focus()
+    else if (returnFocus) settingsButton.focus()
+  }
+
+  function select(next) {
+    isSettingsOpen = false
+    tab = tabOrDefault(next)
+    transport.prefs?.set('tab', tab)
+    show()
+    onTabChange()
+  }
+
+  /** Draws the open panel; the hidden one is drawn when it is opened. */
+  function drawPanel() {
+    if (!panels[tab] || !state) return
+    const isRunning = mode === 'running'
+    contents[tab].hidden = !isRunning
+    unavailableCards[tab].hidden = isRunning
+    if (isRunning) {
+      views[tab]?.update(state)
+      return
+    }
+    const { title, lines } = gameUnavailable(state.game?.status)
+    unavailableCards[tab].replaceChildren(card(title, lines))
+  }
+
+  function show() {
+    const isShown = mode !== 'off'
+    if (mode !== 'running') isSettingsOpen = false
+    settingsButton.hidden = mode !== 'running'
+    settingsButton.setAttribute('aria-expanded', String(isSettingsOpen))
+    settings.element.hidden = !isSettingsOpen
+    if (isSettingsOpen) {
+      root.dataset.gameSettings = 'open'
+      settings.update(state)
+    } else {
+      delete root.dataset.gameSettings
+    }
+    bar.hidden = !isShown
+    estimated.hidden = !(mode === 'running' && isEstimated(state?.game))
+    viewOnly.hidden = !(isShown && state?.game?.viewOnly === true)
+    if (isShown) root.dataset.gameTab = tab
+    else delete root.dataset.gameTab
+    tabs.setSelected(tab)
+    // The rooms are the Rooms tab's panel only while there are tabs.
+    if (isShown) {
+      roomsElement.id = panelId('rooms')
+      roomsElement.setAttribute('role', 'tabpanel')
+      roomsElement.setAttribute('aria-labelledby', tabId('rooms'))
+    } else {
+      roomsElement.removeAttribute('role')
+      roomsElement.removeAttribute('aria-labelledby')
+    }
+    for (const [name, panel] of Object.entries(panels)) panel.hidden = !isShown || name !== tab
+    drawPanel()
+  }
+
+  bar.hidden = true
+  settingsButton.hidden = true
+  for (const panel of Object.values(panels)) panel.hidden = true
+
+  return {
+    /** The tab bar goes above the rooms; the panels and the message line below it. */
+    bar,
+    notice,
+    panels: [...Object.values(panels), settings.element],
+    settingsButton,
+    showNotice,
+    /** Opens the tab saved for this surface, or asked for in the address. */
+    async restoreTab() {
+      const saved = await Promise.resolve(transport.prefs?.get('tab')).catch(() => null)
+      tab = tabOrDefault(saved)
+    },
+    update(next) {
+      state = next
+      mode = gameModeOf(next.game)
+      show()
+    },
+    /** Clears a message whose time is up. Called by the stage's one clock. */
+    tick(now) {
+      if (noticeUntil && now >= noticeUntil) {
+        noticeUntil = 0
+        notice.textContent = ''
+      }
+    },
+    get mode() {
+      return mode
+    }
+  }
+}

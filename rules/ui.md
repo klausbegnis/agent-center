@@ -50,6 +50,10 @@ paths:
   `emotes.js`, a `@keyframes ac-emote-<name>` in `stage.css` and a row in `THEMES.md`;
   `npm run check` fails when one is missing.
 - Emotes stop while the page is hidden.
+- Game mode's fight follows the same rules. Which blow plays when is decided in
+  `fight-schedule.js` from ids and the clock it is given, the moves are animations in
+  `ui/game.css`, and a character plays a fight move or an emote, never both. Nothing fights
+  while the page is hidden or under reduced motion.
 
 ## Accessibility
 

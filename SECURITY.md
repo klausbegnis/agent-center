@@ -45,13 +45,85 @@ Knowing this helps judge whether something is a vulnerability.
   A website can still send a request to the port; it gets a refusal, or a file of the plugin's
   own UI that the browser will not let it read.
 - With **Open to the local network** turned on, that page is reachable by anyone on the same
-  network, who can read all of the above and change themes and hidden rooms. This is off by
+  network, who can read all of the above and change themes and hidden rooms. In game mode they
+  can watch the game but not play it: the server refuses every game route to a connection that
+  does not come from this machine's loopback address (see "Game mode" below). This is off by
   default and is a deliberate trade-off, not a bug. Do not turn it on on a network you do not
   trust.
 - Whoever can reach that page can also keep it busy, for example by holding many connections
   open, so that it stops answering for a while. That is not treated as a vulnerability: it only
   affects the page, never Orca or the agents.
-- It stores only its own preferences: the chosen themes and the hidden rooms.
+- It stores its own preferences (the chosen themes and the hidden rooms) and, with game mode
+  on, the game's save. See below.
+
+## Game mode
+
+Game mode is off by default. It asks for no permission of its own.
+
+- **On Orca releases without session token totals** (every release today), progress is
+  estimated, not measured: from how long each agent works and how many tool calls it starts,
+  which the plugin already sees through the events and hooks above, and for agents on paired
+  machines from the state and tool name the snapshot of that machine already gives. The tool
+  name is used only to count the call and pick its activity; its input and result are never
+  read. Nothing new is read from Orca, and the session history is never called.
+- **Once Orca provides them**, and only when Orca offers the Agent Session History to plugins
+  and you granted the session history permission (`history:read`), the game uses the real
+  totals: the worker calls `agent.listSessions` every 30 seconds. It makes that call only when
+  Orca lists the permission among those granted; an Orca that does not say counts as not
+  granting it. This version of the plugin does not ask for that permission, so the call is
+  never made.
+
+The rest of this section is about what happens once real totals are read, except where it says
+otherwise.
+
+- **What it reads:** for the 200 newest sessions, each session's id, token total, workspace id,
+  creation time, whether it runs, and its title. It never reads a conversation; Orca does not
+  give one. Titles can be the start of a session's first message.
+- **What the permission covers:** every agent session in Orca's history on this computer, not
+  only the projects shown. The game counts only sessions whose workspace is a room on screen,
+  and none in a room you put out of the game (a project with no world); it still reads them.
+- **What it stores**, in the plugin's own storage under the key `game`: the game's progress
+  (worlds, rooms by their id, which contains the project's folder path, characters by session
+  id), and per session its id, its last token total and when it was read. On the estimate a
+  character's id is `estimated:` followed by Orca's pane id for the agent's terminal, with the
+  paired machine's name in front of the pane id (`estimated:build-box/…`) for an agent on a
+  paired machine, so the save holds the names of paired machines whose agents played. No
+  per-session totals are stored; the working time and tool call counts stay in memory. Titles are stored
+  only while **Game mode: keep conversation titles** is on, on the characters of finished
+  sessions; turning that setting off deletes them.
+- **What it shows:** the view state, served on the local page like everything else, gains the
+  game: where its tokens come from, session ids of the characters on screen, levels, the room's
+  fight, and the stored titles when kept. A page opened from another machine (with **Open to the
+  local network** on) gets the same game with every session id replaced by an alias that cannot
+  be turned back into it, and without the retirees' titles.
+- **What the local page's API can do with it**, from this machine only. With **Open to the
+  local network** on, a request whose connection does not come from a loopback address is
+  refused for every one of these routes, before anything is read or changed:
+
+  | Route | What it does |
+  |---|---|
+  | `/api/game/prestige` | prestiges a skill (cannot be undone) |
+  | `/api/game/upgrade-item` | spends materials on an item |
+  | `/api/game/buy-upgrade` | spends materials on a group upgrade |
+  | `/api/game/assign-room` | moves a room to another world, a new one, or out of the game |
+  | `/api/game/reset-world` | starts a world over (cannot be undone) |
+  | `/api/game/auto-spend` | turns auto-spend on or off |
+  | `/api/game/travel` | turns "new scene after each monster" on or off |
+  | `/api/game/keep-titles` | turns keeping conversation titles on or off |
+  | `/api/game/export-save` | answers the whole save file (see "The save file" below) |
+  | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |
+  | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
+
+  Any program or user account on this machine can still use them, like the other settings.
+
+### The save file
+
+**Export** gives the whole save as a file, and that file is private: it holds the full folder
+path of every project that played, the names of paired machines whose agents played (in their
+characters' ids), session ids and, when **Game mode: keep conversation titles** is on, the
+titles of finished conversations. Keep it like any other private file, and do not attach it to
+a public issue or bug report. **Import** checks a file part by part before it replaces the
+game, and cleans its titles and monster names like the labels above.
 
 It does not send anything to the internet, does not type into terminals, does not start
 agents, and does not block or rewrite tool calls.
@@ -70,6 +142,8 @@ not a vulnerability in the plugin.
 
 - Reading files outside `ui/` and `themes/` through the local server.
 - The local page being reachable from another machine while the network setting is off.
+- A page on another machine playing the game, reading the save, or reading session ids or kept
+  titles, while the network setting is on.
 - A website reading the local page or changing its settings, in either network setting.
 - A crafted workspace, branch, host or conversation name causing script to run in the panel or
   the external view.
