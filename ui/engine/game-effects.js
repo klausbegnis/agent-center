@@ -4,6 +4,7 @@
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
+import { LEGENDARY_EVENT } from './legendary-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
 export const MAX_ROOM_LINES = 3
@@ -14,7 +15,8 @@ export const MAX_ROOM_LINES = 3
  * @property {'monster' | 'agent' | 'room'} target where it plays
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
- * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase'} tone
+ * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary'} tone
+ * @property {string} [artId] a legendary entry whose picture plays with the line
  */
 
 /** The name of a chest item or of a dropped entry, from what the room's chest shows. */
@@ -92,6 +94,10 @@ function lineEffects(events, game) {
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'drop' })
     } else if (event.type === 'purchase') {
       effects.push(...purchaseEffects(event, game))
+    } else if (event.type === 'legendary' && room && event.item) {
+      // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
+      const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))
+      effects.push({ roomId: event.roomId, target: 'room', text, tone: 'legendary', artId: event.item })
     }
   }
   return effects

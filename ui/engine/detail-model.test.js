@@ -50,3 +50,22 @@ test('an idle character names the trade it gathers now, a chosen one rather than
   const chosen = { ...MEMBER, state: 'idle', trade: 'runecraft', tradeChoice: 'runecraft', autoTrade: 'fishing' }
   assert.equal(agentCharacter(stateWith(chosen), AGENT).trade, 'Gathering Runecraft')
 })
+
+test('legendary gear names its picture, and the card shows the room\'s active relic and its buff', () => {
+  const character = {
+    ...MEMBER,
+    equipment: { weapon: { id: 'oathbreaker', name: 'Oathbreaker', tier: 2, level: 1, legendary: true, entryId: 'oathbreaker' }, outfit: null, tool: null }
+  }
+  const state = stateWith(character)
+  state.rooms = [{ id: 'room', agents: [AGENT] }]
+  state.game.rooms = { room: { joined: true, relics: { owned: ['rimeheart'], active: 'rimeheart' } } }
+  state.game.legendary = {
+    relicCount: 22,
+    entries: { rimeheart: { id: 'rimeheart', name: 'Rimeheart', kind: 'boss-relic', effect: { effect: 'staminaDrain', scope: 'party', amount: 0.05 } } }
+  }
+  const card = agentCharacter(state, AGENT)
+  assert.equal(card.equipment[0].legendaryId, 'oathbreaker')
+  assert.equal(card.equipment[1].legendaryId, null)
+  assert.deepEqual(card.relic, { id: 'rimeheart', name: 'Rimeheart', text: 'Monsters drain 5% less stamina',
+    line: 'Relic: Rimeheart · Monsters drain 5% less stamina' })
+})

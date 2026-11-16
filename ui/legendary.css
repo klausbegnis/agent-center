@@ -1,0 +1,136 @@
+/* Legendary loot: relics, boss relics and legendary equipment. Their pictures are pixel art drawn at
+   32×32 (frames at 40×40) and are never smoothed. Gold marks everything legendary, with the item's
+   own picture and glow, so it never rests on colour alone. */
+.ac-legendary-art,
+.ac-legendary-frame {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  user-select: none;
+}
+
+/* A picture in a frame: the frame fills the box and the item sits inside its border (4 of 40). */
+.ac-legendary-framed {
+  position: relative;
+  display: block;
+  width: 40px;
+  aspect-ratio: 1;
+  flex: none;
+}
+.ac-legendary-framed .ac-legendary-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ac-legendary-framed .ac-legendary-art { position: absolute; inset: 10%; width: 80%; height: 80%; }
+
+.ac-legendary-name { color: var(--ac-game-gold, #f2c14e); }
+.ac-legendary-flavour {
+  margin: 2px 0 0;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+
+/* The Relics card of the Arsenal's Items section. */
+.ac-legendary-relics[hidden] { display: none; }
+.ac-legendary-relics { margin-top: 10px; font-size: 12px; }
+.ac-legendary-relics-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ac-legendary-count { font-size: 11px; white-space: nowrap; }
+.ac-legendary-active { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 6px 0 8px; }
+.ac-legendary-active-picture { width: 80px; }
+.ac-legendary-active-words { display: flex; flex-direction: column; min-width: 0; }
+.ac-legendary-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-legendary-active .ac-legendary-name { margin: 1px 0 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.ac-legendary-buff { margin: 2px 0 0; font-weight: 600; }
+.ac-legendary-relic-grid {
+  display: grid;
+  /* Six to a row, as in a 380 px panel; a wide page keeps them slot sized, not stretched. */
+  grid-template-columns: repeat(6, minmax(0, 56px));
+  gap: 4px;
+  margin: 4px 0;
+}
+.ac-legendary-slot {
+  position: relative;
+  display: block;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: #0f0d0a;
+  color: inherit;
+  font: inherit;
+}
+.ac-legendary-slot .ac-legendary-framed { width: 100%; }
+button.ac-legendary-slot { cursor: pointer; }
+button.ac-legendary-slot:hover { filter: brightness(1.15); }
+.ac-legendary-slot:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 2px; }
+/* The active relic's slot is ringed in gold and marked with a star, not only coloured. */
+.ac-legendary-slot-active { outline: 2px solid var(--ac-game-gold, #f2c14e); outline-offset: 1px; }
+.ac-legendary-slot-active::after {
+  content: '★';
+  position: absolute;
+  top: -2px;
+  right: 1px;
+  font-size: 10px;
+  color: var(--ac-game-gold, #f2c14e);
+  text-shadow: 0 1px 0 #000, 0 0 2px #000;
+}
+.ac-legendary-slot-pending { opacity: 0.6; }
+.ac-legendary-slot-empty { border: 1px dashed color-mix(in srgb, #8a6a2a 60%, transparent); background: #0c0b09; }
+.ac-legendary-teaser { margin-bottom: 4px; }
+/* Its line keeps its height when empty, so the answer to a click moves nothing below it. */
+.ac-legendary-status { min-height: 1.3em; margin: 4px 0 0; font-size: 11px; color: var(--ac-game-good, #7bd88f); }
+
+/* Legendary equipment in the chest: its own picture in a gold frame with a soft glow. */
+.ac-game-slotbox-legendary {
+  border-color: var(--ac-game-gold, #f2c14e);
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--ac-game-gold, #f2c14e) 22%, #1b1f27), #0f1116 78%);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 0 6px color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent);
+}
+.ac-game-slotbox-legendary .ac-game-slotbox-tier { color: var(--ac-game-gold, #f2c14e); }
+.ac-game-slotbox-art { width: 82%; height: 82%; }
+
+/* The agent card: legendary gear in gold with its picture, and the room's active relic. */
+.ac-detail-legendary-art { width: 16px; height: 16px; }
+.ac-detail-slot-legendary .ac-detail-slot-name { color: var(--ac-game-gold, #f2c14e); font-weight: 700; }
+.ac-detail-relic { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; }
+.ac-detail-relic-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container (max-width: 300px) {
+  .ac-detail-relic { display: none; }
+}
+
+/* The room's band: the active relic, a small picture by the wave. Narrow cells leave it out. */
+.ac-legendary-band-relic { flex: none; align-items: center; padding: 0.15em; }
+.ac-legendary-band-relic[hidden] { display: none; }
+.ac-legendary-band-art { width: clamp(14px, 4.2cqw, 24px); height: auto; aspect-ratio: 1; }
+@container (max-width: 300px) {
+  .ac-legendary-band-relic { display: none; }
+}
+.ac-mini .ac-legendary-band-relic { display: none !important; }
+
+/* A legendary drop over the room: gold, its picture, a glow and a pop, twice as long as a line. */
+.ac-game-tone-legendary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--ac-game-gold, #f2c14e);
+  font-size: clamp(10px, 3cqw, 14px);
+  font-weight: 800;
+  border: 1px solid color-mix(in srgb, var(--ac-game-gold, #f2c14e) 70%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent);
+  animation: ac-legendary-found 5.2s ease-out 1 both;
+}
+.ac-legendary-pop-art { width: 2em; height: 2em; }
+@keyframes ac-legendary-found {
+  0% { opacity: 0; transform: scale(0.6); }
+  8% { opacity: 1; transform: scale(1.12); }
+  14%, 85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-game-tone-legendary { animation: none !important; }
+}

@@ -4,6 +4,7 @@ import { agentCharacter } from './detail-model.js'
 import { button, el } from './dom.js'
 import { meter } from './game-controls.js'
 import { gameIcon } from './icon-view.js'
+import { legendaryPicture } from './legendary-art.js'
 import { activityLabel, since, subagentOf } from './labels.js'
 
 /** The character's class, level, progress and trade on one line. */
@@ -33,8 +34,11 @@ function attributeRow(card) {
   return list
 }
 
-/** The three slots, each its icon and the item's name with its upgrade level. */
-function equipmentRow(card) {
+/**
+ * The three slots, each its icon and the item's name with its upgrade level; a legendary item
+ * shows its own picture and its name in gold.
+ */
+function equipmentRow(card, base) {
   const list = el('ul', 'ac-detail-equipment')
   for (const slot of card.equipment) {
     const row = el('li', slot.isEmpty ? 'ac-detail-slot ac-muted' : 'ac-detail-slot')
@@ -42,7 +46,11 @@ function equipmentRow(card) {
     row.setAttribute('aria-label', slot.label)
     const name = el('span', 'ac-detail-slot-name', slot.name)
     name.setAttribute('aria-hidden', 'true')
-    row.append(gameIcon(slot.iconId, 'ac-detail-icon'), name)
+    const icon = slot.legendaryId
+      ? legendaryPicture(base, slot.legendaryId, { glow: true, className: 'ac-detail-icon ac-detail-legendary-art' })
+      : gameIcon(slot.iconId, 'ac-detail-icon')
+    row.classList.toggle('ac-detail-slot-legendary', Boolean(slot.legendaryId))
+    row.append(icon, name)
     if (slot.level) {
       const level = el('span', 'ac-detail-slot-level', slot.level)
       level.setAttribute('aria-hidden', 'true')
@@ -53,12 +61,22 @@ function equipmentRow(card) {
   return list
 }
 
+/** The room's active relic: its small picture and what it does. */
+function relicRow(relic, base) {
+  const row = el('div', 'ac-detail-relic')
+  row.title = relic.line
+  row.append(legendaryPicture(base, relic.id, { glow: true, className: 'ac-detail-icon ac-detail-legendary-art' }),
+    el('span', 'ac-detail-relic-text', relic.line))
+  return row
+}
+
 /** What the card adds for the agent's game character, or nothing. */
-function characterPart(card) {
+function characterPart(card, base) {
   if (!card) return []
   const part = el('div', 'ac-detail-game')
   if (card.kind === 'guest') part.append(el('span', 'ac-muted', card.text))
-  else part.append(characterHead(card), attributeRow(card), equipmentRow(card))
+  else part.append(characterHead(card), attributeRow(card), equipmentRow(card, base))
+  if (card.relic) part.append(relicRow(card.relic, base))
   return [part]
 }
 
@@ -106,7 +124,7 @@ export function createDetail(transport, { onOpenWorkspace } = {}) {
           })
         )
       }
-      element.append(...characterPart(agentCharacter(state, agent)))
+      element.append(...characterPart(agentCharacter(state, agent), transport.base ?? ''))
     }
   }
 }

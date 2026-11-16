@@ -85,3 +85,9 @@ test('a drop and an upgrade use the names and the level the worker gives them', 
   assert.ok(texts.includes('Found Ashwood Wand'))
   assert.ok(texts.includes('Upgraded Spark Rod to Lv 4'))
 })
+
+test('a legendary drop is celebrated in gold with its picture', () => {
+  const event = { type: 'legendary', roomId: 'room', item: 'rimeheart', name: 'Rimeheart', kind: 'boss-relic' }
+  const [effect] = gameEffects({ ...none, events: [event] }, state())
+  assert.deepEqual(effect, { roomId: 'room', target: 'room', text: 'Legendary! Rimeheart', tone: 'legendary', artId: 'rimeheart' })
+})

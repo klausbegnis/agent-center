@@ -14,6 +14,8 @@ import {
   levelPlus,
   SLOT_LABEL
 } from './labels.js'
+import { relicLine } from './legendary-labels.js'
+import { activeRelic } from './legendary-model.js'
 
 /** A Mage's weapon is a magical one; the others' are physical. */
 const weaponType = (classId) => (classId === 'magical' ? 'magical' : 'physical')
@@ -27,10 +29,22 @@ const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1) : text)
  *   kind: 'member', classId: string, facts: string, progress: number, progressText: string,
  *   progressLabel: string, attributesLabel: string,
  *   attributes: { id: string, short: string, label: string, value: number }[],
- *   equipment: { slot: string, iconId: string, name: string, level: string, label: string, isEmpty: boolean }[],
- *   trade: string | null
- * }} MemberCard
+ *   equipment: { slot: string, iconId: string, name: string, level: string, label: string, isEmpty: boolean,
+ *     legendaryId: string | null }[],
+ *   trade: string | null,
+ *   relic: { id: string, name: string, text: string, line: string } | null
+ * }} MemberCard `legendaryId` names a legendary item's picture; `relic` is the room's active relic
  */
+
+/** The room an agent is in, by the rooms of the view state. */
+const roomIdOf = (state, agent) => state.rooms?.find((room) => room.agents?.some((item) => item.id === agent.id))?.id ?? null
+
+/** The room's active relic as the card shows it, or null. */
+function relicOf(state, agent) {
+  const roomId = roomIdOf(state, agent)
+  const relic = roomId ? activeRelic(state.game, roomId) : null
+  return relic ? { id: relic.id, name: relic.name, text: relic.text, line: relicLine(relic.name, relic.text) } : null
+}
 
 /**
  * What the card shows of the agent's character, or null when it shows nothing of the game.
@@ -63,9 +77,11 @@ export function agentCharacter(state, agent) {
         name: item ? item.name : ARSENAL.emptySlot,
         level: item ? levelPlus(item.level) : '',
         label: equipmentSlotLabel(slot, item),
-        isEmpty: !item
+        isEmpty: !item,
+        legendaryId: item?.legendary ? item.entryId : null
       }
     }),
+    relic: relicOf(state, agent),
     // A character gathers its trade while its agent is idle (done); otherwise it fights or waits.
     trade: character.state === 'idle' && character.trade ? gatheringTrade(character.trade) : null
   }

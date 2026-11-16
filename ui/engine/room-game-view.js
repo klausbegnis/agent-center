@@ -30,16 +30,22 @@ import {
   waveKillsLabel,
   waveLabel
 } from './labels.js'
+import { legendaryPicture } from './legendary-art.js'
+import { bandRelicLabel } from './legendary-labels.js'
+import { activeRelic } from './legendary-model.js'
 import { monsterSpot } from './monster-place.js'
 import { createMonsterView } from './monster-view.js'
 
 /** How long an event stays over the room; the CSS animation lasts as long. */
 const EFFECT_MS = 2600
+/** A legendary drop is celebrated twice as long (ui/legendary.css). */
+const LEGENDARY_EFFECT_MS = 5200
 
 /**
- * @param {{ scene: HTMLElement, theme: object, roomId: string, mirrored: boolean }} options
+ * @param {{ scene: HTMLElement, theme: object, roomId: string, mirrored: boolean, base?: string }} options
+ *   `base` is where the surface loads legendary pictures from
  */
-export function createRoomGame({ scene, theme, roomId, mirrored }) {
+export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
   const band = el('div', 'ac-game-band')
   band.style.height = `${bandHeight(theme) * 100}%`
 
@@ -64,7 +70,12 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
   const stamina = meter('ac-game-stamina', STAMINA_NAME)
   party.append(partyState, stamina.element)
 
-  band.append(wave, foeInfo, party)
+  // The room's active relic, a small mark by the wave; narrow cells leave it out (ui/legendary.css).
+  const relicMark = el('span', 'ac-game-pill ac-legendary-band-relic')
+  relicMark.setAttribute('role', 'img')
+  relicMark.hidden = true
+  let drawnRelic = null
+  band.append(wave, relicMark, foeInfo, party)
 
   const foe = createMonsterView({ theme, spot: monsterSpot(theme), mirrored })
   foe.setPhase('gone')
@@ -90,6 +101,18 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
   lines.style.top = `${bandHeight(theme) * 100}%`
   /** Every effect on screen, with the time it is taken away. */
   const playing = new Map()
+
+  /** Shows the room's active relic by the wave, or hides the mark. */
+  function drawRelic(game) {
+    const relic = activeRelic(game, roomId)
+    relicMark.hidden = !relic
+    if (!relic || drawnRelic === relic.id) return
+    drawnRelic = relic.id
+    const label = bandRelicLabel(relic.name, relic.text)
+    relicMark.setAttribute('aria-label', label)
+    relicMark.title = label
+    relicMark.replaceChildren(legendaryPicture(base, relic.id, { glow: true, className: 'ac-legendary-band-art' }))
+  }
 
   function drawBand(fight) {
     waveNumber.textContent = waveLabel(fight.wave)
@@ -263,9 +286,10 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
         if (!place) continue
         const className = `ac-game-pop ac-game-pop-${effect.target} ac-game-tone-${effect.tone}`
         const node = el('span', className, effect.text)
+        if (effect.artId) node.prepend(legendaryPicture(base, effect.artId, { glow: true, className: 'ac-legendary-pop-art' }))
         node.setAttribute('aria-hidden', 'true')
         place.append(node)
-        playing.set(node, now + EFFECT_MS)
+        playing.set(node, now + (effect.tone === 'legendary' ? LEGENDARY_EFFECT_MS : EFFECT_MS))
       }
     },
     /**
@@ -314,6 +338,7 @@ export function createRoomGame({ scene, theme, roomId, mirrored }) {
       lastFight = fight
       if (fight) {
         drawBand(fight)
+        drawRelic(game)
         if (!band.isConnected) scene.append(band)
       } else {
         band.remove()

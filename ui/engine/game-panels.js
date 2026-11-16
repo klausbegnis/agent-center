@@ -1,5 +1,5 @@
-// The game's tabs other than Rooms, as panels: Party, Chest (with the chests rooms left behind),
-// Camp, Skills and Market. Each draws the room or the world picked above the tabs; only the open
+// The game's tabs other than Rooms, as panels: Party, Chest (with the room's relics and the chests
+// rooms left behind), Camp, Skills and Market. Each draws the room or the world picked above the tabs; only the open
 // one is drawn, the others when they are opened. Says which materials the prices on screen lack,
 // for the strip above the tabs.
 import { costsOnScreen, shortMaterials } from './arsenal-model.js'
@@ -10,6 +10,7 @@ import { roomTitle } from './labels.js'
 import { createMarketView } from './market-view.js'
 import { createOrphansCard } from './orphans-view.js'
 import { createPartyView } from './party-view.js'
+import { createRelicsCard } from './relics-view.js'
 import { createSkillsView } from './skills-view.js'
 
 /**
@@ -23,7 +24,8 @@ import { createSkillsView } from './skills-view.js'
  */
 export function createGamePanels({ contents, actions, base, onChosenItem }) {
   const party = createPartyView({ actions })
-  const chest = createChestView({ actions, onChosenChange: onChosenItem })
+  const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
+  const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })
   const camp = createCampView({ actions })
   /** A tab's views in one block that spans the panel and lays itself out by its own width. */
@@ -33,7 +35,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
     return node
   }
   contents.party.append(block(party.element))
-  contents.chest.append(block(chest.element, orphans.element))
+  contents.chest.append(block(chest.element, relics.element, orphans.element))
   contents.camp.append(block(camp.element))
   const skills = createSkillsView({ panel: contents.skills, actions })
   const market = createMarketView({ panel: contents.market, actions, base })
@@ -54,6 +56,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
       if (tab === 'party') party.update({ state, game, roomId, room, world })
       if (tab === 'chest') {
         chest.update({ state, game, roomId, room, world })
+        relics.update({ game, roomId })
         const shown = state.rooms.find((entry) => entry.id === roomId)
         orphans.update({ roomId, roomName: shown ? roomTitle(shown) : roomId, world })
       }
