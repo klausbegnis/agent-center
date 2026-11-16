@@ -4,6 +4,7 @@ import {
   affordableUnits,
   amountFrom,
   cityStance,
+  gatheringTradeOf,
   heldMaterials,
   offerBlock,
   pricePoint,
@@ -98,4 +99,10 @@ test('a stall piece says why it cannot be bought', () => {
   assert.equal(offerBlock(offer, { ...can, roomId: null }), 'noRoom')
   assert.equal(offerBlock(offer, { ...can, roomId: 'full-room' }), 'full')
   assert.equal(offerBlock(offer, { ...can, coins: 99 }), 'coins')
+})
+
+test('a gathering material names the trade that gathers it; a work material names none', () => {
+  assert.equal(gatheringTradeOf('fish'), 'fishing')
+  assert.equal(gatheringTradeOf('runes'), 'runecraft')
+  assert.equal(gatheringTradeOf('bars'), null)
 })

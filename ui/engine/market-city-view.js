@@ -13,6 +13,7 @@ import {
   TREND_NOTE,
   buyLabel,
   coinsText,
+  gatheredBy,
   heldText,
   materialList,
   offerBlockText,
@@ -25,6 +26,7 @@ import {
 import {
   amountFrom,
   cityStance,
+  gatheringTradeOf,
   heldMaterials,
   offerBlock,
   pricePoint,
@@ -77,6 +79,14 @@ function priceMarks(city, materialId, trend) {
   return node
 }
 
+/** The icon of the trade that gathers a material, named for screen readers and on hover. */
+function tradeMark(trade) {
+  const node = el('span', 'ac-market-trade-mark')
+  node.title = gatheredBy(trade)
+  node.append(gameIcon(trade, 'ac-market-trade-icon'), el('span', 'ac-visually-hidden', gatheredBy(trade)))
+  return node
+}
+
 function sellRow({ world, city, materialId, typed, actions }) {
   const market = world.market
   const point = pricePoint(market, city, materialId)
@@ -86,8 +96,10 @@ function sellRow({ world, city, materialId, typed, actions }) {
   const head = el('div', 'ac-market-row-head')
   const price = el('span', `ac-market-price ac-market-trend-${trend}`, priceEach(unitSellPrice(point), trend))
   price.title = TREND_NOTE[trend]
-  head.append(iconLabel(materialId, materialLabel(materialId), 'ac-market-name'),
-    el('span', 'ac-market-held ac-game-amount', heldText(held)), price, priceMarks(city, materialId, trend))
+  head.append(iconLabel(materialId, materialLabel(materialId), 'ac-market-name'))
+  const trade = gatheringTradeOf(materialId)
+  if (trade) head.append(tradeMark(trade))
+  head.append(el('span', 'ac-market-held ac-game-amount', heldText(held)), price, priceMarks(city, materialId, trend))
   row.append(head)
   if (!actions.sellMaterial) return row
   const key = `sell:${city.id}:${materialId}`

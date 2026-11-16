@@ -1,7 +1,7 @@
 // The wording of the Market tab, apart from labels.js, which is past the size a module should
 // have. Computes nothing beyond putting numbers already worked out into sentences.
 import { formatAmount } from './game-format.js'
-import { materialLabel, slotText } from './labels.js'
+import { materialLabel, skillLabel, slotText } from './labels.js'
 
 export const MARKET = {
   world: 'World',
@@ -97,3 +97,6 @@ export function offerBlockText(block, { price, coins }) {
 
 /** The Buy button's name for screen readers: "Buy Runed Grimoire for 9,120 coins". */
 export const buyLabel = (offer) => `Buy ${offer.name} for ${coinsText(offer.price)}`
+
+/** What a Sell row's trade icon means: "Gathered by Fishing". */
+export const gatheredBy = (trade) => `Gathered by ${skillLabel(trade)}`

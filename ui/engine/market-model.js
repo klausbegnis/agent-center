@@ -7,6 +7,24 @@
 export const MARKET_MATERIALS = Object.freeze(['bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish', 'crops',
   'logs', 'hides', 'runes'])
 
+/** The trade whose idle characters gather each gathering material; work materials have none. */
+const TRADE_OF_MATERIAL = Object.freeze({
+  ore: 'mining',
+  fish: 'fishing',
+  crops: 'farming',
+  logs: 'woodcutting',
+  hides: 'hunting',
+  runes: 'runecraft'
+})
+
+/**
+ * The trade that gathers a material, or null for one only kills give.
+ *
+ * @param {string} materialId
+ * @returns {string | null}
+ */
+export const gatheringTradeOf = (materialId) => TRADE_OF_MATERIAL[materialId] ?? null
+
 /**
  * What a city thinks of a material.
  *
