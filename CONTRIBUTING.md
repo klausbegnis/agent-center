@@ -136,4 +136,5 @@ This project follows the [Code of Conduct](CODE_OF_CONDUCT.md). By taking part y
 
 By contributing you agree that your contribution is licensed under the [MIT licence](LICENSE).
 Art you did not make yourself needs a licence that allows redistribution; say which in the pull
-request.
+request. The city banners in `ui/cities/` are original pixel art made for this project, drawn by the
+scripts in `scripts/city-art/`.

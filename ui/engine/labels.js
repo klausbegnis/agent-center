@@ -113,7 +113,7 @@ export function themeLoadFailure(state) {
 // The game. Its wording is kept here with the rest; the game's own facts come from the view state.
 
 /** The game's tabs. */
-export const GAME_TAB_LABEL = { rooms: 'Rooms', arsenal: 'Arsenal', skills: 'Skills' }
+export const GAME_TAB_LABEL = { rooms: 'Rooms', arsenal: 'Arsenal', skills: 'Skills', market: 'Market' }
 export const GAME_TABS_NAME = 'Game views'
 
 /** The small marker by the tabs, and what it means, when token totals are not reported. */
@@ -170,7 +170,10 @@ const ACTION_NAMES = {
   setKeepTitles: 'Changing the titles setting',
   exportSave: 'The export',
   importSave: 'The import',
-  moveOrphanItems: 'Moving the items'
+  moveOrphanItems: 'Moving the items',
+  sellMaterial: 'The sale',
+  tradeMaterial: 'The trade',
+  buyStallOffer: 'The purchase'
 }
 
 /**

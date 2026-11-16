@@ -1,4 +1,4 @@
-// The game's frame around the rooms: the tabs, the Arsenal and Skills panels and a line for
+// The game's frame around the rooms: the tabs, the Arsenal, Skills and Market panels and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { createArsenalView } from './arsenal-view.js'
 import { button, el, svgIcon } from './dom.js'
@@ -8,6 +8,7 @@ import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
 import { createSkillsView } from './skills-view.js'
 import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
+import { createMarketView } from './market-view.js'
 import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
@@ -48,7 +49,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const panels = {}
   const contents = {}
   const unavailableCards = {}
-  for (const name of ['arsenal', 'skills']) {
+  for (const name of ['arsenal', 'skills', 'market']) {
     const panel = el('section', `ac-game-panel ac-game-panel-${name}`)
     panel.id = panelId(name)
     panel.setAttribute('role', 'tabpanel')
@@ -72,7 +73,8 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   /** What draws each panel while the game runs. */
   const views = {
     arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs }),
-    skills: createSkillsView({ panel: contents.skills, actions })
+    skills: createSkillsView({ panel: contents.skills, actions }),
+    market: createMarketView({ panel: contents.market, actions, base: transport.base ?? '', prefs: transport.prefs })
   }
 
   function showNotice(message, action) {

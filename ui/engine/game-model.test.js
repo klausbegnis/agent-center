@@ -44,16 +44,18 @@ test('a running status without its worlds and rooms is not drawn as running', ()
 
 test('a saved tab is kept only when it is one of the tabs', () => {
   assert.equal(tabOrDefault('skills'), 'skills')
+  assert.equal(tabOrDefault('market'), 'market')
   assert.equal(tabOrDefault('settings'), 'rooms')
   assert.equal(tabOrDefault(null), 'rooms')
 })
 
 test('the arrow keys move along the tabs and wrap round, Home and End go to either end', () => {
   assert.equal(tabAfterKey('rooms', 'ArrowRight'), 'arsenal')
-  assert.equal(tabAfterKey('skills', 'ArrowRight'), 'rooms')
-  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'skills')
+  assert.equal(tabAfterKey('skills', 'ArrowRight'), 'market')
+  assert.equal(tabAfterKey('market', 'ArrowRight'), 'rooms')
+  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'market')
   assert.equal(tabAfterKey('arsenal', 'Home'), GAME_TABS[0])
-  assert.equal(tabAfterKey('arsenal', 'End'), 'skills')
+  assert.equal(tabAfterKey('arsenal', 'End'), 'market')
   assert.equal(tabAfterKey('arsenal', 'Enter'), null)
 })
 

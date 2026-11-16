@@ -16,11 +16,15 @@ export const GAME_ACTION_METHODS = [
   'setKeepTitles',
   'exportSave',
   'importSave',
-  'moveOrphanItems'
+  'moveOrphanItems',
+  'sellMaterial',
+  'tradeMaterial',
+  'buyStallOffer'
 ]
 
 /** Actions that should change something; an answer of `{ changed: false }` is worth saying. */
-const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade', 'resetWorld', 'moveOrphanItems'])
+const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade', 'resetWorld', 'moveOrphanItems',
+  'sellMaterial', 'tradeMaterial', 'buyStallOffer'])
 /** Actions that answer with something to show instead of `{ changed }`. */
 const GIVES_ANSWER = new Set(['exportSave'])
 /** Actions the worker refuses for reasons a person can act on, such as a damaged file: say why. */

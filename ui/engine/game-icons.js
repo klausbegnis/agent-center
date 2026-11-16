@@ -1,4 +1,4 @@
-// The game's pixel icons: skills, materials, classes, item slots, group upgrades and stars. Each
+// The game's pixel icons: skills, materials, classes, item slots, group upgrades, stars and coins. Each
 // is a 10 × 10 grid in two inks, `a` and `b`, with colours of its own, so a list can be scanned
 // by colour and by shape. Original drawings, neutral to every room theme. Never touches the DOM.
 import { pixelPath } from './pixel-art.js'
@@ -184,6 +184,12 @@ export const ICONS = {
     colors: { a: '#C39BE0', b: '#6FE0D2' },
     rows: ['...aaaa...', '.aa....aa.', '.a......a.', 'a...bb...a', 'a..b..b..a', 'a..b..b..a', 'a...bb...a',
       '.a......a.', '.aa....aa.', '...aaaa...']
+  },
+  // A coin of the market, with its stamped mark.
+  coin: {
+    colors: { a: '#F2C14E', b: '#A8741A' },
+    rows: ['...aaaa...', '.aaaaaaaa.', '.aabbbbaa.', 'aabaaaabaa', 'aabaabaaaa', 'aabaabaaaa', 'aabaaaabaa',
+      '.aabbbbaa.', '.aaaaaaaa.', '...aaaa...']
   },
   // A prestige star.
   star: {

@@ -4,7 +4,7 @@ import { clampShare } from './game-format.js'
 import { monsterRank } from './monster-rank.js'
 
 /** The game's tabs, in the order they are shown. */
-export const GAME_TABS = /** @type {const} */ (['rooms', 'arsenal', 'skills'])
+export const GAME_TABS = /** @type {const} */ (['rooms', 'arsenal', 'skills', 'market'])
 const DEFAULT_TAB = 'rooms'
 
 /**

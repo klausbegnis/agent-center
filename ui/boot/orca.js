@@ -32,6 +32,12 @@ const transport = {
   exportSave: () => orca.plugin.request('game.exportSave'),
   importSave: (file) => orca.plugin.request('game.importSave', { file }),
   moveOrphanItems: (fromRoomId, toRoomId) => orca.plugin.request('game.moveOrphanItems', { fromRoomId, toRoomId }),
+  sellMaterial: (worldId, cityId, materialId, amount) =>
+    orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
+  tradeMaterial: (worldId, cityId, fromId, toId, amount) =>
+    orca.plugin.request('game.trade', { worldId, cityId, fromId, toId, amount }),
+  buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>
+    orca.plugin.request('game.buyOffer', { worldId, cityId, offerIndex, entryId, roomId }),
   // The panel and the tab keep their own view choice.
   prefs: {
     get: (key) => orca.storage.get(`${key}:${isTab ? 'tab' : 'panel'}`),

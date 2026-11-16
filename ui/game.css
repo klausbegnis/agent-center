@@ -73,11 +73,14 @@
 /* Which part shows: the rooms on the Rooms tab, a panel on the others. */
 .ac-root[data-game-tab='arsenal'] .ac-rooms,
 .ac-root[data-game-tab='skills'] .ac-rooms,
+.ac-root[data-game-tab='market'] .ac-rooms,
 .ac-root[data-game-tab='arsenal'] .ac-shelf,
-.ac-root[data-game-tab='skills'] .ac-shelf { display: none; }
+.ac-root[data-game-tab='skills'] .ac-shelf,
+.ac-root[data-game-tab='market'] .ac-shelf { display: none; }
 /* Gallery fits the rooms without scrolling; a panel scrolls like List. */
 .ac-root.ac-gallery[data-game-tab='arsenal'],
-.ac-root.ac-gallery[data-game-tab='skills'] { overflow: auto; }
+.ac-root.ac-gallery[data-game-tab='skills'],
+.ac-root.ac-gallery[data-game-tab='market'] { overflow: auto; }
 .ac-game-panel[hidden] { display: none !important; }
 .ac-game-panel {
   display: grid;
@@ -1385,3 +1388,106 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   .ac-detail-equipment,
   .ac-detail-trade { display: none; }
 }
+
+/* Market: the coins on top, then a card per city with its banner, or the city opened with its
+   Sell, Trade and Stall cards. Banners are 192 x 72 pixel art, scaled up without smoothing. */
+.ac-market-head { grid-column: 1 / -1; }
+.ac-market-head[hidden],
+.ac-market-view-only[hidden] { display: none; }
+.ac-market-coins {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ac-market-coin { width: 14px; height: 14px; flex: none; }
+.ac-market-coins-value { font-size: 15px; }
+.ac-market-intro { grid-column: 1 / -1; }
+.ac-market-city { gap: 6px; }
+.ac-market-banner {
+  position: relative;
+  margin: -10px -12px 0;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  line-height: 0;
+}
+.ac-market-banner-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 192 / 72;
+  image-rendering: pixelated;
+}
+.ac-market-banner-name {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  color: #f4f1e8;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #12151b, -1px 1px 0 #12151b, 1px -1px 0 #12151b, -1px -1px 0 #12151b;
+}
+.ac-market-tagline { margin: 0; font-size: 12px; font-style: italic; }
+.ac-market-trades { display: flex; flex-direction: column; gap: 2px; }
+.ac-market-trades-label { font-weight: 600; color: var(--orca-foreground, #e8eaf0); }
+.ac-market-city .ac-button { align-self: flex-start; }
+.ac-market-city-locked .ac-market-banner-image { filter: grayscale(1) brightness(0.6); }
+.ac-market-city-locked .ac-market-tagline,
+.ac-market-city-locked .ac-market-trades { opacity: 0.6; }
+.ac-market-locked {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-market-city-open { grid-column: 1 / -1; }
+.ac-market-city-open .ac-market-banner { margin-top: 0; border-radius: 4px; }
+.ac-market-back { align-self: flex-start; }
+.ac-market-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--orca-border, #2a2f3a);
+  font-size: 12px;
+}
+.ac-market-row:first-child { padding-top: 0; border-top: 0; }
+.ac-market-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.ac-market-name { font-weight: 600; }
+.ac-market-held { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-market-price { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ac-market-trend-up { color: var(--ac-game-good); }
+.ac-market-trend-down { color: var(--ac-game-warn); }
+.ac-market-marks { display: inline-flex; gap: 4px; }
+.ac-market-tag {
+  padding: 0 5px;
+  border: 1px solid var(--orca-border, #3a4150);
+  border-radius: 8px;
+  font-size: 10px;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-market-tag-wanted { border-color: var(--ac-game-gold); color: var(--ac-game-gold); }
+.ac-market-row-controls,
+.ac-market-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ac-market-pair .ac-market-field { flex: 1 1 140px; min-width: 0; }
+.ac-market-stepper { display: flex; align-items: center; gap: 3px; }
+.ac-market-step { min-width: 28px; padding: 0; }
+.ac-market-amount { flex: 0 0 84px; width: 84px; text-align: right; }
+.ac-market-go { margin-left: auto; }
+.ac-market-result { min-height: 1.4em; margin: 0; font-size: 12px; font-weight: 600; }
+.ac-market-offer-head { display: flex; align-items: center; gap: 8px; }
+.ac-market-offer-facts { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ac-market-offer-name { font-size: 12px; }
+.ac-market-offer-price { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
