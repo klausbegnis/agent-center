@@ -20,6 +20,7 @@ import {
   printTable,
   sumOf
 } from './game-balance.mjs'
+import { legendaryGain } from './legendary-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
 const content = {
@@ -27,9 +28,13 @@ const content = {
   items: readJson('../game/items.json'),
   races: readJson('../game/races.json'),
   bosses: readJson('../game/bosses.json'),
-  cities: readJson('../game/cities.json')
+  cities: readJson('../game/cities.json'),
+  legendary: readJson('../game/legendary.json')
 }
 const engine = createEngine({ content })
+/** The same content without legendary loot: the fixed parties of the balance check are measured on it. */
+const { legendary: _legendary, ...plainContent } = content
+const plainEngine = createEngine({ content: plainContent })
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -79,6 +84,17 @@ const WORKING_TOKENS_PER_MINUTE = 25_000
 const MAX_WORK_SHARE = 0.85
 
 const isWorkday = (day) => day % 7 < 5
+const legendaryKind = (id) => content.legendary.legendary.find((entry) => entry.id === id)?.kind
+/** What a room owns of legendary loot: relics, boss-owned items, and all of it. */
+const legendaryCounts = (project) => {
+  const relics = project.legendary?.relics ?? []
+  const equipment = project.chest.filter((item) => item.legendary).length
+  return {
+    relics: relics.length,
+    bossItems: relics.filter((id) => legendaryKind(id) === 'boss-relic').length + equipment,
+    total: relics.length + equipment
+  }
+}
 const materialTotal = (materials) => sumOf(Object.values(materials ?? {}))
 const workIntervals = (day) =>
   WORK_BLOCKS.map(([start, end]) => [day * DAY + start * HOUR, day * DAY + end * HOUR])
@@ -241,6 +257,16 @@ function upgradeLevels(save) {
   return items + sumOf(Object.values(world.upgrades))
 }
 
+/** The day each room first owned a relic and a boss-owned item. */
+function trackLegendary(run, day) {
+  for (const [projectId, project] of Object.entries(run.save.worlds.main?.projects ?? {})) {
+    const counts = legendaryCounts(project)
+    const firsts = (run.legendaryFirsts[projectId] ??= { relic: null, bossItem: null })
+    if (counts.relics > 0 && firsts.relic === null) firsts.relic = day + 1
+    if (counts.bossItems > 0 && firsts.bossItem === null) firsts.bossItem = day + 1
+  }
+}
+
 /** Days at which the most used work skill reached the milestones. */
 function trackMilestones(run, day) {
   const skills = run.save.worlds.main?.skills ?? {}
@@ -283,7 +309,8 @@ function snapshot(run, day) {
     gear: meanOf(weapons.map(effectiveGearLevel)) ?? 0,
     referenceGear: referenceGearLevel(level),
     gatherShare: income > 0 ? run.period.gathered / income : 0,
-    shares: sharesOf(world, projects, level)
+    shares: sharesOf(world, projects, level),
+    legendary: projects.map((project) => legendaryCounts(project).total)
   }
 }
 
@@ -309,6 +336,7 @@ function simulate(scenario, { trades = false } = {}) {
     serial: scenario.concurrent,
     period: newPeriod(),
     milestones: {},
+    legendaryFirsts: {},
     firstPrestige: null,
     daysWithoutKill: 0,
     rows: [],
@@ -319,6 +347,7 @@ function simulate(scenario, { trades = false } = {}) {
     if (isWorkday(day)) playWorkday(run, day)
     else advanceAndCount(run, day * DAY, (day + 1) * DAY, idleReadings(run))
     trackMilestones(run, day)
+    trackLegendary(run, day)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -357,6 +386,14 @@ function printScenario(run) {
   const milestone = (level) => run.milestones[level] ?? '-'
   console.log(`\nMost used skill: 10 on day ${milestone(10)}, 30 on day ${milestone(30)}, ` +
     `60 on day ${milestone(60)}, first prestige on day ${run.firstPrestige ?? `> ${DAYS}`}.`)
+  const owned = (day) => run.rows.find((row) => row.day === day)?.legendary.join('/') ?? '-'
+  const firsts = Object.keys(run.legendaryFirsts).sort().map((projectId) => {
+    const { relic, bossItem } = run.legendaryFirsts[projectId]
+    return `${projectId} day ${relic ?? '-'} / ${bossItem ?? '-'}`
+  })
+  console.log(`Legendary items owned per room: ${owned(30)} at day 30, ${owned(90)} at day 90, ` +
+    `${owned(365)} at day 365 (of ${content.legendary.legendary.length}). First relic / boss-owned item: ` +
+    `${firsts.join(', ')}.`)
 }
 
 /** The same scenarios with and without a visit to the market every working day. */
@@ -383,7 +420,8 @@ function printMarketComparison(plainRuns, tradingRuns) {
 const started = Date.now()
 const runs = SCENARIOS.map((scenario) => simulate(scenario))
 for (const run of runs) printScenario(run)
-printBalanceCheck(runs, engine, tokensPerWorkingHour)
+const legendary = { measure: (level) => legendaryGain({ plain: plainEngine, loaded: engine, content }, level) }
+printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary)
 printMarketComparison(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true })))
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)

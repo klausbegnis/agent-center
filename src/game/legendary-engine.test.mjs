@@ -52,7 +52,7 @@ test('the Moonwane Scepter\'s holder trains arcana faster, and only arcana', () 
   assert.ok(arcanaXp(held) > arcanaXp(plain))
 })
 
-test('the Millwind Vane keeps idle characters gathering an hour past the usual stop', () => {
+test('the Millwind Vane keeps idle characters gathering a while past the usual stop', () => {
   const start = tokensFor(emptySave(), {})
   const idle = [{ projectId: ROOM, sessionId: 'first', state: 'idle' }]
   const window = { from: GATHER_STOPS_AFTER_HOURS * HOUR, to: (GATHER_STOPS_AFTER_HOURS + 1) * HOUR, sessions: idle }

@@ -111,7 +111,7 @@ test('the party bonuses read stamina, rest, kills, affixes, thorns and drops fro
   assert.equal(partyBonuses([effectOf('unquenched-candle')], []).restTicks, (REST_SECONDS - 10) / TICK_SECONDS)
   close(partyBonuses([effectOf('velvet-thirst-chalice')], []).staminaPerKill, 0.04)
   close(partyBonuses([effectOf('silk-widows-spindle')], []).affixWeakening, 0.2)
-  close(partyBonuses([effectOf('bramble-queens-rose')], []).thorns, 0.05)
+  close(partyBonuses([effectOf('bramble-queens-rose')], []).thorns, effectOf('bramble-queens-rose').amount)
   close(partyBonuses([effectOf('pilfered-lantern')], []).itemDrop, 0.15)
 })
 
@@ -128,7 +128,7 @@ test('kill materials grow by the share for the materials the relic names, or for
 })
 
 test('gathering gets extra hours, more units of the named material and more experience', () => {
-  assert.equal(gatherBonuses([effectOf('millwind-vane')], [], 'ore').extraHours, 1)
+  assert.equal(gatherBonuses([effectOf('millwind-vane')], [], 'ore').extraHours, effectOf('millwind-vane').amount)
   close(gatherBonuses([effectOf('sheaf-of-the-long-summer')], [], 'fish').yieldFactor, 1.06)
   close(gatherBonuses([effectOf('sheaf-of-the-long-summer')], [], 'ore').yieldFactor, 1)
   close(gatherBonuses([effectOf('golden-hive-comb')], [effectOf('gravewake-mattock')], 'ore').yieldFactor, 1.15)

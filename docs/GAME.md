@@ -7,9 +7,10 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items, races, bosses, cities } })` takes the parsed
-`game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json` and
-`game/cities.json` and returns
+`createEngine({ content: { monsters, items, races, bosses, cities, legendary } })` takes the parsed
+`game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json`,
+`game/cities.json` and `game/legendary.json` (optional: without it there is no legendary loot) and
+returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -28,6 +29,7 @@ milliseconds the caller passes.
 | `equipItem(save, { projectId, sessionId, slot, itemId })` | Sets what a living character holds in a slot: an item of the room's chest, `null` for nothing, or `'auto'` (see "Choosing equipment"); unchanged when the choice is refused or changes nothing. `equipProblem(project, { sessionId, slot, itemId })` says why a choice is refused, or null. |
 | `bestGearForRoom(save, { projectId })` | Re-runs the automatic pick for every slot of a room nobody pinned; unchanged when nothing would change. |
 | `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
+| `setActiveRelic(save, { projectId, relicId })` | Makes one of a room's relics the active one, or none with null; unchanged when the room does not own it. See "Legendary loot". |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
@@ -336,6 +338,95 @@ comes back from retirement, and when a person asks for it. A person can also cho
   touch free items), so a pin never points at a missing item; the save check refuses one that
   does.
 
+## Legendary loot
+
+Three kinds, in `game/legendary.json` (checked by `src/game/legendary-content.mjs`), each with a
+name, a flavour line, a colour and a picture in `ui/art/legendary/`:
+
+- **Relics** (`relic`, ten): a room owns any number and has one **active**; only the active one
+  acts, on the whole party. Each names the city that will sell it (`city`, an id). They drop from
+  bosses; `relicsCityCanOffer(index, { cityId, ownedIds })` is the pure function a city's market
+  stall calls for what it can offer a room (that city's relics the room does not own; boss relics
+  are never sold).
+- **Boss relics** (`boss-relic`, twelve): relics too, but each is the signature of one named boss
+  of `game/bosses.json` (`boss`, its id), drops only from that boss and is never sold.
+- **Legendary equipment** (`equipment`, twelve): a weapon, outfit or tool dropped only by its boss,
+  made for a class (`class`) or, for a tool, a trade (`trade`), with a recipe. It lives in the
+  chest like other gear (`legendary: true` on the item, its id its entry's id), is upgraded the
+  same way, goes back to the chest on retirement and moves with a chest left behind. It is never
+  salvaged or capped away, and a room never holds two of one.
+
+### Effects
+
+A buff is data: `{ effect, scope, amount, ...qualifiers }`, one of a closed set of types the
+engine interprets (`src/game/legendary-effects.mjs`). A relic's scope is `party`; equipment's is
+`holder`: it acts on the living character holding it, or, for a party quantity, on its party while
+that character fights. The UI words the text from the same data (`ui/engine/legendary-labels.js`),
+and a test checks every shipped item's text against its effect.
+
+| Type | Scopes | What it changes |
+|---|---|---|
+| `attackSpeed` | party, holder | hits × (1 + a), after Engineering's limits |
+| `damage` | party, holder | hits × (1 + a); `damageType` limits it to one type, `ranks` to monsters of those ranks |
+| `critChance` | holder | the crit chance + a, under `CRIT_MAX` |
+| `critDamage` | party | `CRIT_DAMAGE` × (1 + a) |
+| `staminaDrain` | party, holder | each monster strike × (1 − a) |
+| `staminaPool` | party | the stamina pool × (1 + a) |
+| `outfitStamina` | holder | the holder's outfit factor × (1 + a) in the pool's mean |
+| `restTime` | party | a rest is a seconds shorter (in whole ticks) |
+| `staminaPerKill` | party | + a of the pool after each kill, after the campfire |
+| `healing` | holder | the holder's medicine × (1 + a) for healing |
+| `supportAura` | holder | the aura the holder gives × (1 + a); a member gets the strongest |
+| `affixWeakening` | party | each affix's addition × (1 − a): swift's and enraged's attack, thorny's and regenerating's shares, and a resistance's missing damage brought a of the way back |
+| `thorns` | party | each strike takes a × (stamina drained ÷ pool) of the monster's max health |
+| `runeCircle` | party | the rune circle's cut × (1 + a) |
+| `itemDrop` | party | the item drop chance × (1 + a), same cap |
+| `killMaterials` | party | a kill's materials × (1 + a), only `materials` when listed |
+| `gatherYield` | party, holder | units gathered × (1 + a), only `materials` when listed |
+| `gatherHours` | party | gathering stops a hours later after the last tokens |
+| `gatherXp` | party | gathering skill experience × (1 + a) |
+| `characterXp` | party | the room's characters' experience from tokens × (1 + a) |
+| `skillXp` | holder | the holder's tokens give the named work skill × (1 + a) |
+| `upgradeCost` | party | the room's item upgrades cost × (1 − a), after the workbench |
+
+Stacking: effects of different sources (the active relic and the equipment held) add, and each
+type's sum is capped by `LEGENDARY_EFFECT_CAPS` (`restTime` in seconds, `gatherHours` in hours).
+Only one relic is active, a room holds one of each item, and today no target reaches a cap.
+
+### Who holds equipment
+
+A new character takes, for each slot, the best free legendary item made for it (its class, or for
+a tool its trade) over the plain item it would have taken, unless that one is more than
+`LEGENDARY_PICK_MARGIN` (2) upgrade levels ahead. It never takes one made for someone else.
+
+### Drops
+
+Only a boss wave's boss (rank `boss` or `legendary`) rolls, by hash of the kill's seed (the one
+its item drop uses), so the same room, wave and kill always drop the same thing:
+
+1. A pool relic the room does not own: chance `RELIC_CHANCE[rank]` (boss 8%, legendary 50%) plus
+   `RELIC_PITY_STEP` (8%) for each such kill since the room's last pool relic. A room that owns no
+   relic at all gets one for certain. Picked by hash among the missing ones; none once it owns all.
+2. For a boss of the roster whose own item the room lacks: chance `BOSS_ITEM_CHANCE[rank]` (boss 5%,
+   legendary 15%) plus `BOSS_ITEM_PITY_STEP` (5%) for each kill of such a boss without it. A
+   room's first boss-owned item is certain. A boss comes back only after the whole roster (550
+   waves), so pity counts kills of any boss with an item, not of the same one.
+
+Equipment drops at the reference gear of the boss's level (the drop tier, with the upgrade levels
+that tier lacks). The first relic a room obtains becomes active. A kill event carries
+`legendary: [{ id, kind }]` when something dropped.
+
+### In the save
+
+A room keeps `legendary: { relics, active, relicPity, bossPity }` (relics in the order obtained)
+only when it has something to keep, so a save from before loads unchanged. `migrate` repairs it;
+`cleanSave` refuses a relic the content does not have, one owned twice, an active relic not owned,
+pity out of range, a legendary item that is not content equipment made as its entry, a second
+copy, and a plain item that uses a legendary id. Moving a chest left behind adds its relics after
+the target's (the target keeps its active relic, or takes the source's when it had none, and its
+own pity) and keeps the better of two copies of an item, salvaging the other, unless the target's
+is held. A world reset forgets them with the room.
+
 ## Scenes
 
 A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
@@ -375,6 +466,8 @@ before any comes again. Adding or removing a theme reshuffles the order.
   falling back to the generic ones. The room's theme is the last `themeId` a reading gave. The
   entry gives the monster its loot table, whatever it looks like.
 - `game/cities.json` describes the market's cities (see "Market").
+- `game/legendary.json` is the legendary loot (see "Legendary loot"); its buffs are data the
+  engine interprets, with amounts bounded by `LEGENDARY_EFFECT_CAPS`.
 - `game/races.json` describes 20 races of generated monsters, `game/bosses.json` the fixed
   roster of named bosses. Both are looks and names only: health, attack, reward and loot never
   depend on them, and `npm run simulate` gives the same result with or without them. They are
@@ -572,11 +665,12 @@ Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number }
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
-            retirees: Retiree[], retiredCount }
+            retirees: Retiree[], retiredCount, legendary? }
+Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
             pinned? }
-Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
+Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy, legendary?: true }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
 ```
@@ -828,6 +922,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.buyUpgrade` | `/api/game/buy-upgrade` | `{ worldId, upgradeId }` |
 | `game.assignRoom` | `/api/game/assign-room` | `{ roomId, worldId }`, `worldId` null for out of the game |
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
+| `game.setActiveRelic` | `/api/game/active-relic` | `{ roomId, relicId }`, `relicId` null for none; a relic the room owns |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
 | `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, or null to follow the room |
@@ -936,6 +1031,8 @@ by the usual closing rules.
       stamina: 0.8,                 // share of the party's pool
       tradeChoice: null,            // what characters without their own choice gather; null: Auto
       chest: [{ id, name, slot, damageType, tier, level, power, heldBy, upgradeCost, affordable }],
+                                    // a legendary item adds legendary: true and entryId
+      relics: { owned: ['tidecall-conch', 'rimeheart'], active: 'rimeheart' },
       chestSize: 6,
       retirees: [{ nameId, class, level, mainSkill, retiredAt, title }],
       retiredCount: 9, bonus: 0.045
@@ -950,6 +1047,9 @@ by the usual closing rules.
     'pane-5': { sessionId: null, link: 'guest', guest: true, level: 1 }
   },
   recent: [{ id: 570, at, type: 'level', roomId, sessionId, agentId, level: 9 }],
+  legendary: { relicCount: 22, equipmentCount: 12,
+    entries: { rimeheart: { id, name, kind, effect, flavour, colour, boss?: { id, name }, city?,
+      slot?, damageType?, class?, trade? } } },   // only the entries the state refers to
   debug: { tokenSource, readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
 }
 ```
@@ -990,7 +1090,8 @@ by the usual closing rules.
   machine's agent while the game reads real totals).
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
   kind, rank, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
-  `drop` (item, with its `name` and `tier`), `level` (agentId, level), `retire` (sessionId,
+  `drop` (item, with its `name` and `tier`), `legendary` (item, `kind`, `name`: a legendary
+  drop, which a UI celebrates), `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
   purchase's level is worked back from the level now and the purchases of the same thing kept
@@ -1049,7 +1150,7 @@ supporter rests more, one missing a damage type is twice as slow against the mat
 resistance; a meaningful upgrade every one to two working days; gathering 15 to 30% of
 materials.
 
-What the simulator measures now:
+What the simulator measures now, legendary loot included:
 
 | | light | medium | heavy |
 |---|---|---|---|
@@ -1161,3 +1262,30 @@ In a year the trader makes 400 to 800 trades, buys 0 to 2 stall pieces and sells
   demo's world at level 16 they cost 54 k to 83 k coins, two to three times its whole stock of
   materials at base value, so the light player, who has little surplus, seldom affords one,
   while medium and heavy could buy one every day or two and mostly do not need to.
+
+### Legendary loot
+
+`npm run simulate` plays with legendary loot (the active relic is the first obtained, as by
+default) and prints, per scenario, what each room owns at day 30, 90 and 365 and the day of its
+first relic and first boss-owned item. Its balance check adds one target per level: a trained
+party of four with the strongest legendary equipment for each class and the best relic for a fight
+kills at most about 15% more in a day than without any.
+
+| | light | medium | heavy |
+|---|---|---|---|
+| Legendary items owned per room at day 30, 90, 365 (of 34) | 3, 3, 4 | 3, 3 to 4, 7 to 9 | 2 to 5, 8 to 10, 16 to 19 |
+| First relic, first boss-owned item | day 8, day 8 | day 1, day 1 to 12 | day 1, day 1 to 46 |
+
+| Level | Kills a day without, with the set and best relic | Gain | Best relic |
+|---|---|---|---|
+| 10 | 244, 267 | +9% | Ember Prince's Grasp |
+| 60 | 237, 267 | +13% | Bramble Queen's Rose |
+| 150 | 409, 450 | +10% | Ember Prince's Grasp |
+
+Equipment alone adds 6 to 8%. A light user meets a boss every few weeks (five in a year), which
+is why a room's first relic and first boss-owned item are certain: the light room sees both at its
+first boss, on day 8. Its first boss has an item of its own only when that boss is one of the 24
+that do (44%); otherwise its first boss-owned item waits for the next boss with one. Collections
+stay long-term goals: a light room owns 4 of 34 after a year, a heavy one about half. The Millwind
+Vane gives 15 minutes, not hours: the light scenario's gathering share sits at the 30% top of its
+target, and every quarter of an hour of gathering moves it by about half a point.

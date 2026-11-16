@@ -99,6 +99,10 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Worlds keep things apart.** Progress belongs to a world, a group of rooms you choose. Put
   work and side projects in different worlds, or leave a room out of the game altogether.
 - **No level cap.** At level 99 a skill can be prestiged for a star and started again, stronger.
+- **Legendary loot.** Bosses leave relics that help a room's whole party (one is active at a
+  time; pick it on the Chest tab), and some named bosses guard a relic or a legendary weapon,
+  outfit or tool of their own, with a buff for the character that holds it. A room's first boss
+  always leaves a relic. They are a bonus on top: a full set adds well under a fifth to a party.
 
 ### The bestiary
 

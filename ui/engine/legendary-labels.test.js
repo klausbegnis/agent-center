@@ -2,14 +2,16 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { EFFECT_TYPES } from '../../src/game/legendary-content.mjs'
-import { effectText, listText, madeForText, sourceText, WORDED_EFFECTS } from './legendary-labels.js'
+import { effectText, hoursText, listText, madeForText, sourceText, WORDED_EFFECTS } from './legendary-labels.js'
 
 const shipped = JSON.parse(readFileSync(new URL('../../game/legendary.json', import.meta.url), 'utf8')).legendary
 
 /** The amount as the text must show it: a share as a percentage, seconds and hours as they are. */
-const shownAmount = (effect) => (['restTime', 'gatherHours'].includes(effect.effect)
-  ? `${effect.amount} ${effect.effect === 'restTime' ? 's' : 'h'}`
-  : `${Math.round(effect.amount * 1000) / 10}%`)
+function shownAmount(effect) {
+  if (effect.effect === 'restTime') return `${effect.amount} s`
+  if (effect.effect === 'gatherHours') return hoursText(effect.amount)
+  return `${Math.round(effect.amount * 1000) / 10}%`
+}
 
 test('every effect type the engine knows has words for each scope it acts in', () => {
   assert.deepEqual(Object.keys(WORDED_EFFECTS).sort(), Object.keys(EFFECT_TYPES).sort())
@@ -39,6 +41,11 @@ test('a relic\'s text speaks of the party and equipment\'s of who holds it', () 
   assert.equal(effectText({ effect: 'damage', scope: 'party', amount: 0.06, ranks: ['boss', 'legendary'] }),
     '+6% damage against bosses and legendary bosses')
   assert.equal(effectText({ effect: 'teleport', scope: 'party', amount: 1 }), '')
+})
+
+test('hours under one read as minutes', () => {
+  assert.equal(hoursText(0.25), '15 min')
+  assert.equal(hoursText(2), '2 h')
 })
 
 test('lists read as a sentence', () => {

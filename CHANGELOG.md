@@ -52,6 +52,13 @@ All notable changes to this project are recorded here. The format follows
   `/api/game/character-trade` and `/api/game/room-trade` (panel requests `game.characterTrade`
   and `game.roomTrade`) answer this computer only; a page that only watches shows the trades
   without the pickers.
+- Game mode: legendary loot. 34 items with their own pixel art: ten relics, twelve relics owned
+  by a named boss, and twelve pieces of legendary equipment. A room owns relics and makes one
+  active for its whole party (the Chest tab's Relics card, or `/api/game/active-relic`);
+  legendary equipment sits in the chest and helps the character that holds it. Bosses drop them
+  by hash like every other drop, a room's first relic and first boss-owned item are certain, and
+  bad luck is bounded by pity. Every buff is data in `game/legendary.json` and its text is
+  derived from it. Saves from before load unchanged; exported saves carry the loot.
 
 ## 0.2.0 - 2026-11-16
 

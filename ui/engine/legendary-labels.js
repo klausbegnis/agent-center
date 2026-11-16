@@ -4,6 +4,8 @@
 import { CLASS_LABEL, SKILL_LABEL } from './labels.js'
 
 const percent = (amount) => `${Math.round(amount * 1000) / 10}%`
+/** Hours as a person says them: "15 min" under an hour, "2 h" from one. */
+export const hoursText = (hours) => (hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} h`)
 
 /** "ore", "crops and fish", "logs, hides and runes". */
 export function listText(words) {
@@ -71,7 +73,7 @@ const EFFECT_TEXT = {
       ? `+${percent(effect.amount)} ${materialsText(effect.materials)} while the ${who} ${GATHER_VERB[effect.materials[0]] ?? 'gathers'}`
       : `+${percent(effect.amount)} to what the ${who} gathers`)
   },
-  gatherHours: { party: (effect) => `Idle characters keep gathering ${effect.amount} h longer after the last tokens` },
+  gatherHours: { party: (effect) => `Idle characters keep gathering ${hoursText(effect.amount)} longer after the last tokens` },
   gatherXp: { party: (effect) => `+${percent(effect.amount)} experience to gathering skills` },
   characterXp: { party: (effect) => `+${percent(effect.amount)} experience for every character in the room` },
   skillXp: {
