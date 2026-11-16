@@ -23,6 +23,7 @@ const transport = {
   buyGroupUpgrade: (worldId, upgradeId) => orca.plugin.request('game.buyUpgrade', { worldId, upgradeId }),
   moveRoomToWorld: (roomId, worldId) => orca.plugin.request('game.assignRoom', { roomId, worldId }),
   resetWorld: (worldId) => orca.plugin.request('game.resetWorld', { worldId }),
+  setActiveRelic: (roomId, relicId) => orca.plugin.request('game.setActiveRelic', { roomId, relicId }),
   setAutoSpend: (on) => orca.plugin.request('game.autoSpend', { on }),
   setTravel: (on) => orca.plugin.request('game.travel', { on }),
   setCharacterTrade: (roomId, sessionId, trade) =>

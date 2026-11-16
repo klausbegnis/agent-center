@@ -92,3 +92,15 @@ test('a world reset forgets the rooms\' legendary loot with the rest', () => {
   const after = engine.applyTokens(reset, { projectId: 'room', sessionId: 's', tokens: 100_000, activity: 'write', now: 1 })
   assert.equal(after.worlds.main.projects.room.legendary, undefined)
 })
+
+test('only a relic the room owns can be made active, and null puts them away', () => {
+  const engine = createEngine({ content })
+  let save = engine.applyTokens(emptySave(), { projectId: 'room', sessionId: 's', tokens: 100_000, activity: 'write', now: 0 })
+  save.worlds.main.projects.room.legendary = state(['rimeheart', 'jawbone-lyre'])
+  const lyre = engine.setActiveRelic(save, { projectId: 'room', relicId: 'jawbone-lyre' })
+  assert.equal(lyre.worlds.main.projects.room.legendary.active, 'jawbone-lyre')
+  assert.equal(engine.setActiveRelic(save, { projectId: 'room', relicId: 'tidecall-conch' }), save)
+  assert.equal(engine.setActiveRelic(save, { projectId: 'room', relicId: 'rimeheart' }), save)
+  assert.equal(engine.setActiveRelic(save, { projectId: 'room', relicId: null }).worlds.main.projects.room.legendary.active, null)
+  assert.equal(engine.setActiveRelic(save, { projectId: 'nowhere', relicId: null }), save)
+})

@@ -226,7 +226,7 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
 
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-  'sell', 'trade', 'buy-offer', 'equip', 'best-gear']
+  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic']
 
 const gameState = {
   rooms: [],

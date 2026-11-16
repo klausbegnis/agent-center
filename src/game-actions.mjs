@@ -6,6 +6,7 @@ import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
 import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
+import { legendaryOf } from './game/legendary.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
@@ -135,6 +136,21 @@ export function createGameActions(dependencies) {
         }
         if (worldIdOf(save, roomId) === worldId) return save
         return assignProject(save, roomId, worldId)
+      })
+    },
+
+    /**
+     * Makes one of a room's relics the active one, or none with null. Only a relic the room owns.
+     *
+     * @param {{ roomId: string, relicId: string | null }} input
+     */
+    async setActiveRelic({ roomId, relicId }) {
+      return change((save) => {
+        const worldId = typeof roomId === 'string' ? worldIdOf(save, roomId) : null
+        const project = worldId === null ? null : save.worlds[worldId]?.projects[roomId]
+        if (!project) throw refuse('unknown room', roomId)
+        if (relicId !== null && !legendaryOf(project).relics.includes(relicId)) throw refuse('not a relic the room owns', relicId)
+        return engine.setActiveRelic(save, { projectId: roomId, relicId })
       })
     },
 

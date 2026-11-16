@@ -181,6 +181,7 @@ const ACTION_NAMES = {
   buyGroupUpgrade: 'The purchase',
   moveRoomToWorld: 'Moving the room',
   resetWorld: 'The reset',
+  setActiveRelic: 'Changing the active relic',
   setAutoSpend: 'Changing auto-spend',
   setTravel: 'Changing the scene setting',
   setKeepTitles: 'Changing the titles setting',

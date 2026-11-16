@@ -204,6 +204,9 @@ export function createGameMode(dependencies) {
       const { type, projectId, worldId, ...details } = kill
       events.push({ type: 'kill', roomId: projectId, worldId, ...details })
       if (kill.item) events.push({ type: 'drop', roomId: projectId, worldId, item: kill.item })
+      for (const drop of kill.legendary ?? []) {
+        events.push({ type: 'legendary', roomId: projectId, worldId, item: drop.id, kind: drop.kind })
+      }
     }
     return { save: moved.save, events }
   }
@@ -438,6 +441,7 @@ export function createUnavailableGame(status) {
     buyGroupUpgrade: refuse,
     assignRoom: refuse,
     resetWorld: refuse,
+    setActiveRelic: refuse,
     setAutoSpend: refuse,
     setTravel: refuse,
     setCharacterTrade: refuse,

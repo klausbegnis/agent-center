@@ -5,6 +5,8 @@ import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
+import { legendaryView } from './legendary-view.mjs'
+import { legendaryOf } from './legendary.mjs'
 import { marketView } from './market-view.mjs'
 import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
@@ -42,6 +44,8 @@ function groupEffect(upgradeId, level) {
 function itemView(item, names, { workbenchLevel, level, materials, relicDiscount = 0 }) {
   const cost = upgradeCost(item, { workbenchLevel, worldLevel: level, relicDiscount })
   return {
+    // Legendary equipment: its entry names its art, buff and flavour line (legendaryView).
+    ...(item.legendary ? { legendary: true, entryId: item.entryId } : {}),
     id: item.id,
     name: names.get(item.entryId ?? item.id) ?? item.id,
     slot: item.slot,
@@ -121,7 +125,8 @@ function projectView(projectId, project, world, names, index) {
     chest: project.chest.map((item) => itemView(item, names, prices)),
     retirees: project.retirees.map((retiree) => ({ ...retiree, attributes: { ...retiree.attributes } })),
     retiredCount: project.retiredCount,
-    retireeBonus: retireeBonus(project)
+    retireeBonus: retireeBonus(project),
+    relics: { owned: [...legendaryOf(project).relics], active: legendaryOf(project).active }
   }
 }
 
@@ -153,8 +158,9 @@ function worldView(worldId, world, names, content, index) {
  * @param {{ items: { items: object[] }, cities?: { cities: object[] } }} content for item names,
  *   the market's cities and the stalls' gear
  * @returns {{ worlds: object[], projectWorld: Record<string, string | null>, keepTitles: boolean,
- *   tickSeconds: number, itemEntries: Record<string, { name: string, tier: number }> }} `itemEntries`
- *   names the content's items by entry id, for telling what a drop was
+ *   tickSeconds: number, itemEntries: Record<string, { name: string, tier: number }>,
+ *   legendary: object | null }} `itemEntries` names the content's items by entry id, for telling
+ *   what a drop was; `legendary` describes the content's legendary loot (legendary-view.mjs)
  */
 export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
@@ -166,6 +172,7 @@ export function viewOf(save, content) {
     keepTitles: save.settings.keepTitles,
     tickSeconds: TICK_SECONDS,
     itemEntries: Object.fromEntries(content.items.items
-      .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }]))
+      .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }])),
+    legendary: legendaryView(index, content.bosses)
   }
 }

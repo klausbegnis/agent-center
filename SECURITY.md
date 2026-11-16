@@ -107,6 +107,7 @@ otherwise.
   | `/api/game/buy-upgrade` | spends materials on a group upgrade |
   | `/api/game/assign-room` | moves a room to another world, a new one, or out of the game |
   | `/api/game/reset-world` | starts a world over (cannot be undone) |
+  | `/api/game/active-relic` | makes one of a room's relics the active one, or none |
   | `/api/game/auto-spend` | turns auto-spend on or off |
   | `/api/game/travel` | turns "new scene after each monster" on or off |
   | `/api/game/character-trade` | sets what one character gathers while idle |

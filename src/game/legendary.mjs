@@ -124,3 +124,17 @@ export function mergeLegendary(target, source) {
   }
   return { chest, legendary: { ...own, relics, active }, salvaged }
 }
+
+/**
+ * The room with another active relic, or none with null. Only a relic the room owns can be active.
+ *
+ * @param {object} project
+ * @param {string | null} relicId
+ * @returns {object} the same project when nothing changes or the relic is not owned
+ */
+export function withActiveRelic(project, relicId) {
+  const legendary = legendaryOf(project)
+  if (legendary.active === relicId) return project
+  if (relicId !== null && !legendary.relics.includes(relicId)) return project
+  return { ...project, legendary: { ...legendary, active: relicId } }
+}

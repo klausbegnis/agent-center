@@ -5,6 +5,7 @@ import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
+import { withActiveRelic } from './legendary.mjs'
 import { buyMaterial, sellMaterial, tradeMaterial } from './market.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
 import { moveProjectItems } from './orphans.mjs'
@@ -74,6 +75,22 @@ function buyGroupUpgrade(save, { worldId, upgradeId }) {
   const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), worldLevel(world.skills))
   const next = applyPurchase(world, { kind: 'group', upgradeId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
+}
+
+/**
+ * Makes one of a room's relics the active one, or none with null. The only choice legendary loot
+ * asks of a person; unchanged when the room does not own the relic or it is active already.
+ *
+ * @param {object} save
+ * @param {{ projectId: string, relicId: string | null }} which
+ * @returns {object}
+ */
+function setActiveRelic(save, { projectId, relicId }) {
+  const worldId = worldIdOf(save, projectId)
+  const project = worldId === null ? null : save.worlds[worldId]?.projects[projectId]
+  if (!project) return save
+  const next = withActiveRelic(project, relicId)
+  return next === project ? save : withWorld(save, worldId, (world) => ({ ...world, projects: { ...world.projects, [projectId]: next } }))
 }
 
 /**
@@ -167,6 +184,7 @@ export function createEngine({ content }) {
     prestige,
     upgradeItem: (save, which) => upgradeItem(save, which, content),
     buyGroupUpgrade,
+    setActiveRelic,
     setKeepTitles,
     setCharacterTrade,
     setRoomTrade,
