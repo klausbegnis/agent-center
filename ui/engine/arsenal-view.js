@@ -48,7 +48,7 @@ export function createArsenalView({ panel, actions, prefs }) {
 
   const views = {
     items: createChestView({ actions, onChosenChange: () => draw() }),
-    party: createPartyView(),
+    party: createPartyView({ actions }),
     camp: createCampView({ actions })
   }
   const sections = {}

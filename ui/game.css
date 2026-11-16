@@ -724,6 +724,15 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-game-hero-who { display: flex; flex-direction: column; min-width: 0; }
 .ac-game-hero-who .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-game-hero-progress { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+/* Trade pickers: the trade's icon beside a compact select, at the right of a character's head and
+   under the Characters heading for the whole room. The icon keeps its place when there is none. */
+.ac-game-trade-slot { margin-left: auto; flex: none; max-width: 55%; }
+.ac-game-trade { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.ac-game-trade-icon { flex: none; width: 16px; height: 16px; }
+.ac-game-trade .ac-select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.ac-game-room-trade { flex-wrap: wrap; margin-bottom: 4px; }
+.ac-game-room-trade .ac-game-trade { flex: 1 1 160px; }
+.ac-game-room-trade .ac-select { flex: 1; }
 .ac-game-attributes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));

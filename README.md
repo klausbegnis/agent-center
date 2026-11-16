@@ -78,7 +78,9 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   Each one makes a different part of the party stronger, and together they set the world level
   that monsters and prices follow.
 - **Idle agents gather.** A character whose agent has finished takes a trade (mining, fishing,
-  farming, woodcutting, hunting or runecraft) and brings materials home.
+  farming, woodcutting, hunting or runecraft) and brings materials home. The game picks one for
+  each character (Auto); in the Arsenal's Party section you can set what everyone in a room
+  gathers, or what one character gathers, which wins over the room's choice.
 - **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
   a new character takes the best free item of each slot by itself. Materials upgrade items and
   buy upgrades for the whole party, by hand or with auto-spend.

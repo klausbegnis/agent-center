@@ -45,3 +45,8 @@ test('a character whose agent is done names the trade it gathers, and a Mage hol
   assert.equal(card.trade, 'Gathering Fishing')
   assert.equal(card.equipment[0].iconId, 'weapon-magical')
 })
+
+test('an idle character names the trade it gathers now, a chosen one rather than the game\'s pick', () => {
+  const chosen = { ...MEMBER, state: 'idle', trade: 'runecraft', tradeChoice: 'runecraft', autoTrade: 'fishing' }
+  assert.equal(agentCharacter(stateWith(chosen), AGENT).trade, 'Gathering Runecraft')
+})
