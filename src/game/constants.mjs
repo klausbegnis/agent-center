@@ -354,3 +354,37 @@ export const STALL_OFFERS = 3
  * upgrading by hand, and worth it with surplus to sell.
  */
 export const STALL_MARKUP = 1.5
+// Legendary loot (docs/GAME.md, "Legendary loot"): relics, boss-owned relics and legendary
+// equipment. Their buffs are data in game/legendary.json; these numbers bound and drop them.
+
+/**
+ * The most each effect type can add up to for one target, whatever its sources: the active relic
+ * and the legendary equipment held. Effects of different sources add, then this caps the sum, so
+ * a future item cannot stack a quantity past what the design allows. Today's content never
+ * reaches a cap; every buff is modest so the world's skills stay the main source of power.
+ * `restTime` is in seconds and `gatherHours` in hours; every other amount is a share.
+ */
+export const LEGENDARY_EFFECT_CAPS = {
+  attackSpeed: 0.08,
+  damage: 0.12,
+  critChance: 0.05,
+  critDamage: 0.3,
+  staminaDrain: 0.1,
+  staminaPool: 0.1,
+  outfitStamina: 0.1,
+  restTime: 20,
+  staminaPerKill: 0.05,
+  healing: 0.1,
+  supportAura: 0.2,
+  affixWeakening: 0.25,
+  thorns: 0.1,
+  runeCircle: 0.15,
+  itemDrop: 0.2,
+  killMaterials: 0.1,
+  gatherYield: 0.15,
+  gatherHours: 2,
+  gatherXp: 0.1,
+  characterXp: 0.05,
+  skillXp: 0.1,
+  upgradeCost: 0.1
+}

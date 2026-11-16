@@ -1,11 +1,13 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
-// bosses.json and cities.json must exist and be valid, and game/items.json must be valid once it
-// exists. The rules are in src/game/content.mjs, content-races.mjs and content-cities.mjs.
+// bosses.json, cities.json and legendary.json must exist and be valid, and game/items.json must be
+// valid once it exists. The rules are in src/game/content.mjs, content-races.mjs,
+// content-cities.mjs and legendary-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
+import { validateLegendary } from '../src/game/legendary-content.mjs'
 
 /**
  * Reports every problem of the game's content files.
@@ -26,9 +28,20 @@ export function checkGameContent({ root, report, readJson }) {
   checkRacesAndBosses({ root, report, readJson })
   checkCities({ root, report, readJson })
   const itemsFile = path.join(root, 'game', 'items.json')
-  if (!fs.existsSync(itemsFile)) return
-  const items = readJson(itemsFile)
+  const items = fs.existsSync(itemsFile) ? readJson(itemsFile) : null
   if (items !== null) for (const problem of validateItems(items)) report(itemsFile, problem)
+  checkLegendary({ root, report, readJson, items })
+}
+
+/** game/legendary.json, its bosses checked against game/bosses.json and its ids against the items. */
+function checkLegendary({ root, report, readJson, items }) {
+  const legendaryFile = path.join(root, 'game', 'legendary.json')
+  if (!fs.existsSync(legendaryFile)) return report(legendaryFile, 'is missing; the game needs it for legendary loot')
+  const legendary = readJson(legendaryFile)
+  const bossesFile = path.join(root, 'game', 'bosses.json')
+  const bosses = fs.existsSync(bossesFile) ? readJson(bossesFile) : null
+  if (legendary === null) return
+  for (const problem of validateLegendary(legendary, { bosses, items })) report(legendaryFile, problem)
 }
 
 /** game/races.json and game/bosses.json, the bosses checked against the races. */

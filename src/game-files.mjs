@@ -6,6 +6,7 @@ import { validateCities } from './game/content-cities.mjs'
 import { validateItems, validateMonsters } from './game/content.mjs'
 import { validateBosses, validateRaces } from './game/content-races.mjs'
 import { createEngine } from './game/engine.mjs'
+import { validateLegendary } from './game/legendary-content.mjs'
 
 /**
  * @param {string} root the plugin folder
@@ -20,14 +21,16 @@ export function loadGameEngine(root, log) {
       items: readJson('items.json'),
       races: readJson('races.json'),
       bosses: readJson('bosses.json'),
-      cities: readJson('cities.json')
+      cities: readJson('cities.json'),
+      legendary: readJson('legendary.json')
     }
     const problems = [
       ...validateMonsters(content.monsters),
       ...validateItems(content.items),
       ...validateRaces(content.races),
       ...validateBosses(content.bosses, content.races),
-      ...validateCities(content.cities)
+      ...validateCities(content.cities),
+      ...validateLegendary(content.legendary, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)
