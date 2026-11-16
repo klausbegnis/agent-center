@@ -4,6 +4,7 @@
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
+import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { buyMaterial, sellMaterial, tradeMaterial } from './market.mjs'
 import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
 import { moveProjectItems } from './orphans.mjs'
@@ -45,15 +46,17 @@ function prestige(save, { worldId, skillId }) {
  *
  * @param {object} save
  * @param {{ projectId: string, itemId: string }} which
+ * @param {object} [content] the game content, for a relic that makes upgrades cheaper
  * @returns {object}
  */
-function upgradeItem(save, { projectId, itemId }) {
+function upgradeItem(save, { projectId, itemId }, content) {
   const worldId = worldIdOf(save, projectId)
   const world = worldId === null ? null : save.worlds[worldId]
   const item = world?.projects[projectId] ? findItem(world.projects[projectId].chest, itemId) : null
   if (!item) return save
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
-  const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills) })
+  const relicDiscount = upgradeDiscountOf(world.projects[projectId], legendaryIndexOf(content))
+  const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills), relicDiscount })
   const next = applyPurchase(world, { kind: item.slot, projectId, itemId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }
@@ -99,13 +102,14 @@ function setKeepTitles(save, keepTitles) {
  * Buys the best affordable upgrade again and again in every world (see spending.mjs).
  *
  * @param {object} save
+ * @param {object} [content] the game content, for relics that make upgrades cheaper
  * @returns {{ save: object, purchases: object[] }}
  */
-function autoSpendWithPurchases(save) {
+function autoSpendWithPurchases(save, content) {
   const purchases = []
   const worlds = {}
   for (const worldId of Object.keys(save.worlds).sort()) {
-    const spent = spendWorld(save.worlds[worldId])
+    const spent = spendWorld(save.worlds[worldId], legendaryIndexOf(content))
     worlds[worldId] = spent.world
     purchases.push(...spent.purchases.map((purchase) => ({ ...purchase, worldId })))
   }
@@ -161,7 +165,7 @@ export function createEngine({ content }) {
     prepareFights: (save, readings) => prepareFights(save, readings, context),
     closeSession,
     prestige,
-    upgradeItem,
+    upgradeItem: (save, which) => upgradeItem(save, which, content),
     buyGroupUpgrade,
     setKeepTitles,
     setCharacterTrade,
@@ -169,8 +173,8 @@ export function createEngine({ content }) {
     equipItem,
     bestGearForRoom,
     equipProblem,
-    autoSpend: (save) => autoSpendWithPurchases(save).save,
-    autoSpendWithPurchases,
+    autoSpend: (save) => autoSpendWithPurchases(save, content).save,
+    autoSpendWithPurchases: (save) => autoSpendWithPurchases(save, content),
     view: (save) => viewOf(save, content),
     cleanSave: (save) => cleanSave(save, { cityIds: (content.cities?.cities ?? []).map((city) => city.id) }),
     moveProjectItems,

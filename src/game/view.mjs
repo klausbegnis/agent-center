@@ -4,6 +4,7 @@ import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
+import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { marketView } from './market-view.mjs'
 import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
@@ -38,8 +39,8 @@ function groupEffect(upgradeId, level) {
   return { upgradeCostFactor: 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * level) }
 }
 
-function itemView(item, names, { workbenchLevel, level, materials }) {
-  const cost = upgradeCost(item, { workbenchLevel, worldLevel: level })
+function itemView(item, names, { workbenchLevel, level, materials, relicDiscount = 0 }) {
+  const cost = upgradeCost(item, { workbenchLevel, worldLevel: level, relicDiscount })
   return {
     id: item.id,
     name: names.get(item.entryId ?? item.id) ?? item.id,
@@ -98,11 +99,12 @@ function monsterView(monster) {
   }
 }
 
-function projectView(projectId, project, world, names) {
+function projectView(projectId, project, world, names, index) {
   const prices = {
     workbenchLevel: groupLevel(world.upgrades, 'workbench'),
     level: worldLevel(world.skills),
-    materials: world.materials
+    materials: world.materials,
+    relicDiscount: upgradeDiscountOf(project, index)
   }
   return {
     id: projectId,
@@ -123,7 +125,7 @@ function projectView(projectId, project, world, names) {
   }
 }
 
-function worldView(worldId, world, names, content) {
+function worldView(worldId, world, names, content, index) {
   return {
     id: worldId,
     level: worldLevel(world.skills),
@@ -138,7 +140,7 @@ function worldView(worldId, world, names, content) {
       return { id: upgradeId, level, cost, affordable, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()
-      .map((projectId) => projectView(projectId, world.projects[projectId], world, names)),
+      .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index)),
     coins: world.coins ?? 0,
     market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items })
   }
@@ -156,8 +158,10 @@ function worldView(worldId, world, names, content) {
  */
 export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
+  const index = legendaryIndexOf(content)
+  for (const [id, entry] of index?.byId ?? []) names.set(id, entry.name)
   return {
-    worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names, content)),
+    worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names, content, index)),
     projectWorld: { ...save.projectWorld },
     keepTitles: save.settings.keepTitles,
     tickSeconds: TICK_SECONDS,

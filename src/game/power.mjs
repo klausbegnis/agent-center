@@ -93,12 +93,16 @@ export function engineeringSpeed(skills) {
 
 /**
  * @param {{ character: Character, skills: { [skillId: string]: Skill }, weaponFactor?: number,
- *   tokensPerMinute: number, speed?: number }} options `weaponFactor` is the weapon's upgrade and
- *   tier factor; `speed` the party's attack speed (`engineeringSpeed` of a real world, 1 for the
- *   reference party)
+ *   tokensPerMinute: number, speed?: number, critBonus?: number, critDamageBonus?: number }} options
+ *   `weaponFactor` is the weapon's upgrade and tier factor; `speed` the party's attack speed
+ *   (`engineeringSpeed` of a real world, 1 for the reference party); `critBonus` adds to the
+ *   critical chance (under CRIT_MAX) and `critDamageBonus` is a share more critical damage, both
+ *   from legendary loot
  * @returns {Hit}
  */
-export function characterHit({ character, skills, weaponFactor = 1, tokensPerMinute, speed = 1 }) {
+export function characterHit({
+  character, skills, weaponFactor = 1, tokensPerMinute, speed = 1, critBonus = 0, critDamageBonus = 0
+}) {
   const className = character.class
   const { attributes } = character
   const amount =
@@ -110,7 +114,8 @@ export function characterHit({ character, skills, weaponFactor = 1, tokensPerMin
     seasoning(character.level) *
     CLASS_HIT[className] *
     pace(tokensPerMinute) *
-    (1 + critChance(attributes.precision ?? 0) * (CRIT_DAMAGE - 1)) *
+    (1 + Math.min(CRIT_MAX, critChance(attributes.precision ?? 0) + critBonus) *
+      (CRIT_DAMAGE * (1 + critDamageBonus) - 1)) *
     (1 + HASTE_PER_AGILITY * (attributes.agility ?? 0)) *
     speed
   return { amount, type: className === 'magical' ? 'magical' : 'physical' }
@@ -118,18 +123,21 @@ export function characterHit({ character, skills, weaponFactor = 1, tokensPerMin
 
 /**
  * Sums a party's hits. A member gets the support aura when another member is a support (one
- * aura at most), and everyone gets the full party bonus when enough distinct classes fight.
+ * aura at most, the strongest), and everyone gets the full party bonus when enough distinct
+ * classes fight.
  *
- * @param {{ class: string, amount: number, type: 'physical' | 'magical' }[]} members
+ * @param {{ class: string, amount: number, type: 'physical' | 'magical', auraFactor?: number }[]} members
+ *   `auraFactor` makes the aura a support gives stronger (legendary loot); 1 when left out
  * @returns {PartyHits}
  */
 export function partyHits(members) {
-  const supports = members.filter((member) => member.class === 'support').length
   const isFullParty = new Set(members.map((member) => member.class)).size >= FULL_PARTY_CLASSES
   const totals = { physical: 0, magical: 0 }
   for (const member of members) {
-    const othersSupport = supports - (member.class === 'support' ? 1 : 0) > 0
-    const bonus = 1 + (othersSupport ? SUPPORT_AURA : 0) + (isFullParty ? FULL_PARTY_BONUS : 0)
+    const auras = members.filter((other) => other !== member && other.class === 'support')
+      .map((other) => SUPPORT_AURA * (other.auraFactor ?? 1))
+    const aura = auras.length ? Math.max(...auras) : 0
+    const bonus = 1 + aura + (isFullParty ? FULL_PARTY_BONUS : 0)
     totals[member.type] += member.amount * bonus
   }
   return { ...totals, total: totals.physical + totals.magical }

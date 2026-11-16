@@ -5,6 +5,16 @@ import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
+import {
+  heldEffects,
+  legendaryIndexOf,
+  memberBonuses,
+  partyBonuses,
+  rankedDamageRanks,
+  relicEffects,
+  runeCircleFactorOf,
+  withKillMaterials
+} from './legendary-effects.mjs'
 import { killsToPass, monsterFor, rankOf } from './monsters.mjs'
 import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
 import { inScene } from './scenes.mjs'
@@ -17,39 +27,66 @@ const REST_TICKS = Math.ceil(REST_SECONDS / TICK_SECONDS)
  * @typedef {{ character: object, tokensPerMinute: number }} Member a working character; a guest
  *   is a newcomer character that is not in the save
  * @typedef {{ hits: { physical: number, magical: number }, luck: number, outfitFactor: number,
- *   defenders: number[], supporters: number[], size: number }} Party
+ *   defenders: number[], supporters: number[], size: number,
+ *   rankedHits: { ranks: string[], hits: { physical: number, magical: number } } | null,
+ *   legendary: import('./legendary-effects.mjs').PartyBonuses }} Party `rankedHits` are the hits
+ *   against the ranks a relic's damage is limited to; `legendary` the loot's party bonuses
  */
+
+/** The party's hits by damage type against a monster of `rank` (null: any rank no relic names). */
+function hitsAgainstRank(hitters, rank) {
+  const scaled = hitters.map((hitter) => ({ ...hitter, amount: hitter.amount * hitter.bonuses.hitFactor(hitter.type, rank) }))
+  const { physical, magical } = partyHits(scaled)
+  return { physical, magical }
+}
 
 /**
  * What a working party brings to every tick, whatever the monster: its hits by damage type, its
- * luck, its outfits, and the resilience of its defenders and medicine of its supporters.
+ * luck, its outfits, the resilience of its defenders and medicine of its supporters, and what its
+ * room's active relic and its members' legendary equipment add.
  *
  * @param {Member[]} members
  * @param {{ skills: object }} world
  * @param {{ chest: object[] }} project
+ * @param {{ legendary?: object }} [content] the game content, for its legendary loot
  * @returns {Party}
  */
-export function partyOf(members, world, project) {
+export function partyOf(members, world, project, content) {
   const itemOf = (id) => (id ? findItem(project.chest, id) : null)
   const speed = engineeringSpeed(world.skills)
-  const hitters = members.map(({ character, tokensPerMinute }) => {
+  const index = legendaryIndexOf(content)
+  const relic = relicEffects(project, index)
+  const held = members.map(({ character }) => heldEffects(project, character, index))
+  const bonuses = held.map((own) => memberBonuses(relic, own))
+  const hitters = members.map(({ character, tokensPerMinute }, at) => {
     const weaponFactor = itemFactor(itemOf(character.equipment?.weapon))
-    const hit = characterHit({ character, skills: world.skills, weaponFactor, tokensPerMinute, speed })
-    return { class: character.class, ...hit }
+    const { critChance: critBonus, critDamage: critDamageBonus, auraFactor } = bonuses[at]
+    const options = { character, skills: world.skills, weaponFactor, tokensPerMinute, speed, critBonus, critDamageBonus }
+    return { class: character.class, ...characterHit(options), auraFactor, bonuses: bonuses[at] }
   })
-  const { physical, magical } = partyHits(hitters)
+  const ranks = rankedDamageRanks(relic)
   const ofClass = (className, attribute) => members
+    .map(({ character }, at) => ({ character, at }))
     .filter(({ character }) => character.class === className)
-    .map(({ character }) => character.attributes[attribute] ?? 0)
-  const outfits = members.map(({ character }) => itemFactor(itemOf(character.equipment?.outfit)))
+    .map(({ character, at }) => (character.attributes[attribute] ?? 0) *
+      (attribute === 'medicine' ? bonuses[at].healingFactor : 1))
+  const outfits = members.map(({ character }, at) =>
+    itemFactor(itemOf(character.equipment?.outfit)) * bonuses[at].outfitFactor)
   return {
-    hits: { physical, magical },
+    hits: hitsAgainstRank(hitters, null),
+    rankedHits: ranks.length ? { ranks, hits: hitsAgainstRank(hitters, ranks[0]) } : null,
     luck: members.reduce((sum, { character }) => sum + (character.attributes.luck ?? 0), 0),
     outfitFactor: outfits.reduce((sum, factor) => sum + factor, 0) / Math.max(1, outfits.length),
     defenders: ofClass('defense', 'resilience'),
     supporters: ofClass('support', 'medicine'),
-    size: members.length
+    size: members.length,
+    legendary: partyBonuses(relic, held)
   }
+}
+
+/** The party's hits against a monster: the ranked ones when a relic's damage names its rank. */
+function hitsAgainst(party, monster) {
+  return party.rankedHits?.ranks.includes(rankOf(monster)) ? party.rankedHits.hits : party.hits
 }
 
 /**
@@ -68,7 +105,7 @@ export function partyAgainst(party, level) {
   return {
     defenders: party.defenders.map((value) => ({ resilience: value / resilience })),
     supporters: party.supporters.map((value) => ({ medicine: value / medicine })),
-    maxStamina: referenceStamina(level) * outfitShare
+    maxStamina: referenceStamina(level) * outfitShare * (party.legendary?.poolFactor ?? 1)
   }
 }
 
@@ -94,7 +131,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     referencePartyHit,
     partySize
   })
-  const hp = monster.maxHp * (1 - runeCircleShare(groupLevel(world.upgrades, 'runeCircle')))
+  const runeCut = runeCircleShare(groupLevel(world.upgrades, 'runeCircle')) * runeCircleFactorOf(project, legendaryIndexOf(content))
+  const hp = monster.maxHp * (1 - runeCut)
   return { ...monster, hp }
 }
 
@@ -106,8 +144,10 @@ function settleKill(state, context) {
   const { worldId, projectId, world, content, party, worldLevel, events } = context
   const { monster } = state
   const seed = `${worldId}|${projectId}|${monster.level}|${state.waveKills}`
-  const reward = rewardFor(monster, { luck: party.luck, seed })
-  state.materials = addMaterials(state.materials, reward.materials)
+  const loot = party.legendary
+  const reward = rewardFor(monster, { luck: party.luck, seed, dropBonus: loot?.itemDrop ?? 0 })
+  const killMaterials = withKillMaterials(reward.materials, loot?.killMaterials ?? [])
+  state.materials = addMaterials(state.materials, killMaterials)
   const roll = { level: monster.level, themeId: state.themeId, seed }
   const entry = reward.itemDrop ? droppedEntry(content.items, roll) : null
   let salvage = {}
@@ -120,9 +160,10 @@ function settleKill(state, context) {
   events.push({
     type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
     affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
-    materials: addMaterials(reward.materials, salvage), item: entry?.id ?? null
+    materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
+  state.stamina = Math.min(1, state.stamina + (loot?.staminaPerKill ?? 0))
   state.waveKills += 1
   state.kills = (state.kills ?? 0) + 1
   if (context.scenes) state.themeId = inScene(state, projectId, context.scenes).themeId
@@ -148,17 +189,18 @@ function playTick(state, context) {
   const against = context.against(state.monster.level)
   const result = fightTick({
     monster: state.monster,
-    hits: context.party.hits,
+    hits: hitsAgainst(context.party, state.monster),
     defenders: against.defenders,
     supporters: against.supporters,
     stamina: state.stamina * against.maxStamina,
-    maxStamina: against.maxStamina
+    maxStamina: against.maxStamina,
+    legendary: context.party.legendary
   })
   state.stamina = result.stamina / against.maxStamina
   state.monster = result.monster
   if (result.killed) return settleKill(state, context)
   if (result.exhausted) {
-    state.restTicks = REST_TICKS
+    state.restTicks = context.party.legendary?.restTicks ?? REST_TICKS
     state.fightRested = true
   }
 }

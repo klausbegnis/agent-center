@@ -4,6 +4,8 @@
 import { createCharacter, grantCharacterXp } from './characters.mjs'
 import { addToChest, equipFromChest } from './chest.mjs'
 import { createItem } from './items.mjs'
+import { heldEffects, legendaryIndexOf, relicEffects, tokenBonuses } from './legendary-effects.mjs'
+import { equipLegendary } from './legendary-equip.mjs'
 import { emptySkill, grantSkillXp, worldLevel, xpFromTokens } from './progression.mjs'
 import { comeBack, retire } from './retirement.mjs'
 import { CLASSES, skillForActivity } from './skills.mjs'
@@ -39,15 +41,18 @@ const withEngineFields = (character) => ({
   skillXp: {}, gatherCarry: 0, title: null, state: 'idle', tradeChoice: null, ...character
 })
 
-/** The session's character, created, or back from retirement, and equipped from the chest. */
-function ensureCharacter(project, { sessionId, skills, now }) {
+/**
+ * The session's character, created, or back from retirement, and equipped from the chest:
+ * legendary equipment made for it first (legendary-equip.mjs).
+ */
+function ensureCharacter(project, { sessionId, skills, now, index }) {
   if (project.characters[sessionId]) return project
   const back = comeBack(project, sessionId, { now })
   const livingClasses = Object.values(project.characters).map((character) => character.class)
   const base = back ? back.project : project
   const born = back ? back.character : createCharacter({ sessionId, livingClasses, skills, now })
   const character = withEngineFields(born)
-  const { chest, equipment } = equipFromChest(base.chest, character)
+  const { chest, equipment } = equipLegendary(equipFromChest(base.chest, character), character, index)
   return withCharacter({ ...base, chest }, { ...character, equipment })
 }
 
@@ -71,7 +76,8 @@ export function mainSkillOf(character) {
  * @param {object} save
  * @param {{ projectId: string, sessionId: string, tokens: number, activity: string, now: number,
  *   themeId?: string | null, title?: string | null, guest?: boolean }} reading
- * @param {{ items: { items: object[] } }} content the parsed game content
+ * @param {{ items: { items: object[] }, legendary?: object }} content the parsed game content; the
+ *   room's relic and the character's legendary equipment can make the experience worth more
  * @returns {object}
  */
 export function applyTokens(save, reading, content) {
@@ -84,8 +90,11 @@ export function applyTokens(save, reading, content) {
     const fresh = !world.projects[projectId]
     let project = fresh ? newProject(worldLevel(world.skills), content) : world.projects[projectId]
     project = { ...project, themeId: themeId ?? project.themeId }
-    project = ensureCharacter(project, { sessionId, skills: world.skills, now })
-    const character = grantCharacterXp(project.characters[sessionId], xp, activity)
+    const index = legendaryIndexOf(content)
+    project = ensureCharacter(project, { sessionId, skills: world.skills, now, index })
+    const held = heldEffects(project, project.characters[sessionId], index)
+    const bonus = tokenBonuses(relicEffects(project, index), held, skillId)
+    const character = grantCharacterXp(project.characters[sessionId], xp * bonus.characterFactor, activity)
     const skillXp = skillId
       ? { ...character.skillXp, [skillId]: (character.skillXp[skillId] ?? 0) + xp }
       : character.skillXp
@@ -93,7 +102,7 @@ export function applyTokens(save, reading, content) {
     const tokensSpent = character.tokens + tokens
     const updated = { ...character, tokens: tokensSpent, lastSeenAt: now, skillXp, title: keptTitle }
     const skills = skillId
-      ? { ...world.skills, [skillId]: grantSkillXp(world.skills[skillId] ?? emptySkill(), xp) }
+      ? { ...world.skills, [skillId]: grantSkillXp(world.skills[skillId] ?? emptySkill(), xp * bonus.skillFactor) }
       : world.skills
     const lastTokenAt = Math.max(world.lastTokenAt ?? now, now)
     return withProjectIn({ ...world, skills, lastTokenAt }, projectId, withCharacter(project, updated))

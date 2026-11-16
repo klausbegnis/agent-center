@@ -73,23 +73,38 @@ export function healing(supporters, maxStamina) {
   return medicine <= 0 ? 0 : (maxStamina * HEAL_CAP_SHARE * medicine) / (medicine + HEAL_HALF)
 }
 
-/** How much harder the monster's affix makes it strike, at the health it has left. */
-function affixAttackFactor(monster, hp) {
-  if (monster.affix === 'swift') return SWIFT_ATTACK
-  if (monster.affix === 'enraged') return 1 + ENRAGED_MAX_BONUS * (1 - hp / monster.maxHp)
+/**
+ * How much harder the monster's affix makes it strike, at the health it has left. `weakening`
+ * (legendary loot) takes that share off what the affix adds.
+ */
+function affixAttackFactor(monster, hp, weakening = 0) {
+  if (monster.affix === 'swift') return 1 + (SWIFT_ATTACK - 1) * (1 - weakening)
+  if (monster.affix === 'enraged') return 1 + ENRAGED_MAX_BONUS * (1 - hp / monster.maxHp) * (1 - weakening)
   return 1
+}
+
+/**
+ * The damage factor of a type against the monster. A resistance affix's resisted type is brought
+ * `weakening` of the way back to full damage.
+ */
+function damageFactor(monster, type, weakening) {
+  const factor = monster[type]
+  const resisted = (monster.affix === 'armored' || monster.affix === 'ethereal') && factor < 1
+  return resisted ? factor + (1 - factor) * weakening : factor
 }
 
 /**
  * The monster's health after the party's hits and its own regeneration, and the damage taken.
  * Regeneration never undoes more than part of the damage, so every fight moves forward.
  */
-function strikeMonster(monster, hits) {
-  const dealt = hits.physical * monster.physical + hits.magical * monster.magical
+function strikeMonster(monster, hits, weakening = 0) {
+  const dealt = hits.physical * damageFactor(monster, 'physical', weakening) +
+    hits.magical * damageFactor(monster, 'magical', weakening)
   const damage = Math.min(monster.hp, dealt)
   const hp = settle(monster.hp - damage, monster.maxHp)
   if (hp === 0 || monster.affix !== 'regenerating') return { hp, damage }
-  const regenerated = Math.min(REGENERATING_SHARE * monster.maxHp, REGENERATING_DAMAGE_SHARE * damage)
+  const kept = 1 - weakening
+  const regenerated = Math.min(REGENERATING_SHARE * kept * monster.maxHp, REGENERATING_DAMAGE_SHARE * kept * damage)
   return { hp: Math.min(monster.maxHp, hp + regenerated), damage }
 }
 
@@ -107,16 +122,25 @@ function strikeMonster(monster, hits) {
  * @param {number} fight.stamina
  * @param {number} fight.maxStamina
  * @param {number} [fight.level] the level the monster strikes at; its own level when left out
+ * @param {{ drainFactor?: number, affixWeakening?: number, thorns?: number }} [fight.legendary] the
+ *   party's legendary loot: a factor on the stamina the monster drains, the share its affix is
+ *   weakened by, and the share of the stamina it drains (of the pool) it loses of its own health
  * @returns {{ monster: object, stamina: number, damage: number, killed: boolean, exhausted: boolean }}
  */
 export function fightTick(fight) {
   const { monster, hits, defenders, supporters, stamina, maxStamina, level = monster.level } = fight
-  const { hp, damage } = strikeMonster(monster, hits)
-  const killed = hp === 0
-  const strike = killed
+  const { drainFactor = 1, affixWeakening = 0, thorns: reflect = 0 } = fight.legendary ?? {}
+  const struck = strikeMonster(monster, hits, affixWeakening)
+  const { damage } = struck
+  let hp = struck.hp
+  const strike = hp === 0
     ? 0
-    : monsterAttack(monster, level) * affixAttackFactor(monster, hp) * (1 - mitigation(defenders))
-  const thorns = monster.affix === 'thorny' ? (THORNY_SHARE * maxStamina * damage) / monster.maxHp : 0
+    : monsterAttack(monster, level) * affixAttackFactor(monster, hp, affixWeakening) *
+      (1 - mitigation(defenders)) * drainFactor
+  if (reflect > 0 && strike > 0) hp = settle(Math.max(0, hp - (reflect * monster.maxHp * strike) / maxStamina), monster.maxHp)
+  const killed = hp === 0
+  const thornyShare = THORNY_SHARE * (1 - affixWeakening)
+  const thorns = monster.affix === 'thorny' ? (thornyShare * maxStamina * damage) / monster.maxHp : 0
   const restored = Math.min(maxStamina, stamina - strike - thorns + healing(supporters, maxStamina))
   const nextStamina = settle(Math.max(0, restored), maxStamina)
   return {
@@ -149,10 +173,13 @@ function splitByWeights(total, weights) {
   return Object.fromEntries(shares.map((share) => [share.id, share.amount]))
 }
 
-/** The chance of an item drop for a party's luck, times the monster's rank factor, never above the cap. */
-function itemDropChance(luck, dropFactor) {
+/**
+ * The chance of an item drop for a party's luck, times the monster's rank factor and the share
+ * more from legendary loot, never above the cap.
+ */
+function itemDropChance(luck, dropFactor, dropBonus = 0) {
   const chance = Math.min(ITEM_DROP_MAX, ITEM_DROP_BASE + ITEM_DROP_PER_LUCK * luck)
-  return Math.min(ITEM_DROP_MAX, chance * dropFactor)
+  return Math.min(ITEM_DROP_MAX, chance * dropFactor * (1 + dropBonus))
 }
 
 /** A monster saved before ranks carries no drop factor: its rank's, from the kind and affix it has. */
@@ -163,13 +190,14 @@ const dropFactorOf = (monster) => monster.dropFactor ?? MONSTER_RANKS[rankOf(mon
  *
  * @param {{ level: number, reward: number, dropFactor?: number, affix: string | null,
  *   loot: Record<string, number> }} monster
- * @param {{ luck: number, seed: string }} roll seed makes the drop deterministic (e.g. world, project, wave)
+ * @param {{ luck: number, seed: string, dropBonus?: number }} roll seed makes the drop deterministic
+ *   (e.g. world, project, wave); `dropBonus` is a share more item drop chance (legendary loot)
  * @returns {{ materials: Record<string, number>, itemDrop: boolean }}
  */
-export function rewardFor(monster, { luck, seed }) {
+export function rewardFor(monster, { luck, seed, dropBonus = 0 }) {
   const total = Math.round(REWARD_BASE * REWARD_GROWTH ** monster.level * monster.reward)
   return {
     materials: splitByWeights(total, monster.loot),
-    itemDrop: chanceOf(`${seed}|item`) < itemDropChance(luck, dropFactorOf(monster))
+    itemDrop: chanceOf(`${seed}|item`) < itemDropChance(luck, dropFactorOf(monster), dropBonus)
   }
 }

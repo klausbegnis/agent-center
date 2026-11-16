@@ -388,3 +388,9 @@ export const LEGENDARY_EFFECT_CAPS = {
   skillXp: 0.1,
   upgradeCost: 0.1
 }
+/**
+ * A free legendary item that fits a new character (made for its class, or for a tool its trade) is
+ * taken over the slot's best plain item unless that one is more than this many upgrade levels
+ * ahead. A legendary item's buff is worth about that much, and its upgrades then keep it level.
+ */
+export const LEGENDARY_PICK_MARGIN = 2
