@@ -20,6 +20,10 @@
  * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
  * @property {(travel: boolean) => Promise<GameResult>} gameSetTravel turns "new scene after each
  *   monster" on or off
+ * @property {(roomId: string, sessionId: string, trade: string | null) => Promise<GameResult>}
+ *   gameSetCharacterTrade what a character gathers while idle; null follows its room
+ * @property {(roomId: string, trade: string | null) => Promise<GameResult>} gameSetRoomTrade what a
+ *   room's characters without a choice of their own gather; null is the engine's own pick
  * @property {(keepTitles: boolean) => Promise<GameResult>} gameSetKeepTitles
  * @property {() => Promise<object>} gameExportSave the saved game as a file's content
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
@@ -133,6 +137,15 @@ export function createController({
     gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
     gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
     gameSetTravel: (travel) => playAction(() => game.setTravel(requireBoolean(travel, 'travel'))),
+    gameSetCharacterTrade: (roomId, sessionId, trade) => playAction(() => game.setCharacterTrade({
+      roomId: requireText(roomId, 'room'),
+      sessionId: requireText(sessionId, 'session'),
+      trade: trade === null ? null : requireText(trade, 'trade')
+    })),
+    gameSetRoomTrade: (roomId, trade) => playAction(() => game.setRoomTrade({
+      roomId: requireText(roomId, 'room'),
+      trade: trade === null ? null : requireText(trade, 'trade')
+    })),
     gameSetKeepTitles: (keepTitles) => playAction(() => game.setKeepTitles(requireBoolean(keepTitles, 'keep-titles'))),
     gameExportSave: () => game.exportSave(),
     gameImportSave: (file) => playAction(() => game.importSave(requireObject(file, 'save file'))),

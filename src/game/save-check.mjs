@@ -60,6 +60,10 @@ function oneOf(value, choices, path) {
   return value
 }
 
+/** A gathering skill, or null (missing in saves from before it was kept). */
+const tradeOrNull = (value, path) =>
+  (value === null || value === undefined ? null : oneOf(value, GATHERING_SKILLS, path))
+
 function boolean(value, path) {
   if (typeof value !== 'boolean') fail(path, 'is not true or false')
   return value
@@ -123,9 +127,8 @@ function character(value, path, sessionId) {
     }),
     equipment: Object.fromEntries(EQUIPMENT_SLOTS.map((slot) =>
       [slot, textOrNull(equipment[slot], `${path}.equipment.${slot}`)])),
-    trade: source.trade === null || source.trade === undefined
-      ? null
-      : oneOf(source.trade, GATHERING_SKILLS, `${path}.trade`),
+    trade: tradeOrNull(source.trade, `${path}.trade`),
+    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
     tokens: number(source.tokens, `${path}.tokens`),
     bornAt: number(source.bornAt, `${path}.bornAt`, { min: -Infinity }),
     lastSeenAt: number(source.lastSeenAt, `${path}.lastSeenAt`, { min: -Infinity }),
@@ -151,9 +154,8 @@ function retiree(value, path) {
       : oneOf(source.mainSkill, WORK_SKILLS, `${path}.mainSkill`),
     retiredAt: number(source.retiredAt, `${path}.retiredAt`, { min: -Infinity }),
     title: textOrNull(source.title, `${path}.title`),
-    trade: source.trade === null || source.trade === undefined
-      ? null
-      : oneOf(source.trade, GATHERING_SKILLS, `${path}.trade`),
+    trade: tradeOrNull(source.trade, `${path}.trade`),
+    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
     bornAt: numberOrNull(source.bornAt, `${path}.bornAt`)
   }
 }
@@ -263,6 +265,7 @@ function project(value, path) {
     fightTicks: whole(source.fightTicks ?? 0, `${path}.fightTicks`),
     fightRested: boolean(source.fightRested ?? false, `${path}.fightRested`),
     themeId: textOrNull(source.themeId, `${path}.themeId`),
+    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
     chest,
     characters,
     retirees: list(source.retirees, `${path}.retirees`).map((entry, index) => retiree(entry, `${path}.retirees.${index}`)),

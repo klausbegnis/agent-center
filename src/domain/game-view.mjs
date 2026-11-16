@@ -128,6 +128,7 @@ function roomView(project, worldId, readings, keepTitles, sceneTheme) {
     party: partyStateOf(readings, project.resting),
     pausedBy: pauseReasonOf(readings),
     stamina: project.stamina,
+    tradeChoice: project.tradeChoice ?? null,
     chest: shownChest(project.chest),
     chestSize: project.chest.length,
     retirees: shownRetirees(project.retirees, keepTitles),
@@ -149,6 +150,8 @@ function characterView(member, link, state) {
     attributes: member.attributes,
     equipment,
     trade: member.trade,
+    tradeChoice: member.tradeChoice ?? null,
+    autoTrade: member.autoTrade ?? null,
     state
   }
 }

@@ -3,10 +3,12 @@
 import { releaseItems } from './chest.mjs'
 import { RETIREE_BONUS, RETIREE_BONUS_MAX, RETIREES_KEPT } from './constants.mjs'
 import { hashOf } from './hash.mjs'
+import { tradeChoiceOf } from './trades.mjs'
 
 /**
  * The record a retiring character leaves. Beyond the fields docs/GAME.md lists, it keeps the
- * character's trade and birth time so a session that comes back is the same character.
+ * character's trade, the trade chosen for it and its birth time so a session that comes back is
+ * the same character.
  */
 function retireeOf(character, { now, mainSkill, title, keepTitle }) {
   return {
@@ -21,6 +23,7 @@ function retireeOf(character, { now, mainSkill, title, keepTitle }) {
     retiredAt: now,
     title: keepTitle ? title : null,
     trade: character.trade ?? null,
+    tradeChoice: tradeChoiceOf(character.tradeChoice),
     bornAt: character.bornAt ?? null
   }
 }
@@ -73,6 +76,7 @@ export function comeBack(project, sessionId, { now }) {
     levelActivityXp: {},
     equipment: { weapon: null, outfit: null, tool: null },
     trade: record.trade ?? null,
+    tradeChoice: tradeChoiceOf(record.tradeChoice),
     tokens: record.tokens,
     bornAt: record.bornAt ?? now,
     lastSeenAt: now

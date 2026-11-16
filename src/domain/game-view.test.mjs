@@ -158,6 +158,20 @@ test('a character whose agent left the room is not sent, and a session without a
   assert.equal(view.rooms[BANANA].party, 'fighting')
 })
 
+test('a room and its characters carry the trades chosen for them, null for none', () => {
+  const links = new Map([['pane-1', { sessionId: 'estimated:pane-1', roomId: BANANA, how: 'agent' }]])
+  const chosen = partyView()
+  chosen.worlds[0].projects[0].tradeChoice = 'fishing'
+  Object.assign(chosen.worlds[0].projects[0].party[0], { trade: 'hunting', tradeChoice: 'hunting', autoTrade: 'mining' })
+  const view = buildGameView(input(chosen, { links, agentStates: new Map([['pane-1', 'idle']]) }))
+  assert.equal(view.rooms[BANANA].tradeChoice, 'fishing')
+  const { trade, tradeChoice, autoTrade } = view.characters['pane-1']
+  assert.deepEqual([trade, tradeChoice, autoTrade], ['hunting', 'hunting', 'mining'])
+  const plain = buildGameView(input(partyView(), { links, agentStates: new Map([['pane-1', 'idle']]) }))
+  assert.equal(plain.rooms[BANANA].tradeChoice, null)
+  assert.equal(plain.characters['pane-1'].tradeChoice, null)
+})
+
 test('the game says how long a round of its fights lasts', () => {
   assert.equal(buildGameView(input({ ...engineView(), tickSeconds: 10 })).tickSeconds, 10)
 })

@@ -25,6 +25,9 @@ const transport = {
   resetWorld: (worldId) => orca.plugin.request('game.resetWorld', { worldId }),
   setAutoSpend: (on) => orca.plugin.request('game.autoSpend', { on }),
   setTravel: (on) => orca.plugin.request('game.travel', { on }),
+  setCharacterTrade: (roomId, sessionId, trade) =>
+    orca.plugin.request('game.characterTrade', { roomId, sessionId, trade }),
+  setRoomTrade: (roomId, trade) => orca.plugin.request('game.roomTrade', { roomId, trade }),
   setKeepTitles: (on) => orca.plugin.request('game.keepTitles', { on }),
   exportSave: () => orca.plugin.request('game.exportSave'),
   importSave: (file) => orca.plugin.request('game.importSave', { file }),

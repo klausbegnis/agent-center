@@ -31,6 +31,14 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['travel', on])
       return { changed: true }
     },
+    gameSetCharacterTrade: async (roomId, sessionId, trade) => {
+      calls.push(['characterTrade', roomId, sessionId, trade])
+      return { changed: true }
+    },
+    gameSetRoomTrade: async (roomId, trade) => {
+      calls.push(['roomTrade', roomId, trade])
+      return { changed: true }
+    },
     gameImportSave: async (file) => {
       if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Center save file')
       calls.push(['import', JSON.stringify(file).length])
@@ -144,6 +152,15 @@ test('a game action reaches the controller and its answer comes back', async (t)
   assert.deepEqual(calls.at(-1), ['travel', true])
 })
 
+test('the trade routes pass their fields on, a missing trade as null for Auto', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body })
+  const room = 'local:/work/rumble-banana'
+  assert.equal((await post('/api/game/character-trade', `{"roomId":"${room}","sessionId":"s1","trade":"fishing"}`)).status, 200)
+  assert.equal((await post('/api/game/room-trade', `{"roomId":"${room}"}`)).status, 200)
+  assert.deepEqual(calls, [['characterTrade', room, 's1', 'fishing'], ['roomTrade', room, null]])
+})
+
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
   const { server, calls } = await setup(t)
   const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
@@ -162,7 +179,7 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
   .find((entry) => entry && !entry.internal && entry.family === 'IPv4')?.address
 
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
-  'travel', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']
+  'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']
 
 const gameState = {
   rooms: [],
