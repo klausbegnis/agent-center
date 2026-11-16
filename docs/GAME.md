@@ -1054,16 +1054,29 @@ Targets the numbers do not meet, and why:
   fight with a rest is the usual case: 60 to 90% of fights early, 25 to 60% after a year as
   the campfire grows.
 
-Choosing a trade gives no material more worth than another: every material is gathered at the
-same rate and costs the same in each recipe it is in. Putting a whole world on one trade gathers
-more units (1.4 to 1.6 times Auto's over a year in light, 2.8 to 3.0 in medium, 4.3 to 4.4 in
-heavy), because that trade's skill takes all the gathering experience (level 183, 478 and 744
-after a year, against 40 to 130 for each of six under Auto), but
-the six materials are needed in pairs, so the surplus waits in the store: over a year it bought
-55 to 59 purchases in light against 61 under Auto, 322 to 339 in medium against 339, and 2,865
-to 2,880 in heavy against 2,872, with the same gear. Steering every room each working day to the
-material the world has least of did a little better than Auto: 5% more purchases in light, 2%
-in medium, under 1% in heavy. The simulator plays Auto, so its numbers above do not change.
+### Choosing a trade
+
+Choosing a trade gives no material more worth than another in the recipes: every material is
+gathered at the same rate and costs the same in each recipe it is in. Putting a whole world on
+one trade gathers more units (1.4 to 1.6 times Auto's over a year in light, 2.8 to 3.0 in
+medium, 4.3 to 4.4 in heavy), because that trade's skill takes all the gathering experience
+(level 183, 478 and 744 after a year, against 40 to 130 for each of six under Auto). Without the
+market the six materials are needed in pairs, so that surplus waits in the store: forcing one
+trade on every room gives, at a year, a mean weapon gear level of 8.0 to 10.0 in light against
+10.0 under Auto, 25.3 to 26.3 in medium against 25.7, and 124.5 to 125.5 in heavy against 125.5.
+Steering every room each working day to the material the world has least of did a little better
+than Auto: 5% more purchases in light, 2% in medium, under 1% in heavy (measured before the
+generic tier 2 items existed). The simulator plays Auto, so its numbers above do not change.
+
+With the market a surplus is no longer worthless: it can be sold, or traded for what is short.
+Forcing one trade on every room and letting the trading player of "Market" below turn the
+surplus into what is lacking does not dominate Auto with the same trader. At a year, over the
+six trades, the gear level is 10.0 in light (10.0 for Auto with the market), 27.0 to 27.3 in
+medium (26.7) and 125.3 to 125.5 in heavy (125.3): at most 2% more. Kills per hour come out
+higher by up to 8% in light (12.8 to 13.8 against 12.8), 5% in medium (11.3 to 12.0 against
+11.4) and 3% in heavy (15.2 to 15.8 against 15.3), purchases per day are the same. The fee and
+the falling price of a big sale take back most of what the faster-levelled trade gathers, so
+neither choice is a trap and none needs a fix.
 
 ### Market
 
@@ -1098,4 +1111,3 @@ In a year the trader makes 400 to 800 trades, buys 0 to 2 stall pieces and sells
   demo's world at level 16 they cost 54 k to 83 k coins, two to three times its whole stock of
   materials at base value, so the light player, who has little surplus, seldom affords one,
   while medium and heavy could buy one every day or two and mostly do not need to.
-
