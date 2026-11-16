@@ -991,8 +991,16 @@ time, `autoSpend` every evening and prestige whenever it is offered. An agent sp
 tokens per minute while it works; a lighter user works fewer minutes. Every choice is a hash,
 so the output only changes with the code. It prints the progression at day 1, 3, 7, 14, 30,
 60, 90, 180 and 365 and a balance check (`scripts/game-balance.mjs`) with PASS or FAIL
-against the targets below, in about two seconds. A balance change is judged by its output,
-not by eye.
+against the targets below. A balance change is judged by its output, not by eye.
+
+It then plays the same three scenarios again with a second policy
+(`scripts/market-policy.mjs`): after the evening's `autoSpend`, a player who visits the market
+once a working day. It trades surplus for what the three cheapest purchases out of reach lack
+(surplus being what is left above three times the most any one purchase needs), buys each stall
+piece that beats what a room keeps of that slot, sells what is still surplus where it pays best
+until the price there has fallen 30% below the usual, and runs `autoSpend` again. It uses only
+what the Market tab offers. The first policy's output does not change with the market: its
+player never trades. The whole run takes a few seconds.
 
 ## Balance
 
@@ -1045,6 +1053,7 @@ Targets the numbers do not meet, and why:
 - Most projects have one or two sessions at a time, so most parties are not balanced and a
   fight with a rest is the usual case: 60 to 90% of fights early, 25 to 60% after a year as
   the campfire grows.
+
 Choosing a trade gives no material more worth than another: every material is gathered at the
 same rate and costs the same in each recipe it is in. Putting a whole world on one trade gathers
 more units (1.4 to 1.6 times Auto's over a year in light, 2.8 to 3.0 in medium, 4.3 to 4.4 in
@@ -1055,3 +1064,38 @@ the six materials are needed in pairs, so the surplus waits in the store: over a
 to 2,880 in heavy against 2,872, with the same gear. Steering every room each working day to the
 material the world has least of did a little better than Auto: 5% more purchases in light, 2%
 in medium, under 1% in heavy. The simulator plays Auto, so its numbers above do not change.
+
+### Market
+
+`npm run simulate`, no market against the daily visit above (the gear is the mean effective
+level of the weapons in use):
+
+| | day | kills/h | with market | gear | with market | purchases/day | with market |
+|---|---|---|---|---|---|---|---|
+| light | 90 | 9.4 | 9.8 | 5.0 | 5.0 | 0.5 | 0.4 |
+| light | 365 | 12.2 | 12.8 | 10.0 | 10.0 | 0.2 | 0.1 |
+| medium | 90 | 9.0 | 9.6 | 9.3 | 10.3 (+11%) | 1.1 | 1.2 |
+| medium | 365 | 10.5 | 11.4 | 25.7 | 26.7 (+4%) | 1.2 | 1.2 |
+| heavy | 90 | 12.6 | 12.5 | 28.7 | 28.5 (-1%) | 9.6 | 9.6 |
+| heavy | 365 | 15.5 | 15.3 | 125.5 | 125.3 | 12.1 | 12.1 |
+
+In a year the trader makes 400 to 800 trades, buys 0 to 2 stall pieces and sells for 16 k
+(light), 3 M (medium) and 2e16 (heavy) coins.
+
+- The market helps modestly, as intended: at a year gear is at most 4% higher and kills per
+  hour up to 9% (medium), within the "at most about +25%" target. Gear grows little because
+  each level above the reference doubles the price whatever pays for it, and the fee and the
+  falling price of a big sale cost a fifth or more of what is traded.
+- A player who never opens the market plays exactly as before: nothing of the market runs
+  without an action, and the first policy's numbers are unchanged.
+- The simple trader is not always better: heavy's kills per hour are 1% lower with it, and
+  light buys slightly fewer upgrades, as trading spends materials on the purchases it picks
+  rather than on those `autoSpend` would have made later. A person who trades with thought does
+  at least as well as one who does not trade.
+- The stall rarely beats a room's own gear: its pieces sit one tier above the drops, about the
+  reference gear, while auto-spend keeps gear in use a little above it. It helps a room that
+  lags or a slot nobody has upgraded (a new mage's weapon). A piece is dear on purpose: in the
+  demo's world at level 16 they cost 54 k to 83 k coins, two to three times its whole stock of
+  materials at base value, so the light player, who has little surplus, seldom affords one,
+  while medium and heavy could buy one every day or two and mostly do not need to.
+
