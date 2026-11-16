@@ -333,6 +333,9 @@ before any comes again. Adding or removing a theme reshuffles the order.
 - `game/items.json` and `game/monsters.json` are data. An item entry is id, slot, damage type,
   tier, recipe and an optional list of themes. A monster entry is id, kind, loot table, sprite
   hints and an optional list of themes. No entry holds a balance number.
+- The generic items have an entry of every slot and damage type at every tier from 1 to 10, so
+  a drop always has the tier `dropTier` allows (a test checks it). Before tier 2 existed, drops
+  stayed at tier 1 until monsters reached level 32.
 - A monster entry is picked by hash among the entries of its kind that match the room's theme,
   falling back to the generic ones. The room's theme is the last `themeId` a reading gave. The
   entry gives the monster its loot table, whatever it looks like.
@@ -841,12 +844,12 @@ What the simulator measures now:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight (normal rank) | 24 ticks, 4.0 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
-| Kills per hour of fighting | 9 to 11 | 7.6 to 10.4 | 11.4 to 15.4 |
+| Median common fight (normal rank) | 22 ticks, 3.7 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
+| Kills per hour of fighting | 9.3 to 12.2 | 7.9 to 10.5 | 11.5 to 15.5 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.0 to 1.9 | 7.4 to 12.1 |
-| Gathering share of materials | 29% | 24% | 15% |
-| Hit from world, gear, character (day 90 on) | 55%, 20%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
+| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.7 | 6.9 to 12.1 |
+| Gathering share of materials | 25% | 24% | 16% |
+| Hit from world, gear, character (day 90 on) | 53%, 23%, 24% | 72%, 22%, 7% | 77%, 22%, 1% |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
 defender or a supporter in 50 to 100%; a party without magic takes 1.9 to 2.1 times as long
