@@ -4,8 +4,8 @@
 // tags of a price, and the amounts a person may type.
 
 /** Materials in the order the game lists them, work materials first. */
-export const MARKET_MATERIALS = Object.freeze(['bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish', 'crops',
-  'logs', 'hides', 'runes'])
+export const MARKET_MATERIALS = Object.freeze(['bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish',
+  'crops',   'logs', 'hides', 'runes'])
 
 /** The trade whose idle characters gather each gathering material; work materials have none. */
 const TRADE_OF_MATERIAL = Object.freeze({
@@ -44,7 +44,8 @@ export function cityStance(city, materialId) {
  * @param {object} market a world's `market` in the view state
  * @param {object} city an open city of it
  * @param {string} materialId
- * @returns {{ base: number, usual: number, pressure: number, depth: number, fee: number, min: number, max: number }}
+ * @returns {{ base: number, usual: number, pressure: number, depth: number, fee: number, min: number,
+ *   max: number }}
  */
 export function pricePoint(market, city, materialId) {
   const base = market.baseValues[materialId]
@@ -81,10 +82,12 @@ function flooredArea(point, from, to) {
 }
 
 /** What the city pays for one more unit now. */
-export const unitSellPrice = (point) => Math.min(point.usual * Math.exp(-point.pressure), point.base) * (1 - point.fee)
+export const unitSellPrice = (point) =>
+  Math.min(point.usual * Math.exp(-point.pressure), point.base) * (1 - point.fee)
 
 /** What the city asks for one more unit now. */
-export const unitBuyPrice = (point) => Math.max(point.usual * Math.exp(-point.pressure), point.base) * (1 + point.fee)
+export const unitBuyPrice = (point) =>
+  Math.max(point.usual * Math.exp(-point.pressure), point.base) * (1 + point.fee)
 
 /**
  * The coins a sale of `amount` units pays, price impact included, and the pressure after.
@@ -112,7 +115,8 @@ export function affordableUnits(point, coins) {
   const flat = Math.max(0, point.pressure - pivot)
   const span = area <= point.base * flat
     ? area / point.base
-    : flat + Math.log1p((area - point.base * flat) / (point.usual * Math.exp(-Math.min(point.pressure, pivot))))
+    : flat +
+      Math.log1p((area - point.base * flat) / (point.usual * Math.exp(-Math.min(point.pressure, pivot))))
   const left = Math.max(0, Math.floor((point.pressure - point.min) * point.depth))
   let units = Math.min(left, Math.floor(span * point.depth))
   while (units > 0 && buyCost(point, units) > coins) units -= Math.max(1, Math.ceil(units * 1e-12))
@@ -198,4 +202,63 @@ export function offerBlock(offer, { coins, roomId, canBuy }) {
   if (offer.fullIn.includes(roomId)) return 'full'
   if (coins < offer.price) return 'coins'
   return null
+}
+
+/**
+ * A slider covers an amount from 0 to what is held. Up to this many units it moves one unit a
+ * step; past it, its positions are spread evenly over the stock, so a stock of millions still
+ * moves in steps a person can see, while the number box beside it keeps every unit.
+ */
+export const SLIDER_POSITIONS = 1000
+/** Page Up and Page Down move the slider by this share of its length. */
+export const SLIDER_PAGE_SHARE = 0.1
+
+/** The slider's last position for a stock: one per unit, at most SLIDER_POSITIONS. */
+export function sliderMax(most) {
+  const whole = Math.max(0, Math.floor(most))
+  return Math.min(whole, SLIDER_POSITIONS)
+}
+
+/** The amount a slider position stands for, whole, from 0 to the stock. */
+export function amountAtPosition(position, most) {
+  const top = sliderMax(most)
+  if (top === 0) return 0
+  const clamped = Math.min(top, Math.max(0, Math.round(Number(position) || 0)))
+  const whole = Math.floor(most)
+  return top === whole ? clamped : Math.round((whole * clamped) / top)
+}
+
+/** The slider position nearest to an amount. */
+export function positionOfAmount(amount, most) {
+  const top = sliderMax(most)
+  if (top === 0) return 0
+  const whole = Math.floor(most)
+  return Math.min(top, Math.max(0, Math.round((Math.max(0, amount) * top) / whole)))
+}
+
+/** The position Page Up (+1) or Page Down (-1) moves to. */
+export function pagedPosition(position, most, direction) {
+  const top = sliderMax(most)
+  const step = Math.max(1, Math.round(top * SLIDER_PAGE_SHARE))
+  return Math.min(top, Math.max(0, position + direction * step))
+}
+
+/** An amount kept within a stock that may have shrunk since it was chosen. */
+export const clampAmount = (amount, most) =>
+  Math.min(Math.max(0, Math.floor(Number(amount) || 0)), Math.max(0, Math.floor(most)))
+
+/**
+ * What a trade's "You get" side says: the units, the coins back, and the rate (how many units
+ * given per unit received), or why there is nothing to get.
+ *
+ * @param {object} market
+ * @param {object} city
+ * @param {{ fromId: string, toId: string, amount: number }} trade
+ * @returns {{ units: number, change: number, rate: number | null, why: 'none' | 'tooLittle' | null }}
+ */
+export function tradeOutcome(market, city, trade) {
+  if (!(trade.amount >= 1)) return { units: 0, change: 0, rate: null, why: 'none' }
+  const quote = tradeQuote(market, city, trade)
+  if (quote.units < 1) return { units: 0, change: 0, rate: null, why: 'tooLittle' }
+  return { ...quote, rate: trade.amount / quote.units, why: null }
 }

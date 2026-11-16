@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  SLIDER_POSITIONS,
   affordableUnits,
+  amountAtPosition,
+  clampAmount,
+  pagedPosition,
+  positionOfAmount,
+  sliderMax,
+  tradeOutcome,
   amountFrom,
   cityStance,
   gatheringTradeOf,
@@ -105,4 +112,46 @@ test('a gathering material names the trade that gathers it; a work material name
   assert.equal(gatheringTradeOf('fish'), 'fishing')
   assert.equal(gatheringTradeOf('runes'), 'runecraft')
   assert.equal(gatheringTradeOf('bars'), null)
+})
+
+test('a slider moves one unit a step on a small stock and spreads a large one over its positions', () => {
+  assert.equal(sliderMax(555), 555)
+  assert.equal(amountAtPosition(300, 555), 300)
+  assert.equal(sliderMax(4_000_000), SLIDER_POSITIONS)
+  assert.equal(amountAtPosition(SLIDER_POSITIONS, 4_000_000), 4_000_000)
+  assert.equal(amountAtPosition(1, 4_000_000), 4000)
+  assert.equal(positionOfAmount(4000, 4_000_000), 1)
+  assert.equal(positionOfAmount(1e17, 1e17), SLIDER_POSITIONS)
+  assert.equal(sliderMax(0), 0)
+  assert.equal(amountAtPosition(5, 0), 0)
+})
+
+test('a slider position outside the slider, or not a number, stays within it', () => {
+  assert.equal(amountAtPosition(-3, 555), 0)
+  assert.equal(amountAtPosition(9999, 555), 555)
+  assert.equal(amountAtPosition('x', 555), 0)
+})
+
+test('Page Up and Page Down move a tenth of the slider, stopping at either end', () => {
+  assert.equal(pagedPosition(100, 555, 1), 156)
+  assert.equal(pagedPosition(10, 555, -1), 0)
+  assert.equal(pagedPosition(990, 5e6, 1), SLIDER_POSITIONS)
+  assert.equal(pagedPosition(0, 5, 1), 1)
+})
+
+test('an amount chosen is kept within a stock that shrank', () => {
+  assert.equal(clampAmount(300, 555), 300)
+  assert.equal(clampAmount(300, 120), 120)
+  assert.equal(clampAmount(undefined, 120), 0)
+  assert.equal(clampAmount(-4, 120), 0)
+})
+
+test('a trade with nothing to give, or too little for one unit, says why; otherwise its rate', () => {
+  assert.equal(tradeOutcome(market, deepforge, { fromId: 'crops', toId: 'ore', amount: 0 }).why, 'none')
+  const tooLittle = tradeOutcome({ ...market, baseValues: { ...market.baseValues, crops: 1 } }, deepforge,
+    { fromId: 'crops', toId: 'ore', amount: 1 })
+  assert.equal(tooLittle.why, 'tooLittle')
+  const outcome = tradeOutcome(market, deepforge, { fromId: 'crops', toId: 'ore', amount: 100 })
+  assert.equal(outcome.why, null)
+  assert.equal(outcome.rate, 100 / outcome.units)
 })

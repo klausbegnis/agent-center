@@ -22,12 +22,13 @@ export const MARKET = {
   trade: 'Trade',
   tradeNote: (city) => `Turn one material into another that ${city} produces, in one step: a sale and a ` +
     'purchase, each with the fee.',
-  from: 'Give',
-  to: 'For',
-  amount: 'Amount',
+  youGive: 'You give',
+  youGet: 'You get',
+  giveMaterial: 'Material to give',
+  getMaterial: 'Material to get',
   max: 'Max',
-  less: 'One less',
-  more: 'One more',
+  sellOpen: 'Sell…',
+  sellClose: 'Close',
   stall: 'Stall',
   stallNote: 'Gear one tier above what monsters drop now. New pieces every day.',
   goesTo: 'Goes to',
@@ -64,21 +65,56 @@ export function formatCoins(coins) {
   return coins < 1e7 ? Math.floor(coins).toLocaleString('en-US') : formatAmount(coins)
 }
 
-/** "1,234 coins". */
-export const coinsText = (coins) => `${formatAmount(coins)} coin${coins === 1 ? '' : 's'}`
+/** "61,379 coins": to the coin, so a price and the coins held compare at a glance. */
+export const coinsText = (coins) => `${formatCoins(coins)} coin${coins === 1 ? '' : 's'}`
 
-/** The Sell button: "Sell for 1,234 coins", or just "Sell" while there is nothing to get. */
-export const sellButton = (coins) => (coins >= 1 ? `Sell for ${coinsText(coins)}` : MARKET.sell)
+/** An amount to the unit while it fits a line: what a button promises must be exact. */
+const exact = (amount) => formatCoins(amount)
 
-/** A Sell row's control, named for screen readers: "Amount of Ore to sell". */
+/** "1,204 Ore". */
+export const unitsText = (amount, materialId) => `${exact(amount)} ${materialLabel(materialId)}`
+
+/** The Sell button: "Sell 300 for 708 coins", or "Sell" while no amount is chosen. */
+export const sellButton = (amount, coins) =>
+  (amount >= 1 && coins >= 1 ? `Sell ${exact(amount)} for ${coinsText(coins)}` : MARKET.sell)
+
+/** What the button that opens a Sell row's amount says to a screen reader. */
+export const sellOpenLabel = (materialId) => `Choose how much ${materialLabel(materialId)} to sell`
+
+/** A Sell row's amount controls, named for screen readers: "Amount of Ore to sell". */
 export const sellAmountLabel = (materialId) => `Amount of ${materialLabel(materialId)} to sell`
 
-/** What a trade gives: "→ 151 Ore, 3 coins back", or why it gives nothing. */
-export function tradeResult({ units, change }, toId) {
-  if (units < 1) return 'Too little to get one unit.'
-  const back = change >= 1 ? `, ${coinsText(change)} back` : ''
-  return `→ ${formatAmount(units)} ${materialLabel(toId)}${back}`
+/** The trade's amount controls: "Amount of Bars to give". */
+export const giveAmountLabel = (materialId) => `Amount of ${materialLabel(materialId)} to give`
+
+/** "555 of 1,204 Bars": how much of a stock is chosen. */
+export const ofHeld = (amount, held, materialId) => `${exact(amount)} of ${unitsText(held, materialId)}`
+
+/** A choice of a material to give: "Bars, 1,204 held". */
+export const materialChoice = (materialId, held) => `${materialLabel(materialId)}, ${exact(held)} held`
+
+/** "+4 coins back", what the purchase leaves of the sale. */
+export const coinsBack = (coins) => `+${coinsText(coins)} back`
+
+/** "1 Crops per 2.13 Bars": what a trade costs per unit received, fee and price moves included. */
+export function rateText(rate, toId, fromId) {
+  const number = (value) => (value < 100 ? value.toFixed(2).replace(/\.?0+$/, '') : formatAmount(value))
+  // Said the way round that puts a 1 in front: "1.42 Ore per 1 Crops" rather than "per 0.7".
+  if (rate < 1) return `${number(1 / rate)} ${materialLabel(toId)} per 1 ${materialLabel(fromId)}`
+  return `1 ${materialLabel(toId)} per ${number(rate)} ${materialLabel(fromId)}`
 }
+
+/** Why a trade gives nothing yet. */
+export function tradeWhy(why, { amount, fromId, toId }) {
+  if (why === 'tooLittle') return `${unitsText(amount, fromId)} is not enough for one ${materialLabel(toId)}.`
+  return `Choose how many ${materialLabel(fromId)} to give.`
+}
+
+/** The Trade button: "Trade 555 Bars for 260 Crops", or "Trade" while there is no deal. */
+export const tradeButton = ({ amount, fromId, units, toId }) =>
+  (amount >= 1 && units >= 1
+    ? `Trade ${unitsText(amount, fromId)} for ${unitsText(units, toId)}`
+    : MARKET.trade)
 
 /** A comma list of material names: "Crops, Fish". */
 export const materialList = (ids) => ids.map(materialLabel).join(', ')

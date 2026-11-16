@@ -929,7 +929,9 @@ by the usual closing rules.
   session, and retirees' `title` null. Its web page then offers none of the actions and shows a
   "View only" marker. The panel and pages on this computer never get `viewOnly`.
 - A world's `market` carries the numbers a UI needs to quote any amount exactly as the engine
-  will (see "Market", "Prices"): a city's usual price is `baseValues[m] * cityFactors[stance]`,
+  will (see "Market", "Prices"); the Market tab does so as a slider moves, before anything is
+  sent, and `ui/engine/market-quote.test.js` holds its quote to the engine's for many amounts and
+  price states: a city's usual price is `baseValues[m] * cityFactors[stance]`,
   with the stance from `wants` and `produces`, and its pressure is `pressure[m]` or 0. A stall
   offer's `fullIn` lists the rooms whose chest already keeps `COPIES_PER_ITEM` copies of it.
   Nothing in it names a session, so a page on another machine gets it unchanged.

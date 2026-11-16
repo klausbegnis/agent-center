@@ -14,7 +14,10 @@ All notable changes to this project are recorded here. The format follows
   tier above what monsters drop, new every game day. Prices move with what is sold and bought
   and recover over game time; a fee on every trade keeps any loop of trades from making money.
   Coins and prices are kept in the save and in exported files; files exported before still
-  import. Nothing is traded by itself, and auto-spend does not trade.
+  import. Nothing is traded by itself, and auto-spend does not trade. Amounts are chosen with a
+  slider (and a number box beside it), the trade reads "You give" → "You get" with what the
+  amount brings and at what rate, and every button states the deal: "Sell 300 for 708 coins",
+  "Trade 555 Bars for 260 Crops".
 - Generic gear at every tier from 1 to 10 in every slot. Drops used to stay at tier 1 until
   monsters reached level 32, as there was no tier 2.
 - A small star at the right of the header's title opens the project's GitHub repository: in the

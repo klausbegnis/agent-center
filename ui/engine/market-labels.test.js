@@ -5,9 +5,12 @@ import {
   formatPrice,
   offerBlockText,
   offerFacts,
+  ofHeld,
   priceEach,
+  rateText,
   sellButton,
-  tradeResult
+  tradeButton,
+  tradeWhy
 } from './market-labels.js'
 
 test('a unit price keeps two decimals below ten coins and none above', () => {
@@ -29,12 +32,21 @@ test('coins are counted to the coin until they are many', () => {
   assert.equal(formatCoins(2.5e9), '2.5 B')
 })
 
-test('the Sell button names the total, and a trade what it gives', () => {
-  assert.equal(sellButton(1234), 'Sell for 1,234 coins')
-  assert.equal(sellButton(0), 'Sell')
-  assert.equal(tradeResult({ units: 151, change: 3 }, 'ore'), '→ 151 Ore, 3 coins back')
-  assert.equal(tradeResult({ units: 151, change: 0 }, 'ore'), '→ 151 Ore')
-  assert.equal(tradeResult({ units: 0, change: 0 }, 'ore'), 'Too little to get one unit.')
+test('the Sell and Trade buttons state the whole deal, and say only the action with no deal', () => {
+  assert.equal(sellButton(300, 708), 'Sell 300 for 708 coins')
+  assert.equal(sellButton(1, 1), 'Sell 1 for 1 coin')
+  assert.equal(sellButton(0, 0), 'Sell')
+  assert.equal(tradeButton({ amount: 555, fromId: 'bars', units: 260, toId: 'crops' }), 'Trade 555 Bars for 260 Crops')
+  assert.equal(tradeButton({ amount: 3, fromId: 'bars', units: 0, toId: 'crops' }), 'Trade')
+})
+
+test('a trade reads how much of a stock is given, the rate, and why it gives nothing', () => {
+  assert.equal(ofHeld(555, 1204, 'bars'), '555 of 1,204 Bars')
+  assert.equal(rateText(2.1346, 'crops', 'bars'), '1 Crops per 2.13 Bars')
+  assert.equal(rateText(2, 'crops', 'bars'), '1 Crops per 2 Bars')
+  assert.equal(rateText(0.7, 'ore', 'crops'), '1.43 Ore per 1 Crops')
+  assert.equal(tradeWhy('none', { amount: 0, fromId: 'bars', toId: 'crops' }), 'Choose how many Bars to give.')
+  assert.equal(tradeWhy('tooLittle', { amount: 1, fromId: 'bars', toId: 'crops' }), '1 Bars is not enough for one Crops.')
 })
 
 test('a stall piece reads its facts and why it cannot be bought', () => {

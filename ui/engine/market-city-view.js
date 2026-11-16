@@ -1,13 +1,14 @@
-// The open city of the Market tab: its Sell list (a row per material held, with an amount and the
-// total it brings), its Trade form and its Stall. Built from the view state and the amounts the
-// person typed, which the caller keeps across redraws; every control carries a data-key so a
-// redraw puts the keyboard back where it was.
+// The open city of the Market tab: its Sell list and its Stall (the Trade card is in
+// market-trade-view.js). A Sell row is one slim line (material, how much is held, the price
+// here and its tags); "Sell…" opens its amount slider and the button that says the deal, one
+// row at a time. What was chosen is kept by the caller across redraws, and every control carries
+// a data-key so a redraw puts the keyboard back where it was.
 import { button, el, select, setOptions } from './dom.js'
 import { section } from './game-controls.js'
-import { formatAmount } from './game-format.js'
 import { gameIcon, iconLabel } from './icon-view.js'
 import { itemSlot } from './item-slot-view.js'
 import { materialLabel } from './labels.js'
+import { amountControl } from './market-amount.js'
 import {
   MARKET,
   TREND_NOTE,
@@ -18,58 +19,25 @@ import {
   materialList,
   offerBlockText,
   offerFacts,
+  ofHeld,
   priceEach,
   sellAmountLabel,
   sellButton,
-  tradeResult
+  sellOpenLabel
 } from './market-labels.js'
 import {
-  amountFrom,
   cityStance,
+  clampAmount,
   gatheringTradeOf,
   heldMaterials,
   offerBlock,
   pricePoint,
   priceTrend,
   sellQuote,
-  tradeQuote,
   unitSellPrice
 } from './market-model.js'
 
-/**
- * An amount box with one less, one more and Max, which tells `onChange` the whole amount typed.
- *
- * @param {{ key: string, label: string, text: string, most: number, onChange: (text: string) => void }} options
- */
-function amountStepper({ key, label, text, most, onChange }) {
-  const node = el('div', 'ac-market-stepper')
-  const input = el('input', 'ac-game-input ac-market-amount')
-  input.type = 'number'
-  input.min = '1'
-  input.step = '1'
-  input.inputMode = 'numeric'
-  input.value = text
-  input.dataset.key = `${key}:amount`
-  input.setAttribute('aria-label', label)
-  const set = (value) => {
-    input.value = String(value)
-    onChange(input.value)
-  }
-  input.addEventListener('input', () => onChange(input.value))
-  const step = (by) => set(Math.min(most, Math.max(1, amountFrom(input.value, most) + by)))
-  const less = button('−', 'ac-button ac-market-step', { onClick: () => step(-1) })
-  less.setAttribute('aria-label', MARKET.less)
-  less.dataset.key = `${key}:less`
-  const more = button('+', 'ac-button ac-market-step', { onClick: () => step(1) })
-  more.setAttribute('aria-label', MARKET.more)
-  more.dataset.key = `${key}:more`
-  const max = button(MARKET.max, 'ac-button', { onClick: () => set(Math.floor(most)) })
-  max.dataset.key = `${key}:max`
-  node.append(less, input, more, max)
-  return node
-}
-
-/** The marks after a price: the trend sign and the "wanted" or "plenty here" tag. */
+/** The marks after a price: the "wanted" or "plenty here" tag, and what the trend sign means. */
 function priceMarks(city, materialId, trend) {
   const node = el('span', 'ac-market-marks')
   const stance = cityStance(city, materialId)
@@ -87,114 +55,105 @@ function tradeMark(trade) {
   return node
 }
 
-function sellRow({ world, city, materialId, typed, actions }) {
-  const market = world.market
-  const point = pricePoint(market, city, materialId)
+/** The open row's slider, number box, Max, and the Sell button that names the deal. */
+function sellEditor({ world, city, materialId, point, held, chosen, open, actions }) {
+  const key = `sell:${city.id}:${materialId}`
+  const editor = el('div', 'ac-market-editor')
+  editor.id = `ac-market-sell-${materialId}`
+  const readout = el('p', 'ac-market-of')
+  const sell = button(MARKET.sell, 'ac-button ac-primary ac-market-go', {
+    onClick: () => {
+      const amount = clampAmount(chosen.get(key), held)
+      if (amount < 1) return
+      actions.sellMaterial(world.id, city.id, materialId, amount).then((isDone) => {
+        if (!isDone) return
+        chosen.set(key, 0)
+        open.onDone(key)
+      })
+    }
+  })
+  sell.dataset.key = `${key}:go`
+  const show = (amount) => {
+    chosen.set(key, amount)
+    const coins = sellQuote(point, amount).coins
+    sell.textContent = sellButton(amount, coins)
+    sell.disabled = !(amount >= 1 && coins >= 1)
+    readout.textContent = ofHeld(amount, held, materialId)
+  }
+  const amount = clampAmount(chosen.get(key), held)
+  const control = amountControl({ key, label: sellAmountLabel(materialId), amount, most: held,
+    valueText: (value) => ofHeld(value, held, materialId), onChange: show })
+  show(amount)
+  const actionsRow = el('div', 'ac-market-row-controls')
+  actionsRow.append(readout, sell)
+  editor.append(control.element, actionsRow)
+  return editor
+}
+
+function sellRow({ world, city, materialId, chosen, open, actions }) {
+  const point = pricePoint(world.market, city, materialId)
   const held = world.materials[materialId]
   const trend = priceTrend(point.pressure)
-  const row = el('article', 'ac-market-row')
+  const isOpen = open.rowId === materialId
+  const row = el('article', `ac-market-row${isOpen ? ' ac-market-row-open' : ''}`)
   const head = el('div', 'ac-market-row-head')
   const price = el('span', `ac-market-price ac-market-trend-${trend}`, priceEach(unitSellPrice(point), trend))
   price.title = TREND_NOTE[trend]
   head.append(iconLabel(materialId, materialLabel(materialId), 'ac-market-name'))
   const trade = gatheringTradeOf(materialId)
   if (trade) head.append(tradeMark(trade))
-  head.append(el('span', 'ac-market-held ac-game-amount', heldText(held)), price, priceMarks(city, materialId, trend))
-  row.append(head)
-  if (!actions.sellMaterial) return row
-  const key = `sell:${city.id}:${materialId}`
-  const sell = button('', 'ac-button ac-primary ac-market-go', {
-    onClick: () => {
-      const amount = amountFrom(typed.get(key), held)
-      if (amount >= 1) actions.sellMaterial(world.id, city.id, materialId, amount)
-    }
-  })
-  sell.dataset.key = `${key}:go`
-  const showTotal = (text) => {
-    typed.set(key, text)
-    const coins = sellQuote(point, amountFrom(text, held)).coins
-    sell.textContent = sellButton(coins)
-    sell.disabled = coins < 1
+  const heldNode = el('span', 'ac-market-held ac-game-amount', heldText(held))
+  head.append(heldNode, price, priceMarks(city, materialId, trend))
+  if (actions.sellMaterial) {
+    const toggle = button(isOpen ? MARKET.sellClose : MARKET.sellOpen, 'ac-button ac-market-toggle', {
+      onClick: () => open.toggle(materialId)
+    })
+    toggle.dataset.key = `sell-open:${city.id}:${materialId}`
+    toggle.setAttribute('aria-expanded', String(isOpen))
+    toggle.setAttribute('aria-controls', `ac-market-sell-${materialId}`)
+    const name = sellOpenLabel(materialId)
+    toggle.setAttribute('aria-label', isOpen ? `${MARKET.sellClose}: ${name}` : name)
+    head.append(toggle)
   }
-  const controls = el('div', 'ac-market-row-controls')
-  controls.append(amountStepper({ key, label: sellAmountLabel(materialId), text: typed.get(key) ?? '', most: held,
-    onChange: showTotal }), sell)
-  showTotal(typed.get(key) ?? '')
-  row.append(controls)
+  row.append(head)
+  if (isOpen && actions.sellMaterial) {
+    row.append(sellEditor({ world, city, materialId, point, held, chosen, open, actions }))
+  }
   return row
 }
 
-/** The Sell card: a row per material the world holds. */
-export function sellCard({ world, city, typed, actions }) {
+/**
+ * The Sell card: a slim row per material the world holds, one of them open.
+ *
+ * @param {{ world: object, city: object, chosen: Map<string, number>,
+ *   open: { rowId: string | null, toggle: (materialId: string) => void, onDone: (key: string) => void },
+ *   actions: object }} options `chosen` holds the amount picked on each row, by its key; `onDone`
+ *   redraws after a sale and gives the keyboard to the row's slider
+ */
+export function sellCard({ world, city, chosen, open, actions }) {
   const held = heldMaterials(world.materials)
   const rows = el('div', 'ac-game-list')
-  rows.append(...held.map((materialId) => sellRow({ world, city, materialId, typed, actions })))
+  rows.append(...held.map((materialId) => sellRow({ world, city, materialId, chosen, open, actions })))
   const lines = [el('p', 'ac-game-card-line', held.length ? MARKET.sellNote : MARKET.nothingToSell), rows]
   return section(MARKET.sell, lines, 'ac-market-sell')
 }
 
-function labelled(label, control) {
+/** A control with its visible label. */
+export function labelled(label, control) {
   const field = el('label', 'ac-game-field ac-market-field')
   field.append(el('span', 'ac-game-field-label', label), control)
   return field
-}
-
-/** The Trade card: give one material held, for one the city produces. */
-export function tradeCard({ world, city, form, actions }) {
-  const held = heldMaterials(world.materials)
-  const children = [el('p', 'ac-game-card-line', MARKET.tradeNote(city.name))]
-  if (!actions.tradeMaterial || held.length === 0) {
-    if (held.length === 0) children.push(el('p', 'ac-game-card-line', MARKET.nothingToSell))
-    return section(MARKET.trade, children, 'ac-market-trade')
-  }
-  const fromId = held.includes(form.fromId) ? form.fromId : held[0]
-  const choices = city.produces.filter((id) => id !== fromId)
-  const toId = choices.includes(form.toId) ? form.toId : choices[0]
-  const from = select('ac-select', MARKET.from)
-  from.removeAttribute('aria-label')
-  setOptions(from, held.map((id) => [id, `${materialLabel(id)} (${formatAmount(world.materials[id])})`]))
-  from.value = fromId
-  from.dataset.key = 'trade:from'
-  const to = select('ac-select', MARKET.to)
-  to.removeAttribute('aria-label')
-  setOptions(to, choices.map((id) => [id, materialLabel(id)]))
-  to.value = toId
-  to.dataset.key = 'trade:to'
-  const result = el('p', 'ac-market-result')
-  result.setAttribute('aria-live', 'polite')
-  const go = button(MARKET.trade, 'ac-button ac-primary ac-market-go', {
-    onClick: () => {
-      const amount = amountFrom(form.amount, world.materials[fromId])
-      if (amount >= 1) actions.tradeMaterial(world.id, city.id, fromId, toId, amount)
-    }
-  })
-  go.dataset.key = 'trade:go'
-  const showResult = (text) => {
-    form.amount = text
-    const quote = tradeQuote(world.market, city, { fromId, toId, amount: amountFrom(text, world.materials[fromId]) })
-    result.textContent = amountFrom(text, world.materials[fromId]) >= 1 ? tradeResult(quote, toId) : ''
-    go.disabled = quote.units < 1
-  }
-  from.addEventListener('change', () => form.onChoose({ fromId: from.value, toId }))
-  to.addEventListener('change', () => form.onChoose({ fromId, toId: to.value }))
-  const stepper = amountStepper({ key: 'trade', label: MARKET.amount, text: form.amount ?? '', most: world.materials[fromId],
-    onChange: showResult })
-  showResult(form.amount ?? '')
-  const pair = el('div', 'ac-market-pair')
-  pair.append(labelled(MARKET.from, from), labelled(MARKET.to, to))
-  const controls = el('div', 'ac-market-row-controls')
-  controls.append(stepper, go)
-  children.push(pair, controls, result)
-  return section(MARKET.trade, children, 'ac-market-trade')
 }
 
 function offerRow({ world, city, offer, roomId, actions }) {
   const row = el('article', 'ac-market-row ac-market-offer')
   const head = el('div', 'ac-market-offer-head')
   const facts = el('div', 'ac-market-offer-facts')
-  facts.append(el('strong', 'ac-market-offer-name', offer.name), el('span', 'ac-game-card-line', offerFacts(offer)))
+  facts.append(el('strong', 'ac-market-offer-name', offer.name),
+    el('span', 'ac-game-card-line', offerFacts(offer)))
   const label = `${offer.name}: ${offerFacts(offer)}`
-  head.append(itemSlot({ item: { id: offer.entryId, name: offer.name, tier: offer.tier, level: 0 }, slot: offer.slot,
+  const item = { id: offer.entryId, name: offer.name, tier: offer.tier, level: 0 }
+  head.append(itemSlot({ item, slot: offer.slot,
     damageType: offer.damageType, label, isSmall: true }), facts)
   const price = el('span', 'ac-market-offer-price')
   price.append(gameIcon('coin', 'ac-market-coin'), el('span', 'ac-game-amount', coinsText(offer.price)))

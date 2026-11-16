@@ -1,15 +1,16 @@
 // The Market tab: the world's coins, then either the list of its cities (a banner each, with
 // what it sells cheap and pays well for, or the level it opens at) or the city opened, with its
-// Sell, Trade and Stall cards. The open city, the typed amounts and the stall's room are kept
+// Sell, Trade and Stall cards. The open city, the amounts chosen and the stall's room are kept
 // across redraws, and a redraw puts the keyboard back on the control that had it.
 import { button, el, select, setOptions } from './dom.js'
 import { replaceKeepingFocus, section } from './game-controls.js'
 import { joinedRooms, worldById } from './game-model.js'
 import { gameIcon } from './icon-view.js'
 import { roomTitle } from './labels.js'
-import { cityTrades, sellCard, stallCard, tradeCard } from './market-city-view.js'
+import { cityTrades, sellCard, stallCard } from './market-city-view.js'
 import { MARKET, formatCoins } from './market-labels.js'
 import { stallRoomId } from './market-model.js'
+import { tradeCard } from './market-trade-view.js'
 
 /** A city's banner, scaled up pixel for pixel, with its name on the lower left. */
 function banner(city, base) {
@@ -39,9 +40,25 @@ export function createMarketView({ panel, actions, base, prefs }) {
   let wantedWorldId = null
   let openCityId = null
   let wantedRoomId = null
-  /** What was typed in each Sell row, by its key, and the Trade form's choices. */
-  const typed = new Map()
-  const trade = { fromId: null, toId: null, amount: '', onChoose: () => {} }
+  /** The amount chosen on each Sell row, by its key; the open row; the Trade form's choices. */
+  const chosen = new Map()
+  /** After a deal: redraw from the amount reset to nothing, the keyboard on that slider. */
+  const afterDeal = (key) => {
+    drawn = null
+    draw()
+    panel.querySelector(`[data-key="${CSS.escape(key)}:slider"]`)?.focus()
+  }
+  const openSell = { rowId: null, toggle: () => {}, onDone: afterDeal }
+  const trade = {
+    fromId: null,
+    toId: null,
+    amount: 0,
+    onChoose: () => {},
+    onDone: (key) => {
+      trade.amount = 0
+      afterDeal(key)
+    }
+  }
   /**
    * Each city's banner, built once: the cards are rebuilt on every change of the world, and a
    * new image would flash empty while it loads.
@@ -110,9 +127,20 @@ export function createMarketView({ panel, actions, base, prefs }) {
     const top = el('section', 'ac-game-card ac-market-city ac-market-city-open')
     top.append(back, bannerOf(city), el('p', 'ac-market-tagline', city.tagline), cityTrades(city))
     trade.onChoose = (choice) => {
+      // Another material to give starts from nothing again: its stock is another number.
+      if (choice.fromId !== trade.fromId) trade.amount = 0
       Object.assign(trade, choice)
       drawn = null
       draw()
+    }
+    openSell.toggle = (materialId) => {
+      openSell.rowId = openSell.rowId === materialId ? null : materialId
+      drawn = null
+      draw()
+      const target = openSell.rowId
+        ? `sell:${city.id}:${materialId}:slider`
+        : `sell-open:${city.id}:${materialId}`
+      panel.querySelector(`[data-key="${target}"]`)?.focus()
     }
     const onRoom = (next) => {
       wantedRoomId = next
@@ -121,9 +149,10 @@ export function createMarketView({ panel, actions, base, prefs }) {
     }
     return [
       top,
-      sellCard({ world, city, typed, actions }),
+      sellCard({ world, city, chosen, open: openSell, actions }),
       tradeCard({ world, city, form: trade, actions }),
-      stallCard({ world, city, rooms: rooms.map((room) => [room.id, roomTitle(room)]), roomId, onRoom, actions })
+      stallCard({ world, city, rooms: rooms.map((room) => [room.id, roomTitle(room)]), roomId, onRoom,
+        actions })
     ]
   }
 
@@ -138,14 +167,16 @@ export function createMarketView({ panel, actions, base, prefs }) {
     noWorld.hidden = Boolean(world?.market)
     viewOnly.hidden = Boolean(actions.sellMaterial) || state.game.viewOnly !== true
     const rooms = joinedRooms(state).map((room) => [room.id, state.game.rooms[room.id]?.worldId])
-    const signature = JSON.stringify([world, rooms, openCityId, wantedRoomId, trade.fromId, trade.toId])
+    const signature = JSON.stringify([world, rooms, openCityId, wantedRoomId, trade.fromId, trade.toId,
+      openSell.rowId])
     if (signature === drawn) return
     drawn = signature
     if (!world?.market) {
       body.replaceChildren()
       return
     }
-    coins.replaceChildren(gameIcon('coin', 'ac-market-coin'), el('span', 'ac-game-summary-label', MARKET.coins),
+    coins.replaceChildren(gameIcon('coin', 'ac-market-coin'),
+      el('span', 'ac-game-summary-label', MARKET.coins),
       el('strong', 'ac-game-amount ac-market-coins-value', formatCoins(world.coins)))
     const city = world.market.cities.find((entry) => entry.id === openCityId && entry.open)
     if (!city) openCityId = null
