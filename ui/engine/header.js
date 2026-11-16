@@ -1,6 +1,8 @@
 // The bar at the top: title, counters, default theme, view, and action buttons.
-import { button, el, select, setOptions } from './dom.js'
-import { defaultThemeOptions } from './labels.js'
+import { button, el, select, setOptions, svgIcon } from './dom.js'
+import { defaultThemeOptions, STAR_LINK_LABEL } from './labels.js'
+import { pixelPath, STAR_MARK } from './pixel-art.js'
+import { REPOSITORY_URL } from './project-link.js'
 
 export const VIEWS = /** @type {const} */ (['list', 'gallery'])
 const VIEW_OPTIONS = [
@@ -50,9 +52,9 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
   for (const action of extraActions) tools.append(button(action.label, 'ac-button', action))
 
   // The title and the counters share a row that never wraps, so a control put at its end stays
-  // on the first line whatever the tools do. Without such a control the row lays out as before.
+  // on the first line whatever the tools do.
   const titleRow = el('div', 'ac-title-row')
-  titleRow.append(el('h1', 'ac-title', 'Agent Center'), counts)
+  titleRow.append(el('h1', 'ac-title', 'Agent Center'), counts, starLink(transport))
   element.append(titleRow, tools)
 
   function addChip(count, label, tone) {
@@ -82,4 +84,25 @@ export function createHeader({ transport, extraActions = [], onViewChange, onRef
       addChip(state.counts.done, 'asleep', 'sleep')
     }
   }
+}
+
+/**
+ * A small star that opens the project's repository. A plain link opens it from a web page; a
+ * surface whose frame cannot leave its folder hands the fixed address to its transport instead.
+ */
+function starLink(transport) {
+  const link = el('a', 'ac-button ac-star-link')
+  link.href = REPOSITORY_URL
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.title = STAR_LINK_LABEL
+  link.setAttribute('aria-label', STAR_LINK_LABEL)
+  link.append(svgIcon('ac-star-icon', STAR_MARK.length, pixelPath(STAR_MARK, '#')))
+  if (transport.openRepository) {
+    link.addEventListener('click', (event) => {
+      event.preventDefault()
+      Promise.resolve(transport.openRepository()).catch((error) => console.error('open the repository', error))
+    })
+  }
+  return link
 }

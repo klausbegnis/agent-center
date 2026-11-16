@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { MONSTER_INKS, MONSTER_SHAPES, monsterShape, pixelPath, viewBoxOf } from './pixel-art.js'
+import { MONSTER_INKS, MONSTER_SHAPES, monsterShape, pixelPath, STAR_MARK, viewBoxOf } from './pixel-art.js'
 
 const isRectangular = (rows) => rows.every((row) => row.length === rows[0].length)
 
@@ -31,4 +31,10 @@ test('a run of pixels along a row becomes one rectangle', () => {
 
 test('a body this UI does not know is drawn as a blob', () => {
   assert.equal(monsterShape('tentacles'), MONSTER_SHAPES.blob)
+})
+
+test('the header star is a square drawing in one ink, so it fits the icon buttons beside it', () => {
+  assert.ok(isRectangular(STAR_MARK))
+  assert.equal(STAR_MARK.length, STAR_MARK[0].length)
+  assert.deepEqual(new Set(STAR_MARK.join('').replaceAll('.', '')), new Set(['#']))
 })

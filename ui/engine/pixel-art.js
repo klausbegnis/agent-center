@@ -1,6 +1,7 @@
-// The game's monster bodies and the settings cog, in pixels. Each is a grid of characters, one per
-// pixel, turned into SVG path data here so the drawing modules only lay paths down. The icons of
-// skills, materials and classes are in game-icons.js. Original drawings, neutral to every theme.
+// The game's monster bodies, the settings cog and the header's star, in pixels. Each is a grid of
+// characters, one per pixel, turned into SVG path data here so the drawing modules only lay paths
+// down. The icons of skills, materials and classes are in game-icons.js. Original drawings, neutral
+// to every theme.
 
 /**
  * Monster bodies on a 12 × 12 grid. Inks: `o` outline, `b` body (the monster's accent colour),
@@ -126,4 +127,16 @@ export const SETTINGS_MARK = [
   '..####..',
   '.#.##.#.',
   '...##...'
+]
+
+/** The mark on the header's link to the project's repository: a star. */
+export const STAR_MARK = [
+  '...##...',
+  '...##...',
+  '########',
+  '.######.',
+  '..####..',
+  '.######.',
+  '.##..##.',
+  '.#....#.'
 ]

@@ -14,6 +14,9 @@ export const ACTIVITY_LABEL = {
   sleep: 'Done'
 }
 
+/** The name and tooltip of the header's link to the project's repository. */
+export const STAR_LINK_LABEL = 'Star Agent Center on GitHub'
+
 /** What floats above a character's head for the states that need attention. */
 export const BUBBLE = { wait: '?', blocked: '!', done: '✓', sleep: 'zz' }
 

@@ -45,8 +45,32 @@ body {
   align-items: center;
   gap: 8px;
 }
-/* The title and counters: laid out as part of the header, unless game mode gives it a control. */
-.ac-title-row { display: contents; }
+/* The title, the counters and the icon buttons keep one row that never wraps, the buttons at its
+   right end, and the tools wrap below it when they do not fit. */
+.ac-title-row {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ac-title-row .ac-counts { min-width: 0; }
+.ac-button.ac-star-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-button.ac-star-link:hover { color: var(--orca-secondary-foreground, #e8eaf0); }
+.ac-star-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  shape-rendering: crispEdges;
+}
 .ac-title {
   margin: 0;
   font-size: 14px;
