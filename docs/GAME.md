@@ -808,10 +808,16 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
+| `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
+| `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
+| `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
-character of the room, a gathering skill. A new world is a
+character of the room, a gathering skill, a city of `game/cities.json`, a material, an offer
+index below `STALL_OFFERS`; an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
+trade or a purchase the market cannot make (a city not open yet, more than the world holds, an
+offer sold or changed) answers `{ changed: false }`. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
 refused with an error, and nothing is stored. Every action but `keepTitles` needs the game to be
 running; `keepTitles` writes the setting, and the save follows. A refusal carries its reason:
@@ -828,7 +834,8 @@ change the saved game or, for `exportSave`, give it away. Such a page can still 
 `exportSave` answers `{ format: 'agent-center-game', version, exportedAt, save, autoSpend,
 travel }`:
 `version` is the stored wrapper's (`STORED_VERSION`), `exportedAt` an ISO time, `save` the
-engine's save as it is in memory, written or not. It never holds the baselines or
+engine's save as it is in memory, written or not, with each world's coins and market. A file
+exported before the market existed still imports, with no coins and a market at rest. It never holds the baselines or
 `watchedUntil`: they describe this computer's sessions at the moment of the export. It works
 whenever the stored save has been read, even with the game off, and is refused while the stored
 save is from a newer plugin.
@@ -868,6 +875,20 @@ by the usual closing rules.
     gatheringSkills: [...same shape],
     materials: { bars: 98, ... },
     upgrades: [{ id: 'campfire', level, cost: { fish: 520, crops: 520 }, affordable, effect }],
+    coins: 48210,
+    market: {
+      day: 20408,                     // the game day: the stall's offers change with it
+      fee: 0.1, depth: 1384.2,        // MARKET_FEE, and the depth at the world's level
+      pressureRange: [-2, 10],
+      baseValues: { bars: 9, ... }, cityFactors: { wanted: 1, neutral: 0.8, produced: 0.6 },
+      cities: [{
+        id: 'goldmill', name: 'Goldmill', tagline, banner: 'ui/cities/goldmill.png', bannerAlt,
+        opensAt: 1, open: true, produces: ['crops', 'fish'], wants: ['ore', 'bars'],
+        pressure: { ore: 0.31 },      // only the prices that moved; open cities only
+        stall: [{ index: 0, kind: 'item', entryId, name, slot, damageType, tier, power, price,
+          sold: false, affordable: true, fullIn: [] }]   // open cities only
+      }, { id: 'runespire', ..., opensAt: 25, open: false }]
+    },
     roomIds: ['local:/work/sneaky-pancake'],
     orphans: [{ roomId: 'local:/work/fuzzy-anvil', name: 'fuzzy-anvil', chestSize: 4, retiredCount: 7 }]
   }],
@@ -907,6 +928,11 @@ by the usual closing rules.
   `recent`) and every chest item's `heldBy` replaced by an alias that is the same for the same
   session, and retirees' `title` null. Its web page then offers none of the actions and shows a
   "View only" marker. The panel and pages on this computer never get `viewOnly`.
+- A world's `market` carries the numbers a UI needs to quote any amount exactly as the engine
+  will (see "Market", "Prices"): a city's usual price is `baseValues[m] * cityFactors[stance]`,
+  with the stance from `wants` and `produces`, and its pressure is `pressure[m]` or 0. A stall
+  offer's `fullIn` lists the rooms whose chest already keeps `COPIES_PER_ITEM` copies of it.
+  Nothing in it names a session, so a page on another machine gets it unchanged.
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
 - `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw

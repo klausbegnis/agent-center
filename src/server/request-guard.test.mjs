@@ -69,7 +69,8 @@ test('a connection from any other address, or none, does not come from this mach
 
 test('every game route is for this machine only', () => {
   for (const route of ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
-    'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']) {
+    'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
+    'sell', 'trade', 'buy-offer']) {
     assert.equal(isLocalOnlyRoute(`/api/game/${route}`), true, route)
   }
 })

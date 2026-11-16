@@ -170,6 +170,8 @@ export function createEngine({ content }) {
     view: (save) => viewOf(save, content),
     cleanSave: (save) => cleanSave(save, { cityIds: (content.cities?.cities ?? []).map((city) => city.id) }),
     moveProjectItems,
-    ...marketActions(content)
+    ...marketActions(content),
+    /** The ids of the market's cities, for the bridge to check an action's city against. */
+    cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }
 }

@@ -4,7 +4,8 @@
 import { emptyBridge } from './game-save.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
-import { GATHERING_SKILLS, WORK_SKILLS } from './game/skills.mjs'
+import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
+import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
 import { SAVE_VERSION, assignProject, migrate, resetWorld, worldIdOf } from './game/worlds.mjs'
@@ -52,6 +53,27 @@ export function createGameActions(dependencies) {
     if (next === save) return { changed: false }
     commit({ save: next, bridge })
     return { changed: true }
+  }
+
+  /** A city of the content: the engine then checks that it is open to the world. */
+  function requireCity(cityId) {
+    if (!engine.cityIds.includes(cityId)) throw refuse('unknown city', cityId)
+  }
+
+  function requireMaterial(materialId) {
+    if (!MATERIALS.includes(materialId)) throw refuse('unknown material', materialId)
+  }
+
+  function requireAmount(amount) {
+    if (!Number.isInteger(amount) || amount < 1 || amount > MARKET_MAX_AMOUNT) throw refuse('not an amount', amount)
+  }
+
+  /** A room on screen or in the save, which plays in the world: what a stall's piece goes into. */
+  function requireRoomOf(save, worldId, roomId) {
+    requireRoom(save, roomId)
+    if (worldIdOf(save, roomId) !== worldId || !Object.hasOwn(save.worlds[worldId].projects, roomId)) {
+      throw refuse('not a room that plays in this world', roomId)
+    }
   }
 
   /** A room the store shows now or one that already plays: anything else is refused. */
@@ -159,6 +181,29 @@ export function createGameActions(dependencies) {
       })
     },
 
+    /** @param {{ worldId: string, cityId: string, materialId: string, amount: number }} input */
+    async sellMaterial({ worldId, cityId, materialId, amount }) {
+      return change((save) => {
+        requireWorld(save, worldId)
+        requireCity(cityId)
+        requireMaterial(materialId)
+        requireAmount(amount)
+        return engine.sellMaterial(save, { worldId, cityId, materialId, amount })
+      })
+    },
+
+    /** @param {{ worldId: string, cityId: string, fromId: string, toId: string, amount: number }} input */
+    async tradeMaterial({ worldId, cityId, fromId, toId, amount }) {
+      return change((save) => {
+        requireWorld(save, worldId)
+        requireCity(cityId)
+        requireMaterial(fromId)
+        requireMaterial(toId)
+        requireAmount(amount)
+        return engine.tradeMaterial(save, { worldId, cityId, fromId, toId, amount })
+      })
+    },
+
     /**
      * Sets what a room's idle characters gather when they have no choice of their own, or null
      * for the engine's own pick.
@@ -170,6 +215,23 @@ export function createGameActions(dependencies) {
         joinedProject(save, roomId)
         requireTrade(trade)
         return engine.setRoomTrade(save, { projectId: roomId, trade })
+      })
+    },
+
+    /**
+     * Buys an offer of a city's stall into a room's chest. `entryId` is the piece the person saw,
+     * so a stall that changed since is not bought from by mistake.
+     *
+     * @param {{ worldId: string, cityId: string, offerIndex: number, entryId: string, roomId: string }} input
+     */
+    async buyStallOffer({ worldId, cityId, offerIndex, entryId, roomId }) {
+      return change((save) => {
+        requireWorld(save, worldId)
+        requireCity(cityId)
+        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= STALL_OFFERS) throw refuse('unknown offer', offerIndex)
+        if (typeof entryId !== 'string') throw refuse('unknown offer', entryId)
+        requireRoomOf(save, worldId, roomId)
+        return engine.buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId: roomId })
       })
     },
 

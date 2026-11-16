@@ -29,6 +29,12 @@
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
  * @property {(fromRoomId: string, toRoomId: string) => Promise<GameResult>} gameMoveOrphanItems
  *   moves a room left behind's chest and retirees into a room on screen
+ * @property {(worldId: string, cityId: string, materialId: string, amount: number) =>
+ *   Promise<GameResult>} gameSellMaterial sells materials to a city for coins
+ * @property {(worldId: string, cityId: string, fromId: string, toId: string, amount: number) =>
+ *   Promise<GameResult>} gameTradeMaterial turns one material into another in a city
+ * @property {(worldId: string, cityId: string, offerIndex: number, entryId: string, roomId: string) =>
+ *   Promise<GameResult>} gameBuyStallOffer buys a piece of a city's stall into a room's chest
  */
 
 /** @typedef {{ changed: boolean }} GameResult whether the action changed the game */
@@ -41,6 +47,12 @@ function requireText(value, what) {
 
 function requireObject(value, what) {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(`invalid ${what}`)
+  return value
+}
+
+/** A whole number: an amount or an index. The game checks its range against what exists. */
+function requireWhole(value, what) {
+  if (!Number.isInteger(value)) throw new Error(`invalid ${what}`)
   return value
 }
 
@@ -152,6 +164,26 @@ export function createController({
     gameMoveOrphanItems: (fromRoomId, toRoomId) => playAction(() => game.moveOrphanItems({
       fromRoomId: requireText(fromRoomId, 'room'),
       toRoomId: requireText(toRoomId, 'room')
+    })),
+    gameSellMaterial: (worldId, cityId, materialId, amount) => playAction(() => game.sellMaterial({
+      worldId: requireText(worldId, 'world'),
+      cityId: requireText(cityId, 'city'),
+      materialId: requireText(materialId, 'material'),
+      amount: requireWhole(amount, 'amount')
+    })),
+    gameTradeMaterial: (worldId, cityId, fromId, toId, amount) => playAction(() => game.tradeMaterial({
+      worldId: requireText(worldId, 'world'),
+      cityId: requireText(cityId, 'city'),
+      fromId: requireText(fromId, 'material'),
+      toId: requireText(toId, 'material'),
+      amount: requireWhole(amount, 'amount')
+    })),
+    gameBuyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) => playAction(() => game.buyStallOffer({
+      worldId: requireText(worldId, 'world'),
+      cityId: requireText(cityId, 'city'),
+      offerIndex: requireWhole(offerIndex, 'offer'),
+      entryId: requireText(entryId, 'offer'),
+      roomId: requireText(roomId, 'room')
     }))
   }
 }
