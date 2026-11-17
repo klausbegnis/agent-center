@@ -3,8 +3,8 @@
   "manifestVersion": 2,
   "id": "agent-center",
   "name": "Agent Center: Tavern & Auto-Battler",
-  "version": "0.2.0",
-  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: their work becomes levels, loot and fights against 20 monster races and 55 named bosses.",
+  "version": "0.3.0",
+  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: levels and loot, a settlement that grows, markets, a bestiary and boss dungeons.",
   "license": "MIT",
   "author": {
     "name": "klausbegnis",
@@ -15,7 +15,7 @@
   "icon": "assets/icon.png",
   "cover": {
     "path": "assets/cover.png",
-    "alt": "Six project rooms in game mode: each room's party of agents fights its monster"
+    "alt": "Six project rooms in game mode: parties fight their monsters, and one room is inside a boss dungeon"
   },
   "screenshots": [
     {
@@ -24,7 +24,7 @@
     },
     {
       "path": "assets/screenshot-game.png",
-      "alt": "Game mode on the Gothic Dungeon theme: six crypt rooms where the parties fight their monsters, with wave, health and stamina on top"
+      "alt": "Game mode: the camp as a settlement in pixel art, at the Village stage"
     },
     {
       "path": "assets/screenshot-bestiary.png",
