@@ -1,15 +1,16 @@
 // The Relics card of the Arsenal's Items section: the room's active relic large in its frame with
 // its name, buff and flavour line, then every relic the room owns as a slot (a single click makes
 // one active), empty slots saying how relics are found, and a short teaser while it owns none.
-// Under them, a relic that is not active can be sent to another room of the world. On a page
-// that cannot play (view only) the slots are pictures, not buttons, and nothing can be sent.
+// Under them, the control that sends a relic that is not active to another room of the world,
+// always there and disabled with its reason when it cannot be used. On a page that cannot play
+// (view only) the slots are pictures, not buttons, and a line says nothing can be sent.
 import { el } from './dom.js'
 import { replaceKeepingFocus } from './game-controls.js'
 import { framedPicture } from './legendary-art.js'
 import { RELICS } from './legendary-labels.js'
 import { relicsCard } from './legendary-model.js'
 import { SEND } from './send-labels.js'
-import { sendTargets, sendableRelics } from './send-model.js'
+import { relicSending, sendTargets } from './send-model.js'
 import { sendControl } from './send-view.js'
 
 /**
@@ -93,28 +94,40 @@ export function createRelicsCard({ actions, base }) {
     return node
   }
 
-  /** "Send a relic: [relic] to [room] Send", when a relic can go and the world has another room. */
+  /**
+   * "Send a relic: [relic] to [room] Send", always there: disabled with the reason when no relic can
+   * go or no other room of the world plays; on a page that only watches, a line saying so.
+   */
   function sendPart(card, roomId) {
-    if (!actions.sendRelic || !current.state) return []
-    const targets = sendTargets(current.state, roomId)
-    const relics = sendableRelics(current.game, roomId)
-      .map((id) => card.owned.find((relic) => relic.id === id))
-      .filter(Boolean)
-    if (targets.length === 0 || relics.length === 0) return []
+    if (!current.state) return []
+    if (typeof actions.sendRelic !== 'function') return [el('p', 'ac-game-card-line ac-muted', SEND.viewOnly)]
+    const sending = relicSending(current.state, roomId, { canSend: current.state.game?.viewOnly !== true, words: SEND })
+    const relics = sending.relicIds.map((id) => card.owned.find((relic) => relic.id === id)).filter(Boolean)
     return [sendControl({
       key: 'send:relic',
       prefix: SEND.relic,
       pickers: [
-        { label: SEND.relicPicker, key: 'send:relic-which', options: relics.map((relic) => [relic.id, relic.name]) },
-        { label: SEND.relicRoomLabel, key: 'send:relic-room', options: targets.map((room) => [room.id, room.name]) }
+        {
+          label: SEND.relicPicker,
+          key: 'send:relic-which',
+          options: relics.map((relic) => ({ value: relic.id, label: relic.name })),
+          emptyLabel: SEND.noRelicPick
+        },
+        {
+          label: SEND.relicRoomLabel,
+          key: 'send:relic-room',
+          options: sending.targets.map((room) => ({ value: room.id, label: room.name })),
+          emptyLabel: SEND.noRoomPick
+        }
       ],
       buttonLabel: SEND.send,
       ariaLabel: SEND.sendRelic,
+      reason: sending.reason,
       onSend: async ([relicId, toRoomId]) => {
         const went = await actions.sendRelic(roomId, toRoomId, relicId)
         if (!went) return
         const relic = relics.find((entry) => entry.id === relicId)
-        const target = targets.find((room) => room.id === toRoomId)
+        const target = sending.targets.find((room) => room.id === toRoomId)
         status.textContent = SEND.relicSent(relic?.name ?? relicId, target?.name ?? toRoomId)
       }
     })]
@@ -126,14 +139,15 @@ export function createRelicsCard({ actions, base }) {
     const card = relicsCard(game, roomId)
     element.hidden = !card
     if (!card) return
-    const targets = current.state && actions.sendRelic ? sendTargets(current.state, roomId) : []
+    const targets = current.state ? sendTargets(current.state, roomId) : []
     const signature = JSON.stringify([roomId, card, pendingId, Boolean(actions.setActiveRelic), targets])
     if (signature === drawn) return
     if (drawn && JSON.parse(drawn)[0] !== roomId) status.textContent = ''
     drawn = signature
     count.textContent = RELICS.owned(card.count, card.total)
     if (card.count === 0) {
-      replaceKeepingFocus(body, [el('p', 'ac-game-card-line ac-legendary-teaser', RELICS.teaser), grid(card, roomId)])
+      replaceKeepingFocus(body, [el('p', 'ac-game-card-line ac-legendary-teaser', RELICS.teaser), grid(card, roomId),
+        ...sendPart(card, roomId)])
       return
     }
     const hint = actions.setActiveRelic ? [el('p', 'ac-game-card-line ac-muted', RELICS.hint)] : []
