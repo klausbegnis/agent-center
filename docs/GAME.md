@@ -7,9 +7,10 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items, races, bosses, cities, legendary } })` takes the parsed
-`game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json`,
-`game/cities.json` and `game/legendary.json` (optional: without it there is no legendary loot) and
+`createEngine({ content: { monsters, items, races, bosses, cities, legendary, bestiary } })` takes
+the parsed `game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json`,
+`game/cities.json`, `game/legendary.json` (optional: without it there is no legendary loot) and
+`game/bestiary.json` (optional: without it nothing is counted and no bestiary bonus is given) and
 returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
@@ -19,7 +20,7 @@ milliseconds the caller passes.
 |---|---|
 | `applyTokens(save, { projectId, sessionId, tokens, activity, now, themeId?, title?, guest? })` | Counts the tokens a session spent since the last reading. Creates the world, the project (wave at the world level, starter chest) and the character when missing; a session found among the project's retirees comes back instead. Grants experience to the activity's work skill and to the character, and records `lastTokenAt`. A guest or an excluded project changes nothing. |
 | `advance(save, { from, to, sessions })` | Moves time forward. `sessions` lists `{ projectId, sessionId, state, activity?, tokensPerMinute?, themeId?, guest?, scenes? }` with `state` one of `working`, `waiting`, `blocked`, `idle`; `scenes` lists the themes a travelling project moves through (see "Scenes"). See "Time". |
-| `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, rank, affix, ticks, whether the party rested, materials and dropped item. |
+| `advanceWithEvents(save, interval)` | The same, returning `{ save, events }`: one `kill` event per kill with its wave, kind, rank, affix, ticks, whether the party rested, materials and dropped item, and `bestiary` news when there is some (see "Bestiary"). |
 | `prepareFights(save, { sessions })` | Moves no time. Records each reported character's state, and gives a project whose party has a working member (a character or a guest) and no monster its monster now, measured against that party. |
 | `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
 | `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
@@ -362,7 +363,8 @@ name, a flavour line, a colour and a picture in `ui/art/legendary/`:
 A buff is data: `{ effect, scope, amount, ...qualifiers }`, one of a closed set of types the
 engine interprets (`src/game/legendary-effects.mjs`). A relic's scope is `party`; equipment's is
 `holder`: it acts on the living character holding it, or, for a party quantity, on its party while
-that character fights. The UI words the text from the same data (`ui/engine/legendary-labels.js`),
+that character fights. The bestiary's is `world`: it acts on every party of the world as a relic
+acts on its room's (see "Bestiary"). The UI words the text from the same data (`ui/engine/legendary-labels.js`),
 and a test checks every shipped item's text against its effect.
 
 | Type | Scopes | What it changes |
@@ -389,10 +391,21 @@ and a test checks every shipped item's text against its effect.
 | `characterXp` | party | the room's characters' experience from tokens × (1 + a) |
 | `skillXp` | holder | the holder's tokens give the named work skill × (1 + a) |
 | `upgradeCost` | party | the room's item upgrades cost × (1 − a), after the workbench |
+| `raceDamage` | world | hits × (1 + damage + a) against a monster of one of `races` |
+| `legendaryPity` | world | each step of a boss's legendary pity counts × (1 + a) |
 
-Stacking: effects of different sources (the active relic and the equipment held) add, and each
-type's sum is capped by `LEGENDARY_EFFECT_CAPS` (`restTime` in seconds, `gatherHours` in hours).
-Only one relic is active, a room holds one of each item, and today no target reaches a cap.
+The bestiary may also give, with the scope `world`, `damage`, `critDamage`, `staminaDrain`,
+`staminaPool`, `restTime`, `staminaPerKill`, `affixWeakening`, `thorns`, `runeCircle`, `itemDrop`,
+`killMaterials`, `gatherHours`, `gatherXp`, `characterXp` and `upgradeCost`.
+
+Stacking: effects of different sources (the active relic, the equipment held and the world's
+bestiary) add, and each type's sum is capped by `LEGENDARY_EFFECT_CAPS` (`restTime` in seconds,
+`gatherHours` in hours). Only one relic is active and a room holds one of each item. With the
+strongest relic of each type, every piece of legendary equipment and a whole bestiary at its top,
+no type passes its cap (a test checks it), save `gatherYield`, where the Sheaf of the Long Summer
+and the Blightmoon Sickle already reach 0.15 together without the bestiary. The `damage` cap is
+0.15: the Crown of the Ossuary and the Labyrinth Cleaver alone reached the 0.12 it was, and the
+bestiary's points against bosses, elites and a damage type sit on top.
 
 ### Who holds equipment
 
@@ -438,6 +451,95 @@ copy, and a plain item that uses a legendary id. Moving a chest left behind adds
 the target's (the target keeps its active relic, or takes the source's when it had none, and its
 own pity) and keeps the better of two copies of an item, salvaging the other, unless the target's
 is held. A world reset forgets them with the room.
+
+## Bestiary
+
+Each world keeps a book of what it has fought (`src/game/bestiary*.mjs`), with its numbers in
+`game/bestiary.json` (checked by `src/game/bestiary-content.mjs`; `npm run check` and the worker
+refuse a file that misses a race of `game/races.json`).
+
+### Counters
+
+Counted where a kill is settled (`noteKill` in `bestiary.mjs`, from `fight.mjs`), so they follow
+the same hash and order as everything else:
+
+- **A race**: every monster with a race of `game/races.json`, generated or a boss of the roster,
+  counts for its race under its rank (normal, veteran, elite, champion, boss, legendary), with the
+  game day of the first kill (`floor(ms / MARKET_DAY_MS)`, the day of the advance it fell in).
+- **A boss**: a boss wave's boss (rank `boss` or `legendary`) of the roster also counts as beaten
+  once, and as beaten as legendary when its rank was; first day as above.
+- **Others**: a hand-made themed monster (`game/monsters.json`, shown as itself) has no race and
+  counts under one counter of its own, by rank. They are a theme's local flavour, not creatures to
+  master, so they have no entry, no mastery and no bonus.
+- A save from before the bestiary starts it empty; the rooms' own `kills` stay as they were and
+  nothing is back-filled. A world reset forgets it with the world. Content without
+  `game/bestiary.json` counts nothing.
+
+A race or a boss with no kill is undiscovered: the UI shows its silhouette and "???".
+
+### Mastery
+
+A race's mastery level is the number of its thresholds its kills have reached. The thresholds are
+the file's, times the race's `scale` (rounded); the four races that a theme prefers (they come up
+three times as often in Gothic Dungeon rooms) have `scale` 1.5.
+
+| Level | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| Kills of a race | 10 | 50 | 200 | 800 | 3,000 |
+| Skeletons, zombies, vampires, ghosts (scale 1.5) | 15 | 75 | 300 | 1,200 | 4,500 |
+
+Each level gives `raceDamage` 0.01 against that race (5% at level 5). At levels 3 and 5
+(`perkLevels`) the race also gives its perk, once for each of those levels reached:
+
+| Race | Perk, each time | Race | Perk, each time |
+|---|---|---|---|
+| Goblins | `itemDrop` +2% | Minotaurs | `upgradeCost` −1% |
+| Orcs | `damage` +0.5%, physical | Dragons | `damage` +0.5%, magical |
+| Trolls | `affixWeakening` 0.5% | Spiders | `affixWeakening` 2% |
+| Ogres | `staminaPool` +1% | Insects | `gatherHours` +6 min |
+| Humans | `characterXp` +0.5% | Slimes | `killMaterials` +1% |
+| Skeletons | `staminaDrain` −0.5% | Elementals | `gatherXp` +1% |
+| Zombies | `gatherHours` +6 min | Golems | `thorns` 0.5% |
+| Vampires | `staminaPerKill` +0.5% | Ghosts | `runeCircle` +1% |
+| Werewolves | `critDamage` +2% | Treants | `upgradeCost` −1% |
+| Demons | `damage` +1% against elites and champions | Lizardfolk | `gatherXp` +1% |
+
+### Boss hunter
+
+Every boss of the roster beaten at least once counts one; beating the same boss again counts only
+for that boss.
+
+| Level | Distinct bosses | Adds |
+|---|---|---|
+| 1 | 5 | `damage` +1% against bosses and legendary bosses |
+| 2 | 15 | `legendaryPity` +25% |
+| 3 | 30 | `damage` +1% against bosses and legendary bosses |
+| 4 | 55 (all) | `legendaryPity` +25% |
+
+### As effects
+
+`bestiaryEffects` turns a world's counters into effects with the scope `world`; `worldEffectsOf`
+works them out once per state of the counters. They join the room's relic effects wherever those
+are read (the fight, the rune circle, gathering, a character's experience, upgrade prices and the
+legendary drop's pity), so every bonus is summed with the relic and the equipment under the same
+caps. A level reached during an advance counts from the next one, as a relic that drops does.
+
+### In the save
+
+A world keeps `bestiary: { races, bosses, others? }` once it has killed: a race's (and the others')
+counter is `[normal, veteran, elite, champion, boss, legendary, firstDay]`, a boss's
+`[beaten, legendary, firstDay]`. Twenty races and 55 bosses fit in under 2 KB. `migrate` drops
+counters of another shape; `cleanSave` refuses a race or boss the content does not have, a list of
+the wrong length or with a number that is not a whole count, a counter with no kill (or no win),
+more legendary wins than wins, an empty bestiary, and any bestiary when the content has none.
+Export and import carry it with the world.
+
+### Kill news
+
+A kill event carries `bestiary: [...]` when it made something new: `{ kind: 'race', id,
+discovered: true }` for a race's first kill, `{ kind: 'race', id, level }` for a mastery level,
+`{ kind: 'boss', id, discovered: true }` for a boss's first win and `{ kind: 'hunter', level }`.
+The bridge turns each into a `bestiary` event of `recent` (see "View state").
 
 ## Scenes
 
@@ -685,7 +787,7 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles } }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market }
+            coins, market: Market, bestiary? }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
@@ -1042,6 +1144,17 @@ by the usual closing rules.
                                     // a room's relic is null once it owns the city's two
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
+    bestiary: {                     // about 9 KB a world
+      discovered: 12, raceCount: 20, beaten: 12, bossCount: 55,
+      hunter: { count: 12, level: 1, maxLevel: 4, from: 5, to: 15, now: [effects], next: [effects] },
+      bonuses: [effects],           // the whole bestiary's, one per kind
+      races: [{ id: 'orc', discovered: true, kills: 187, ranks: [140, 28, 14, 3, 2, 0], eliteKills: 19,
+        firstDay: 20_399, level: 2, maxLevel: 5, from: 50, to: 200, now: [effects], next: [effects] },
+        { id: 'ogre', discovered: false, kills: 0, level: 0, maxLevel: 5, from: 0, to: 10 }],
+      bosses: [{ id: 'skrix', discovered: true, beaten: 3, legendary: 1, firstDay: 20_400,
+        item: 'pilfered-lantern', found: false }],  // found: a room of the world owns the item
+      others: { kills: 84, firstDay: 20_399 }       // or null
+    },
     roomIds: ['local:/work/sneaky-pancake'],
     orphans: [{ roomId: 'local:/work/fuzzy-anvil', name: 'fuzzy-anvil', chestSize: 4, retiredCount: 7 }]
   }],
@@ -1078,6 +1191,12 @@ by the usual closing rules.
   legendary: { relicCount: 22, equipmentCount: 12,
     entries: { rimeheart: { id, name, kind, effect, flavour, colour, boss?: { id, name }, city?,
       slot?, damageType?, class?, trade? } } },   // only the entries the state refers to
+  bestiary: {                       // the content's, the same for every world; about 32 KB
+    races: [{ id: 'orc', name: 'Orcs', thresholds: [10, 50, 200, 800, 3000], look }],
+    bosses: [{ id: 'skrix', name: 'Skrix', epithet: 'the Lantern Thief', race: 'goblin', look,
+      item: 'pilfered-lantern' }],  // item: null for a boss that guards none
+    perkLevels: [3, 5], hunterThresholds: [5, 15, 30, 55]
+  },
   debug: { tokenSource, readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
 }
 ```
@@ -1119,7 +1238,9 @@ by the usual closing rules.
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
   kind, rank, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
   `drop` (item, with its `name` and `tier`), `legendary` (item, `kind`, `name`: a legendary
-  drop, which a UI celebrates), `level` (agentId, level), `retire` (sessionId,
+  drop, which a UI celebrates), `bestiary` (`kind` race, boss or hunter, `id`, `discovered` or
+  `level`, and the race's or boss's `name`: a first kill or a new level, which a UI celebrates),
+  `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
   purchase's level is worked back from the level now and the purchases of the same thing kept
@@ -1179,7 +1300,7 @@ supporter rests more, one missing a damage type is twice as slow against the mat
 resistance; a meaningful upgrade every one to two working days; gathering 15 to 30% of
 materials.
 
-What the simulator measures now, legendary loot included:
+What the simulator measures now, legendary loot and the bestiary included:
 
 | | light | medium | heavy |
 |---|---|---|---|
@@ -1187,11 +1308,11 @@ What the simulator measures now, legendary loot included:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight (normal rank) | 22 ticks, 3.7 min | 25 ticks, 4.2 min | 19 ticks, 3.2 min |
-| Kills per hour of fighting | 9.3 to 12.2 | 7.9 to 10.7 | 11.5 to 15.4 |
+| Median common fight (normal rank) | 22 ticks, 3.7 min | 24 ticks, 4.0 min | 18 ticks, 3.0 min |
+| Kills per hour of fighting | 9.4 to 12.6 | 7.9 to 11.3 | 11.7 to 16.4 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 7.0 to 13.8 |
-| Gathering share of materials | 26% | 23% | 16% |
+| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 6.9 to 13.7 |
+| Gathering share of materials | 25% | 22% | 16% |
 | Hit from world, gear, character (day 90 on) | 53%, 23%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
@@ -1338,3 +1459,43 @@ above the drops at level 0, which is at most two upgrade levels ahead of a fresh
 against tier 8, 13 against 14). That is within `LEGENDARY_PICK_MARGIN`, so a new character still
 takes the legendary item it fits, and auto-spend keeps it level from then on. The rule needs no
 change.
+
+### Bestiary
+
+`npm run simulate` plays with the bestiary and plays the three scenarios a second time without it
+(legendary loot in both). Its table, per scenario and day: races met, mastery levels in all, how
+many races are at each level, races with their perk, distinct bosses beaten, the hunter's level,
+the damage bonus against a race averaged over all twenty, and kills per hour without and with
+the bestiary.
+
+| | day | races | levels (races at 1/2/3/4/5) | perks | bosses | hunter | race damage | kills/h without, with |
+|---|---|---|---|---|---|---|---|---|
+| light | 30 | 20 | 20 (20/0/0/0/0) | 0 | 2 | 0 | 1% | 10.9, 11.0 (+1%) |
+| light | 90 | 20 | 34 (6/14/0/0/0) | 0 | 3 | 0 | 2% | 9.4, 9.7 (+3%) |
+| light | 365 | 20 | 57 (0/3/17/0/0) | 17 | 5 | 1 | 3% | 12.2, 12.6 (+3%) |
+| medium | 30 | 20 | 40 (0/20/0/0/0) | 0 | 5 | 1 | 2% | 7.9, 7.9 (+1%) |
+| medium | 90 | 20 | 56 (0/4/16/0/0) | 16 | 9 | 1 | 3% | 9.0, 9.3 (+3%) |
+| medium | 365 | 20 | 77 (0/0/3/17/0) | 20 | 29 | 2 | 4% | 10.7, 11.3 (+6%) |
+| heavy | 30 | 20 | 46 (0/14/6/0/0) | 6 | 14 | 1 | 2% | 11.5, 11.7 (+1%) |
+| heavy | 90 | 20 | 60 (0/0/20/0/0) | 20 | 37 | 3 | 3% | 12.4, 13.4 (+8%) |
+| heavy | 365 | 20 | 94 (0/0/0/6/14) | 20 | 55 | 4 | 5% | 15.4, 16.4 (+7%) |
+
+Its balance check adds two kinds of target: in each scenario the bestiary adds at most about 10%
+kills per hour at a year (+3%, +6%, +7%), and a whole bestiary at its top (every race at level 5,
+every boss beaten) adds at most about 10% to a trained party of four that already has the full
+legendary set and the best relic for a fight (+8% at level 10, +7% at 60 and 150).
+
+- Every race comes up in every theme, so even a light user meets all twenty in the first month,
+  and reaches the first level of each within a few weeks. The collection that lasts is the
+  bosses: five in a year for a light user, 29 for a medium one; a heavy user beats all 55 within
+  the year. Races are not left out: a light user's are at level 2 or 3 after a year, a medium
+  user's at 4, and a heavy user reaches the top of a common race after about ten months.
+- The perks matter more than their size says: they act on every room of the world, and the ones
+  that touch materials and prices compound through gear. With perks at levels 2 and 4, 1.5% a
+  level and the trolls' shorter rests, the medium and heavy users gained 13% and 17% at a year;
+  perks at levels 3 and 5, 1% a level, a smaller ghost perk and no rest perk bring it to the
+  numbers above.
+- No target that passed before the bestiary fails with it. Small shifts: the median common fight
+  is 24 ticks for medium and 18 for heavy (25 and 19 before), the trading light player buys two
+  stall relics in a year instead of three, and the world levels do not change. The "Market" and
+  "Legendary loot" tables above were measured before the bestiary.

@@ -1,5 +1,6 @@
 // The game part of the view state: why the game is off, or the worlds, rooms and characters a
 // UI draws, reshaped from the engine's view and kept small enough for a panel post. Pure.
+import { describeBestiaryEvent } from './game-bestiary-view.mjs'
 import { describeLegendaryDrop, legendaryMarks, legendaryShown } from './game-legendary-view.mjs'
 import { gameStateOf } from './game-sessions.mjs'
 
@@ -240,10 +241,11 @@ function describePurchase(event, index, recent, { projects, worlds }) {
  * name and level. A kill's monster name is not known here: the bridge's kill events do not
  * carry it.
  */
-function describeEvents(recent, { projects, worlds, itemEntries, legendary }) {
+function describeEvents(recent, { projects, worlds, itemEntries, legendary, bestiary }) {
   return recent.map((event, index) => {
     if (event.type === 'kill') return { ...event, level: event.wave }
     if (event.type === 'legendary') return describeLegendaryDrop(event, legendary)
+    if (event.type === 'bestiary') return describeBestiaryEvent(event, bestiary)
     if (event.type === 'drop') {
       const entry = itemEntries[event.item]
       return entry ? { ...event, name: entry.name, tier: entry.tier } : event
@@ -321,11 +323,14 @@ export function buildGameView(input) {
   }))
   const tickSeconds = engineView.tickSeconds ?? null
   const described = describeEvents(recent, {
-    projects, worlds, itemEntries: engineView.itemEntries ?? {}, legendary: engineView.legendary
+    projects, worlds, itemEntries: engineView.itemEntries ?? {}, legendary: engineView.legendary,
+    bestiary: engineView.bestiary
   })
   const legendary = legendaryShown(engineView.legendary, { rooms, characters, recent: described, worlds })
   return {
     status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug,
-    ...(legendary ? { legendary } : {})
+    ...(legendary ? { legendary } : {}),
+    // The races' and bosses' names and looks, the same for every world; each world has its counts.
+    ...(engineView.bestiary ? { bestiary: engineView.bestiary } : {})
   }
 }

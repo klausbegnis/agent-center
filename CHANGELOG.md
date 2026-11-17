@@ -8,7 +8,7 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
-- Game mode's tabs are now Rooms, Party, Chest, Camp, Skills and Market: the Arsenal tab and
+- Game mode's tabs are now Rooms, Party, Chest, Camp, Skills, Market and Bestiary: the Arsenal tab and
   its Items, Party and Camp row are gone, Items is called Chest. Above the tabs, on every tab,
   are the room picker with its world and level and one strip with the world's coins and
   materials, which no longer move when another tab opens. The picker chooses the room of Party
@@ -19,6 +19,17 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: a **Bestiary** tab, the seventh. Each world counts the creatures it kills: every
+  race by rank, every named boss beaten (and how often as legendary), the rooms' own themed
+  monsters as "others", and the day of each first kill. A race or boss never killed shows as a
+  silhouette and "???". A race's mastery levels (at 10, 50, 200, 800 and 3,000 kills) each add
+  1% damage against it, and at levels 3 and 5 its small themed perk (slimes: a little more
+  materials from kills; goblins: a little more item drops; and so on); beating 5, 15, 30 and all
+  55 different bosses levels a boss hunter track with a little damage against bosses and faster
+  legendary pity. Every bonus is data in `game/bestiary.json`, an effect of the set legendary
+  loot uses, summed with the relic and the equipment under the same caps; the damage cap is now
+  0.15. A first kill and a new level are celebrated in the room. The counters are kept in the
+  save and in save files; older saves load with an empty bestiary, and a world reset clears it.
 - Choose what a character holds. On the Party tab each of a character's three slots opens, in
   place, the room's chest items that fit it, best first, with what each changes and whether it
   is free or a swap with the character holding it (refused, with the reason, when that one

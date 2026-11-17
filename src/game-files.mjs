@@ -2,6 +2,7 @@
 // missing or invalid leaves the game unavailable rather than half working.
 import fs from 'node:fs'
 import path from 'node:path'
+import { validateBestiary } from './game/bestiary-content.mjs'
 import { validateCities } from './game/content-cities.mjs'
 import { validateItems, validateMonsters } from './game/content.mjs'
 import { validateBosses, validateRaces } from './game/content-races.mjs'
@@ -22,7 +23,8 @@ export function loadGameEngine(root, log) {
       races: readJson('races.json'),
       bosses: readJson('bosses.json'),
       cities: readJson('cities.json'),
-      legendary: readJson('legendary.json')
+      legendary: readJson('legendary.json'),
+      bestiary: readJson('bestiary.json')
     }
     const problems = [
       ...validateMonsters(content.monsters),
@@ -30,7 +32,8 @@ export function loadGameEngine(root, log) {
       ...validateRaces(content.races),
       ...validateBosses(content.bosses, content.races),
       ...validateCities(content.cities),
-      ...validateLegendary(content.legendary, content)
+      ...validateLegendary(content.legendary, content),
+      ...validateBestiary(content.bestiary, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)

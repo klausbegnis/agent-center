@@ -1,9 +1,10 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
-// bosses.json, cities.json and legendary.json must exist and be valid, and game/items.json must be
-// valid once it exists. The rules are in src/game/content.mjs, content-races.mjs,
-// content-cities.mjs and legendary-content.mjs.
+// bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
+// game/items.json must be valid once it exists. The rules are in src/game/content.mjs,
+// content-races.mjs, content-cities.mjs, legendary-content.mjs and bestiary-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
+import { validateBestiary } from '../src/game/bestiary-content.mjs'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
@@ -31,6 +32,21 @@ export function checkGameContent({ root, report, readJson }) {
   const items = fs.existsSync(itemsFile) ? readJson(itemsFile) : null
   if (items !== null) for (const problem of validateItems(items)) report(itemsFile, problem)
   checkLegendary({ root, report, readJson, items })
+  checkBestiary({ root, report, readJson })
+}
+
+/** game/bestiary.json, its races checked against game/races.json and its track against the bosses. */
+function checkBestiary({ root, report, readJson }) {
+  const bestiaryFile = path.join(root, 'game', 'bestiary.json')
+  if (!fs.existsSync(bestiaryFile)) return report(bestiaryFile, 'is missing; the game needs it for the bestiary')
+  const bestiary = readJson(bestiaryFile)
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  if (bestiary === null) return
+  const others = { races: readIfThere('races.json'), bosses: readIfThere('bosses.json') }
+  for (const problem of validateBestiary(bestiary, others)) report(bestiaryFile, problem)
 }
 
 /**

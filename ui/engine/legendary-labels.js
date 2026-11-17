@@ -80,19 +80,37 @@ const EFFECT_TEXT = {
     holder: (effect, who) =>
       `The ${who}'s tokens give ${percent(effect.amount)} more ${(SKILL_LABEL[effect.skill] ?? effect.skill).toLowerCase()} experience`
   },
-  upgradeCost: { party: (effect) => `Item upgrades cost ${percent(effect.amount)} fewer materials` }
+  upgradeCost: { party: (effect) => `Item upgrades cost ${percent(effect.amount)} fewer materials` },
+  raceDamage: {
+    world: (effect, who, { raceNames = {} } = {}) => `+${percent(effect.amount)} damage against ` +
+      listText((effect.races ?? []).map((id) => (raceNames[id] ?? id).toLowerCase()))
+  },
+  legendaryPity: {
+    world: (effect) => `+${percent(effect.amount)} to the extra legendary chance each boss without a drop adds`
+  }
 }
+/**
+ * The party effects the bestiary gives a whole world (scope `world`) read as a relic's do: they act
+ * on every party of the world the way a relic acts on its room's.
+ */
+const WORLD_AS_PARTY = [
+  'damage', 'critDamage', 'staminaDrain', 'staminaPool', 'restTime', 'staminaPerKill', 'affixWeakening', 'thorns',
+  'runeCircle', 'itemDrop', 'killMaterials', 'gatherHours', 'gatherXp', 'characterXp', 'upgradeCost'
+]
+for (const type of WORLD_AS_PARTY) EFFECT_TEXT[type].world = EFFECT_TEXT[type].party
 
 /**
  * What an effect does, in words: "Monsters drain 5% less stamina", "+4% critical chance for the
- * wielder". '' for an effect this version cannot word.
+ * wielder", "+3% damage against orcs". '' for an effect this version cannot word.
  *
  * @param {{ effect: string, scope: string, amount: number }} effect
  * @param {string} [slot] the equipment's slot, for who a holder effect acts for
+ * @param {{ raceNames?: Record<string, string> }} [context] the names of the races a bestiary
+ *   effect names, by id
  */
-export function effectText(effect, slot) {
+export function effectText(effect, slot, context = {}) {
   const words = EFFECT_TEXT[effect?.effect]?.[effect.scope]
-  return words ? words(effect, HOLDER_WORD[slot] ?? 'holder') : ''
+  return words ? words(effect, HOLDER_WORD[slot] ?? 'holder', context) : ''
 }
 
 /** The effect types this module can word, for a test to compare with the engine's. */

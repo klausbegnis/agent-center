@@ -360,13 +360,17 @@ export const STALL_MARKUP = 1.5
 /**
  * The most each effect type can add up to for one target, whatever its sources: the active relic
  * and the legendary equipment held. Effects of different sources add, then this caps the sum, so
- * a future item cannot stack a quantity past what the design allows. Today's content never
- * reaches a cap; every buff is modest so the world's skills stay the main source of power.
+ * a future item cannot stack a quantity past what the design allows. The world's bestiary is a
+ * third source, summed with the other two. Today's content never passes a cap, all three at
+ * their most included, save `gatherYield`, where a relic and a tool reach it without the
+ * bestiary; every buff is modest so the world's skills stay the main source of power.
  * `restTime` is in seconds and `gatherHours` in hours; every other amount is a share.
  */
 export const LEGENDARY_EFFECT_CAPS = {
   attackSpeed: 0.08,
-  damage: 0.12,
+  // 0.12 was the strongest relic and weapon together; the bestiary's few points against bosses,
+  // elites and a damage type fit on top of them (docs/GAME.md, "Bestiary").
+  damage: 0.15,
   critChance: 0.05,
   critDamage: 0.3,
   staminaDrain: 0.1,
@@ -386,7 +390,11 @@ export const LEGENDARY_EFFECT_CAPS = {
   gatherXp: 0.1,
   characterXp: 0.05,
   skillXp: 0.1,
-  upgradeCost: 0.1
+  upgradeCost: 0.1,
+  // The bestiary's own types (docs/GAME.md, "Bestiary"): damage against the races a world has
+  // mastered, and how much faster bosses' legendary pity grows.
+  raceDamage: 0.1,
+  legendaryPity: 0.5
 }
 /**
  * A free legendary item that fits a new character (made for its class, or for a tool its trade) is

@@ -60,3 +60,21 @@ test('an item says where it comes from and who it is made for', () => {
   assert.equal(madeForText({ class: 'physical' }), 'Made for a Fighter')
   assert.equal(madeForText({ trade: 'mining' }), 'Made for a miner')
 })
+
+const bestiary = JSON.parse(readFileSync(new URL('../../game/bestiary.json', import.meta.url), 'utf8'))
+
+test('every bestiary perk and hunter level is worded with its amount and qualifiers', () => {
+  const effects = [...bestiary.races.map((race) => race.perk), ...bestiary.hunter.levels.flat()]
+  for (const effect of effects) {
+    const text = effectText(effect)
+    assert.ok(text.includes(shownAmount(effect)), `${effect.effect}: ${text}`)
+    if (effect.damageType) assert.ok(text.includes(effect.damageType), text)
+    assert.ok(!/undefined|NaN/.test(text), text)
+  }
+})
+
+test('damage against a race names the race as the bestiary calls it', () => {
+  const effect = { effect: 'raceDamage', scope: 'world', amount: 0.045, races: ['orc'] }
+  assert.equal(effectText(effect, undefined, { raceNames: { orc: 'Orcs' } }), '+4.5% damage against orcs')
+  assert.equal(effectText(effect), '+4.5% damage against orc')
+})

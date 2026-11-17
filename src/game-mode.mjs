@@ -201,12 +201,14 @@ export function createGameMode(dependencies) {
     const moved = engine.advanceWithEvents(save, { from, to: at, sessions: states })
     const events = []
     for (const kill of moved.events) {
-      const { type, projectId, worldId, ...details } = kill
+      const { type, projectId, worldId, bestiary: _news, ...details } = kill
       events.push({ type: 'kill', roomId: projectId, worldId, ...details })
       if (kill.item) events.push({ type: 'drop', roomId: projectId, worldId, item: kill.item })
       for (const drop of kill.legendary ?? []) {
         events.push({ type: 'legendary', roomId: projectId, worldId, item: drop.id, kind: drop.kind })
       }
+      // A first kill of a race or a boss, and a mastery or boss hunter level, for the room to celebrate.
+      for (const news of kill.bestiary ?? []) events.push({ type: 'bestiary', roomId: projectId, worldId, ...news })
     }
     return { save: moved.save, events }
   }

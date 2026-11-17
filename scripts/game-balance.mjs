@@ -252,8 +252,9 @@ function legendaryChecks(legendary) {
  * @param {object} engine an engine without legendary loot, for the fixed parties
  * @param {(scenario: object) => number} perHourOf tokens a session spends per hour of work
  * @param {{ measure: (level: number) => object }} [legendary] what legendary loot adds at a level
+ * @param {() => [string, boolean, string][]} [moreChecks] further targets, measured after these
  */
-export function printBalanceCheck(runs, engine, perHourOf, legendary) {
+export function printBalanceCheck(runs, engine, perHourOf, legendary, moreChecks = () => []) {
   const byId = Object.fromEntries(runs.map((run) => [run.scenario.id, run]))
   const results = [
     ...progressionChecks(byId),
@@ -262,6 +263,7 @@ export function printBalanceCheck(runs, engine, perHourOf, legendary) {
     ...compositionChecks(engine),
     ...legendaryChecks(legendary)
   ]
+  results.push(...moreChecks())
   console.log('\n## Balance check\n')
   const rows = results.map(([name, passed, detail]) => [passed ? 'PASS' : 'FAIL', name, detail])
   printTable(['', 'target', 'measured'], rows)

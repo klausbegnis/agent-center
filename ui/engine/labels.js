@@ -119,7 +119,8 @@ export const GAME_TAB_LABEL = {
   chest: 'Chest',
   camp: 'Camp',
   skills: 'Skills',
-  market: 'Market'
+  market: 'Market',
+  bestiary: 'Bestiary'
 }
 /** The icon beside each tab's name, from game-icons.js. */
 export const GAME_TAB_ICON = {
@@ -128,7 +129,8 @@ export const GAME_TAB_ICON = {
   chest: 'tab-chest',
   camp: 'campfire',
   skills: 'star',
-  market: 'coin'
+  market: 'coin',
+  bestiary: 'tab-bestiary'
 }
 export const GAME_TABS_NAME = 'Game views'
 

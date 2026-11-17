@@ -2,6 +2,7 @@
 // and gathering, closed sessions retire, and materials buy upgrades. Never mutates, no I/O, no
 // clock and no randomness: the same save and the same calls always give the same result.
 import { advanceWithEvents, prepareFights } from './advance.mjs'
+import { worldEffectsOf } from './bestiary-effects.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
@@ -57,7 +58,7 @@ function upgradeItem(save, { projectId, itemId }, content) {
   const item = world?.projects[projectId] ? findItem(world.projects[projectId].chest, itemId) : null
   if (!item) return save
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
-  const relicDiscount = upgradeDiscountOf(world.projects[projectId], legendaryIndexOf(content))
+  const relicDiscount = upgradeDiscountOf(world.projects[projectId], legendaryIndexOf(content), worldEffectsOf(world, content))
   const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills), relicDiscount })
   const next = applyPurchase(world, { kind: item.slot, projectId, itemId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
@@ -127,7 +128,8 @@ function autoSpendWithPurchases(save, content) {
   const purchases = []
   const worlds = {}
   for (const worldId of Object.keys(save.worlds).sort()) {
-    const spent = spendWorld(save.worlds[worldId], legendaryIndexOf(content))
+    const world = save.worlds[worldId]
+    const spent = spendWorld(world, legendaryIndexOf(content), worldEffectsOf(world, content))
     worlds[worldId] = spent.world
     purchases.push(...spent.purchases.map((purchase) => ({ ...purchase, worldId })))
   }
@@ -199,7 +201,12 @@ export function createEngine({ content }) {
     autoSpend: (save) => autoSpendWithPurchases(save, content).save,
     autoSpendWithPurchases: (save) => autoSpendWithPurchases(save, content),
     view: (save) => viewOf(save, content),
-    cleanSave: (save) => cleanSave(save, { cityIds: (content.cities?.cities ?? []).map((city) => city.id), legendary: content.legendary }),
+    cleanSave: (save) => cleanSave(save, {
+      cityIds: (content.cities?.cities ?? []).map((city) => city.id),
+      legendary: content.legendary,
+      bestiary: content.bestiary,
+      bosses: content.bosses
+    }),
     moveProjectItems,
     ...marketActions(content),
     /** The ids of the market's cities, for the bridge to check an action's city against. */

@@ -20,7 +20,7 @@ const FULL_SET = {
 const ROOM = 'fuzzy-anvil'
 
 /** The party's room with each character holding its class's legendary items at its plain items' power. */
-function withFullSet(save, index, relicId) {
+export function withFullSet(save, index, relicId) {
   const world = save.worlds.main
   const project = world.projects[ROOM]
   let chest = [...project.chest]
@@ -46,7 +46,7 @@ function withFullSet(save, index, relicId) {
 }
 
 /** Kills over HOURS of the whole party working. */
-function killsOf(engine, save) {
+export function killsOf(engine, save) {
   const sessions = Object.keys(save.worlds.main.projects[ROOM].characters)
     .map((sessionId) => ({ projectId: ROOM, sessionId, state: 'working', tokensPerMinute: REFERENCE_TOKENS_PER_MINUTE }))
   let current = save

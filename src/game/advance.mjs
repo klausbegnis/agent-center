@@ -1,6 +1,8 @@
 // Real time passing for the projects that have sessions: each reported session's state is
 // recorded, idle characters gather, and the working party of a project fights. Also gets a
 // project ready for the next stretch of time: a party that works has a monster to face.
+import { worldEffectsOf } from './bestiary-effects.mjs'
+import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
@@ -55,7 +57,8 @@ function gatherFor(world, project, character, hours, bonuses) {
 function settleCharacters(world, projectId, readings, { from, to, content }) {
   let current = world
   const index = legendaryIndexOf(content)
-  const relic = relicEffects(world.projects[projectId], index)
+  // The room's relic and its world's bestiary act on gathering alike.
+  const relic = [...relicEffects(world.projects[projectId], index), ...worldEffectsOf(world, content)]
   const extraHours = gatherBonuses(relic, [], null).extraHours
   const hours = activeHours({ from, to, lastTokenAt: world.lastTokenAt, extraHours })
   const sorted = [...readings].sort((a, b) => a.sessionId.localeCompare(b.sessionId, 'en'))
@@ -123,9 +126,11 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
     ticks,
     content,
     referencePartyHit,
-    scenes
+    scenes,
+    day: gameDayOf(to)
   })
   current = { ...current, materials: addMaterials(current.materials, fight.materials) }
+  if (fight.bestiary) current = { ...current, bestiary: fight.bestiary }
   return { world: withProjectIn(current, projectId, fight.project), events: fight.events }
 }
 

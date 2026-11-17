@@ -4,6 +4,7 @@
 import { createCharacter, grantCharacterXp } from './characters.mjs'
 import { addToChest, equipFromChest } from './chest.mjs'
 import { createItem } from './items.mjs'
+import { worldEffectsOf } from './bestiary-effects.mjs'
 import { heldEffects, legendaryIndexOf, relicEffects, tokenBonuses } from './legendary-effects.mjs'
 import { equipLegendary } from './legendary-equip.mjs'
 import { emptySkill, grantSkillXp, worldLevel, xpFromTokens } from './progression.mjs'
@@ -95,7 +96,7 @@ export function applyTokens(save, reading, content) {
     const index = legendaryIndexOf(content)
     project = ensureCharacter(project, { sessionId, skills: world.skills, now, index })
     const held = heldEffects(project, project.characters[sessionId], index)
-    const bonus = tokenBonuses(relicEffects(project, index), held, skillId)
+    const bonus = tokenBonuses([...relicEffects(project, index), ...worldEffectsOf(world, content)], held, skillId)
     const character = grantCharacterXp(project.characters[sessionId], xp * bonus.characterFactor, activity)
     const skillXp = skillId
       ? { ...character.skillXp, [skillId]: (character.skillXp[skillId] ?? 0) + xp }

@@ -4,11 +4,11 @@ import { clampShare } from './game-format.js'
 import { monsterRank } from './monster-rank.js'
 
 /** The game's tabs, in the order they are shown. */
-export const GAME_TABS = /** @type {const} */ (['rooms', 'party', 'chest', 'camp', 'skills', 'market'])
+export const GAME_TABS = /** @type {const} */ (['rooms', 'party', 'chest', 'camp', 'skills', 'market', 'bestiary'])
 const DEFAULT_TAB = 'rooms'
 /** The tabs that show one room; the others show its whole world (or, Rooms, every room). */
 export const ROOM_TABS = Object.freeze(['party', 'chest'])
-export const WORLD_TABS = Object.freeze(['camp', 'skills', 'market'])
+export const WORLD_TABS = Object.freeze(['camp', 'skills', 'market', 'bestiary'])
 /**
  * The Arsenal's sections before they became tabs, by the section a saved preference or a link
  * names (`?tab=arsenal&section=party`). The Arsenal opened on its items when no section was named.
