@@ -34,6 +34,19 @@ All notable changes to this project are recorded here. The format follows
   first and shows each skill's level before and after; it is never done on its own.
 - The Skills tab says under the work skills where their split comes from: the agents' tools, or
   an estimated mix when tools are not visible for some agents.
+- Game mode: the Camp tab is now the world's settlement, which grows like a base in a strategy
+  game. The campfire, the workbench and the rune circle are its Hearth, Workshop and Sanctum, with
+  the same effects, prices and save; two new buildings join them: the **Storehouse** (opens at the
+  Outpost; lowers the market's fee, never below 6%) and the **Defences** (opens at the Hamlet;
+  monsters drain a little less stamina). Every building grows through three tiers with its own
+  pixel-art sprite, and the total of all building levels takes the settlement through seven
+  stages (Camp, Outpost, Hamlet, Village, Town, Stronghold, Citadel), each with its own picture,
+  shown across the top of the tab with the way to the next stage, and a small bonus for the whole
+  world (a few percent in all at the Citadel). A new tier or stage is celebrated over the world's
+  rooms. From a building's second tier, half of its price can be paid in coins at the materials'
+  base value; the price in materials alone always stays, and auto-spend never spends coins. Past
+  the Citadel, renovation stars keep counting. A badge with the stage sits above the tabs. Saves
+  from before load unchanged; `SETTLEMENT=n` shows stage n in the demo.
 
 - Game mode: each character card on the Party tab shows its agent's sprite, the same one its room
   draws (the room's theme, its scene while it travels, and the agent's own outfit and tint),

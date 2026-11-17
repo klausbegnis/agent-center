@@ -7,11 +7,12 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items, races, bosses, cities, legendary, bestiary } })` takes
+`createEngine({ content: { monsters, items, races, bosses, cities, legendary, bestiary, settlement } })` takes
 the parsed `game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json`,
 `game/cities.json`, `game/legendary.json` (optional: without it there is no legendary loot) and
 `game/bestiary.json` (optional: without it nothing is counted and no bestiary bonus is given) and
-returns
+`game/settlement.json` (optional: without it there are no stages and only the campfire, the
+workbench and the rune circle can be built; see "Settlement") and returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -25,7 +26,8 @@ milliseconds the caller passes.
 | `closeSession(save, { projectId, sessionId, now, title? })` | Retires the session's character. |
 | `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
-| `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
+| `buyGroupUpgrade(save, { worldId, upgradeId, useCoins? })` | Buys the next level of a group upgrade (a building of the settlement), in materials alone or, with `useCoins`, half in coins from the tier that allows it; unchanged when it cannot pay, the building is not open at the settlement's stage, or coins were asked of a tier that takes none. `buildingProblem(save, which)` says why the last two refuse, or null. |
+| `settlementNews(before, after)` | The tiers, stages and renovation stars a change reached, per world (see "Settlement"). |
 | `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
 | `equipItem(save, { projectId, sessionId, slot, itemId })` | Sets what a living character holds in a slot: an item of the room's chest, `null` for nothing, or `'auto'` (see "Choosing equipment"); unchanged when the choice is refused or changes nothing. `equipProblem(project, { sessionId, slot, itemId })` says why a choice is refused, or null. |
 | `bestGearForRoom(save, { projectId })` | Re-runs the automatic pick for every slot of a room nobody pinned; unchanged when nothing would change. |
@@ -46,8 +48,9 @@ milliseconds the caller passes.
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
 upgrades and `autoSpend`), `drops.mjs` (item drops), `market.mjs`, `market-prices.mjs` and
-`stall.mjs` (the market), `transfer.mjs` (sending to another room), and `view.mjs` with
-`market-view.mjs`, over the rule modules described
+`stall.mjs` (the market), `transfer.mjs` (sending to another room), `settlement*.mjs` and
+`buildings.mjs` (the settlement), `world-effects.mjs` (what a world gives every party in it), and
+`view.mjs` with `market-view.mjs` and `settlement-view.mjs`, over the rule modules described
 below.
 
 Every number lives in `src/game/constants.mjs`. Formulas below name those constants.
@@ -281,7 +284,9 @@ project id:
   party kills faster, so with prices fixed by item level alone gear ran away from the
   monsters. Priced this way gear stays near the reference however fast a party kills, and a
   project that lags catches up cheaply.
-- Group upgrades, per world, each with a two-material recipe in `GROUP_UPGRADES`. Level L
+- Group upgrades, per world, each with a two-material recipe in `GROUP_UPGRADES`: the buildings
+  of the settlement (see "Settlement" for the two that need one, the Storehouse and the
+  Defences, and for paying half in coins). Level L
   costs `round(GROUP_COST_BASE * REWARD_GROWTH ** worldLevel * GROUP_COST_GROWTH ** (L -
   GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel))` of each material, at least 1. No level cap; the
   campfire and the rune circle approach a ceiling (`MAX * L / (L + HALF)`) so they never make
@@ -291,9 +296,11 @@ project id:
   - `workbench`: item upgrades cost `1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * L)`.
   - `runeCircle`: every new monster starts with `RUNE_CIRCLE_MAX * L / (L + RUNE_CIRCLE_HALF)`
     less health.
-- `autoSpend` looks at every item a living character holds and the three group upgrades.
-  Among the affordable ones it buys the one with the lowest total cost divided by
-  `SPEND_WEIGHTS` of its kind, and repeats, at most `SPEND_MAX_PURCHASES` times a call.
+- `autoSpend` looks at every item a living character holds and every building the settlement
+  has opened. Among the affordable ones it buys the one with the lowest total cost divided by
+  `SPEND_WEIGHTS` of its kind (a group upgrade's own `spendWeight` when it has one: 0.75 for the
+  Storehouse, which pays off only for a world that trades), and repeats, at most
+  `SPEND_MAX_PURCHASES` times a call. It pays in materials only and never spends coins.
 
 ## Items, chest, retirement
 
@@ -426,13 +433,14 @@ and a test checks every shipped item's text against its effect.
 | `upgradeCost` | party | the room's item upgrades cost × (1 − a), after the workbench |
 | `raceDamage` | world | hits × (1 + damage + a) against a monster of one of `races` |
 | `legendaryPity` | world | each step of a boss's legendary pity counts × (1 + a) |
+| `marketFee` | world | the market's fee − a (the Storehouse's; see "Settlement") |
 
 The bestiary may also give, with the scope `world`, `damage`, `critDamage`, `staminaDrain`,
 `staminaPool`, `restTime`, `staminaPerKill`, `affixWeakening`, `thorns`, `runeCircle`, `itemDrop`,
 `killMaterials`, `gatherHours`, `gatherXp`, `characterXp` and `upgradeCost`.
 
-Stacking: effects of different sources (the active relic, the equipment held and the world's
-bestiary) add, and each type's sum is capped by `LEGENDARY_EFFECT_CAPS` (`restTime` in seconds,
+Stacking: effects of different sources (the active relic, the equipment held, the world's
+bestiary and the world's settlement) add, and each type's sum is capped by `LEGENDARY_EFFECT_CAPS` (`restTime` in seconds,
 `gatherHours` in hours). Only one relic is active and a room holds one of each item. With the
 strongest relic of each type, every piece of legendary equipment and a whole bestiary at its top,
 no type passes its cap (a test checks it), save `gatherYield`, where the Sheaf of the Long Summer
@@ -605,6 +613,98 @@ boss hunter level and `{ kind: 'rank', level }` for a hunter rank. A kill that l
 levels at once (a champion, a boss) tells only the last. A race level past the powered ones is a
 prestige rank; the bridge adds its `title` and `prestige`.
 The bridge turns each into a `bestiary` event of `recent` (see "View state").
+
+## Settlement
+
+Each world's group upgrades are the buildings of its settlement (`src/game/settlement*.mjs`,
+`buildings.mjs`), with its names, tiers, stages and art in `game/settlement.json` (checked by
+`src/game/settlement-content.mjs`: every group upgrade is exactly one building, stages and tiers
+rise, art is a PNG under `ui/settlement/`, which `npm run check` also finds, and every stage
+bonus is a world effect whose sum fits each cap; the worker refuses a file with problems).
+Nothing of it is stored: tiers, the stage and renovation stars are worked out from the building
+levels the world already keeps.
+
+### Buildings
+
+| Building | Group upgrade | Recipe | Opens at | What a level L does |
+|---|---|---|---|---|
+| Hearth | `campfire` | fish, crops | Camp | the party gets back `0.6 × L / (L + 5)` of its missing stamina after each kill |
+| Workshop | `workbench` | ore, gears | Camp | item upgrades cost `1 / (1 + 0.05 × L)` |
+| Sanctum | `runeCircle` | runes, crystals | Camp | every new monster has `0.2 × L / (L + 10)` less health |
+| Storehouse | `storehouse` | logs, seals | Outpost | `marketFee` `0.04 × L / (L + 10)`: the fee falls towards 6% |
+| Defences | `defences` | bars, hides | Hamlet | `staminaDrain` `0.03 × L / (L + 10)`: monsters drain less |
+
+The first three are the group upgrades every world always had, with the same effects, prices and
+save fields; the last two exist only with a settlement in the content (`settlementOnly` in
+`GROUP_UPGRADES`). Every building is priced like the others (see "Spending") and levels without
+end: the price keeps doubling a level and every effect only nears its ceiling. The Storehouse's
+and the Defences' effects are effects of the world (`buildingEffects` in
+`settlement-effects.mjs`), summed with the relic, the equipment and the bestiary under
+`LEGENDARY_EFFECT_CAPS`: `marketFee` is capped at 0.04, and the `staminaDrain` cap went from 0.1
+to 0.13 so that, with the strongest relic, all the legendary equipment, a whole bestiary and the
+Defences at their top, no type passes its cap (`settlement-effects.test.mjs` checks it).
+
+### Tiers
+
+| Building | Tier I (level 1) | Tier II (level 5) | Tier III (level 15) |
+|---|---|---|---|
+| Hearth | Hearth | Cooking hearth | Hearth hall |
+| Workshop | Workbench | Smithy | Great forge |
+| Sanctum | Rune circle | Rune shrine | Sanctum |
+| Storehouse | Supply shed | Storehouse | Trading house |
+| Defences | Palisade | Watchtower | Gatehouse |
+
+Each tier has its sprite (`ui/settlement/building-<art>-<tier>.png`). A building at level 0 is not
+built and is drawn as its first tier, faded.
+
+### Stages
+
+The stage follows the total of all building levels:
+
+| Stage | From (levels in all) | Bonus to every party of the world, kept from then on |
+|---|---|---|
+| 1 Camp | 0 | none |
+| 2 Outpost | 1 | `gatherHours` +0.25: idle characters gather 15 minutes longer |
+| 3 Hamlet | 5 | `staminaPool` +1% |
+| 4 Village | 30 | `runeCircle` +2%: the Sanctum's cut is 2% larger |
+| 5 Town | 60 | `thorns` 1% |
+| 6 Stronghold | 200 | `staminaPool` +1% (2% in all) |
+| 7 Citadel | 500 | `restTime` 5 s shorter rests |
+
+At the Citadel all of it is: rests 5 s shorter, gathering a quarter hour longer, a 2% larger
+stamina pool, 1% thorns and a 2% stronger Sanctum, each well under its cap with every other source
+at its top. Past the Citadel, every `renovation.every` (50) building levels earn a renovation star:
+a count and a banner on the picture, nothing more, so the settlement never simply ends.
+
+### Paying in coins
+
+From the tier `coinsFromTier` names (II), a level can also be paid half in coins: of each material
+`floor(amount × SETTLEMENT_COIN_SHARE)` (0.5) is paid instead at its base value
+(`MATERIAL_BASE_VALUES`) in coins (`coinPrice` in `spending.mjs`). Buying those materials at a
+market always costs more than their base value, so this is the cheaper way to turn coins into a
+building. It is optional: the price in materials alone stays, so a world that never trades is
+never stuck, and `autoSpend` never spends coins. Coins go nowhere back from a building, so this
+opens no loop that makes money.
+
+### In the save, on import, and as news
+
+- The two new buildings live in `World.upgrades` with the others. A save from before them reads
+  with both at 0 (`migrate` keeps the levels as they are); export and import carry them with the
+  world, and a world reset clears them.
+- `cleanSave` refuses a level of a building the settlement has not opened at the stage the
+  world's levels reach (a Defences level with fewer than 5 levels in all), or one that needs a
+  settlement the content lacks, as well as unknown ids and levels that are not whole.
+- The bridge compares the settlement before and after every change it keeps (a round, autoSpend,
+  a purchase by hand): a building's new tier (the highest, when one change lifts it several), a
+  new stage and new renovation stars become `settlement` events in `recent` (see "View state"),
+  which every room of the world celebrates, a stage most. An imported game is no news.
+
+### Pace
+
+Tuned with the simulator (see "Balance"): with the thresholds above, a light user reaches the
+Outpost on day 15 and the Hamlet on day 30, a medium one the Village on day 53 and the Town on day
+186, and a heavy one the Stronghold on day 169 and the Citadel a little after its first year
+(491 levels at day 365).
 
 ## Scenes
 
@@ -784,7 +884,7 @@ depth    = MARKET_DEPTH_BASE * REWARD_GROWTH ** L
 | Constant | Value | Why |
 |---|---|---|
 | `MARKET_CITY_FACTORS` | wanted 1, neutral 0.8, produced 0.6 | A city pays most for what it wants; none pays more than the base value. |
-| `MARKET_FEE` | 0.1 | Every sale pays 10% less, every purchase costs 10% more: the spread that keeps trading from paying. |
+| `MARKET_FEE` | 0.1 | Every sale pays 10% less, every purchase costs 10% more: the spread that keeps trading from paying. A world's Storehouse lowers it, never below `MARKET_FEE_FLOOR` (0.06); the formulas below use the world's fee. |
 | `MARKET_DEPTH_BASE` | 1000 | The units that move a price by a factor of e at level 0: about two and a half reference upgrades at every level. |
 | `MARKET_PRESSURE_MIN`, `MARKET_PRESSURE_MAX` | -2, 10 | The ceiling on a city's price when bought out, and the floor of a dumped one. |
 | `MARKET_RECOVERY_HALF_LIFE_MS` | 6 hours | A price pushed in the morning is mostly back the next day of play. |
@@ -808,7 +908,9 @@ recovery) and asserts wealth never rises, coins and stocks stay whole and at lea
 pressures stay in range; that the best sell price is below the best buy price for every
 material in every state; that every buy-here-sell-there round trip loses coins for amounts
 from 1 to 40,000, with or without waiting for prices to recover; and that a sale of 1e17 units
-is bounded.
+is bounded. The random walk and the round trips run again with the fee at its floor (a
+Storehouse at level 1e12), and the property holds: any fee above 0 keeps every sale below base
+value and every purchase above it.
 
 ### The stall
 
@@ -867,7 +969,9 @@ Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, at
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
 ```
 
-`coins` are the world's, whole; a save from before the market has none and reads as 0, with a
+`upgrades` holds the level of each building of the settlement by its group upgrade id
+(`campfire`, `workbench`, `runeCircle`, `storehouse`, `defences`), a missing one at 0 (see
+"Settlement"). `coins` are the world's, whole; a save from before the market has none and reads as 0, with a
 market at rest (`{ clock: null, pressure: {}, sold: {} }`). `market.pressure` keeps only prices
 that moved; `sold` the offers bought on the day it names.
 
@@ -1200,7 +1304,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 |---|---|---|
 | `game.prestige` | `/api/game/prestige` | `{ worldId, skillId }` |
 | `game.upgradeItem` | `/api/game/upgrade-item` | `{ roomId, itemId }` |
-| `game.buyUpgrade` | `/api/game/buy-upgrade` | `{ worldId, upgradeId }` |
+| `game.buyUpgrade` | `/api/game/buy-upgrade` | `{ worldId, upgradeId, useCoins }`: `useCoins` optional, a boolean, to pay half in coins; a building not open yet, or coins asked of a tier that takes none, is refused with the reason |
 | `game.assignRoom` | `/api/game/assign-room` | `{ roomId, worldId }`, `worldId` null for out of the game |
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
 | `game.rebalanceSkills` | `/api/game/rebalance-skills` | `{ worldId }`: shares the world's work-skill experience again by its mix, keeping its world level (see "Rebalancing a lopsided world") |
@@ -1289,10 +1393,30 @@ by the usual closing rules.
     skillSplit: { from: 'mixed', mix: 'default', rebalance: [{ skillId: 'forge', from: 4, to: 15 }, ...] },
     materials: { bars: 98, ... },
     upgrades: [{ id: 'campfire', level, cost: { fish: 520, crops: 520 }, affordable, effect }],
+                                    // the buildings open now, by group upgrade id
+    settlement: {                   // null without game/settlement.json; about 4 KB
+      total: 31,                    // building levels in all
+      stage: { index: 3, number: 4, count: 7, id: 'village', name: 'Village', from: 30,
+        art: 'ui/settlement/stage-4-village.png', alt, bonus: [effects] },
+      next: { kind: 'stage', ...the next stage, have: 1, need: 30 },
+                                    // past the last: { kind: 'star', stars, from, have, need }
+      stars: 0, renovationEvery: 50,
+      bonuses: [effects],           // every stage's bonus reached so far
+      stages: [{ id, name, from, art, reached }],
+      buildings: [{ id: 'hearth', upgradeId: 'campfire', name: 'Hearth', level: 9, tier: 2,
+        tierCount: 3, current: { tier: 2, name: 'Cooking hearth', from: 5, art },
+        nextTier: { tier: 3, name: 'Hearth hall', from: 15, art },   // null at the top
+        open: true, opensAt: null,  // { index, id, name, from } while it is not
+        cost: { fish, crops }, affordable,
+        coinPrice: { cost: { fish, crops }, coins, affordable },     // null before tier II
+        coinsFromTier: 2, effect: { staminaAfterKill }, nextEffect: { staminaAfterKill } }]
+                                    // effect: staminaAfterKill, upgradeCostFactor, monsterHealthCut,
+                                    // marketFee (the fee itself) or staminaDrainCut
+    },
     coins: 48210,
     market: {
       day: 20408,                     // the game day: the stall's offers change with it
-      fee: 0.1, depth: 1384.2,        // MARKET_FEE, and the depth at the world's level
+      fee: 0.1, depth: 1384.2,        // the world's fee (its Storehouse lowers it), and the depth
       pressureRange: [-2, 10],
       baseValues: { bars: 9, ... }, cityFactors: { wanted: 1, neutral: 0.8, produced: 0.6 },
       cities: [{
@@ -1406,6 +1530,10 @@ by the usual closing rules.
   drop, which a UI celebrates), `bestiary` (`kind` race, boss, hunter or rank, `id`, `discovered`
   or `level`, the race's or boss's `name`, and for a prestige rank the race's `title` and
   `prestige`: a first kill or a new level, which a UI celebrates),
+  `settlement` (`worldId`, `kind` tier, stage or stars; a tier's `buildingId`, `upgradeId`,
+  `building` and its `tier` and `name`; a stage's `stage`, `stageId` and `name`; `stars`: a new
+  tier, stage or renovation star of the world's settlement, which a UI celebrates in every room of
+  the world, a stage most),
   `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
@@ -1450,15 +1578,17 @@ once a working day. It trades surplus for what the three cheapest purchases out 
 (surplus being what is left above three times the most any one purchase needs), buys each stall
 piece that beats what a room keeps of that slot, sells what is still surplus where it pays best
 until the price there has fallen 30% below the usual, buys a stall's relic whenever its coins
-cover it (for the first room that lacks it), and runs `autoSpend` again. It uses only
-what the Market tab offers. The first policy's output does not change with the market: its
+cover it (for the first room that lacks it), builds the cheapest building level it can pay half
+in coins while it keeps a relic's price in coins (at most 20 a visit), and runs `autoSpend`
+again. It uses only what the Market and Camp tabs offer. The first policy's output does not change with the market: its
 player never trades.
 
 Last, it plays the scenarios with more than one room (medium and heavy) with a third policy
 (`scripts/funnel-policy.mjs`): once a working day, after `autoSpend`, the player sends every free
 item and every relic that is not active from the other rooms into the first one, then presses
-**Best gear for everyone** there. It prints both runs side by side. The whole run takes under a
-minute.
+**Best gear for everyone** there. It prints both runs side by side. It also prints the day each
+scenario's settlement reached each stage, with and without the market, and its building levels at
+day 365. The whole run takes under a minute.
 
 ## Balance
 
@@ -1472,7 +1602,7 @@ supporter rests more, one missing a damage type is twice as slow against the mat
 resistance; a meaningful upgrade every one to two working days; gathering 15 to 30% of
 materials.
 
-What the simulator measures now, legendary loot and the bestiary included:
+What the simulator measures now, legendary loot, the bestiary and the settlement included:
 
 | | light | medium | heavy |
 |---|---|---|---|
@@ -1480,12 +1610,13 @@ What the simulator measures now, legendary loot and the bestiary included:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight (normal rank) | 21 ticks, 3.5 min | 25 ticks, 4.2 min | 18 ticks, 3.0 min |
-| Kills per hour of fighting | 9.7 to 12.8 | 8.3 to 11.1 | 12.0 to 16.6 |
+| Median common fight (normal rank) | 22 ticks, 3.7 min | 25 ticks, 4.2 min | 18 ticks, 3.0 min |
+| Kills per hour of fighting | 9.7 to 12.7 | 8.1 to 11.4 | 12.0 to 17.4 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 7.3 to 14.1 |
+| Purchases per working day (day 30 on) | 0.2 to 0.8 | 1.2 to 2.3 | 7.6 to 14.8 |
 | Gathering share of materials | 25% | 23% | 16% |
-| Hit from world, gear, character (day 90 on) | 54%, 22%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
+| Hit from world, gear, character (day 90 on) | 54%, 22%, 24% | 72%, 22%, 7% | 77%, 22%, 1% |
+| Settlement stage reached (day): Outpost, Hamlet, Village, Town, Stronghold, Citadel | 15, 30, 200, -, -, - | 2, 4, 53, 186, -, - | 1, 3, 18, 46, 169, after a year |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
 defender or a supporter in 50 to 100%; a party without magic takes 1.9 to 2.1 times as long
@@ -1498,6 +1629,11 @@ at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow
 world level, not the party, so that shows as a slightly longer fight.
 
 Targets the numbers do not meet, and why:
+
+- The light user reaches the Outpost on day 15, not in the first week: the Outpost needs one
+  building level, and a light user can pay for no purchase at all before the third week (as
+  before the settlement). Making first levels cheaper would change the old upgrades' prices,
+  which the settlement keeps exactly; the Hamlet (day 30) is in the first month.
 
 - The hit split is right only in the middle. A character's own share is bounded (seasoning
   and its own attribute points, the "three quarters" rule), while the world's grows without
