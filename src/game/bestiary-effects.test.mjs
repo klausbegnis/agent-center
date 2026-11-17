@@ -33,15 +33,15 @@ const maxed = () => ({
 
 test('a race gives nothing before its first level, then damage against it at every level', () => {
   assert.deepEqual(raceMasteryEffects(index, 'orc', 0), [])
-  assert.deepEqual(raceMasteryEffects(index, 'orc', 1), [{ effect: 'raceDamage', scope: 'world', amount: 0.015, races: ['orc'] }])
-  close(amountOf(raceMasteryEffects(index, 'orc', 5), 'raceDamage'), 0.075)
+  assert.deepEqual(raceMasteryEffects(index, 'orc', 1), [{ effect: 'raceDamage', scope: 'world', amount: 0.01, races: ['orc'] }])
+  close(amountOf(raceMasteryEffects(index, 'orc', 5), 'raceDamage'), 0.05)
 })
 
 test('a race\'s perk comes at the perk levels, once for each one reached', () => {
-  assert.equal(amountOf(raceMasteryEffects(index, 'goblin', 1), 'itemDrop'), 0)
-  close(amountOf(raceMasteryEffects(index, 'goblin', 2), 'itemDrop'), 0.02)
+  assert.equal(amountOf(raceMasteryEffects(index, 'goblin', 2), 'itemDrop'), 0)
   close(amountOf(raceMasteryEffects(index, 'goblin', 3), 'itemDrop'), 0.02)
-  close(amountOf(raceMasteryEffects(index, 'goblin', 4), 'itemDrop'), 0.04)
+  close(amountOf(raceMasteryEffects(index, 'goblin', 4), 'itemDrop'), 0.02)
+  close(amountOf(raceMasteryEffects(index, 'goblin', 5), 'itemDrop'), 0.04)
 })
 
 test('the boss hunter gives the effects of every level reached', () => {
@@ -52,7 +52,7 @@ test('the boss hunter gives the effects of every level reached', () => {
 })
 
 test('a world\'s effects follow its counters: kills of a race and distinct bosses', () => {
-  const bestiary = { races: { slime: kills(40), orc: kills(9) }, bosses: { skrix: [3, 1, 20_000] } }
+  const bestiary = { races: { slime: kills(200), orc: kills(9) }, bosses: { skrix: [3, 1, 20_000] } }
   const effects = bestiaryEffects(bestiary, index)
   assert.deepEqual(effects.filter((effect) => effect.effect === 'raceDamage').map((effect) => effect.races), [['slime']])
   close(amountOf(effects, 'killMaterials'), 0.01)
@@ -72,10 +72,10 @@ const members = [{ character: fighter, tokensPerMinute: 20_000 }]
 
 test('a party hits harder against a race its world has mastered, and only against it', () => {
   const plain = partyOf(members, { skills: {} }, { chest: [] }, content)
-  const world = { skills: {}, bestiary: { races: { orc: kills(150) }, bosses: {} } }
+  const world = { skills: {}, bestiary: { races: { orc: kills(200) }, bosses: {} } }
   const party = partyOf(members, world, { chest: [] }, content)
   const orc = { rank: 'normal', race: 'orc' }
-  close(party.hitsAgainst(orc).physical / plain.hitsAgainst(orc).physical, 1 + 3 * 0.015 + 0.005)
+  close(party.hitsAgainst(orc).physical / plain.hitsAgainst(orc).physical, 1 + 3 * 0.01 + 0.005)
   close(party.hitsAgainst({ rank: 'normal', race: 'goblin' }).physical / plain.hits.physical, 1.005)
 })
 
@@ -83,7 +83,7 @@ test('the bestiary adds to the relic and equipment, and the sum is capped', () =
   const relic = [legendary.byId.get('crown-of-the-ossuary').effect]
   const held = [legendary.byId.get('labyrinth-cleaver').effect]
   const hunter = hunterEffects(index, 4)
-  const orcPerk = raceMasteryEffects(index, 'orc', 4)
+  const orcPerk = raceMasteryEffects(index, 'orc', 5)
   const bonuses = memberBonuses([...relic, ...hunter, ...orcPerk], held)
   close(bonuses.hitFactor('physical', 'boss', null), 1.15)
   const moreThanCap = [{ effect: 'damage', scope: 'world', amount: 0.1 }]
@@ -94,19 +94,19 @@ test('the bestiary adds to the relic and equipment, and the sum is capped', () =
 
 test('race damage adds to plain damage against that race', () => {
   const bonuses = memberBonuses(raceMasteryEffects(index, 'troll', 1), [legendary.byId.get('labyrinth-cleaver').effect])
-  close(bonuses.hitFactor('physical', 'normal', 'troll'), 1 + 0.06 + 0.015)
+  close(bonuses.hitFactor('physical', 'normal', 'troll'), 1 + 0.06 + 0.01)
   close(bonuses.hitFactor('physical', 'normal', 'ogre'), 1.06)
   close(bonuses.hitFactor('physical', 'normal', null), 1.06)
 })
 
 test('mastered minotaurs and treants make upgrades cheaper beside the relic', () => {
   const anvil = { legendary: { relics: ['everwarm-anvil'], active: 'everwarm-anvil' } }
-  const world = [...raceMasteryEffects(index, 'minotaur', 4), ...raceMasteryEffects(index, 'treant', 2)]
+  const world = [...raceMasteryEffects(index, 'minotaur', 5), ...raceMasteryEffects(index, 'treant', 3)]
   close(upgradeDiscountOf(anvil, legendary, world), 0.05 + 0.02 + 0.01)
 })
 
 test('mastered humans give the world\'s characters a little more experience', () => {
-  close(tokenBonuses(raceMasteryEffects(index, 'human', 4), [], 'forge').characterFactor, 1.01)
+  close(tokenBonuses(raceMasteryEffects(index, 'human', 5), [], 'forge').characterFactor, 1.01)
 })
 
 test('the boss hunter makes each step of legendary pity worth more', () => {

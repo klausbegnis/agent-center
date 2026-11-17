@@ -1,13 +1,13 @@
 {
   "mastery": {
-    "thresholds": [10, 40, 150, 600, 2500],
-    "perLevel": { "effect": "raceDamage", "scope": "world", "amount": 0.015 },
-    "perkLevels": [2, 4]
+    "thresholds": [10, 50, 200, 800, 3000],
+    "perLevel": { "effect": "raceDamage", "scope": "world", "amount": 0.01 },
+    "perkLevels": [3, 5]
   },
   "races": [
     { "id": "goblin", "name": "Goblins", "perk": { "effect": "itemDrop", "scope": "world", "amount": 0.02 } },
     { "id": "orc", "name": "Orcs", "perk": { "effect": "damage", "scope": "world", "amount": 0.005, "damageType": "physical" } },
-    { "id": "troll", "name": "Trolls", "perk": { "effect": "restTime", "scope": "world", "amount": 5 } },
+    { "id": "troll", "name": "Trolls", "perk": { "effect": "affixWeakening", "scope": "world", "amount": 0.005 } },
     { "id": "ogre", "name": "Ogres", "perk": { "effect": "staminaPool", "scope": "world", "amount": 0.01 } },
     { "id": "human", "name": "Humans", "perk": { "effect": "characterXp", "scope": "world", "amount": 0.005 } },
     { "id": "skeleton", "name": "Skeletons", "scale": 1.5, "perk": { "effect": "staminaDrain", "scope": "world", "amount": 0.005 } },
@@ -23,7 +23,7 @@
     { "id": "slime", "name": "Slimes", "perk": { "effect": "killMaterials", "scope": "world", "amount": 0.01 } },
     { "id": "elemental", "name": "Elementals", "perk": { "effect": "gatherXp", "scope": "world", "amount": 0.01 } },
     { "id": "golem", "name": "Golems", "perk": { "effect": "thorns", "scope": "world", "amount": 0.005 } },
-    { "id": "ghost", "name": "Ghosts", "scale": 1.5, "perk": { "effect": "runeCircle", "scope": "world", "amount": 0.02 } },
+    { "id": "ghost", "name": "Ghosts", "scale": 1.5, "perk": { "effect": "runeCircle", "scope": "world", "amount": 0.01 } },
     { "id": "treant", "name": "Treants", "perk": { "effect": "upgradeCost", "scope": "world", "amount": 0.01 } }
   ],
   "hunter": {

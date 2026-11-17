@@ -20,6 +20,7 @@ import {
   printTable,
   sumOf
 } from './game-balance.mjs'
+import { bestiaryGain, bestiaryProgress } from './bestiary-balance.mjs'
 import { legendaryGain } from './legendary-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
@@ -29,11 +30,18 @@ const content = {
   races: readJson('../game/races.json'),
   bosses: readJson('../game/bosses.json'),
   cities: readJson('../game/cities.json'),
-  legendary: readJson('../game/legendary.json')
+  legendary: readJson('../game/legendary.json'),
+  bestiary: readJson('../game/bestiary.json')
 }
 const engine = createEngine({ content })
-/** The same content without legendary loot: the fixed parties of the balance check are measured on it. */
-const { legendary: _legendary, ...plainContent } = content
+/**
+ * The same content without the bestiary, and without legendary loot either: the fixed parties of
+ * the balance check are measured on them, and the scenarios are played again without the bestiary
+ * to measure what it adds.
+ */
+const { bestiary: _bestiary, ...legendaryContent } = content
+const legendaryEngine = createEngine({ content: legendaryContent })
+const { legendary: _legendary, ...plainContent } = legendaryContent
 const plainEngine = createEngine({ content: plainContent })
 
 const MINUTE = 60_000
@@ -150,7 +158,7 @@ const newPeriod = () => ({
 /** Advances the engine and counts kills, kill materials and gathered materials. */
 function advanceAndCount(run, from, to, readings) {
   const before = materialTotal(run.save.worlds.main?.materials)
-  const { save, events } = engine.advanceWithEvents(run.save, { from, to, sessions: readings })
+  const { save, events } = run.engine.advanceWithEvents(run.save, { from, to, sessions: readings })
   run.save = save
   const killMaterials = sumOf(events.map((event) => materialTotal(event.materials)))
   for (const event of events) run.period.kills.push(event)
@@ -177,7 +185,7 @@ function closeFinished(run, now) {
     if (session.workMsLeft > 0) return
     const character = run.save.worlds.main?.projects[session.projectId]?.characters[session.id]
     if (character) run.period.retiredLevels.push(character.level)
-    run.save = engine.closeSession(run.save, { projectId: session.projectId, sessionId: session.id, now })
+    run.save = run.engine.closeSession(run.save, { projectId: session.projectId, sessionId: session.id, now })
     run.serial += 1
     const next = openSession(run.scenario, slot, run.serial)
     next.startsAt = now + STEP * (hashOf(`${next.id}|gap`) % 6)
@@ -197,7 +205,7 @@ function playStep(run, from, to) {
     if (state === 'working') {
       const tokens = Math.round(session.tokensPerStep * (0.5 + chanceOf(`${sessionId}|${stepKey}|tokens`)))
       const activity = weightedPick(session.profile.mix, chanceOf(`${sessionId}|${stepKey}|activity`))
-      run.save = engine.applyTokens(run.save, { projectId, sessionId, tokens, activity, now: from, themeId })
+      run.save = run.engine.applyTokens(run.save, { projectId, sessionId, tokens, activity, now: from, themeId })
       tokensPerMinute = tokens / STEP_MINUTES
       session.workMsLeft -= STEP
     }
@@ -217,7 +225,7 @@ const idleReadings = (run) => run.slots.map((session) => ({
 function prestigeAll(run, day) {
   for (const skillId of [...WORK_SKILLS, ...GATHERING_SKILLS]) {
     const before = run.save
-    run.save = engine.prestige(run.save, { worldId: 'main', skillId })
+    run.save = run.engine.prestige(run.save, { worldId: 'main', skillId })
     const prestiged = run.save !== before
     if (prestiged && WORK_SKILLS.includes(skillId) && run.firstPrestige === null) run.firstPrestige = day + 1
   }
@@ -235,7 +243,7 @@ function playWorkday(run, day) {
   }
   advanceAndCount(run, clock, (day + 1) * DAY, idleReadings(run))
   if (run.dayFightHours > 1 && run.dayKills === 0) run.daysWithoutKill += 1
-  const spent = engine.autoSpendWithPurchases(run.save)
+  const spent = run.engine.autoSpendWithPurchases(run.save)
   run.save = spent.save
   run.period.purchases += spent.purchases.length
   if (run.trades) tradeAtMarket(run)
@@ -245,7 +253,7 @@ function playWorkday(run, day) {
 /** The market policy's visit: what it bought counts as purchases, like autoSpend's. */
 function tradeAtMarket(run) {
   const before = upgradeLevels(run.save)
-  run.save = visitMarket(engine, run.save, { cities: content.cities.cities, items: content.items, legendary: content.legendary }, run.market)
+  run.save = visitMarket(run.engine, run.save, { cities: content.cities.cities, items: content.items, legendary: content.legendary }, run.market)
   run.period.purchases += upgradeLevels(run.save) - before
 }
 
@@ -310,7 +318,8 @@ function snapshot(run, day) {
     referenceGear: referenceGearLevel(level),
     gatherShare: income > 0 ? run.period.gathered / income : 0,
     shares: sharesOf(world, projects, level),
-    legendary: projects.map((project) => legendaryCounts(project).total)
+    legendary: projects.map((project) => legendaryCounts(project).total),
+    bestiary: bestiaryProgress(world, content)
   }
 }
 
@@ -324,12 +333,14 @@ function closePeriod(run, day) {
 
 /**
  * @param {object} scenario
- * @param {{ trades?: boolean }} [policy] `trades` adds a visit to the market every working day
+ * @param {{ trades?: boolean, withEngine?: object }} [policy] `trades` adds a visit to the market
+ *   every working day; `withEngine` plays on another engine than the full one
  */
-function simulate(scenario, { trades = false } = {}) {
+function simulate(scenario, { trades = false, withEngine = engine } = {}) {
   const run = {
     scenario,
     trades,
+    engine: withEngine,
     market: { trades: 0, gear: 0, earned: 0, relics: 0 },
     save: emptySave(),
     slots: Array.from({ length: scenario.concurrent }, (_, slot) => openSession(scenario, slot, slot)),
@@ -422,11 +433,56 @@ function printMarketComparison(plainRuns, tradingRuns) {
   }
 }
 
+/** What each scenario's bestiary reached at day 30, 90 and 365, and what it adds to kills per hour. */
+function printBestiary(runs, plainRuns) {
+  console.log('\n## Bestiary: races met, mastery, bosses, bonus; kills per hour without and with it\n')
+  const rows = []
+  runs.forEach((run, at) => {
+    for (const day of [30, 90, 365]) {
+      const row = run.rows.find((each) => each.day === day)
+      const without = plainRuns[at].rows.find((each) => each.day === day)
+      const { discovered, levels, byLevel, bosses, hunter, meanRaceDamage, perks } = row.bestiary
+      rows.push([run.scenario.id, day, `${discovered}/20`, levels, byLevel.slice(1).join('/'), perks, `${bosses}/55`, hunter,
+        percent(meanRaceDamage), fixed(without.killsPerHour), fixed(row.killsPerHour),
+        percent(row.killsPerHour / without.killsPerHour - 1)])
+    }
+  })
+  printTable(['scenario', 'day', 'races', 'levels', 'at 1/2/3/4/5', 'perks', 'bosses', 'hunter', 'race dmg',
+    'kills/h', 'bestiary', 'gain'], rows)
+  console.log('Levels: mastery levels in all. At 1/2/3/4/5: races at each level. Perks: races with their ' +
+    'perk. Race dmg: the damage bonus against a race, averaged over all twenty.')
+}
+
+/** The bestiary's balance targets: what it adds in the scenarios at a year, and when maxed. */
+function bestiaryChecks(runs, plainRuns, bestRelics) {
+  const yearly = runs.map((run, at) => {
+    const gain = run.rows.at(-1).killsPerHour / plainRuns[at].rows.at(-1).killsPerHour - 1
+    return [`${run.scenario.id}: the bestiary adds at most about 10% kills per hour at a year`, gain <= 0.1,
+      `${percent(gain)} (${fixed(plainRuns[at].rows.at(-1).killsPerHour)} to ${fixed(run.rows.at(-1).killsPerHour)})`]
+  })
+  const engines = { plain: plainEngine, legendary: legendaryEngine, loaded: engine, content }
+  const maxed = [10, 60, 150].map((level) => {
+    const { base, kills, gain } = bestiaryGain(engines, level, bestRelics.get(level))
+    return [`level ${level}: a whole bestiary adds at most about 10% to the legendary set`, gain <= 0.11,
+      `+${percent(gain)} kills (${base} to ${kills})`]
+  })
+  return [...yearly, ...maxed]
+}
+
 const started = Date.now()
 const runs = SCENARIOS.map((scenario) => simulate(scenario))
 for (const run of runs) printScenario(run)
-const legendary = { measure: (level) => legendaryGain({ plain: plainEngine, loaded: engine, content }, level) }
-printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary)
+const plainRuns = SCENARIOS.map((scenario) => simulate(scenario, { withEngine: legendaryEngine }))
+printBestiary(runs, plainRuns)
+const bestRelics = new Map()
+const legendary = {
+  measure: (level) => {
+    const gain = legendaryGain({ plain: plainEngine, loaded: legendaryEngine, content }, level)
+    bestRelics.set(level, gain.best.relicId)
+    return gain
+  }
+}
+printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => bestiaryChecks(runs, plainRuns, bestRelics))
 printMarketComparison(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true })))
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)

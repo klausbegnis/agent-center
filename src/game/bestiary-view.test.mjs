@@ -49,16 +49,16 @@ test('a world that never killed has every race and boss undiscovered and no bonu
 })
 
 test('a race shows its kills by rank, its level, the thresholds around it and its bonuses now and next', () => {
-  const view = worldBestiaryView(world({ races: { goblin: [30, 5, 4, 1, 1, 0, 20_400] }, bosses: {} }), content)
+  const view = worldBestiaryView(world({ races: { goblin: [200, 5, 4, 1, 1, 0, 20_400] }, bosses: {} }), content)
   const goblin = view.races.find((race) => race.id === 'goblin')
-  assert.deepEqual([goblin.kills, goblin.eliteKills, goblin.firstDay, goblin.level, goblin.from, goblin.to], [41, 6, 20_400, 2, 40, 150])
-  assert.deepEqual(goblin.ranks, [30, 5, 4, 1, 1, 0])
+  assert.deepEqual([goblin.kills, goblin.eliteKills, goblin.firstDay, goblin.level, goblin.from, goblin.to], [211, 6, 20_400, 3, 200, 800])
+  assert.deepEqual(goblin.ranks, [200, 5, 4, 1, 1, 0])
   assert.deepEqual(goblin.now.map((effect) => effect.effect), ['raceDamage', 'itemDrop'])
-  assert.deepEqual(goblin.next.map((effect) => [effect.effect, effect.amount]), [['raceDamage', 0.045], ['itemDrop', 0.02]])
+  assert.deepEqual(goblin.next.map((effect) => [effect.effect, effect.amount]), [['raceDamage', 0.04], ['itemDrop', 0.02]])
 })
 
 test('a race at its top level has no next threshold or bonus', () => {
-  const view = worldBestiaryView(world({ races: { slime: [2500, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
+  const view = worldBestiaryView(world({ races: { slime: [3000, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
   const slime = view.races.find((race) => race.id === 'slime')
   assert.deepEqual([slime.level, slime.to, slime.next], [5, null, null])
 })
@@ -78,7 +78,7 @@ test('the hunter counts distinct bosses and the world\'s bonuses add up by kind'
   const view = worldBestiaryView(world({ races, bosses, others: [3, 0, 0, 0, 0, 0, 5] }), content)
   assert.deepEqual([view.hunter.count, view.hunter.level, view.hunter.from, view.hunter.to], [15, 2, 15, 30])
   assert.deepEqual(view.bonuses.map((effect) => effect.effect).sort(),
-    ['damage', 'damage', 'legendaryPity', 'raceDamage', 'raceDamage'])
+    ['damage', 'legendaryPity', 'raceDamage', 'raceDamage'])
   assert.deepEqual(view.others, { kills: 3, firstDay: 5 })
 })
 
