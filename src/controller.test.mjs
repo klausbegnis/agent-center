@@ -58,6 +58,7 @@ function recordingGame() {
     buyGroupUpgrade: record('buy'),
     assignRoom: record('assign'),
     resetWorld: record('reset'),
+    rebalanceSkills: record('rebalance'),
     setAutoSpend: record('autoSpend'),
     setTravel: record('travel'),
     setCharacterTrade: record('characterTrade'),
@@ -90,13 +91,15 @@ test('game actions reach the game with their fields and tell the surfaces', asyn
   await controller.gameAssignRoom('local:/work/rumble-banana', null)
   await controller.gameSetAutoSpend(true)
   await controller.gameSetTravel(false)
+  await controller.gameRebalanceSkills('main')
   assert.deepEqual(calls, [
     ['prestige', { worldId: 'main', skillId: 'forge' }],
     ['assign', { roomId: 'local:/work/rumble-banana', worldId: null }],
     ['autoSpend', true],
-    ['travel', false]
+    ['travel', false],
+    ['rebalance', { worldId: 'main' }]
   ])
-  assert.equal(changes(), 4)
+  assert.equal(changes(), 5)
 })
 
 test('game actions with values of the wrong kind are refused before they reach the game', async () => {
@@ -107,6 +110,7 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gameSetAutoSpend('yes'), /invalid auto-spend/)
   await assert.rejects(controller.gameSetTravel(1), /invalid travel/)
   await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
+  await assert.rejects(controller.gameRebalanceSkills(null), /invalid world/)
   await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
   await assert.rejects(controller.gameImportSave([]), /invalid save file/)
   assert.equal(calls.length, 0)

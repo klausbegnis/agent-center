@@ -9,6 +9,7 @@ export const GAME_ACTION_METHODS = [
   'buyGroupUpgrade',
   'moveRoomToWorld',
   'resetWorld',
+  'rebalanceSkills',
   'setActiveRelic',
   'setAutoSpend',
   'setTravel',
@@ -28,7 +29,8 @@ export const GAME_ACTION_METHODS = [
 ]
 
 /** Actions that should change something; an answer of `{ changed: false }` is worth saying. */
-const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade', 'resetWorld', 'moveOrphanItems',
+const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade', 'resetWorld', 'rebalanceSkills',
+  'moveOrphanItems',
   'sellMaterial', 'tradeMaterial', 'buyStallOffer', 'setEquipment', 'sendRelic'])
 /** Actions that answer with something to show instead of `{ changed }`. */
 const GIVES_ANSWER = new Set(['exportSave', 'bestGear', 'sendItem'])

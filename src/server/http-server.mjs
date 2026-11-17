@@ -133,6 +133,7 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/buy-upgrade': (input) => controller.gameBuyUpgrade(input.worldId, input.upgradeId),
     '/api/game/assign-room': (input) => controller.gameAssignRoom(input.roomId, input.worldId ?? null),
     '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
+    '/api/game/rebalance-skills': (input) => controller.gameRebalanceSkills(input.worldId),
     '/api/game/active-relic': (input) => controller.gameSetActiveRelic(input.roomId, input.relicId ?? null),
     '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
     '/api/game/travel': (input) => controller.gameSetTravel(input.on),

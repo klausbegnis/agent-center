@@ -17,6 +17,8 @@
  * @property {(roomId: string, worldId: string | null) => Promise<GameResult>} gameAssignRoom puts a
  *   room in a world, or out of the game with null
  * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
+ * @property {(worldId: string) => Promise<GameResult>} gameRebalanceSkills shares a world's work-skill
+ *   experience again by the work mix, keeping its world level
  * @property {(roomId: string, relicId: string | null) => Promise<GameResult>} gameSetActiveRelic makes
  *   one of a room's relics the active one, or none with null
  * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
@@ -169,6 +171,7 @@ export function createController({
       worldId: worldId === null ? null : requireText(worldId, 'world')
     })),
     gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
+    gameRebalanceSkills: (worldId) => playAction(() => game.rebalanceSkills({ worldId: requireText(worldId, 'world') })),
     gameSetActiveRelic: (roomId, relicId) => playAction(() => game.setActiveRelic({
       roomId: requireText(roomId, 'room'),
       relicId: relicId === null ? null : requireText(relicId, 'relic')

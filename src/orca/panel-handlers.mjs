@@ -31,6 +31,7 @@ export function registerPanelHandlers(orca, controller) {
   orca.panels.handle('game.buyUpgrade', (input) => controller.gameBuyUpgrade(input?.worldId, input?.upgradeId))
   orca.panels.handle('game.assignRoom', (input) => controller.gameAssignRoom(input?.roomId, input?.worldId ?? null))
   orca.panels.handle('game.resetWorld', (input) => controller.gameResetWorld(input?.worldId))
+  orca.panels.handle('game.rebalanceSkills', (input) => controller.gameRebalanceSkills(input?.worldId))
   orca.panels.handle('game.setActiveRelic', (input) =>
     controller.gameSetActiveRelic(input?.roomId, input?.relicId ?? null))
   orca.panels.handle('game.autoSpend', (input) => controller.gameSetAutoSpend(input?.on))

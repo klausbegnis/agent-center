@@ -1,12 +1,13 @@
 // The game's settings, opened from the cog in the header: keep titles, auto-spend, new scene after
-// each monster, each room's world (another world, a new one, or out of the game), resetting a
-// world and the save file.
+// each monster, each room's world (another world, a new one, or out of the game), rebalancing a
+// world's work skills, resetting a world and the save file.
 import { button, el, select, setOptions } from './dom.js'
 import { confirmButton, replaceKeepingFocus, section, settingSwitch } from './game-controls.js'
 import { isEstimated, MAX_WORLDS, newWorldId, roomWorlds } from './game-model.js'
 import { ARSENAL, ESTIMATED_NOTE, roomTitle } from './labels.js'
 import { createSaveFileCard } from './save-file-view.js'
 import { SETTINGS, VIEW_ONLY_NOTE, worldChoice } from './settings-labels.js'
+import { REBALANCE, rebalanceChanges } from './skill-mix-labels.js'
 
 /** The value of the "out of the game" and "new world" choices; world ids are never empty. */
 const OUT_OF_GAME = ''
@@ -24,6 +25,7 @@ export function createSettingsView({ actions, onClose }) {
   /** The room someone is naming a new world for, and what they typed so far. */
   let naming = null
   let resetWorldId = null
+  let rebalanceWorldId = null
   const openQuestions = new Set()
 
   const element = el('section', 'ac-game-settings')
@@ -157,6 +159,46 @@ export function createSettingsView({ actions, onClose }) {
     return section(SETTINGS.reset, children)
   }
 
+  /** "Rebalance work skills": a world, what would move, and a question before it is done. */
+  function rebalanceCard(worlds) {
+    const chosen = worlds.find((world) => world.id === rebalanceWorldId) ?? worlds[0]
+    const children = [el('p', 'ac-game-card-line', REBALANCE.note)]
+    if (worlds.length > 1) {
+      const field = el('label', 'ac-game-field')
+      const picker = select('ac-select', REBALANCE.world, worlds.map((world) => [world.id, worldChoice(world)]))
+      picker.removeAttribute('aria-label')
+      picker.dataset.key = 'rebalance-world'
+      picker.value = chosen.id
+      picker.addEventListener('change', () => {
+        rebalanceWorldId = picker.value
+        drawn = null
+        draw()
+      })
+      field.append(el('span', 'ac-game-field-label', REBALANCE.world), picker)
+      children.push(field)
+    }
+    const split = chosen.skillSplit
+    const changes = rebalanceChanges(split?.rebalance)
+    if (split?.mix) children.push(el('p', 'ac-game-card-line ac-muted', REBALANCE.mix[split.mix] ?? REBALANCE.mix.default))
+    if (!changes) {
+      children.push(el('p', 'ac-game-card-line', REBALANCE.nothing))
+      return section(REBALANCE.title, children)
+    }
+    children.push(el('p', 'ac-game-card-line ac-game-rebalance-preview', changes))
+    const key = `rebalance:${chosen.id}`
+    children.push(confirmButton({
+      label: REBALANCE.title,
+      question: REBALANCE.question(chosen.id, changes),
+      confirm: REBALANCE.confirm(chosen.id),
+      className: 'ac-primary',
+      key,
+      isOpen: openQuestions.has(key),
+      onOpenChange: (isOpen) => (isOpen ? openQuestions.add(key) : openQuestions.delete(key)),
+      onConfirm: () => actions.rebalanceSkills(chosen.id)
+    }))
+    return section(REBALANCE.title, children)
+  }
+
   function draw() {
     if (!state) return
     const game = state.game
@@ -168,16 +210,18 @@ export function createSettingsView({ actions, onClose }) {
     const worlds = game.worlds ?? []
     const rooms = roomWorlds(state)
     const signature = JSON.stringify([
-      worlds.map((world) => [world.id, world.level]),
+      worlds.map((world) => [world.id, world.level, world.skillSplit?.rebalance, world.skillSplit?.mix]),
       rooms.map(({ room, worldId }) => [room.id, worldId]),
       naming?.roomId,
-      resetWorldId
+      resetWorldId,
+      rebalanceWorldId
     ])
     if (signature === drawn) return
     drawn = signature
     const list = el('div', 'ac-game-list')
     list.append(...rooms.map((entry) => roomRow(entry, worlds)))
     const cards = [section(SETTINGS.worlds, [el('p', 'ac-game-card-line', SETTINGS.worldsNote), list])]
+    if (actions.rebalanceSkills && worlds.length) cards.push(rebalanceCard(worlds))
     if (actions.resetWorld && worlds.length) cards.push(resetCard(worlds))
     if (saveFile) cards.push(saveFile.element)
     replaceKeepingFocus(body, cards)
