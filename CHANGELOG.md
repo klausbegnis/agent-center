@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+## 0.3.0 - 2026-11-17
+
 ### Changed
 
 - Game mode: the room picker above the tabs is now a row of room chips, so switching rooms is one
