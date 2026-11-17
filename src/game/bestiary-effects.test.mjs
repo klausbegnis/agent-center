@@ -70,7 +70,7 @@ test('a world\'s effects follow its counters: points of a race, all points and d
   const bestiary = { races: { slime: atLevel('slime', 5), orc: kills(1) }, bosses: { skrix: [3, 1, 20_000] } }
   const effects = bestiaryEffects(bestiary, index)
   assert.deepEqual(effects.filter((effect) => effect.effect === 'raceDamage').map((effect) => effect.races), [['slime']])
-  const rank = amountOf(rankEffects(index, 0), 'killMaterials')
+  const rank = amountOf(rankEffects(index, 1), 'killMaterials')
   close(amountOf(effects, 'killMaterials'), 0.004 + rank)
   assert.equal(amountOf(effects, 'legendaryPity'), 0)
   close(totalOf(effects, 'damage', (effect) => effect.ranks?.includes('boss')), 0.005)

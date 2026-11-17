@@ -3,14 +3,15 @@
 // party that already has the full legendary set and the best relic. Run by `npm run simulate`.
 import { bestiaryIndexOf } from '../src/game/bestiary-content.mjs'
 import { bestiaryEffects } from '../src/game/bestiary-effects.mjs'
-import { distinctBossesOf, hunterLevelOf, masteryOf } from '../src/game/bestiary.mjs'
+import { distinctBossesOf, hunterLevelOf, hunterRankOf, masteryOf } from '../src/game/bestiary.mjs'
 import { legendaryIndexOf } from '../src/game/legendary-effects.mjs'
 import { trainedParty } from './game-balance.mjs'
 import { killsOf, withFullSet } from './legendary-balance.mjs'
 
 /**
- * Where a world's bestiary stands: races met, the mastery levels reached (in all, and the races at
- * each level), distinct bosses beaten, the hunter's level, and the mean damage bonus against a
+ * Where a world's bestiary stands: races met, the mastery levels reached (in all, the lowest and
+ * highest, and how many races are past their powered levels), the races with a perk, distinct
+ * bosses beaten, the boss hunter's level, the hunter rank, and the mean damage bonus against a
  * race over all of them (what a party gains against a monster picked evenly among the races).
  *
  * @param {object | undefined} world
@@ -25,15 +26,21 @@ export function bestiaryProgress(world, content) {
   return {
     discovered: index.raceIds.filter((raceId) => bestiary?.races[raceId]).length,
     levels: levels.reduce((sum, level) => sum + level, 0),
-    byLevel: Array.from({ length: index.levels + 1 }, (_, level) => levels.filter((each) => each === level).length),
+    lowest: Math.min(...levels),
+    highest: Math.max(...levels),
+    /** The highest level of a race with no scale: one that comes up as often as any. */
+    common: Math.max(...index.raceIds.filter((raceId) => (index.races.get(raceId).ladder.scale ?? 1) === 1)
+      .map((raceId) => masteryOf(bestiary, raceId, index))),
+    prestige: levels.filter((level) => level > index.levels).length,
     bosses: distinctBossesOf(bestiary, index),
     hunter: hunterLevelOf(bestiary, index),
+    rank: hunterRankOf(bestiary, index),
     meanRaceDamage: raceDamage / index.raceIds.length,
     perks: index.raceIds.filter((raceId, at) => levels[at] >= index.perkEvery).length
   }
 }
 
-/** Every race at the top threshold and every boss of the roster beaten once. */
+/** Every race far past its powered levels, the rank far up, and every boss of the roster beaten once. */
 function maxedBestiary(index) {
   const races = Object.fromEntries(index.raceIds.map((raceId) =>
     [raceId, [1e9, 0, 0, 0, 0, 0, 0]]))
@@ -58,3 +65,11 @@ export function bestiaryGain({ plain, legendary, loaded, content }, level, relic
   const kills = killsOf(loaded, withBestiary)
   return { base, kills, gain: kills / base - 1 }
 }
+
+/**
+ * The number of mastery levels a stretch of the engine's kill events brought, and whether one did.
+ *
+ * @param {object[]} events
+ */
+export const levelUpsIn = (events) => events.reduce((sum, event) =>
+  sum + (event.bestiary ?? []).filter((news) => news.kind === 'race' && news.level).length, 0)

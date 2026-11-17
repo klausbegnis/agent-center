@@ -75,7 +75,7 @@ test('the view state carries the bestiary\'s races and bosses once, and each wor
   const bestiary = view.worlds[0].bestiary
   assert.deepEqual([bestiary.discovered, bestiary.raceCount, bestiary.beaten, bestiary.bossCount], [1, 20, 1, 55])
   const goblin = bestiary.races.find((race) => race.id === 'goblin')
-  assert.deepEqual([goblin.kills, goblin.level, goblin.from, goblin.to], [13, 4, 13, 18])
+  assert.deepEqual([goblin.kills, goblin.level, goblin.from, goblin.to], [13, 4, 13, 20])
   assert.equal(bestiary.bosses.find((boss) => boss.id === 'skrix').legendary, 1)
 })
 

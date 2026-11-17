@@ -1,6 +1,6 @@
 {
   "points": {"normal": 1, "veteran": 2, "elite": 5, "champion": 10, "boss": 25, "legendary": 60},
-  "mastery": {"levels": 25, "firstCost": 2, "growth": 1.31, "perLevel": {"effect": "raceDamage", "scope": "world", "amount": 0.002}, "perkEvery": 5},
+  "mastery": {"levels": 25, "firstCost": 2, "growth": 1.35, "perLevel": {"effect": "raceDamage", "scope": "world", "amount": 0.002}, "perkEvery": 5},
   "races": [
     {"id": "goblin", "name": "Goblins", "title": "Goblin-bane", "perk": {"effect": "itemDrop", "scope": "world", "amount": 0.008}},
     {"id": "orc", "name": "Orcs", "title": "Orc-bane", "perk": {"effect": "damage", "scope": "world", "amount": 0.002, "damageType": "physical"}},

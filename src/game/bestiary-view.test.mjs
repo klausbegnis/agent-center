@@ -55,17 +55,17 @@ test('a race shows its kills by rank, its points, its level, the points around i
   const view = worldBestiaryView(world({ races: { goblin: [60, 5, 4, 1, 0, 0, 20_400] }, bosses: {} }), content)
   const goblin = view.races.find((race) => race.id === 'goblin')
   assert.deepEqual([goblin.kills, goblin.points, goblin.eliteKills, goblin.firstDay], [70, 60 + 10 + 20 + 10, 5, 20_400])
-  assert.deepEqual([goblin.level, goblin.from, goblin.to, goblin.prestige], [10, 90, 119, 0])
+  assert.deepEqual([goblin.level, goblin.from, goblin.to, goblin.prestige], [9, 79, 109, 0])
   assert.deepEqual(goblin.ranks, [60, 5, 4, 1, 0, 0])
   assert.deepEqual(goblin.now.map((effect) => effect.effect), ['raceDamage', 'itemDrop'])
   assert.deepEqual(goblin.next.map((effect) => effect.effect), ['raceDamage', 'itemDrop'])
-  assert.ok(Math.abs(goblin.next[0].amount - 0.022) < 1e-12)
+  assert.ok(Math.abs(goblin.next[0].amount - 0.02) < 1e-12)
 })
 
 test('past its last powered level a race goes on in prestige, with nothing more to give', () => {
-  const view = worldBestiaryView(world({ races: { slime: [8000, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
+  const view = worldBestiaryView(world({ races: { slime: [15000, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
   const slime = view.races.find((race) => race.id === 'slime')
-  assert.deepEqual([slime.level, slime.prestige, slime.from, slime.to, slime.next], [26, 1, 7217, 9456, []])
+  assert.deepEqual([slime.level, slime.prestige, slime.from, slime.to, slime.next], [26, 1, 13979, 18873, []])
 })
 
 test('a boss shows its wins, and whether a room of the world found its item', () => {
