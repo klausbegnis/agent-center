@@ -63,7 +63,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the six tabs, then the chest's item slots with a legendary sword in a gold frame, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the seven tabs, then the chest's item slots with a legendary sword in a gold frame, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -104,6 +104,13 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   outfit or tool of their own, with a buff for the character that holds it. A room's first boss
   always leaves a relic, and a city's stall sells one of its two relics now and then, for coins.
   They are a bonus on top: a full set adds well under a fifth to a party.
+- **A bestiary.** Each world keeps a book of every creature it has fought: the Bestiary tab
+  shows the races met and the bosses beaten (unknown ones as a dark silhouette and "???"), with
+  kills, mastery levels and the next threshold. Every mastery level adds a little damage against
+  that race, each race has a small perk of its own, and beating more different bosses levels a
+  boss hunter track. It is a small bonus too: a whole bestiary adds under a tenth to a party.
+
+![The Bestiary tab: races discovered and bosses beaten, the boss hunter's track and the bestiary's bonuses, then cards of slimes, goblins, orcs, skeletons, humans and trolls with their kills, mastery pips and damage bonus](docs/screenshots/game-bestiary.png)
 
 ### The bestiary
 
@@ -131,7 +138,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 ### Turning it on
 
 Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
-gains six tabs: **Rooms**, **Party**, **Chest**, **Camp**, **Skills** and **Market**, under a
+gains seven tabs: **Rooms**, **Party**, **Chest**, **Camp**, **Skills**, **Market** and **Bestiary**, under a
 room picker and a strip with the world's coins and materials; the picker chooses the room that
 Party and Chest show (and the world of the others), and on Rooms it can show one room alone. In
 a narrow panel the tabs show their icons only. The cog in the

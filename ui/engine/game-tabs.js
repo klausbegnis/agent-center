@@ -1,4 +1,4 @@
-// The game's tab list: Rooms, Party, Chest, Camp, Skills, Market. Real tabs, reachable with the
+// The game's tab list: Rooms, Party, Chest, Camp, Skills, Market, Bestiary. Real tabs, reachable with the
 // arrow keys. Each has a pixel icon beside its name; when the bar is too narrow for the names
 // (a container query in game.css), only the icons show and the name stays the accessible name
 // and the tooltip.

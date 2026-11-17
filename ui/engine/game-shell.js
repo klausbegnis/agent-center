@@ -1,5 +1,5 @@
 // The game's frame around the rooms: above the tabs, the room picker and the world's coins and
-// materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market); their panels; and a line for
+// materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market, Bestiary); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { button, el, svgIcon } from './dom.js'
 import { createGameActions } from './game-actions.js'
