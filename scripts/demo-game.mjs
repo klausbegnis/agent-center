@@ -115,6 +115,60 @@ function startingSave(travel, frozen) {
   return { version: 1, save, bridge: { travel } }
 }
 
+/**
+ * The frozen demo's bestiary. A day of play meets every race, so the frozen world's book is set to
+ * one of weeks of play instead: twelve races met, a few mastered, slimes to the top, eight still
+ * unknown, and a dozen bosses beaten, among them the owner of the legendary room's Rimeheart, so
+ * its card shows the item found. Kills by rank, then the game day of the first.
+ */
+function demoBestiary(day) {
+  const race = (normal, veteran, elite, champion, boss, legendary, daysAgo) =>
+    [normal, veteran, elite, champion, boss, legendary, day - daysAgo]
+  const boss = (beaten, legendary, daysAgo) => [beaten, legendary, day - daysAgo]
+  return {
+    races: {
+      slime: race(2410, 410, 210, 45, 2, 0, 61),
+      goblin: race(520, 105, 52, 12, 3, 1, 61),
+      orc: race(140, 28, 14, 3, 2, 0, 60),
+      skeleton: race(88, 17, 9, 2, 1, 0, 58),
+      human: race(46, 9, 4, 1, 1, 0, 55),
+      troll: race(30, 6, 3, 1, 1, 0, 52),
+      spider: race(24, 4, 2, 0, 0, 0, 47),
+      dragon: race(11, 2, 1, 0, 1, 1, 40),
+      werewolf: race(9, 2, 1, 0, 0, 0, 31),
+      insect: race(6, 1, 0, 0, 0, 0, 20),
+      golem: race(3, 0, 1, 0, 0, 0, 9),
+      treant: race(1, 0, 0, 0, 0, 0, 0)
+    },
+    bosses: {
+      skrix: boss(3, 1, 60),
+      grubbin: boss(2, 0, 55),
+      'old-hessa': boss(2, 0, 50),
+      'corwen-ashby': boss(1, 0, 46),
+      morvash: boss(2, 1, 41),
+      thruska: boss(1, 0, 37),
+      'mother-skein': boss(1, 0, 30),
+      vorzhaal: boss(1, 1, 24),
+      brakkus: boss(1, 0, 18),
+      ossric: boss(1, 0, 12),
+      'queen-zarra': boss(1, 0, 6),
+      'old-rusk': boss(1, 0, 1)
+    },
+    others: race(64, 12, 6, 1, 1, 0, 61)
+  }
+}
+
+/**
+ * Gives the frozen world the bestiary above. It goes in as an imported save would, then a round
+ * with the clock where it is links the agents again and earns nothing.
+ */
+async function showDemoBestiary(game, now) {
+  const file = await game.exportSave()
+  file.save.worlds.main.bestiary = demoBestiary(Math.floor(now / MARKET_DAY_MS))
+  await game.importSave(file)
+  await game.round()
+}
+
 /** A swing between 0.5 and 1.5, from a hash. */
 const swingOf = (key) => 0.5 + (hashOf(key) % 1000) / 1000
 
@@ -280,6 +334,7 @@ export async function createDemoGame(options) {
       frozenClock += ROUND_MS * SPEED
       await game.round()
     }
+    await showDemoBestiary(game, frozenClock)
     return game
   }
   await game.round()
