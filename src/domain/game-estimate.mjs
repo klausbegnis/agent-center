@@ -15,7 +15,9 @@ const MS_PER_MINUTE = 60_000
  * @typedef {import('./work-meter.mjs').MeterReading} MeterReading
  * @typedef {MeterReading & { at: number }} MeterBaseline what a meter showed when last read
  * @typedef {{ agentId: string, workedMs: Record<string, number>, toolCalls: number, minutes: number,
- *   since: number }} MeterDelta what an agent did over `minutes`, since the time `since`
+ *   since: number, attributedMs: Record<string, number>, callsBy: Record<string, number> }} MeterDelta
+ *   what an agent did over `minutes`, since the time `since`; `attributedMs` and `callsBy` say
+ *   which skills it trains (work-meter.mjs)
  * @typedef {import('./game-sessions.mjs').RoomAgent} RoomAgent
  */
 
@@ -55,6 +57,16 @@ function workedSince(before, after) {
   return worked
 }
 
+/** Each count in `after` beyond `before`; one that went down (it never should) counts nothing. */
+function grownSince(before, after) {
+  const grown = {}
+  for (const [key, value] of Object.entries(after ?? {})) {
+    const more = value - (before?.[key] ?? 0)
+    if (more > 0) grown[key] = more
+  }
+  return grown
+}
+
 /**
  * Where counting starts for a meter read for the first time. One that started after the last
  * reading (`watchedUntil`) is new: everything it counted is new work. Any other counted before
@@ -62,7 +74,8 @@ function workedSince(before, after) {
  */
 function firstMeterBaseline(meter, { now, watchedUntil }) {
   const isNew = watchedUntil !== null && meter.startedAt > watchedUntil
-  return isNew ? { startedAt: meter.startedAt, workedMs: {}, toolCalls: 0, at: Math.min(meter.startedAt, now) } : null
+  if (!isNew) return null
+  return { startedAt: meter.startedAt, workedMs: {}, toolCalls: 0, attributedMs: {}, callsBy: {}, at: Math.min(meter.startedAt, now) }
 }
 
 /**
@@ -83,7 +96,14 @@ export function readMeterDeltas(baselines, meters, { now, watchedUntil }) {
   for (const [agentId, meter] of Object.entries(meters)) {
     const known = baselines[agentId]
     const baseline = known && known.startedAt === meter.startedAt ? known : firstMeterBaseline(meter, { now, watchedUntil })
-    next[agentId] = { startedAt: meter.startedAt, workedMs: { ...meter.workedMs }, toolCalls: meter.toolCalls, at: now }
+    next[agentId] = {
+      startedAt: meter.startedAt,
+      workedMs: { ...meter.workedMs },
+      toolCalls: meter.toolCalls,
+      attributedMs: { ...meter.attributedMs },
+      callsBy: { ...meter.callsBy },
+      at: now
+    }
     if (!baseline) continue
     const workedMs = workedSince(baseline.workedMs, meter.workedMs)
     const toolCalls = meter.toolCalls - baseline.toolCalls
@@ -93,7 +113,9 @@ export function readMeterDeltas(baselines, meters, { now, watchedUntil }) {
     }
     if (toolCalls === 0 && Object.keys(workedMs).length === 0) continue
     const minutes = Math.max(0, now - baseline.at) / MS_PER_MINUTE
-    deltas.push({ agentId, workedMs, toolCalls, minutes, since: baseline.at })
+    const attributedMs = grownSince(baseline.attributedMs, meter.attributedMs)
+    const callsBy = grownSince(baseline.callsBy, meter.callsBy)
+    deltas.push({ agentId, workedMs, toolCalls, minutes, since: baseline.at, attributedMs, callsBy })
   }
   return { baselines: next, deltas, resets }
 }

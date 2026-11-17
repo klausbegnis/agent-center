@@ -45,6 +45,7 @@ const transport = {
   buyGroupUpgrade: (worldId, upgradeId) => postGame('buy-upgrade', { worldId, upgradeId }),
   moveRoomToWorld: (roomId, worldId) => postGame('assign-room', { roomId, worldId }),
   resetWorld: (worldId) => postGame('reset-world', { worldId }),
+  rebalanceSkills: (worldId) => postGame('rebalance-skills', { worldId }),
   setActiveRelic: (roomId, relicId) => postGame('active-relic', { roomId, relicId }),
   setAutoSpend: (on) => postGame('auto-spend', { on }),
   setTravel: (on) => postGame('travel', { on }),

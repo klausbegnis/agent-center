@@ -17,6 +17,7 @@ import {
   skillLabel,
   starsLabel
 } from './labels.js'
+import { splitSourceLine } from './skill-mix-labels.js'
 
 /** Stars are drawn one by one up to this many; more are written as a count. */
 const STARS_DRAWN = 5
@@ -100,10 +101,13 @@ export function createSkillsView({ panel, actions }) {
     return control
   }
 
-  function skillsCard(title, note, world, skills, speedText) {
+  function skillsCard(title, note, world, skills, speedText, footer = null) {
     const list = el('div', 'ac-game-skill-list')
     list.append(...skills.map((skill) => skillRow(world, skill, speedText)))
-    return section(title, [el('p', 'ac-game-card-line', note), list])
+    const children = [el('p', 'ac-game-card-line', note), list]
+    // Where the split between work skills comes from, so a skill that moves is understood.
+    if (footer) children.push(el('p', 'ac-game-card-line ac-muted ac-game-skill-split', footer))
+    return section(title, children)
   }
 
   function drawSummary(world, speedText) {
@@ -135,7 +139,7 @@ export function createSkillsView({ panel, actions }) {
     const speedText = formatFactor(world.attackSpeed)
     drawSummary(world, speedText)
     replaceKeepingFocus(body, [
-      skillsCard(SKILLS.work, SKILLS.workNote, world, world.workSkills ?? [], speedText),
+      skillsCard(SKILLS.work, SKILLS.workNote, world, world.workSkills ?? [], speedText, splitSourceLine(world.skillSplit)),
       skillsCard(SKILLS.gathering, SKILLS.gatheringNote, world, world.gatheringSkills ?? [], speedText)
     ])
   }

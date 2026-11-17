@@ -475,3 +475,52 @@ test('an agent on a paired machine that cannot be read stays in the room but cou
   tick(5_000)
   assert.deepEqual(store.workMeters().p5.workedMs, { think: 15_000 })
 })
+
+test('subagents a snapshot lists on their agent become its familiars and leave with the snapshots', () => {
+  const { store } = setup()
+  const parent = (subagents) => ({ paneKey: 'p1', parentPaneKey: null, state: 'working', agentType: 'claude', subagents })
+  store.sync('local', [{ workspaceId: 'w-api', agents: [parent([
+    { id: 'sub-1', state: 'working', startedAt: 900, description: 'Map the router' },
+    { id: 'sub-2', state: 'done', startedAt: 800, description: 'Finished earlier' }
+  ])] }])
+  let agents = store.snapshot().rooms[0].agents
+  assert.deepEqual(agents.map((agent) => [agent.id, agent.name, agent.parentId]),
+    [['p1', 'api', null], ['p1/sub:sub-1', 'Map the router', 'p1']])
+  assert.equal(store.snapshot().counts.subs, 1)
+  store.sync('local', [{ workspaceId: 'w-api', agents: [parent([])] }])
+  agents = store.snapshot().rooms[0].agents
+  assert.deepEqual(agents.map((agent) => agent.id), ['p1'])
+})
+
+test('a subagent listed both on its agent and as a child entry shows once', () => {
+  const { store } = setup()
+  store.sync('local', [{ workspaceId: 'w-api', agents: [
+    { paneKey: 'p1', parentPaneKey: null, state: 'working', subagents: [{ id: 'sub-1', state: 'working', description: 'Map the router' }] },
+    { paneKey: 'p1-child', parentPaneKey: 'p1', state: 'working', displayName: 'Map the router' }
+  ] }])
+  assert.equal(store.snapshot().counts.subs, 1)
+})
+
+test('a subagent a hook already shows is not added again from the snapshot', () => {
+  const { store } = setup()
+  store.linkTerminals([{ terminalId: 't1', paneKey: 'p1' }])
+  store.sync('local', [{ workspaceId: 'w-api', agents: [{ paneKey: 'p1', parentPaneKey: null, state: 'working' }] }])
+  store.toolBefore({ agent: 'claude', workspaceId: 'w-api', terminalId: 't1', tool: 'Agent', input: { description: 'Map the router' }, callId: 'call-9' })
+  const listed = [{ id: 'other-id', state: 'working', startedAt: 1_000, description: 'Map the router' },
+    { id: 'call-9b', state: 'working', startedAt: 2_000, description: 'Check the tests' }]
+  store.sync('local', [{ workspaceId: 'w-api', agents: [{ paneKey: 'p1', parentPaneKey: null, state: 'working', subagents: listed }] }])
+  const names = store.snapshot().rooms[0].agents.filter((agent) => agent.parentId).map((agent) => agent.name)
+  assert.deepEqual(names, ['Map the router', 'Check the tests'])
+})
+
+test('an agent with a working subagent in the snapshot earns delegating time without any hook', () => {
+  const { store, tick } = setup()
+  const row = { workspaceId: 'w-api', agents: [{ paneKey: 'p1', parentPaneKey: null, state: 'working',
+    subagents: [{ id: 'sub-1', state: 'working', description: 'Map the router' }] }] }
+  store.sync('local', [row])
+  tick(60_000)
+  store.sync('local', [row])
+  const meter = store.workMeters().p1
+  assert.equal(meter.attributedMs.delegate, 30_000)
+  assert.equal(meter.attributedMs.unknown, 30_000)
+})

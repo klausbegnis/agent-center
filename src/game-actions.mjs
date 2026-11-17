@@ -1,12 +1,14 @@
 // What a person can do in the game, checked before it reaches the engine: every id must name
 // something that exists (or, for a new world, be a well-formed name), so nothing made up is
 // stored. Each action answers whether it changed anything.
+import { worldWorkMix } from './domain/skill-mix.mjs'
 import { emptyBridge } from './game-save.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
 import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
 import { legendaryOf } from './game/legendary.mjs'
+import { rebalanceWorkSkills } from './game/rebalance.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
@@ -173,6 +175,23 @@ export function createGameActions(dependencies) {
       return change((save) => {
         requireWorld(save, worldId)
         return resetWorld(save, worldId)
+      })
+    },
+
+    /**
+     * Shares a world's work-skill experience again by the mix its unknown working time follows
+     * (worldWorkMix), keeping its world level. Only when asked; never automatic.
+     *
+     * @param {{ worldId: string }} input
+     */
+    async rebalanceSkills({ worldId }) {
+      const { bridge } = data()
+      return change((save) => {
+        requireWorld(save, worldId)
+        const world = save.worlds[worldId]
+        const skills = rebalanceWorkSkills(world.skills, worldWorkMix(bridge.workMix?.[worldId]).mix)
+        const isSame = JSON.stringify(skills) === JSON.stringify(world.skills)
+        return isSame ? save : { ...save, worlds: { ...save.worlds, [worldId]: { ...world, skills } } }
       })
     },
 

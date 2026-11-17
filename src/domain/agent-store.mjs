@@ -3,7 +3,14 @@
 import { activityForTool, isDelegateTool } from './activities.mjs'
 import { TITLE_LIMIT, displayText } from './display-text.mjs'
 import { basename, groupRooms } from './rooms.mjs'
-import { countToolCall, createWorkMeter, mergeWorkMeters, readWorkMeter, settleWorkMeter } from './work-meter.mjs'
+import {
+  countToolCall,
+  createWorkMeter,
+  mergeWorkMeters,
+  noteToolSignal,
+  readWorkMeter,
+  settleWorkMeter
+} from './work-meter.mjs'
 
 const NO_PROJECT_ROOM = { id: 'no-project', name: 'No project', host: null }
 const SUBAGENT_NAME_LIMIT = 40
@@ -171,11 +178,12 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   /**
    * Adds the time since the agent's meter was last settled. An agent on a machine that cannot be
    * read is not known to have worked meanwhile, whatever its last state was, so that time counts
-   * as no work.
+   * as no work. While it has subagents, part of that time counts as delegating.
    */
   function settleMeter(entry) {
     const isUnreachable = unreachableHosts.has(hostOf(entry))
-    settleWorkMeter(entry.meter, { state: isUnreachable ? 'unreachable' : entry.state, activity: entry.activity }, now())
+    const state = isUnreachable ? 'unreachable' : entry.state
+    settleWorkMeter(entry.meter, { state, activity: entry.activity, hasSubagents: entry.subs.size > 0 }, now())
   }
 
   /**
@@ -272,6 +280,30 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     if (state !== 'working') entry.activity = 'think'
   }
 
+  /** Whether a subagent entry came from a snapshot, not from a tool hook. */
+  const isSnapshotSub = (key) => key.startsWith('pane:') || key.startsWith('snap:')
+
+  /**
+   * The subagents a snapshot lists on their agent (`subagents`), as familiars of it. A listed
+   * subagent that a tool hook already shows is not added again: one whose id is the hook's call
+   * id, or, failing that, as many of the earliest listed as there are hook subagents.
+   */
+  function syncListedSubagents(entry, listed) {
+    const working = (listed ?? []).filter((sub) => sub.state !== 'done')
+      .sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0))
+    const fromHooks = [...entry.subs.keys()].filter((key) => !isSnapshotSub(key))
+    const unmatchedHooks = fromHooks.filter((key) => !working.some((sub) => sub.id === key)).length
+    const unmatched = working.filter((sub) => !entry.subs.has(sub.id))
+    for (const sub of unmatched.slice(unmatchedHooks)) {
+      entry.subs.set(`snap:${sub.id}`, {
+        id: `${entry.id}/sub:${sub.id}`,
+        name: displayText(sub.description, SUBAGENT_NAME_LIMIT) ?? 'subagent',
+        activity: 'think',
+        since: sub.startedAt ?? now()
+      })
+    }
+  }
+
   function lastSub(entry) {
     let last = null
     for (const sub of entry.subs.values()) last = sub
@@ -282,7 +314,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   function toolBefore(event) {
     const entry = upsert(event)
     if (event.agent) entry.kind = event.agent
-    countToolCall(entry.meter)
+    // A subagent's call counts for its agent, by its own tool: the agent's meter covers both.
+    countToolCall(entry.meter, isDelegateTool(event.tool) ? 'delegate' : activityForTool(event.tool), now())
     if (entry.state !== 'working') {
       entry.state = 'working'
       entry.since = now()
@@ -317,7 +350,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     } else {
       // No call id: end the oldest subagent that came from a hook.
       for (const key of entry.subs.keys()) {
-        if (!key.startsWith('pane:')) {
+        if (!isSnapshotSub(key)) {
           entry.subs.delete(key)
           break
         }
@@ -334,6 +367,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   function sync(hostId, rows) {
     const seen = new Set()
     const children = []
+    /** Agents whose snapshot lists their subagents: their `parentPaneKey` entries say it again. */
+    const listing = new Set()
     for (const row of rows ?? []) {
       for (const agent of row.agents ?? []) {
         if (agent.parentPaneKey) {
@@ -363,18 +398,23 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
           entry.state = state
           entry.since = since
         }
-        if (entry.state === 'working' && state === 'working' && agent.toolName && !isDelegateTool(agent.toolName) && entry.subs.size === 0) {
-          setActivity(entry, activityForTool(agent.toolName))
+        if (entry.state === 'working' && state === 'working' && agent.toolName) {
+          // A snapshot sees the tool running now: no call is counted, but it says what the agent does.
+          const toolActivity = isDelegateTool(agent.toolName) ? 'delegate' : activityForTool(agent.toolName)
+          noteToolSignal(entry.meter, toolActivity, now())
+          if (toolActivity !== 'delegate' && entry.subs.size === 0) setActivity(entry, toolActivity)
         }
         if (state === 'done') entry.subs.clear()
         // Subagents seen by ps are rebuilt on every snapshot; the ones from hooks stay.
-        for (const key of [...entry.subs.keys()]) if (key.startsWith('pane:')) entry.subs.delete(key)
+        for (const key of [...entry.subs.keys()]) if (isSnapshotSub(key)) entry.subs.delete(key)
+        if (state !== 'done') syncListedSubagents(entry, agent.subagents)
+        if (agent.subagents?.length) listing.add(entry.id)
       }
     }
     for (const child of children) {
       const parent = agents.get(child.parentPaneKey)
       const state = mostUrgentState(child.state, child.mainAgent?.state)
-      if (!parent || state === 'done') continue
+      if (!parent || state === 'done' || listing.has(parent.id)) continue
       parent.subs.set(`pane:${child.paneKey}`, {
         id: child.paneKey,
         name:

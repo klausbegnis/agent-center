@@ -4,7 +4,8 @@
 import { estimatedSessions, readMeterDeltas } from './domain/game-estimate.mjs'
 import { matchSessions, placeSessions } from './domain/game-sessions.mjs'
 import { boundTokens, readTokenDeltas } from './domain/game-tokens.mjs'
-import { estimateTokens, estimateTokensFromTime } from './game/estimate.mjs'
+import { WORK_ACTIVITIES, foldObservedCalls, worldWorkMix } from './domain/skill-mix.mjs'
+import { estimateTokens, estimateTokensFromTime, estimateWeights, splitTokens } from './game/estimate.mjs'
 
 /**
  * @typedef {import('./domain/game-sessions.mjs').HistorySession} HistorySession
@@ -13,8 +14,13 @@ import { estimateTokens, estimateTokensFromTime } from './game/estimate.mjs'
  *   sessions: HistorySession[], truncated: boolean,
  *   places: Map<string, import('./domain/game-sessions.mjs').Place | null>,
  *   agentOf: Map<string, string>, how: Map<string, string>,
- *   deltas: Map<string, { tokens: number, minutes: number }>, resets: number, baselines: object
+ *   deltas: Map<string, SessionDelta>, resets: number, baselines: object
  * }} SourceReading maps by session id; `baselines` are the source's, to keep for the next round
+ * @typedef {{ tokens: number, minutes: number, work?: EstimatedWork,
+ *   split?: Record<string, number> }} SessionDelta `split` shares `tokens` between the work
+ *   activities; without it they all count as the agent's activity at the time of the round
+ * @typedef {{ attributedMs: Record<string, number>, callsBy: Record<string, number>, toolCalls: number,
+ *   minutes: number, fromTimeOnly: boolean }} EstimatedWork what an estimate was made of
  */
 
 /**
@@ -63,7 +69,64 @@ export function readFromEstimate({ meters, agents, baselines, watchedUntil, at }
     const sessionId = sessionOf.get(delta.agentId)
     const estimate = paired.has(sessionId) ? estimateTokensFromTime(delta) : estimateTokens(delta)
     const tokens = boundTokens(estimate, delta.since, at)
-    if (tokens > 0) deltas.set(sessionId, { tokens, minutes: delta.minutes })
+    if (tokens <= 0) continue
+    const { attributedMs, callsBy, toolCalls, minutes } = delta
+    const work = { attributedMs, callsBy, toolCalls, minutes, fromTimeOnly: paired.has(sessionId) }
+    deltas.set(sessionId, { tokens, minutes, work })
   }
   return { sessions, truncated: false, places, agentOf, how, deltas, resets: read.resets, baselines: read.baselines }
+}
+
+/** Adds `ms` to the tracked or unknown time of a world's record. */
+function addTime(record, worldId, { attributedMs }) {
+  const unknownMs = attributedMs.unknown ?? 0
+  const allMs = Object.values(attributedMs).reduce((sum, ms) => sum + ms, 0)
+  const entry = record[worldId] ?? { trackedMs: 0, unknownMs: 0 }
+  record[worldId] = { trackedMs: entry.trackedMs + allMs - unknownMs, unknownMs: entry.unknownMs + unknownMs }
+}
+
+/**
+ * Shares each estimated session's tokens between the work activities (estimateWeights), the time
+ * no tool explains following its world's mix (worldWorkMix), after this round's tool calls have
+ * been added to that world's observed calls. The tokens of a session stay the same in total.
+ *
+ * @param {object} input
+ * @param {Map<string, SessionDelta>} input.deltas by session id, from readFromEstimate
+ * @param {Map<string, { roomId: string }>} input.places by session id
+ * @param {(roomId: string) => string | null} input.worldOf a room's world, null when out of the game
+ * @param {Record<string, Record<string, number>>} input.observed the observed calls by world
+ * @returns {{ deltas: Map<string, SessionDelta>, observed: Record<string, Record<string, number>>,
+ *   time: Record<string, { trackedMs: number, unknownMs: number }> }} `time` is this round's working
+ *   time by world, explained by tools or not
+ */
+export function attributeEstimate({ deltas, places, worldOf, observed }) {
+  const worldOfSession = (sessionId) => {
+    const place = places.get(sessionId)
+    return place ? worldOf(place.roomId) : null
+  }
+  const calls = {}
+  for (const [sessionId, { work }] of deltas) {
+    const worldId = worldOfSession(sessionId)
+    if (worldId === null || !work) continue
+    const counts = (calls[worldId] ??= {})
+    for (const activity of WORK_ACTIVITIES) counts[activity] = (counts[activity] ?? 0) + (work.callsBy[activity] ?? 0)
+  }
+  const nextObserved = { ...observed }
+  for (const [worldId, counts] of Object.entries(calls)) nextObserved[worldId] = foldObservedCalls(observed[worldId], counts)
+  const shared = new Map()
+  const time = {}
+  for (const [sessionId, delta] of deltas) {
+    const worldId = worldOfSession(sessionId)
+    if (worldId === null || !delta.work) {
+      shared.set(sessionId, delta)
+      continue
+    }
+    const unknownMix = worldWorkMix(nextObserved[worldId]).mix
+    const weights = estimateWeights(delta.work, { unknownMix, fromTimeOnly: delta.work.fromTimeOnly })
+    // A meter that shared nothing (none should) is spread by the world's mix, never all to think.
+    const hasWeight = Object.values(weights).some((weight) => weight > 0)
+    shared.set(sessionId, { ...delta, split: splitTokens(delta.tokens, hasWeight ? weights : unknownMix, 'think') })
+    addTime(time, worldId, delta.work)
+  }
+  return { deltas: shared, observed: nextObserved, time }
 }

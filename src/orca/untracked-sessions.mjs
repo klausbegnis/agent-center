@@ -36,6 +36,7 @@ export function withUntrackedSessions(rows, terminals, now) {
     extra.push({
       paneKey: terminal.paneKey,
       parentPaneKey: null,
+      subagents: [],
       state: isWorking ? 'working' : 'done',
       agentType: null,
       conversationName: name,

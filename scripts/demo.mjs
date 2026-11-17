@@ -130,10 +130,18 @@ agent('cosmic-llama/main', 'codex', 'Crash triage', 'waiting')
 tool(push, 'Edit')
 subagent(onboarding, 'Explore', 'Read')
 
-// quantum-pickle
+// quantum-pickle, on a paired machine: its subagents come the way a newer Orca's snapshot lists
+// them, on their agent (`subagents`), not from tool hooks.
 const backfill = agent('quantum-pickle/nightly-backfill', 'codex', 'Nightly backfill')
-agent('quantum-pickle/main', 'claude', 'Schema migration', 'done')
+const migration = agent('quantum-pickle/main', 'claude', 'Schema migration', 'done')
 tool(backfill, 'Bash')
+store.sync('gpu-rig', [
+  { workspaceId: 'quantum-pickle/nightly-backfill', agents: [{
+    paneKey: backfill.paneKey, parentPaneKey: null, state: 'working', agentType: 'codex', hasLivePty: true,
+    subagents: [{ id: 'demo-sub-1', state: 'working', startedAt: Date.now(), description: 'Check the partitions' }]
+  }] },
+  { workspaceId: 'quantum-pickle/main', agents: [{ paneKey: migration.paneKey, parentPaneKey: null, state: 'done', hasLivePty: true }] }
+])
 
 // sneaky-pancake
 const reference = agent('sneaky-pancake/api-reference', 'claude', 'API reference')

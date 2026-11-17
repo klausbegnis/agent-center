@@ -25,6 +25,16 @@ test('an agent id becomes a game session id that is recognised as estimated', ()
   assert.equal(isEstimatedSessionId('a1b2c3'), false)
 })
 
+test('a delta carries how the working time was shared and the tool calls by activity', () => {
+  const before = { ...meter(0, { think: MINUTE }, 2), attributedMs: { read: 40_000, unknown: 20_000 }, callsBy: { read: 2 } }
+  const after = { ...meter(0, { think: 2 * MINUTE }, 5), attributedMs: { read: 70_000, write: 10_000, unknown: 40_000 },
+    callsBy: { read: 4, write: 1 } }
+  const first = readMeterDeltas({}, { 'pane-1': before }, { now: MINUTE, watchedUntil: null })
+  const [delta] = readMeterDeltas(first.baselines, { 'pane-1': after }, { now: 2 * MINUTE, watchedUntil: MINUTE }).deltas
+  assert.deepEqual(delta.attributedMs, { read: 30_000, write: 10_000, unknown: 20_000 })
+  assert.deepEqual(delta.callsBy, { read: 2, write: 1 })
+})
+
 test('a meter seen for the first time earns nothing when the game just started watching', () => {
   const read = readMeterDeltas({}, { 'pane-1': meter(0, { write: 10 * MINUTE }, 40) }, { now: 20 * MINUTE, watchedUntil: null })
   assert.deepEqual(read.deltas, [])
@@ -34,14 +44,16 @@ test('a meter seen for the first time earns nothing when the game just started w
 test('a meter that started after the last reading earns everything it counted', () => {
   const meters = { 'pane-1': meter(5 * MINUTE, { write: MINUTE }, 3) }
   const read = readMeterDeltas({}, meters, { now: 6 * MINUTE, watchedUntil: 4 * MINUTE })
-  assert.deepEqual(read.deltas, [{ agentId: 'pane-1', workedMs: { write: MINUTE }, toolCalls: 3, minutes: 1, since: 5 * MINUTE }])
+  assert.deepEqual(read.deltas, [{ agentId: 'pane-1', workedMs: { write: MINUTE }, toolCalls: 3, minutes: 1, since: 5 * MINUTE,
+    attributedMs: {}, callsBy: {} }])
 })
 
 test('a known meter earns what it counted since its baseline', () => {
   const first = readMeterDeltas({}, { 'pane-1': meter(0, { read: MINUTE }, 2) }, { now: MINUTE, watchedUntil: null })
   const meters = { 'pane-1': meter(0, { read: MINUTE, write: 30_000 }, 5) }
   const second = readMeterDeltas(first.baselines, meters, { now: 2 * MINUTE, watchedUntil: MINUTE })
-  assert.deepEqual(second.deltas, [{ agentId: 'pane-1', workedMs: { write: 30_000 }, toolCalls: 3, minutes: 1, since: MINUTE }])
+  assert.deepEqual(second.deltas, [{ agentId: 'pane-1', workedMs: { write: 30_000 }, toolCalls: 3, minutes: 1, since: MINUTE,
+    attributedMs: {}, callsBy: {} }])
 })
 
 test('an agent that did nothing since the last reading has no delta', () => {

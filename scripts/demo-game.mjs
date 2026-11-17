@@ -186,22 +186,35 @@ function createMeters(store) {
       const isPaired = (room.host ?? LOCAL) !== LOCAL
       for (const agent of room.agents) {
         if (agent.parentId) continue
-        if (!meters.has(agent.id)) meters.set(agent.id, { startedAt: now, workedMs: {}, toolCalls: 0, calls: 0 })
+        if (!meters.has(agent.id)) {
+          meters.set(agent.id, { startedAt: now, workedMs: {}, toolCalls: 0, calls: 0, attributedMs: {}, callsBy: {} })
+        }
         const meter = meters.get(agent.id)
         if (agent.state !== 'working') continue
-        meter.workedMs[agent.activity] = (meter.workedMs[agent.activity] ?? 0) + minutes * MINUTE_MS
-        if (isPaired) continue
+        const ms = minutes * MINUTE_MS
+        const add = (record, key, amount) => (record[key] = (record[key] ?? 0) + amount)
+        add(meter.workedMs, agent.activity, ms)
+        // Shared the way the store's meter shares it: a paired machine's time is unknown, a local
+        // agent's follows its tool with a quarter for thinking.
+        if (isPaired) {
+          add(meter.attributedMs, 'unknown', ms)
+          continue
+        }
+        add(meter.attributedMs, 'think', ms / 4)
+        add(meter.attributedMs, agent.activity, (ms * 3) / 4)
         // Fractions of a call carry over, so a slow agent still makes one now and then.
         meter.calls += TOOL_CALLS_PER_MINUTE * minutes * swingOf(`${agent.id}|${round}`)
-        meter.toolCalls = Math.floor(meter.calls)
+        const calls = Math.floor(meter.calls)
+        add(meter.callsBy, agent.activity, calls - meter.toolCalls)
+        meter.toolCalls = calls
       }
     }
   }
 
   return {
     step,
-    read: () => Object.fromEntries([...meters].map(([agentId, { startedAt, workedMs, toolCalls }]) =>
-      [agentId, { startedAt, workedMs: { ...workedMs }, toolCalls }]))
+    read: () => Object.fromEntries([...meters].map(([agentId, { startedAt, workedMs, toolCalls, attributedMs, callsBy }]) =>
+      [agentId, { startedAt, workedMs: { ...workedMs }, toolCalls, attributedMs: { ...attributedMs }, callsBy: { ...callsBy } }]))
   }
 }
 

@@ -3,6 +3,7 @@
 // when the plugin stops. A storage that fails never stops the game; a save from a newer version
 // of the plugin is never overwritten.
 import { normalizeBaselines } from './domain/game-tokens.mjs'
+import { WORK_ACTIVITIES } from './domain/skill-mix.mjs'
 
 export const GAME_STORAGE_KEY = 'game'
 /** The version of the stored wrapper. The engine's save inside it has a version of its own. */
@@ -22,15 +23,31 @@ const RETIREES_KEPT_WHEN_LARGE = [25, 10, 0]
 
 /**
  * @typedef {{ baselines: Record<string, { total: number, at: number }>, watchedUntil: number | null,
- *   autoSpend: boolean, travel: boolean, tokenSource: 'history' | 'estimated' | null }} Bridge what
- *   the worker keeps beside the engine's save; `baselines` and `watchedUntil` belong to
- *   `tokenSource`, and `travel` is "new scene after each monster"
+ *   autoSpend: boolean, travel: boolean, tokenSource: 'history' | 'estimated' | null,
+ *   workMix: Record<string, Record<string, number>> }} Bridge what the worker keeps beside the
+ *   engine's save; `baselines` and `watchedUntil` belong to `tokenSource`, `travel` is "new scene
+ *   after each monster" and `workMix` the tool calls observed in each world, by activity
+ *   (src/domain/skill-mix.mjs), which survive a change of source
  * @typedef {{ save: object, bridge: Bridge }} GameData
  */
 
 /** @returns {Bridge} */
 export function emptyBridge() {
-  return { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null }
+  return { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null, workMix: {} }
+}
+
+/** The observed tool calls by world: counts by work activity, anything else dropped. */
+function normalizeWorkMix(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const mixes = {}
+  for (const [worldId, counts] of Object.entries(value)) {
+    if (!counts || typeof counts !== 'object' || Array.isArray(counts)) continue
+    const kept = Object.fromEntries(WORK_ACTIVITIES
+      .filter((activity) => Number.isFinite(counts[activity]) && counts[activity] >= 0)
+      .map((activity) => [activity, counts[activity]]))
+    if (Object.keys(kept).length) mixes[worldId] = kept
+  }
+  return mixes
 }
 
 const TOKEN_SOURCES = new Set(['history', 'estimated'])
@@ -45,7 +62,8 @@ function normalizeBridge(value) {
     watchedUntil,
     autoSpend: bridge.autoSpend === true,
     travel: bridge.travel === true,
-    tokenSource: TOKEN_SOURCES.has(bridge.tokenSource) ? bridge.tokenSource : formerSource
+    tokenSource: TOKEN_SOURCES.has(bridge.tokenSource) ? bridge.tokenSource : formerSource,
+    workMix: normalizeWorkMix(bridge.workMix)
   }
 }
 

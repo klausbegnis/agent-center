@@ -249,7 +249,8 @@ test('a save file far larger than other bodies can be imported, and a refusal sa
 const networkAddress = Object.values(os.networkInterfaces()).flat()
   .find((entry) => entry && !entry.internal && entry.family === 'IPv4')?.address
 
-const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
+const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'rebalance-skills',
+  'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
   'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic']
 
