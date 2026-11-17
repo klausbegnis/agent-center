@@ -63,6 +63,7 @@ function characterView(character, project, names, prices) {
   return {
     sessionId: character.sessionId,
     class: character.class,
+    pinned: { ...character.pinned },
     level: character.level,
     levelProgress: Math.min(1, (character.xp ?? 0) / characterXpToNext(character.level)),
     seasoning: seasoning(character.level),

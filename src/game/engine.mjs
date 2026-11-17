@@ -14,6 +14,7 @@ import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
+import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
@@ -165,6 +166,9 @@ export function createEngine({ content }) {
     setKeepTitles,
     setCharacterTrade,
     setRoomTrade,
+    equipItem,
+    bestGearForRoom,
+    equipProblem,
     autoSpend: (save) => autoSpendWithPurchases(save).save,
     autoSpendWithPurchases,
     view: (save) => viewOf(save, content),

@@ -25,6 +25,8 @@ milliseconds the caller passes.
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
 | `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
 | `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
+| `equipItem(save, { projectId, sessionId, slot, itemId })` | Sets what a living character holds in a slot: an item of the room's chest, `null` for nothing, or `'auto'` (see "Choosing equipment"); unchanged when the choice is refused or changes nothing. `equipProblem(project, { sessionId, slot, itemId })` says why a choice is refused, or null. |
+| `bestGearForRoom(save, { projectId })` | Re-runs the automatic pick for every slot of a room nobody pinned; unchanged when nothing would change. |
 | `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
@@ -309,6 +311,31 @@ project id:
   `RETIREES_KEPT` are kept; older ones fold into a counter. A session that comes back with the
   same id leaves retirement with its level and attributes and takes the best free items.
 
+### Choosing equipment
+
+The automatic pick above (`equipFromChest` in `chest.mjs`) runs only when a character arrives or
+comes back from retirement, and when a person asks for it. A person can also choose by hand
+(`equip.mjs`), from the Party tab:
+
+- **A free item** of the room's chest that fits the slot (a weapon of the class's damage type) is
+  taken; what the character held there goes back to the chest, free.
+- **An item another character holds** is swapped: the two exchange that slot's items (the other
+  gets what the character held there, or nothing). The swap is refused, with the reason, when
+  the other could not use what it would get, so no character ever holds a weapon of the wrong
+  type. The one who chose is pinned; the other keeps its own pin or none.
+- **Nothing** empties the slot; the item goes back to the chest.
+- A slot chosen by hand, item or nothing, is **pinned** (`pinned: { weapon: true }` on the
+  character), and the automatic pick leaves it alone. **Auto** unpins it and takes the best free
+  item of that slot at once, which may be the one it held.
+- **Best gear for everyone** puts every unpinned item of the room's living characters back in the
+  chest, then lets each character, in order of session id, take the best free item of each of
+  its unpinned slots, as on arrival. It answers how many slots changed.
+- Pins belong to a living character. A character that retires gives its items back and its pins
+  are forgotten (the retiree record has none), so one that comes back starts on Auto. An item a
+  character holds never leaves the chest (moving a left-behind room's chest and salvage only
+  touch free items), so a pin never points at a missing item; the save check refuses one that
+  does.
+
 ## Scenes
 
 A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
@@ -547,7 +574,8 @@ Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightT
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
-            tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state }
+            tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
+            pinned? }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
@@ -803,6 +831,8 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
 | `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, or null to follow the room |
+| `game.equip` | `/api/game/equip` | `{ roomId, sessionId, slot, itemId }`: a living character of a room that plays, `weapon`, `outfit` or `tool`, and an item of that room's chest, null for nothing or `'auto'`; a choice the rules refuse says why. |
+| `game.bestGear` | `/api/game/best-gear` | `{ roomId }`; answers `{ changed, slotsChanged }` |
 | `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, or null for Auto |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
@@ -915,7 +945,8 @@ by the usual closing rules.
   characters: {
     'pane-13': { sessionId, link: 'title', guest: false, class: 'physical', level: 6,
       levelProgress: 0.4, attributes: {...}, equipment: { weapon: { id, name, tier, level },
-      outfit, tool }, trade: 'mining', tradeChoice: null, autoTrade: 'mining', state: 'working' },
+      outfit, tool }, pinned: { weapon: true }, trade: 'mining', tradeChoice: null,
+      autoTrade: 'mining', state: 'working' },
     'pane-5': { sessionId: null, link: 'guest', guest: true, level: 1 }
   },
   recent: [{ id: 570, at, type: 'level', roomId, sessionId, agentId, level: 9 }],
@@ -951,6 +982,8 @@ by the usual closing rules.
 - A character's `trade` is the one it gathers now (see "Gathering"), `tradeChoice` its own
   choice or null, and `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
   to.
+- A character's `pinned` names the slots chosen by hand (see "Choosing equipment"); a page that
+  only watches shows them without the choice.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
   right character. `link` is how it was matched: `session`, `title`, `only`, `agent` (the
   estimate: one character per agent, on this computer or a paired one) or `guest` (a paired
@@ -1055,6 +1088,21 @@ Targets the numbers do not meet, and why:
 - Most projects have one or two sessions at a time, so most parties are not balanced and a
   fight with a rest is the usual case: 60 to 90% of fights early, 25 to 60% after a year as
   the campfire grows.
+
+### Choosing equipment by hand
+
+The automatic pick is greedy, one character at a time in the order they arrive, and blind to
+class: a Healer that arrives first takes the strongest physical weapon although a Fighter hits
+harder with it. That costs little. Over a simulated year, re-running "Best gear for everyone"
+every evening, or giving each damage type's strongest weapons to the hardest-hitting classes
+(Fighter and Mage before Guardian before Healer) every evening, changed the mean weapon gear
+level by -0.5 to +0.6 and kills per hour by -2% to +2% against the automatic pick alone, in
+both directions, and not at all for the light player's single character. Gear is about a fifth
+of a hit and auto-spend upgrades whatever is held, so who holds the one good item matters only
+until the next upgrades. A better automatic assignment exists (the strongest weapons of each
+damage type to the classes with the highest `CLASS_HIT`, outfits and tools by power) but would
+not change these numbers noticeably. The simulator never chooses by hand, so its numbers do not
+change.
 
 ### Choosing a trade
 

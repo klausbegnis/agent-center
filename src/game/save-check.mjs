@@ -144,8 +144,21 @@ function character(value, path, sessionId) {
     skillXp: amounts(source.skillXp ?? {}, `${path}.skillXp`, WORK_SKILLS),
     gatherCarry: number(source.gatherCarry ?? 0, `${path}.gatherCarry`),
     title: textOrNull(source.title, `${path}.title`),
-    state: oneOf(source.state ?? 'idle', CHARACTER_STATES, `${path}.state`)
+    state: oneOf(source.state ?? 'idle', CHARACTER_STATES, `${path}.state`),
+    // Slots chosen by hand; a save from before they existed has none, and the field is left out.
+    ...(source.pinned === undefined ? {} : { pinned: pins(source.pinned, `${path}.pinned`) })
   }
+}
+
+/** The slots a person pinned: known slots, each true. */
+function pins(value, path) {
+  return entries(value, path, {
+    key: (slot, at) => oneOf(slot, EQUIPMENT_SLOTS, at),
+    entry: (pinned, at) => {
+      if (pinned !== true) fail(at, 'is not true')
+      return true
+    }
+  })
 }
 
 function retiree(value, path) {
