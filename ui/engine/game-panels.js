@@ -23,7 +23,7 @@ import { createSkillsView } from './skills-view.js'
  *   called when another chest item is chosen, so the strip can mark what its upgrade lacks
  */
 export function createGamePanels({ contents, actions, base, onChosenItem }) {
-  const party = createPartyView({ actions })
+  const party = createPartyView({ actions, base })
   const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
   const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })

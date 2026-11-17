@@ -1,6 +1,7 @@
 // The wording of the Party tab's equipment picker, apart from labels.js, which is past the size a
 // module should have.
 import { levelPlus, SLOT_LABEL } from './labels.js'
+import { madeForText } from './legendary-labels.js'
 
 export const EQUIP = {
   close: 'Close',
@@ -31,8 +32,12 @@ export function slotButtonLabel(slot, item, isPinned) {
 /** The change in power a choice brings: "+2", "−1" or "same". */
 export const powerChange = (change) => (change > 0 ? `+${change}` : change < 0 ? `−${-change}` : 'same')
 
+/** A legendary choice's buff beside its power: "legendary: +4% critical chance for the wielder". */
+export const legendaryNote = (legendary) => (legendary ? `legendary: ${legendary.text}` : '')
+
 /** What taking a choice means, beside it: free, a swap with its holder, or why not. */
-export function takeText({ take, holder }) {
+export function takeText({ take, holder, legendary }) {
+  if (take === 'unfit') return `${madeForText(legendary ?? {})}: this one cannot hold it`
   if (take === 'equipped') return EQUIP.equipped
   if (take === 'swap') return `swap with ${holder || 'its holder'}`
   if (take === 'refused') return `held by ${holder || 'someone'}: ${EQUIP.refusedSwap}`
@@ -42,6 +47,7 @@ export function takeText({ take, holder }) {
 /** A choice's name for screen readers: "Tempered Shortsword, Tier 3, +0, power +2, swap with …". */
 export function choiceLabel(choice) {
   const { item } = choice
+  const buff = choice.legendary ? `${legendaryNote(choice.legendary)}, ` : ''
   return `${item.name}, Tier ${item.tier}, ${levelPlus(item.level)}, power ${powerChange(choice.change)}, ` +
-    takeText(choice)
+    buff + takeText(choice)
 }

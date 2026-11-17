@@ -9,6 +9,7 @@ import { equipLegendary } from './legendary-equip.mjs'
 import { emptySkill, grantSkillXp, worldLevel, xpFromTokens } from './progression.mjs'
 import { comeBack, retire } from './retirement.mjs'
 import { CLASSES, skillForActivity } from './skills.mjs'
+import { effectiveTrade } from './trades.mjs'
 import { emptyProject, withCharacter, withProjectIn, withWorld, worldIdOf } from './worlds.mjs'
 
 /** The lowest generic tier of a slot (and damage type), for a new project's starting chest. */
@@ -52,7 +53,8 @@ function ensureCharacter(project, { sessionId, skills, now, index }) {
   const base = back ? back.project : project
   const born = back ? back.character : createCharacter({ sessionId, livingClasses, skills, now })
   const character = withEngineFields(born)
-  const { chest, equipment } = equipLegendary(equipFromChest(base.chest, character), character, index)
+  const picker = { ...character, trade: effectiveTrade(character, base) }
+  const { chest, equipment } = equipLegendary(equipFromChest(base.chest, character), picker, index)
   return withCharacter({ ...base, chest }, { ...character, equipment })
 }
 

@@ -2,20 +2,34 @@
 // one, or one another character holds, by swapping), empty a slot, or hand a slot back to the
 // automatic pick. A slot chosen by hand is pinned, and the automatic pick leaves it alone. The
 // automatic pick itself stays in chest.mjs (`equipFromChest`); this module only calls it. Pure.
-import { equipFromChest, findItem } from './chest.mjs'
+import { equipFromChest, findItem, weaponTypeOf } from './chest.mjs'
+import { equipLegendary, legendaryMisfit, mayHold } from './legendary-equip.mjs'
+import { effectiveTrade } from './trades.mjs'
 import { withCharacter, withProjectIn, worldIdOf } from './worlds.mjs'
+
+export { weaponTypeOf }
+
+/** @typedef {import('./legendary-content.mjs').LegendaryIndex | null} LegendaryIndex */
 
 /** The equipment slots, in the order they are shown. */
 export const EQUIPMENT_SLOTS = Object.freeze(['weapon', 'outfit', 'tool'])
 /** The choice that hands a slot back to the automatic pick. */
 export const AUTO = 'auto'
 
-/** The weapon damage type a class can use; the same rule `equipFromChest` follows. */
-export const weaponTypeOf = (characterClass) => (characterClass === 'magical' ? 'magical' : 'physical')
+/** The character as the picking rule sees it: with the trade it gathers now. */
+const asPicker = (character, project) => ({ ...character, trade: effectiveTrade(character, project) })
 
-/** Whether a character can use an item in its slot: any outfit or tool, a weapon of its type. */
-export function canUse(character, item) {
-  return item.slot !== 'weapon' || item.damageType === weaponTypeOf(character.class)
+/**
+ * Whether a character can use an item in its slot: any outfit or tool, a weapon of its type, and a
+ * legendary item only when it is made for it (`mayHold` in legendary-equip.mjs).
+ *
+ * @param {object} character
+ * @param {object} item
+ * @param {{ index?: LegendaryIndex, project?: object }} [rule] the legendary content, and the
+ *   project whose trade choice a character follows
+ */
+export function canUse(character, item, { index = null, project = {} } = {}) {
+  return mayHold(asPicker(character, project), item, index)
 }
 
 /** The slots a character's person chose by hand. */
@@ -47,16 +61,21 @@ function hold(chest, character, slot, itemId) {
  * The automatic pick for some of a character's slots: its items in those slots go back to the
  * chest, then `equipFromChest` chooses among the free items of those slots only.
  *
+ * Legendary items follow `equipLegendary`: one made for the character is taken first within
+ * LEGENDARY_PICK_MARGIN, and one made for someone else never.
+ *
  * @param {object[]} chest
  * @param {object} character
  * @param {string[]} slots
+ * @param {{ index?: LegendaryIndex, project?: object }} [rule]
  * @returns {{ chest: object[], character: object }}
  */
-export function autoPick(chest, character, slots) {
+export function autoPick(chest, character, slots, { index = null, project = {} } = {}) {
   if (slots.length === 0) return { chest, character }
   const own = new Set(slots.map((slot) => character.equipment?.[slot]).filter(Boolean))
   const released = chest.map((item) => (own.has(item.id) ? { ...item, heldBy: null } : item))
-  const picked = equipFromChest(released.filter((item) => slots.includes(item.slot)), character)
+  const offered = released.filter((item) => slots.includes(item.slot))
+  const picked = equipLegendary(equipFromChest(offered, character), asPicker(character, project), index)
   const taken = new Map(slots.map((slot) => [picked.equipment[slot], slot]).filter(([id]) => id))
   const nextChest = released.map((item) =>
     (taken.has(item.id) ? { ...item, heldBy: character.sessionId } : item))
@@ -71,9 +90,11 @@ export function autoPick(chest, character, slots) {
  *
  * @param {object} project
  * @param {{ sessionId: string, slot: string, itemId: string | null }} choice
+ * @param {LegendaryIndex} [index] the legendary content, for who may hold a legendary item
  * @returns {string | null}
  */
-export function equipProblem(project, { sessionId, slot, itemId }) {
+export function equipProblem(project, { sessionId, slot, itemId }, index = null) {
+  const rule = { index, project }
   const character = Object.hasOwn(project.characters, sessionId) ? project.characters[sessionId] : null
   if (!character) return 'not a character of this room'
   if (!EQUIPMENT_SLOTS.includes(slot)) return 'not an equipment slot'
@@ -81,11 +102,13 @@ export function equipProblem(project, { sessionId, slot, itemId }) {
   const item = findItem(project.chest, itemId)
   if (!item) return 'not an item of this room\'s chest'
   if (item.slot !== slot) return `that item does not go in the ${slot} slot`
-  if (!canUse(character, item)) return 'that character cannot use that weapon'
+  const misfit = legendaryMisfit(asPicker(character, project), item, index)
+  if (misfit) return misfit
+  if (!canUse(character, item, rule)) return 'that character cannot use that weapon'
   const holder = item.heldBy && item.heldBy !== sessionId ? project.characters[item.heldBy] : null
   if (item.heldBy && item.heldBy !== sessionId && !holder) return 'that item is held by nobody here'
   const given = character.equipment?.[slot] ? findItem(project.chest, character.equipment[slot]) : null
-  if (holder && given && !canUse(holder, given)) {
+  if (holder && given && !canUse(holder, given, rule)) {
     return 'the one holding it cannot use what it would get in exchange'
   }
   return null
@@ -96,12 +119,13 @@ export function equipProblem(project, { sessionId, slot, itemId }) {
  *
  * @param {object} project
  * @param {{ sessionId: string, slot: string, itemId: string | null }} choice
+ * @param {LegendaryIndex} [index]
  * @returns {object}
  */
-export function equipInProject(project, { sessionId, slot, itemId }) {
+export function equipInProject(project, { sessionId, slot, itemId }, index = null) {
   const character = project.characters[sessionId]
   if (itemId === AUTO) {
-    const picked = autoPick(project.chest, withPin(character, slot, false), [slot])
+    const picked = autoPick(project.chest, withPin(character, slot, false), [slot], { index, project })
     return withCharacter({ ...project, chest: picked.chest }, picked.character)
   }
   const item = itemId === null ? null : findItem(project.chest, itemId)
@@ -141,12 +165,13 @@ function inProject(save, projectId, change) {
  *
  * @param {object} save
  * @param {{ projectId: string, sessionId: string, slot: string, itemId: string | null }} choice
+ * @param {LegendaryIndex} [index]
  * @returns {object}
  */
-export function equipItem(save, { projectId, ...choice }) {
+export function equipItem(save, { projectId, ...choice }, index = null) {
   return inProject(save, projectId, (project) => {
-    if (equipProblem(project, choice)) return project
-    const next = equipInProject(project, choice)
+    if (equipProblem(project, choice, index)) return project
+    const next = equipInProject(project, choice, index)
     return JSON.stringify(next) === JSON.stringify(project) ? project : next
   })
 }
@@ -156,11 +181,14 @@ export function equipItem(save, { projectId, ...choice }) {
  * the chest, then each character takes the best free item of its unpinned slots, in order of
  * session id, as characters do when they arrive.
  *
+ * Legendary items are only freed and picked again, never dropped or copied.
+ *
  * @param {object} save
  * @param {{ projectId: string }} where
+ * @param {LegendaryIndex} [index]
  * @returns {object}
  */
-export function bestGearForRoom(save, { projectId }) {
+export function bestGearForRoom(save, { projectId }, index = null) {
   return inProject(save, projectId, (project) => {
     const order = Object.keys(project.characters).sort()
     const free = new Set(order.flatMap((sessionId) => {
@@ -176,7 +204,7 @@ export function bestGearForRoom(save, { projectId }) {
       const slots = EQUIPMENT_SLOTS.filter((slot) => !pinnedSlots(character).includes(slot))
       const emptied = { ...character, equipment: { ...character.equipment } }
       for (const slot of slots) emptied.equipment[slot] = null
-      const picked = autoPick(next.chest, emptied, slots)
+      const picked = autoPick(next.chest, emptied, slots, { index, project: next })
       next = withCharacter({ ...next, chest: picked.chest }, picked.character)
     }
     return JSON.stringify(next) === JSON.stringify(project) ? project : next

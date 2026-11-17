@@ -5,7 +5,7 @@
 // shows the slots only.
 import { button, el } from './dom.js'
 import { replaceKeepingFocus } from './game-controls.js'
-import { EQUIP, choiceLabel, pickerTitle, powerChange, slotButtonLabel, takeText } from './equip-labels.js'
+import { EQUIP, choiceLabel, legendaryNote, pickerTitle, powerChange, slotButtonLabel, takeText } from './equip-labels.js'
 import { AUTO_CHOICE, EQUIP_SLOTS, isPinned, optionAfter, slotChoices, weaponTypeOf } from './equip-model.js'
 import { itemSlot } from './item-slot-view.js'
 import { ARSENAL, equipmentSlotLabel } from './labels.js'
@@ -13,10 +13,11 @@ import { ARSENAL, equipmentSlotLabel } from './labels.js'
 /**
  * @param {{ roomId: () => string, sessionId: string, name: string,
  *   actions: Record<string, (...args: unknown[]) => Promise<boolean>>,
- *   open: { key: string | null, set: (key: string | null) => void } }} options `open` is shared
- *   by every character's slots, so opening one picker closes the other
+ *   open: { key: string | null, set: (key: string | null) => void }, base?: string }} options
+ *   `open` is shared by every character's slots, so opening one picker closes the other; `base`
+ *   is where the surface loads legendary pictures from
  */
-export function createEquipSlots({ roomId, sessionId, name, actions, open }) {
+export function createEquipSlots({ roomId, sessionId, name, actions, open, base = '' }) {
   const element = el('div', 'ac-game-equip')
   const list = el('ul', 'ac-game-slots')
   list.setAttribute('aria-label', ARSENAL.equipment)
@@ -40,15 +41,17 @@ export function createEquipSlots({ roomId, sessionId, name, actions, open }) {
     if (isDone) close(slot)
   }
 
-  function option({ key, label, ariaLabel, hint, isPressed = false, disabled = false, onPick, item, slot }) {
+  function option({ key, label, ariaLabel, hint, note, isPressed = false, disabled = false, onPick, item, slot }) {
     const node = button('', 'ac-game-equip-option', { onClick: onPick })
     node.dataset.key = key
     node.setAttribute('aria-pressed', String(isPressed))
     node.setAttribute('aria-label', ariaLabel ?? label)
     node.disabled = disabled
-    if (item) node.append(itemSlot({ item, slot, damageType: item.damageType, label: item.name, isSmall: true }))
+    if (item) node.append(itemSlot({ item, slot, damageType: item.damageType, label: item.name, isSmall: true, base }))
     const text = el('span', 'ac-game-equip-option-text')
-    text.append(el('span', 'ac-game-equip-option-name', label))
+    text.append(el('span', `ac-game-equip-option-name${item?.legendary ? ' ac-legendary-name' : ''}`, label))
+    // A legendary item's buff, next to the power it adds: power alone would undersell it.
+    if (note) text.append(el('span', 'ac-game-equip-option-hint ac-legendary-buff', note))
     if (hint) text.append(el('span', 'ac-game-equip-option-hint', hint))
     node.append(text)
     return node
@@ -67,8 +70,9 @@ export function createEquipSlots({ roomId, sessionId, name, actions, open }) {
         label: `${choice.item.name} · ${powerChange(choice.change)}`,
         ariaLabel: choiceLabel(choice),
         hint: takeText(choice),
+        note: legendaryNote(choice.legendary),
         isPressed: choice.isCurrent,
-        disabled: choice.take === 'refused',
+        disabled: choice.take === 'refused' || choice.take === 'unfit',
         item: choice.item,
         slot,
         onPick: () => choose(slot, choice.item.id)
@@ -102,8 +106,8 @@ export function createEquipSlots({ roomId, sessionId, name, actions, open }) {
     const { state, room, character, canChoose } = last
     const openSlot = open.key?.startsWith(`${sessionId}|`) ? open.key.slice(sessionId.length + 1) : null
     last.openSlot = openSlot
-    const signature = JSON.stringify([character.equipment, character.pinned, character.class, room.chest, canChoose,
-      openSlot])
+    const signature = JSON.stringify([character.equipment, character.pinned, character.class, character.trade,
+      room.chest, canChoose, openSlot, state.game?.legendary])
     if (signature === drawn) return
     drawn = signature
     const rows = EQUIP_SLOTS.map((slot) => {
@@ -115,7 +119,8 @@ export function createEquipSlots({ roomId, sessionId, name, actions, open }) {
         damageType: slot === 'weapon' ? weaponTypeOf(character.class) : null,
         label: canChoose ? slotButtonLabel(slot, item, isPinned(character, slot)) : equipmentSlotLabel(slot, item),
         isSmall: true,
-        isButton: canChoose
+        isButton: canChoose,
+        base
       })
       if (canChoose) {
         box.dataset.key = keyOf(slot)

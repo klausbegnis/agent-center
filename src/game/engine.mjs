@@ -192,9 +192,10 @@ export function createEngine({ content }) {
     setKeepTitles,
     setCharacterTrade,
     setRoomTrade,
-    equipItem,
-    bestGearForRoom,
-    equipProblem,
+    // Who may hold a legendary item is the content's to say (legendary-equip.mjs).
+    equipItem: (save, choice) => equipItem(save, choice, legendaryIndexOf(content)),
+    bestGearForRoom: (save, where) => bestGearForRoom(save, where, legendaryIndexOf(content)),
+    equipProblem: (project, choice) => equipProblem(project, choice, legendaryIndexOf(content)),
     autoSpend: (save) => autoSpendWithPurchases(save, content).save,
     autoSpendWithPurchases: (save) => autoSpendWithPurchases(save, content),
     view: (save) => viewOf(save, content),

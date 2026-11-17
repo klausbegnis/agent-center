@@ -1,7 +1,7 @@
 // Which character takes a piece of legendary equipment from the chest. A piece is made for a class
 // (a weapon or an outfit) or a trade (a tool); a new character that fits takes it over the plain
 // item it would have taken, unless that one is far ahead. Pure.
-import { bestFreeItem, findItem, isBetter } from './chest.mjs'
+import { bestFreeItem, findItem, isBetter, weaponTypeOf } from './chest.mjs'
 import { LEGENDARY_PICK_MARGIN } from './constants.mjs'
 import { effectiveGearLevel } from './items.mjs'
 
@@ -11,12 +11,42 @@ const SLOTS = ['weapon', 'outfit', 'tool']
  * Whether a piece of legendary equipment is made for the character.
  *
  * @param {object | undefined} entry the content entry
- * @param {{ class: string, trade?: string | null }} character
+ * @param {{ class: string, trade?: string | null }} character `trade` is the one it gathers now
+ *   (effectiveTrade in trades.mjs)
  * @returns {boolean}
  */
 export function fitsCharacter(entry, character) {
   if (entry?.kind !== 'equipment') return false
   return entry.slot === 'tool' ? entry.trade === character.trade : entry.class === character.class
+}
+
+/**
+ * Whether a character may hold an item, the one rule of every pick, automatic or by hand: a weapon
+ * of its class's damage type, any outfit or tool, and a legendary item only when it is made for it
+ * (its class, or for a tool the trade it gathers).
+ *
+ * @param {{ class: string, trade?: string | null }} character with the trade it gathers now
+ * @param {{ slot: string, damageType?: string, legendary?: boolean, entryId?: string }} item
+ * @param {import('./legendary-content.mjs').LegendaryIndex | null} index
+ * @returns {boolean}
+ */
+export function mayHold(character, item, index) {
+  if (item.slot === 'weapon' && item.damageType !== weaponTypeOf(character.class)) return false
+  return !item.legendary || fitsCharacter(index?.byId.get(item.entryId), character)
+}
+
+/**
+ * Why a character may not hold a legendary item it could otherwise use, or null.
+ *
+ * @param {{ class: string, trade?: string | null }} character
+ * @param {{ legendary?: boolean, entryId?: string }} item
+ * @param {import('./legendary-content.mjs').LegendaryIndex | null} index
+ */
+export function legendaryMisfit(character, item, index) {
+  if (!item.legendary || fitsCharacter(index?.byId.get(item.entryId), character)) return null
+  return index?.byId.get(item.entryId)?.slot === 'tool'
+    ? 'that legendary tool is made for another trade'
+    : 'that legendary item is made for another class'
 }
 
 /** Swaps one item a character holds for another (or none), in the chest. */

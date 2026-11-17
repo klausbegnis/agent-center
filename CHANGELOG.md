@@ -63,6 +63,10 @@ All notable changes to this project are recorded here. The format follows
   the one the room in "Goes to" lacks, at a steep price in coins that grows with the world. It is
   bought through the stall's usual Buy (`/api/game/buy-offer` with the offer after the gear);
   boss relics are never sold.
+- Game mode: choosing equipment knows legendary items. Auto, "Best gear for everyone" and the
+  Party tab's picker follow the same rule as a new character: a legendary item goes only to the
+  class (or, for a tool, the trade) it is made for, and the picker shows its buff and says who it
+  is made for.
 
 ## 0.2.0 - 2026-11-16
 

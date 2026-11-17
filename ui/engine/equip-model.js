@@ -3,6 +3,7 @@
 // it can be taken (free, swapped with its holder, or not at all and why). The same rules as the
 // worker's src/game/equip.mjs; the worker checks again. Never touches the DOM.
 import { roomCharacters } from './game-model.js'
+import { legendaryDetails } from './legendary-model.js'
 
 /** The equipment slots, in the order they are shown. */
 export const EQUIP_SLOTS = Object.freeze(['weapon', 'outfit', 'tool'])
@@ -16,6 +17,22 @@ export const weaponTypeOf = (characterClass) => (characterClass === 'magical' ? 
 export const canUse = (characterClass, item) =>
   item.slot !== 'weapon' || item.damageType === weaponTypeOf(characterClass)
 
+/**
+ * Whether a character may hold an item, the worker's rule (`mayHold` in legendary-equip.mjs): it
+ * can use it, and a legendary item is made for its class or, for a tool, the trade it gathers.
+ *
+ * @param {object | undefined} game the view state's game, for the legendary entries
+ * @param {{ class: string, trade?: string | null }} character
+ * @param {object} item
+ */
+export function mayHold(game, character, item) {
+  if (!canUse(character.class, item)) return false
+  if (!item.legendary) return true
+  const entry = game?.legendary?.entries?.[item.entryId]
+  if (!entry) return false
+  return entry.slot === 'tool' ? entry.trade === character.trade : entry.class === character.class
+}
+
 /** Strongest first (effective gear level), then tier, then level, then id: the chest's own order. */
 function byStrength(a, b) {
   return (b.power ?? 0) - (a.power ?? 0) || b.tier - a.tier || b.level - a.level ||
@@ -24,14 +41,16 @@ function byStrength(a, b) {
 
 /**
  * The choices of a character's slot: every item of the room's chest that fits, best first, each
- * `{ item, isCurrent, change, holder, take }` where `change` is its power against the current
- * item's (the current one counts as 0 when the slot is empty), `holder` the name of who holds it
- * (null when free), and `take` is 'equipped', 'free', 'swap' or 'refused'.
+ * `{ item, isCurrent, change, holder, take, legendary }` where `change` is its power against the
+ * current item's (the current one counts as 0 when the slot is empty), `holder` the name of who
+ * holds it (null when free), `take` is 'equipped', 'free', 'swap', 'refused' (a swap the holder
+ * could not take) or 'unfit' (a legendary item made for another class or trade), and
+ * `legendary` a legendary item's entry with its buff in words, or null.
  *
  * @param {{ state: object, roomId: string, room: { chest?: object[] }, character: object,
  *   slot: string }} where
  * @returns {{ item: object, isCurrent: boolean, change: number, holder: string | null,
- *   take: 'equipped' | 'free' | 'swap' | 'refused' }[]}
+ *   take: 'equipped' | 'free' | 'swap' | 'refused' | 'unfit', legendary: object | null }[]}
  */
 export function slotChoices({ state, roomId, room, character, slot }) {
   const chest = room.chest ?? []
@@ -49,11 +68,13 @@ export function slotChoices({ state, roomId, room, character, slot }) {
       let take = isCurrent ? 'equipped' : 'free'
       if (!isCurrent && item.heldBy) {
         // The holder gets what this character holds there now, or nothing.
-        const usable = holderMember && (!current || canUse(holderMember.character.class, current))
+        const usable = holderMember && (!current || mayHold(state.game, holderMember.character, current))
         take = usable ? 'swap' : 'refused'
       }
+      if (!isCurrent && !mayHold(state.game, character, item)) take = 'unfit'
       const holder = isCurrent || !item.heldBy ? null : holderMember?.agent.name ?? ''
-      return { item, isCurrent, change: (item.power ?? 0) - base, holder, take }
+      const legendary = legendaryDetails(state.game, item)
+      return { item, isCurrent, change: (item.power ?? 0) - base, holder, take, legendary }
     })
 }
 

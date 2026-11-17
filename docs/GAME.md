@@ -319,7 +319,8 @@ The automatic pick above (`equipFromChest` in `chest.mjs`) runs only when a char
 comes back from retirement, and when a person asks for it. A person can also choose by hand
 (`equip.mjs`), from the Party tab:
 
-- **A free item** of the room's chest that fits the slot (a weapon of the class's damage type) is
+- **A free item** of the room's chest that fits the slot (a weapon of the class's damage type; a
+  legendary item only for who it is made, see "Who holds equipment" under "Legendary loot") is
   taken; what the character held there goes back to the chest, free.
 - **An item another character holds** is swapped: the two exchange that slot's items (the other
   gets what the character held there, or nothing). The swap is refused, with the reason, when
@@ -395,9 +396,20 @@ Only one relic is active, a room holds one of each item, and today no target rea
 
 ### Who holds equipment
 
-A new character takes, for each slot, the best free legendary item made for it (its class, or for
-a tool its trade) over the plain item it would have taken, unless that one is more than
-`LEGENDARY_PICK_MARGIN` (2) upgrade levels ahead. It never takes one made for someone else.
+One rule says who may hold an item (`mayHold` in `legendary-equip.mjs`, over `weaponTypeOf` in
+`chest.mjs`): a weapon of the class's damage type, any outfit or tool, and a legendary item only
+when it is made for the character, its class or, for a tool, the trade it gathers now (its own
+choice, the room's, or Auto's). Every pick follows it:
+
+- **The automatic pick** (a new or returning character, **Auto** on a slot, **Best gear for
+  everyone**) takes, for each slot, the best free legendary item made for the character over the
+  plain item it would have taken, unless that one is more than `LEGENDARY_PICK_MARGIN` (2) upgrade
+  levels ahead, and never one made for someone else. Best gear only frees items and picks again,
+  so a legendary item is never lost or copied.
+- **By hand**, the Party tab's picker shows a legendary item to every character of its damage type,
+  with its buff beside the power it adds, but only one it is made for can take it; the others see
+  who it is made for. A swap is refused when either side would end up with an item it may not
+  hold. A legendary item chosen by hand is pinned like any other.
 
 ### Drops
 

@@ -79,3 +79,39 @@ test('the picker\'s wording says the change, the swap and the pin', () => {
   assert.equal(choiceLabel({ item: { name: 'Sword', tier: 3, level: 1 }, change: 2, take: 'free' }),
     'Sword, Tier 3, +1, power +2, free')
 })
+
+const legendaryState = {
+  ...state,
+  game: {
+    ...state.game,
+    legendary: {
+      entries: {
+        oathbreaker: { id: 'oathbreaker', name: 'Oathbreaker', kind: 'equipment', slot: 'weapon', class: 'physical',
+          effect: { effect: 'critChance', scope: 'holder', amount: 0.04 } }
+      }
+    }
+  }
+}
+const oathbreaker = item('oathbreaker', 'weapon', 1, { damageType: 'physical', legendary: true, entryId: 'oathbreaker' })
+const legendaryChoices = (character, chest) =>
+  slotChoices({ state: legendaryState, roomId: 'room', room: { chest }, character, slot: 'weapon' })
+
+test('a legendary weapon is offered to the class it is made for, with its buff, and refused to another', () => {
+  const chest = [...room.chest, oathbreaker]
+  const forFighter = legendaryChoices(fighter, chest).find((choice) => choice.item.id === 'oathbreaker')
+  assert.equal(forFighter.take, 'free')
+  assert.equal(forFighter.legendary.text, '+4% critical chance for the wielder')
+  assert.match(choiceLabel(forFighter), /legendary: \+4% critical chance for the wielder/)
+  const guardian = { sessionId: 's2', class: 'defense', equipment: { weapon: { id: 'axe' } } }
+  const forGuardian = legendaryChoices(guardian, chest).find((choice) => choice.item.id === 'oathbreaker')
+  assert.equal(forGuardian.take, 'unfit')
+  assert.equal(takeText(forGuardian), 'Made for a Fighter: this one cannot hold it')
+})
+
+test('a swap that would hand a legendary weapon to a class it is not made for is refused', () => {
+  const chest = room.chest.map((entry) => (entry.id === 'cudgel' ? { ...entry, heldBy: null } : entry))
+    .concat([{ ...oathbreaker, heldBy: 's1' }])
+  const armed = { ...fighter, equipment: { weapon: { id: 'oathbreaker' } } }
+  const axe = legendaryChoices(armed, chest).find((choice) => choice.item.id === 'axe')
+  assert.equal(axe.take, 'refused')
+})
