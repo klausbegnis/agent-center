@@ -123,7 +123,9 @@ export function attributeEstimate({ deltas, places, worldOf, observed }) {
     }
     const unknownMix = worldWorkMix(nextObserved[worldId]).mix
     const weights = estimateWeights(delta.work, { unknownMix, fromTimeOnly: delta.work.fromTimeOnly })
-    shared.set(sessionId, { ...delta, split: splitTokens(delta.tokens, weights, 'think') })
+    // A meter that shared nothing (none should) is spread by the world's mix, never all to think.
+    const hasWeight = Object.values(weights).some((weight) => weight > 0)
+    shared.set(sessionId, { ...delta, split: splitTokens(delta.tokens, hasWeight ? weights : unknownMix, 'think') })
     addTime(time, worldId, delta.work)
   }
   return { deltas: shared, observed: nextObserved, time }

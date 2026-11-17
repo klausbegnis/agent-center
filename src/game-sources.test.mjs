@@ -115,3 +115,13 @@ test('a round adds its tool calls to the world\'s observed mix', () => {
   assert.equal(observed.main.read, 4)
   assert.equal(observed.main.run, 1)
 })
+
+test('a meter that shared none of its time is spread by the world\'s mix, not given to thinking', () => {
+  const deltas = new Map([['estimated:pane-1', { tokens: 1_000, minutes: 1,
+    work: { attributedMs: {}, callsBy: {}, toolCalls: 0, minutes: 1, fromTimeOnly: false } }]])
+  const places = new Map([['estimated:pane-1', { roomId: 'local:/work/rumble-banana' }]])
+  const { deltas: shared } = attributeEstimate({ deltas, places, worldOf: () => 'main', observed: {} })
+  const split = shared.get('estimated:pane-1').split
+  assert.equal(split.think, 250)
+  assert.equal(split.delegate, 100)
+})
