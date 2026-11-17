@@ -20,3 +20,8 @@ node_modules/
 scripts/city-art/*.png
 scripts/city-art/x1/
 scripts/city-art/__pycache__/
+
+# outputs of the settlement art generator (see scripts/settlement-art/README.md)
+scripts/settlement-art/*.png
+scripts/settlement-art/png/
+scripts/settlement-art/__pycache__/
