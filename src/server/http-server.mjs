@@ -130,7 +130,8 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     // The game. The controller checks every value; these only pick the fields out.
     '/api/game/prestige': (input) => controller.gamePrestige(input.worldId, input.skillId),
     '/api/game/upgrade-item': (input) => controller.gameUpgradeItem(input.roomId, input.itemId),
-    '/api/game/buy-upgrade': (input) => controller.gameBuyUpgrade(input.worldId, input.upgradeId),
+    // `useCoins` pays part of a building's level in coins, from the tier that allows it.
+    '/api/game/buy-upgrade': (input) => controller.gameBuyUpgrade(input.worldId, input.upgradeId, input.useCoins ?? false),
     '/api/game/assign-room': (input) => controller.gameAssignRoom(input.roomId, input.worldId ?? null),
     '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
     '/api/game/rebalance-skills': (input) => controller.gameRebalanceSkills(input.worldId),

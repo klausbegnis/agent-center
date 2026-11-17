@@ -13,8 +13,10 @@ import { canPrestige, prestige as prestigeSkill, worldLevel } from './progressio
 import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
+import { buildingProblem, buyGroupUpgrade } from './buildings.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
-import { applyPurchase, coinPrice, groupLevel, groupUpgradeCost, isUpgradeOpen, spendWorld } from './spending.mjs'
+import { settlementNews } from './settlement.mjs'
+import { applyPurchase, groupLevel, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
@@ -64,30 +66,6 @@ function upgradeItem(save, { projectId, itemId }, content) {
   const relicDiscount = upgradeDiscountOf(world.projects[projectId], legendaryIndexOf(content), worldEffectsOf(world, content))
   const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills), relicDiscount })
   const next = applyPurchase(world, { kind: item.slot, projectId, itemId, cost })
-  return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
-}
-
-/**
- * Buys the next level of a group upgrade (a building of the settlement) for a world, in materials
- * alone or, with `useCoins`, partly in coins once the building has reached the tier that allows it
- * (`coinPrice`). Unchanged when it cannot pay, the building is not open yet, or coins were asked
- * for and the building does not take them yet.
- *
- * @param {object} save
- * @param {{ worldId: string, upgradeId: string, useCoins?: boolean }} which `upgradeId` one of
- *   GROUP_UPGRADE_IDS
- * @param {object} [content] the game content, for the settlement
- * @returns {object}
- */
-function buyGroupUpgrade(save, { worldId, upgradeId, useCoins = false }, content) {
-  const world = save.worlds[worldId]
-  const settlement = settlementIndexOf(content)
-  if (!world || !isUpgradeOpen(world, upgradeId, settlement)) return save
-  const level = groupLevel(world.upgrades, upgradeId)
-  const cost = groupUpgradeCost(upgradeId, level, worldLevel(world.skills))
-  const withCoins = useCoins === true ? coinPrice(cost, upgradeId, level, settlement) : null
-  if (useCoins === true && !withCoins) return save
-  const next = applyPurchase(world, { kind: 'group', upgradeId, ...(withCoins ?? { cost }) })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }
 
@@ -208,7 +186,11 @@ export function createEngine({ content }) {
     closeSession,
     prestige,
     upgradeItem: (save, which) => upgradeItem(save, which, content),
-    buyGroupUpgrade: (save, which) => buyGroupUpgrade(save, which, content),
+    buyGroupUpgrade: (save, which) => buyGroupUpgrade(save, which, settlementIndexOf(content)),
+    /** Why a building's next level cannot be bought as asked now, or null (buildings.mjs). */
+    buildingProblem: (save, which) => buildingProblem(save, which, settlementIndexOf(content)),
+    /** The tiers and stages a change reached, for the bridge to celebrate (settlement.mjs). */
+    settlementNews: (before, after) => settlementNews(before, after, settlementIndexOf(content)),
     setActiveRelic,
     setKeepTitles,
     setCharacterTrade,
@@ -224,7 +206,8 @@ export function createEngine({ content }) {
       cityIds: (content.cities?.cities ?? []).map((city) => city.id),
       legendary: content.legendary,
       bestiary: content.bestiary,
-      bosses: content.bosses
+      bosses: content.bosses,
+      settlement: content.settlement
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.

@@ -93,3 +93,36 @@ export function settlementOf(world, index) {
     })
   }
 }
+
+/**
+ * What a change to the save reached in each world's settlement, for the bridge to celebrate: a
+ * building's new tier (the highest, when one change lifts it several), a new stage, and new
+ * renovation stars. Levels only fall when a world starts over, which is no news.
+ *
+ * @param {{ worlds: Record<string, object> }} before
+ * @param {{ worlds: Record<string, object> }} after
+ * @param {SettlementIndex | null} index
+ * @returns {object[]} `{ type: 'settlement', worldId, kind: 'tier' | 'stage' | 'stars', ... }`
+ */
+export function settlementNews(before, after, index) {
+  if (!index || before === after) return []
+  const news = []
+  for (const worldId of Object.keys(after.worlds).sort()) {
+    const world = after.worlds[worldId]
+    const earlier = Object.hasOwn(before.worlds, worldId) ? before.worlds[worldId] : null
+    if (earlier?.upgrades === world.upgrades) continue
+    const was = settlementOf(earlier ?? { upgrades: {} }, index)
+    const now = settlementOf(world, index)
+    now.buildings.forEach(({ building, tier }, at) => {
+      if (tier <= was.buildings[at].tier) return
+      news.push({ type: 'settlement', worldId, kind: 'tier', buildingId: building.id, upgradeId: building.upgradeId,
+        tier, name: building.tiers[tier - 1].name, building: building.name })
+    })
+    if (now.stage > was.stage) {
+      const stage = index.stages[now.stage]
+      news.push({ type: 'settlement', worldId, kind: 'stage', stage: now.stage, stageId: stage.id, name: stage.name })
+    }
+    if (now.stars > was.stars) news.push({ type: 'settlement', worldId, kind: 'stars', stars: now.stars })
+  }
+  return news
+}

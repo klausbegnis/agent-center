@@ -19,7 +19,8 @@ import { emptyMarket } from './market.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
 import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
-import { GROUP_UPGRADE_IDS } from './spending.mjs'
+import { indexSettlement } from './settlement-content.mjs'
+import { GROUP_UPGRADE_IDS, isUpgradeOpen } from './spending.mjs'
 import { SAVE_VERSION } from './worlds.mjs'
 
 /** Ids and titles the engine keeps are short; a longer one did not come from it. */
@@ -332,7 +333,24 @@ function market(value, path, cityIds) {
   }
 }
 
-function world(value, path, { cityIds, legendaryIndex, bestiaryIndex }) {
+/**
+ * A world's building levels: whole numbers, each of a building its settlement has opened at the
+ * stage those levels reach (without a settlement in the content, only the buildings every world had).
+ */
+function buildingLevels(value, path, settlementIndex) {
+  const upgrades = entries(value, path, {
+    key: (id, at) => oneOf(id, GROUP_UPGRADE_IDS, at),
+    entry: (level, at) => whole(level, at)
+  })
+  for (const [upgradeId, level] of Object.entries(upgrades)) {
+    if (level > 0 && !isUpgradeOpen({ upgrades }, upgradeId, settlementIndex)) {
+      fail(`${path}.${upgradeId}`, 'is a building the settlement has not opened at that stage')
+    }
+  }
+  return upgrades
+}
+
+function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex }) {
   const source = record(value, path)
   const checked = checkWorldBestiary(source.bestiary, bestiaryIndex)
   if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
@@ -341,10 +359,7 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex }) {
     ...(checked.bestiary ? { bestiary: checked.bestiary } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
     materials: amounts(source.materials, `${path}.materials`, MATERIALS),
-    upgrades: entries(source.upgrades, `${path}.upgrades`, {
-      key: (id, at) => oneOf(id, GROUP_UPGRADE_IDS, at),
-      entry: (level, at) => whole(level, at)
-    }),
+    upgrades: buildingLevels(source.upgrades, `${path}.upgrades`, settlementIndex),
     projects: entries(source.projects, `${path}.projects`, {
       key: text,
       entry: (item, at) => project(item, at, legendaryIndex)
@@ -365,18 +380,20 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex }) {
  *   ids of the market's cities, which a market may name; the parsed game/legendary.json: legendary
  *   loot must be loot it has, and without it a save that holds any is refused; the parsed
  *   game/bestiary.json and game/bosses.json, whose races and bosses a bestiary may count, and
- *   without which a save that keeps one is refused
+ *   without which a save that keeps one is refused; the parsed game/settlement.json, whose stages
+ *   open the buildings a world may have levels of
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses } = {}) {
+export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
   const bestiaryIndex = indexBestiary(bestiary, bosses)
+  const settlementIndex = indexSettlement(settlement)
   try {
     const source = record(value, 'the save')
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex })
+      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.

@@ -105,9 +105,16 @@ export function createGameMode(dependencies) {
   let generation = 0
 
   const data = () => gameSave.get()
-  /** Replaces the save and the bridge, keeps them, and tells the surfaces. */
-  function commit(next) {
+  /**
+   * Replaces the save and the bridge, keeps them, and tells the surfaces. A building tier or a
+   * settlement stage the change reached, by hand or by autoSpend, goes into `recent`; an imported
+   * game is no news.
+   */
+  function commit(next, { isNews = true } = {}) {
+    const before = data().save
     gameSave.set(next)
+    const news = isNews && before ? engine.settlementNews(before, next.save) : []
+    if (news.length) recent = keepRecent(recent, stamp(news, now()))
     cachedView = null
     onChange()
   }
@@ -191,7 +198,7 @@ export function createGameMode(dependencies) {
     agentlessStates = {}
     recent = []
     forgetMeters()
-    commit(next)
+    commit(next, { isNews: false })
   }
 
   function syncKeepTitles(save) {

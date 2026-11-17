@@ -28,7 +28,8 @@ export function registerPanelHandlers(orca, controller) {
   // The game. The controller checks every value; these only pick the fields out.
   orca.panels.handle('game.prestige', (input) => controller.gamePrestige(input?.worldId, input?.skillId))
   orca.panels.handle('game.upgradeItem', (input) => controller.gameUpgradeItem(input?.roomId, input?.itemId))
-  orca.panels.handle('game.buyUpgrade', (input) => controller.gameBuyUpgrade(input?.worldId, input?.upgradeId))
+  orca.panels.handle('game.buyUpgrade', (input) =>
+    controller.gameBuyUpgrade(input?.worldId, input?.upgradeId, input?.useCoins ?? false))
   orca.panels.handle('game.assignRoom', (input) => controller.gameAssignRoom(input?.roomId, input?.worldId ?? null))
   orca.panels.handle('game.resetWorld', (input) => controller.gameResetWorld(input?.worldId))
   orca.panels.handle('game.rebalanceSkills', (input) => controller.gameRebalanceSkills(input?.worldId))

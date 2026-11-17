@@ -20,7 +20,8 @@ const transport = {
   // The game. The worker checks every value and answers { changed }.
   prestigeSkill: (worldId, skillId) => orca.plugin.request('game.prestige', { worldId, skillId }),
   upgradeItem: (roomId, itemId) => orca.plugin.request('game.upgradeItem', { roomId, itemId }),
-  buyGroupUpgrade: (worldId, upgradeId) => orca.plugin.request('game.buyUpgrade', { worldId, upgradeId }),
+  buyGroupUpgrade: (worldId, upgradeId, useCoins = false) =>
+    orca.plugin.request('game.buyUpgrade', { worldId, upgradeId, useCoins }),
   moveRoomToWorld: (roomId, worldId) => orca.plugin.request('game.assignRoom', { roomId, worldId }),
   resetWorld: (worldId) => orca.plugin.request('game.resetWorld', { worldId }),
   rebalanceSkills: (worldId) => orca.plugin.request('game.rebalanceSkills', { worldId }),

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { indexSettlement } from './settlement-content.mjs'
-import { isBuildingOpen, renovationStars, settlementOf, stageIndexOf, tierOf, totalLevels } from './settlement.mjs'
+import { isBuildingOpen, renovationStars, settlementNews, settlementOf, stageIndexOf, tierOf, totalLevels } from './settlement.mjs'
 
 const data = JSON.parse(readFileSync(new URL('../../game/settlement.json', import.meta.url), 'utf8'))
 const index = indexSettlement(data)
@@ -58,4 +58,23 @@ test('a building opens at its stage; without a settlement only the upgrades ever
   const gated = { ...index, byUpgrade: new Map([['campfire', { ...hearth, opensAt: 2 }]]) }
   assert.equal(isBuildingOpen({ upgrades: {} }, 'campfire', gated, alwaysOpen), false)
   assert.equal(isBuildingOpen({ upgrades: { workbench: stageFrom('hamlet') } }, 'campfire', gated, alwaysOpen), true)
+})
+
+const saveWith = (upgrades) => ({ worlds: { main: { upgrades } } })
+
+test('news tells the highest tier a change reached, the new stage and new renovation stars', () => {
+  const news = settlementNews(saveWith({}), saveWith({ campfire: hearth.tiers[2].from }), index)
+  const tiers = news.filter((event) => event.kind === 'tier')
+  assert.deepEqual(tiers.map((event) => [event.buildingId, event.tier, event.name]), [['hearth', 3, 'Hearth hall']])
+  assert.ok(news.some((event) => event.kind === 'stage'))
+  const last = stageFrom('citadel')
+  const starred = settlementNews(saveWith({ campfire: last }), saveWith({ campfire: last + index.renovationEvery }), index)
+  assert.deepEqual(starred.map((event) => [event.kind, event.stars]), [['stars', 1]])
+})
+
+test('a reset or an unchanged world is no news, nor is anything without a settlement', () => {
+  const rich = saveWith({ campfire: 40 })
+  assert.deepEqual(settlementNews(rich, saveWith({}), index), [])
+  assert.deepEqual(settlementNews(rich, { worlds: { main: rich.worlds.main } }, index), [])
+  assert.deepEqual(settlementNews(saveWith({}), rich, null), [])
 })

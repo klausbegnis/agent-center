@@ -46,7 +46,7 @@ const EMOTE_TICK_MS = 250
  * @property {(worldId: string, skillId: string) => Promise<unknown>} [prestigeSkill] the game's
  *   actions, each answering `{ changed }`; see GAME_ACTION_METHODS in game-actions.js
  * @property {(roomId: string, itemId: string) => Promise<unknown>} [upgradeItem]
- * @property {(worldId: string, upgradeId: string) => Promise<unknown>} [buyGroupUpgrade]
+ * @property {(worldId: string, upgradeId: string, useCoins?: boolean) => Promise<unknown>} [buyGroupUpgrade]
  * @property {(roomId: string, worldId: string | null) => Promise<unknown>} [moveRoomToWorld] null
  *   takes the room out of the game; a new kebab-case id makes a new world
  * @property {(worldId: string) => Promise<unknown>} [resetWorld]

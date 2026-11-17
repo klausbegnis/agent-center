@@ -42,7 +42,7 @@ const transport = {
   setRoomTheme: (id, theme) => post('/api/room', { id, theme }),
   prestigeSkill: (worldId, skillId) => postGame('prestige', { worldId, skillId }),
   upgradeItem: (roomId, itemId) => postGame('upgrade-item', { roomId, itemId }),
-  buyGroupUpgrade: (worldId, upgradeId) => postGame('buy-upgrade', { worldId, upgradeId }),
+  buyGroupUpgrade: (worldId, upgradeId, useCoins = false) => postGame('buy-upgrade', { worldId, upgradeId, useCoins }),
   moveRoomToWorld: (roomId, worldId) => postGame('assign-room', { roomId, worldId }),
   resetWorld: (worldId) => postGame('reset-world', { worldId }),
   rebalanceSkills: (worldId) => postGame('rebalance-skills', { worldId }),
