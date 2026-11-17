@@ -1,9 +1,8 @@
 // The game's tabs other than Rooms, as panels: Party, Chest (with the room's relics and the chests
-// rooms left behind), Camp, Skills, Market and Bestiary. Each draws the room or the world picked above the
+// rooms left behind), Camp, Skills, Market and World (the bestiary and the roadmap of instances). Each draws the room or the world picked above the
 // tabs; only the open one is drawn, the others when they are opened. Says which materials the
 // prices on screen lack, for the strip above the tabs.
 import { costsOnScreen, shortMaterials } from './arsenal-model.js'
-import { createBestiaryView } from './bestiary-view.js'
 import { createCampView } from './camp-view.js'
 import { createChestView } from './chest-view.js'
 import { el } from './dom.js'
@@ -16,6 +15,7 @@ import { portraitOf } from './portraits.js'
 import { roomThemeIds } from './room-themes.js'
 import { campCosts } from './settlement-model.js'
 import { createSkillsView } from './skills-view.js'
+import { createWorldView } from './world-view.js'
 
 /**
  * @param {{
@@ -26,13 +26,15 @@ import { createSkillsView } from './skills-view.js'
  *   library?: { get: (id: string) => object | undefined, has: (id: string) => boolean,
  *     ensure: (id: string) => Promise<object | null> },
  *   onShowAgent?: (agentId: string) => void,
- *   onThemeLoaded?: () => void
+ *   onThemeLoaded?: () => void,
+ *   prefs?: { get: (key: string) => unknown, set: (key: string, value: string) => void }
  * }} options `contents` is the element each tab's panel draws into, by tab; `onChosenItem` is
  *   called when another chest item is chosen, so the strip can mark what its upgrade lacks;
  *   `library` holds the themes the rooms are drawn with, for the Party tab's portraits, and
- *   `onThemeLoaded` asks for a redraw once a theme a portrait waits for has loaded
+ *   `onThemeLoaded` asks for a redraw once a theme a portrait waits for has loaded; `prefs` keeps
+ *   the World tab's view
  */
-export function createGamePanels({ contents, actions, base, onChosenItem, library, onShowAgent, onThemeLoaded }) {
+export function createGamePanels({ contents, actions, base, onChosenItem, library, onShowAgent, onThemeLoaded, prefs }) {
   const party = createPartyView({ actions, base, onShowAgent })
   /** Themes a portrait asked for, so each is loaded once. */
   const asked = new Set()
@@ -65,7 +67,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   contents.camp.append(block(camp.element))
   const skills = createSkillsView({ panel: contents.skills, actions })
   const market = createMarketView({ panel: contents.market, actions, base })
-  const bestiary = createBestiaryView({ panel: contents.bestiary, base })
+  const worldView = createWorldView({ panel: contents.world, base, actions, prefs })
 
   return {
     /** The Chest tab's drag of a slot onto a room chip (chest-view.js). */
@@ -81,7 +83,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
       const game = state.game
       if (tab === 'skills') skills.update(state, world?.id ?? null)
       if (tab === 'market') market.update(state, { worldId: world?.id ?? null, roomId })
-      if (tab === 'bestiary') bestiary.update(state, world?.id ?? null)
+      if (tab === 'world') worldView.update({ state, world, roomId })
       if (!room || !world) return new Map()
       if (tab === 'party') party.update({ state, game, roomId, room, world, portraitFor: portraitsFor(state, roomId) })
       if (tab === 'chest') {

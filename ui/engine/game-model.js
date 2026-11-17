@@ -4,11 +4,11 @@ import { clampShare } from './game-format.js'
 import { monsterRank } from './monster-rank.js'
 
 /** The game's tabs, in the order they are shown. */
-export const GAME_TABS = /** @type {const} */ (['rooms', 'party', 'chest', 'camp', 'skills', 'market', 'bestiary'])
+export const GAME_TABS = /** @type {const} */ (['rooms', 'party', 'chest', 'camp', 'skills', 'market', 'world'])
 const DEFAULT_TAB = 'rooms'
 /** The tabs that show one room; the others show its whole world (or, Rooms, every room). */
 export const ROOM_TABS = Object.freeze(['party', 'chest'])
-export const WORLD_TABS = Object.freeze(['camp', 'skills', 'market', 'bestiary'])
+export const WORLD_TABS = Object.freeze(['camp', 'skills', 'market', 'world'])
 /**
  * The Arsenal's sections before they became tabs, by the section a saved preference or a link
  * names (`?tab=arsenal&section=party`). The Arsenal opened on its items when no section was named.
@@ -31,7 +31,8 @@ export function gameModeOf(game) {
 
 /**
  * A saved or asked-for tab when it is one of GAME_TABS, otherwise the rooms. The Arsenal, which
- * held Chest, Party and Camp, maps to the tab of its section, so old preferences and links work.
+ * held Chest, Party and Camp, maps to the tab of its section, and the Bestiary to the World tab
+ * (whose Creatures and Bosses it was), so old preferences and links work.
  *
  * @param {unknown} value
  * @param {unknown} [section] the Arsenal section saved or asked for with it
@@ -40,6 +41,7 @@ export function tabOrDefault(value, section) {
   if (value === 'arsenal') {
     return Object.hasOwn(ARSENAL_SECTION_TABS, section) ? ARSENAL_SECTION_TABS[section] : 'chest'
   }
+  if (value === 'bestiary') return 'world'
   return GAME_TABS.includes(value) ? value : DEFAULT_TAB
 }
 

@@ -115,6 +115,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     actions,
     base,
     onChosenItem: () => drawPanel(),
+    prefs: transport.prefs,
     library,
     onShowAgent,
     onThemeLoaded: () => drawPanel()

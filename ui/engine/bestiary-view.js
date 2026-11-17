@@ -148,9 +148,10 @@ function createBossCard(model, base) {
 }
 
 /**
- * @param {{ panel: HTMLElement, base: string }} options
+ * @param {{ panel: HTMLElement, base: string, outerSwitch?: boolean }} options `outerSwitch`: the
+ *   World tab switches between Creatures and Bosses itself (setShow), so this view's own switch hides
  */
-export function createBestiaryView({ panel, base }) {
+export function createBestiaryView({ panel, base, outerSwitch = false }) {
   let show = 'creatures'
   let sort = 'points'
   let openKey = null
@@ -301,6 +302,7 @@ export function createBestiaryView({ panel, base }) {
     drawHead(model)
     switchButtons.forEach((node, at) => node.setAttribute('aria-pressed', String(SHOWS[at] === show)))
     sortButtons.forEach((node, at) => node.setAttribute('aria-pressed', String(CREATURE_SORTS[at] === sort)))
+    switcher.hidden = outerSwitch
     sorter.hidden = show !== 'creatures'
     creatureGrid.hidden = show !== 'creatures'
     bossGrid.hidden = show !== 'bosses'
@@ -310,6 +312,12 @@ export function createBestiaryView({ panel, base }) {
   }
 
   return {
+    /** Shows the creatures or the bosses, as the World tab's switch says. */
+    setShow(name) {
+      if (!SHOWS.includes(name) || name === show) return
+      show = name
+      draw()
+    },
     /**
      * @param {object} next the view state, with the game running
      * @param {string | null} nextWorldId the world of the room picked above the tabs
