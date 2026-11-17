@@ -5,7 +5,7 @@ import {
   ESTIMATE_TOKENS_PER_WORKING_MINUTE,
   ESTIMATE_TOOL_CALLS_PER_MINUTE
 } from './constants.mjs'
-import { estimateTokens, estimateTokensFromTime } from './estimate.mjs'
+import { estimateTokens, estimateTokensFromTime, estimateWeights, splitTokens } from './estimate.mjs'
 
 const MINUTE = 60_000
 
@@ -63,4 +63,39 @@ test('an agent whose calls cannot be counted is paid a whole working minute per 
   const writing = estimateTokensFromTime({ workedMs: { write: MINUTE } })
   assert.equal(writing, Math.round(ESTIMATE_ACTIVITY_WEIGHTS.write * ESTIMATE_TOKENS_PER_WORKING_MINUTE))
   assert.equal(estimateTokensFromTime({ workedMs: {} }), 0)
+})
+
+const EVEN = { write: 0.2, read: 0.2, run: 0.2, think: 0.2, delegate: 0.2 }
+
+test('a split always adds up to the tokens it shares', () => {
+  for (const tokens of [1, 7, 25_000, 123_457]) {
+    const parts = splitTokens(tokens, { write: 1, read: 1, run: 1 }, 'think')
+    assert.equal(Object.values(parts).reduce((sum, part) => sum + part, 0), tokens)
+  }
+})
+
+test('a split with no weight goes to the fallback', () => {
+  assert.deepEqual(splitTokens(500, { write: 0 }, 'think'), { think: 500 })
+  assert.deepEqual(splitTokens(0, { write: 1 }, 'think'), {})
+})
+
+test('the weights put each tool call on its own activity and the time on the shared time', () => {
+  const weights = estimateWeights(
+    { attributedMs: { read: MINUTE }, callsBy: { write: 2 }, toolCalls: 2, minutes: 1 }, { unknownMix: EVEN })
+  assert.ok(weights.write > 0 && weights.read > 0)
+  assert.equal(weights.run, 0)
+})
+
+test('time no tool explains is spread by the mix it is given', () => {
+  const weights = estimateWeights({ attributedMs: { unknown: MINUTE }, minutes: 1 }, { unknownMix: { read: 1, write: 0 } })
+  assert.equal(weights.write, 0)
+  assert.ok(weights.read > 0)
+})
+
+test('an agent whose calls are not counted is split by its time alone', () => {
+  const weights = estimateWeights(
+    { attributedMs: { run: MINUTE }, callsBy: { write: 5 }, toolCalls: 5, minutes: 1 },
+    { unknownMix: EVEN, fromTimeOnly: true })
+  assert.equal(weights.write, 0)
+  assert.equal(weights.run, ESTIMATE_TOKENS_PER_WORKING_MINUTE)
 })

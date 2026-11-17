@@ -348,6 +348,10 @@ Contributions are welcome.
 - Game mode's progress is an estimate on every released Orca: working time and tool calls stand
   in for tokens, and a conversation cleared in the same terminal goes on as the same character.
   See [docs/GAME.md](docs/GAME.md#the-estimate).
+- On the estimate, which work skill a minute trains is itself estimated: it follows the agent's
+  recent tools, and the time of agents whose tools are not visible (untracked sessions, paired
+  machines, long gaps without a tool) follows the mix the world's other agents were seen using,
+  or a default mix for coding work. The Skills tab says which applies.
 - On the estimate, an agent on a paired machine is seen only through its machine's snapshot
   every 15 seconds and no tool call of it is counted: its working time is sampled, and each
   working minute is paid at an assumed pace of tool calls. A long-running command there is

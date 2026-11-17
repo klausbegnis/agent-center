@@ -29,6 +29,12 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game settings: **Rebalance work skills** shares a world's work-skill experience again by its
+  mix, keeping the world level, for worlds that grew lopsided under the old attribution. It asks
+  first and shows each skill's level before and after; it is never done on its own.
+- The Skills tab says under the work skills where their split comes from: the agents' tools, or
+  an estimated mix when tools are not visible for some agents.
+
 - Game mode: each character card on the Party tab shows its agent's sprite, the same one its room
   draws (the room's theme, its scene while it travels, and the agent's own outfit and tint),
   standing idle, so a card is easy to match with its figure. A click on it opens the Rooms tab
@@ -116,6 +122,18 @@ All notable changes to this project are recorded here. The format follows
   Party tab's picker follow the same rule as a new character: a legendary item goes only to the
   class (or, for a tool, the trade) it is made for, and the picker shows its buff and says who it
   is made for.
+
+### Fixed
+
+- Game mode on the estimate: the five work skills now grow in sensible proportions. Before, a
+  round's tokens all went to the one activity the agent showed at that moment, so agents whose
+  tools the plugin cannot see (sessions Orca stopped tracking after a restart, agents on paired
+  machines) trained Arcana alone, and Command grew only if a round came while a subagent call
+  was open. Now the working time is shared by the tool calls around it (a quarter for thinking),
+  each tool call counts for its own skill, half the time of an agent with working subagents counts
+  as delegating, and time no tool explains follows the mix the world's agents were seen using, or
+  a default mix for coding work before any was seen. The total estimated per working minute is
+  unchanged: only the split between skills moved. See docs/GAME.md, "The estimate".
 
 ## 0.2.0 - 2026-11-16
 

@@ -173,7 +173,9 @@ export function matchSessions({ sessions, places, agents, links }) {
  * @param {Map<string, Place | null>} input.places
  * @param {Map<string, string>} input.agentOf agent id by session id
  * @param {RoomAgent[]} input.agents
- * @param {Map<string, { tokens: number, minutes: number }>} input.deltas by session id
+ * @param {Map<string, { tokens: number, minutes: number, split?: Record<string, number> }>} input.deltas
+ *   by session id; a delta with a `split` counts each part as its own activity, one without it
+ *   counts all its tokens as the activity the agent has now
  * @param {(roomId: string) => string | null} input.themeOf the room's theme, for the monsters
  * @returns {{
  *   states: { projectId: string, sessionId: string, state: string, activity: string,
@@ -204,7 +206,12 @@ export function buildReadings({ sessions, places, agentOf, agents, deltas, theme
     const activity = agent ? workActivity(agent.activity) : FALLBACK_ACTIVITY
     const projectId = place.roomId
     const { sessionId } = session
-    if (delta) tokens.push({ projectId, sessionId, tokens: delta.tokens, activity, title: session.title, themeId })
+    if (delta) {
+      const parts = delta.split ? Object.entries(delta.split) : [[activity, delta.tokens]]
+      for (const [partActivity, partTokens] of parts) {
+        if (partTokens > 0) tokens.push({ projectId, sessionId, tokens: partTokens, activity: partActivity, title: session.title, themeId })
+      }
+    }
     if (!agent && !session.running) continue
     const state = agent ? gameStateOf(agent.state) : (delta ? 'working' : 'idle')
     const tokensPerMinute = delta && delta.minutes > 0 ? delta.tokens / delta.minutes : 0

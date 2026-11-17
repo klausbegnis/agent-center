@@ -39,15 +39,25 @@ function setup({ stored, failGet = false } = {}) {
 
 const progressed = () => ({ ...emptySave(), projectWorld: { 'local:/work/rumble-banana': 'main' } })
 
+test('a stored work mix keeps only counts of work activities', async () => {
+  const workMix = { main: { read: 4, think: -1, wait: 9 }, side: 'many', empty: {} }
+  const bridge = { baselines: {}, watchedUntil: 5, tokenSource: 'estimated', workMix }
+  const { gameSave } = setup({ stored: { version: STORED_VERSION, save: progressed(), bridge } })
+  const data = await gameSave.load()
+  assert.deepEqual(data.bridge.workMix, { main: { read: 4 } })
+})
+
 test('nothing stored loads an empty game with nothing watched yet', async () => {
   const { gameSave } = setup()
   const data = await gameSave.load()
   assert.deepEqual(data.save, emptySave())
-  assert.deepEqual(data.bridge, { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null })
+  assert.deepEqual(data.bridge, { baselines: {}, watchedUntil: null, autoSpend: false, travel: false, tokenSource: null,
+    workMix: {} })
 })
 
 test('a stored game comes back with its baselines and settings', async () => {
-  const bridge = { baselines: { 's1': { total: 10, at: 5 } }, watchedUntil: 5, autoSpend: true, travel: true, tokenSource: 'estimated' }
+  const bridge = { baselines: { 's1': { total: 10, at: 5 } }, watchedUntil: 5, autoSpend: true, travel: true, tokenSource: 'estimated',
+    workMix: { main: { read: 12, run: 3.5 } } }
   const { gameSave } = setup({ stored: { version: STORED_VERSION, save: progressed(), bridge } })
   const data = await gameSave.load()
   assert.deepEqual(data.save.projectWorld, { 'local:/work/rumble-banana': 'main' })

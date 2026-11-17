@@ -8,9 +8,11 @@ import { buildReadings, mainAgents, sessionsToClose } from './domain/game-sessio
 import { buildGameView, gameStatus, keepRecent, tokenSourceOf } from './domain/game-view.mjs'
 import { createGameActions } from './game-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
-import { readFromEstimate, readFromHistory } from './game-sources.mjs'
+import { foldWorkTime, splitSourceOf, worldWorkMix } from './domain/skill-mix.mjs'
+import { attributeEstimate, readFromEstimate, readFromHistory } from './game-sources.mjs'
+import { rebalancePreview } from './game/rebalance.mjs'
 import { sceneThemeOf } from './game/scenes.mjs'
-import { DEFAULT_WORLD } from './game/worlds.mjs'
+import { DEFAULT_WORLD, worldIdOf } from './game/worlds.mjs'
 import { RANDOM_THEME } from './preferences.mjs'
 
 /**
@@ -81,6 +83,8 @@ export function createGameMode(dependencies) {
   let tokenSource = /** @type {TokenSource} */ ('estimated')
   /** The work meters as last read. Kept in memory only: the meters start again with the worker. */
   let meterBaselines = {}
+  /** By world, the working time of the latest rounds, explained by tools or not. */
+  let workTime = {}
   /** When each estimated character's agent was first missed from the room. */
   let missingSince = new Map()
   let keepTitles = false
@@ -172,7 +176,7 @@ export function createGameMode(dependencies) {
     forgetMeters()
     const { save, bridge } = data()
     if (bridge.watchedUntil === null || gameSave.isFromNewerVersion()) return
-    commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend, travel: bridge.travel } })
+    commit({ save, bridge: { ...emptyBridge(), autoSpend: bridge.autoSpend, travel: bridge.travel, workMix: bridge.workMix } })
   }
 
   /**
@@ -266,8 +270,11 @@ export function createGameMode(dependencies) {
     if (source === 'estimated') {
       const meters = readWorkMeters()
       const at = now()
-      const reading = readFromEstimate({ meters, agents, baselines: meterBaselines, watchedUntil: bridge.watchedUntil, at })
-      return { at, reading }
+      const read = readFromEstimate({ meters, agents, baselines: meterBaselines, watchedUntil: bridge.watchedUntil, at })
+      const { save } = data()
+      const worldOf = (roomId) => worldIdOf(save, roomId)
+      const shared = attributeEstimate({ deltas: read.deltas, places: read.places, worldOf, observed: bridge.workMix })
+      return { at, reading: { ...read, deltas: shared.deltas }, workMix: shared.observed, time: shared.time }
     }
     const history = await readHistory()
     if (!history.ok) {
@@ -308,6 +315,11 @@ export function createGameMode(dependencies) {
     // A game imported while the source was read: what was read belongs to the game before it.
     if (!read || generation !== startedIn) return
     const { at, reading } = read
+    if (read.time) {
+      const worldIds = new Set([...Object.keys(workTime), ...Object.keys(read.time)])
+      workTime = Object.fromEntries([...worldIds].map((worldId) =>
+        [worldId, foldWorkTime(workTime[worldId], read.time[worldId] ?? { trackedMs: 0, unknownMs: 0 })]))
+    }
     const { sessions, places, agentOf, how, deltas } = reading
     const themeIds = listThemeIds()
     const readings = buildReadings({ sessions, places, agentOf, agents, deltas, themeOf: themeOfWith(themeIds) })
@@ -341,7 +353,25 @@ export function createGameMode(dependencies) {
     // The estimate's baselines are the meters, which start again with the worker: never saved.
     if (source === 'estimated') meterBaselines = reading.baselines
     const baselines = source === 'history' ? reading.baselines : {}
-    commit({ save, bridge: { ...bridge, baselines, watchedUntil: at } })
+    const workMix = read.workMix ?? bridge.workMix
+    commit({ save, bridge: { ...bridge, baselines, watchedUntil: at, workMix } })
+  }
+
+  /**
+   * By world, where its split between work skills comes from now and what a rebalance would do,
+   * for the Skills tab and the settings.
+   */
+  function skillSplits(save, bridge) {
+    const splits = {}
+    for (const [worldId, world] of Object.entries(save.worlds)) {
+      const { mix, source } = worldWorkMix(bridge.workMix?.[worldId])
+      splits[worldId] = {
+        from: tokenSource === 'history' ? 'activity' : splitSourceOf(workTime[worldId]),
+        mix: source,
+        rebalance: rebalancePreview(world.skills, mix)
+      }
+    }
+    return splits
   }
 
   /** Reads the settings and, while the game runs, plays one round. Never throws. */
@@ -385,6 +415,7 @@ export function createGameMode(dependencies) {
       travel: bridge.travel,
       keepTitles,
       engineView: running ? engine.view(save) : null,
+      skillSplits: running ? skillSplits(save, bridge) : {},
       defaultWorldId: DEFAULT_WORLD,
       roomIds: rooms.map((room) => room.id).filter((id) => id !== 'no-project'),
       links,
@@ -446,6 +477,7 @@ export function createUnavailableGame(status) {
     buyGroupUpgrade: refuse,
     assignRoom: refuse,
     resetWorld: refuse,
+    rebalanceSkills: refuse,
     setActiveRelic: refuse,
     setAutoSpend: refuse,
     setTravel: refuse,

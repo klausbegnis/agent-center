@@ -991,10 +991,16 @@ place of totals, except across restarts (below).
 ### The estimate
 
 Without real totals, the store's work meter (`src/domain/work-meter.mjs`) counts for every
-agent the time it spent working at each activity and the tool calls it started (from the
-`agent.tool.before` hook; a subagent's calls count for its agent). Time spent waiting, blocked
-or done is not working time. Over one round, an agent on this computer is estimated to have
-spent:
+agent the time it spent working and the tool calls it started (from the `agent.tool.before`
+hook; a subagent's calls count for its agent). Time spent waiting, blocked or done is not
+working time. The estimate has two separate parts: **how many tokens** a round is worth, and
+**which work skills** they train.
+
+#### How many tokens
+
+The total is computed from the working time by the activity the agent showed while it passed
+(`workedMs`), exactly as it always was. Over one round, an agent on this computer is estimated
+to have spent:
 
 ```
 tokens = sum over activities (working minutes × ESTIMATE_ACTIVITY_WEIGHTS[activity])
@@ -1014,13 +1020,95 @@ tokens = sum over activities (working minutes × ESTIMATE_ACTIVITY_WEIGHTS[activ
 
 An agent thinking for a minute at 3.75 calls is estimated at exactly 25,000 tokens. The tokens
 are then bounded like real ones (`MAX_TOKENS_PER_MINUTE` over at most `MAX_CATCH_UP_MS`) and
-feed `applyTokens` and the pace exactly like real ones.
+feed the pace exactly like real ones.
+
+#### Which skills they train
+
+The same working time is also shared between the five work activities by what the tools show
+(`attributedMs`), and the round's tokens are split by that share (`attributeEstimate` in
+`src/game-sources.mjs`, `estimateWeights` and `splitTokens` in `src/game/estimate.mjs`). The
+split only decides which skills grow: the parts always add up to the total above, so progression
+speed, character levels and the simulator's targets do not change. Each part goes to
+`applyTokens` with its own activity.
+
+The rules (`src/domain/skill-mix.mjs`):
+
+- **Each tool call** counts for its tool's activity (`activityForTool`; `Agent` and `Task` are
+  delegate, unknown tools think). Its share of the tokens (`ESTIMATE_TOKENS_PER_TOOL_CALL`) goes
+  to that activity.
+- **Time between tool calls follows the tools.** Every agent keeps a recent tool mix, an
+  exponentially weighted mix of its calls (`RECENT_CALL_WEIGHT` 0.25, about the last eight
+  calls). Working time after a tool signal goes `THINK_SHARE` (a quarter) to think and the rest
+  by that mix: a model does reason between calls, but the text of an edit or a command is written
+  before its call starts.
+- **Unknown is not thinking.** Working time that no tool signal explains is `unknown`: an agent
+  never seen using a tool (a session Orca stopped tracking after a restart, an agent on a paired
+  machine whose snapshot names no tool), or one whose last signal is older than
+  `TOOL_SIGNAL_FRESH_MS` (ten minutes). Unknown time is spread by its world's mix.
+- **Delegation.** While an agent has subagents working (from its hooks or from the snapshot),
+  `DELEGATE_SHARE` (half) of its working time counts as delegate, and the other half follows the
+  rules above. The subagents' own tool calls count on their agent's meter by their own tool, so
+  their reads and edits train Lore and Forge. Subagents are not characters and have no meter of
+  their own, so nothing is counted twice; parallel subagents do not multiply the agent's time,
+  because the total must not change.
+- A snapshot that names the running tool (`toolName`) is a tool signal without a call: it keeps
+  the agent's mix and freshness up to date but adds no call.
+
+**The world's mix** (`worldWorkMix`) is what unknown time and a rebalance follow. Each round, the
+tool calls of the world's agents are added to its observed counts (`foldObservedCalls`), which
+keep about the latest `OBSERVED_CALLS_KEPT` (500) calls and are saved with the bridge as
+`workMix`. Once there are `MIN_OBSERVED_CALLS` (30), the world's mix is their time mix (a quarter
+think, the rest by the calls) with every activity raised to `MIX_FLOOR` (5 %) and normalised
+again. Before that it is `DEFAULT_WORK_MIX`:
+
+| write | read | run | think | delegate |
+|---|---|---|---|---|
+| 0.20 | 0.25 | 0.20 | 0.25 | 0.10 |
+
+It sits between two references. A typical coding session's tool calls are mostly reads and
+searches, then commands, then edits, with a few subagents; with a quarter of the time for
+thinking that gives roughly write 0.15, read 0.30, run 0.22, think 0.29, delegate 0.04. The
+simulator's balance was tuned on its three profiles, which average about write 0.25, read 0.27,
+run 0.15, think 0.2, delegate 0.13. Delegation keeps a tenth because it is the one activity no
+snapshot of an untracked agent shows, and a skill left at level 1 cripples its class.
+
+Before this attribution, a round's tokens all went to the one activity the agent showed at the
+moment of the round. An agent with no tool signal shows think, so untracked sessions and paired
+machines trained Arcana alone; and delegate showed only while an `Agent` or `Task` call seen by a
+hook was open on the parent, at the moment the round came.
+
+The Skills tab says under the work skills where the split comes from: "Split from your agents'
+tools" when tools explain nearly all the recent working time (less than a tenth unknown), and
+"Estimated mix: tools are not visible for some agents…" otherwise, naming what their time
+follows. With real totals the split is still the agent's activity when the tokens are counted.
+
+#### Rebalancing a lopsided world
+
+**Rebalance work skills** in the game settings shares a world's work-skill experience again by
+the world's mix (`rebalanceWorkSkills` in `src/game/rebalance.mjs`). It is only ever done when
+asked, after a question that shows each skill's level before and after. The rule:
+
+- the experience is shared between the five work skills by the mix;
+- its total is the largest for which the five levels add up to no more than they did, which,
+  since levels rise one at a time, is the same sum: **the world level does not change**;
+- levels and the progress inside them are recomputed from level 1; stars and experience banked
+  at the cap stay with their skill; gathering skills, characters and retirees are left alone.
+
+Experience beyond what the same world level holds is not kept. The level curve is linear
+(`LEVEL_BASE × level` per level), so a lopsided world holds far more experience than a balanced
+one of the same world level: keeping the total instead would raise the world level, and with it
+every hit and price, for nothing. A world at Forge 4, Lore 2, Engineering 13, Arcana 52 and
+Command 1 (world level 14) becomes, with the default mix, Forge 15, Lore 16, Engineering 15,
+Arcana 16 and Command 10 (still world level 14).
+
+#### Agents on paired machines
 
 An agent on a paired machine is known only from the snapshot of that machine (`orca worktree
 ps --environment <name>`, every 15 seconds): no event or hook reaches the plugin from there.
 Its meter counts the time between two snapshots as working when the earlier one saw it
 working, at the activity of the tool the snapshot names (`toolName`), or thinking when it names
-none. Its tool calls cannot be counted: a snapshot names the tool running at that moment, and
+none. That activity only sizes the total; for the skills, a named tool is a tool signal
+and time with none is unknown, spread by the world's mix. Its tool calls cannot be counted: a snapshot names the tool running at that moment, and
 two snapshots 15 seconds apart cannot tell one call from ten. So it has no tool-call part, and
 each working minute is worth the whole assumed working minute instead
 (`estimateTokensFromTime` in `src/game/estimate.mjs`):
@@ -1092,9 +1180,10 @@ forgets every title kept.
 ### Saving
 
 One storage key, `game`, holds `{ version, save, bridge }`: the engine's save and
-`{ baselines, watchedUntil, autoSpend, travel, tokenSource }`. A stored bridge without
+`{ baselines, watchedUntil, autoSpend, travel, tokenSource, workMix }`. A stored bridge without
 `tokenSource` that has a `watchedUntil` was watched through the history; one without `travel`
-has it off. It is loaded once with the engine's `migrate`, written
+has it off; one without `workMix` has observed no tool calls yet. `workMix` (the tool calls
+observed in each world, by activity) is kept when the source changes or the game stops. It is loaded once with the engine's `migrate`, written
 at most every 30 seconds after a change and when the plugin stops. It is never written when the
 stored value comes from a newer plugin (a newer wrapper `version` or a newer save `version`), or
 when it could not be read at all; then the game plays without saving. A failed write is logged
@@ -1114,6 +1203,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.buyUpgrade` | `/api/game/buy-upgrade` | `{ worldId, upgradeId }` |
 | `game.assignRoom` | `/api/game/assign-room` | `{ roomId, worldId }`, `worldId` null for out of the game |
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
+| `game.rebalanceSkills` | `/api/game/rebalance-skills` | `{ worldId }`: shares the world's work-skill experience again by its mix, keeping its world level (see "Rebalancing a lopsided world") |
 | `game.setActiveRelic` | `/api/game/active-relic` | `{ roomId, relicId }`, `relicId` null for none; a relic the room owns |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
@@ -1193,6 +1283,10 @@ by the usual closing rules.
     id: 'main', level: 11, attackSpeed: 1.12,
     workSkills: [{ id: 'forge', level, stars, effectiveLevel, progress, canPrestige }, ...],
     gatheringSkills: [...same shape],
+    // Where the split between work skills comes from now: 'tools', 'mixed', 'mix', 'none' (no
+    // work seen yet) or 'activity' (real totals); the world's mix ('observed' or 'default'), and
+    // each work skill's level before and after a rebalance.
+    skillSplit: { from: 'mixed', mix: 'default', rebalance: [{ skillId: 'forge', from: 4, to: 15 }, ...] },
     materials: { bars: 98, ... },
     upgrades: [{ id: 'campfire', level, cost: { fish: 520, crops: 520 }, affordable, effect }],
     coins: 48210,

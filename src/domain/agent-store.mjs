@@ -3,7 +3,14 @@
 import { activityForTool, isDelegateTool } from './activities.mjs'
 import { TITLE_LIMIT, displayText } from './display-text.mjs'
 import { basename, groupRooms } from './rooms.mjs'
-import { countToolCall, createWorkMeter, mergeWorkMeters, readWorkMeter, settleWorkMeter } from './work-meter.mjs'
+import {
+  countToolCall,
+  createWorkMeter,
+  mergeWorkMeters,
+  noteToolSignal,
+  readWorkMeter,
+  settleWorkMeter
+} from './work-meter.mjs'
 
 const NO_PROJECT_ROOM = { id: 'no-project', name: 'No project', host: null }
 const SUBAGENT_NAME_LIMIT = 40
@@ -171,11 +178,12 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   /**
    * Adds the time since the agent's meter was last settled. An agent on a machine that cannot be
    * read is not known to have worked meanwhile, whatever its last state was, so that time counts
-   * as no work.
+   * as no work. While it has subagents, part of that time counts as delegating.
    */
   function settleMeter(entry) {
     const isUnreachable = unreachableHosts.has(hostOf(entry))
-    settleWorkMeter(entry.meter, { state: isUnreachable ? 'unreachable' : entry.state, activity: entry.activity }, now())
+    const state = isUnreachable ? 'unreachable' : entry.state
+    settleWorkMeter(entry.meter, { state, activity: entry.activity, hasSubagents: entry.subs.size > 0 }, now())
   }
 
   /**
@@ -282,7 +290,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   function toolBefore(event) {
     const entry = upsert(event)
     if (event.agent) entry.kind = event.agent
-    countToolCall(entry.meter)
+    // A subagent's call counts for its agent, by its own tool: the agent's meter covers both.
+    countToolCall(entry.meter, isDelegateTool(event.tool) ? 'delegate' : activityForTool(event.tool), now())
     if (entry.state !== 'working') {
       entry.state = 'working'
       entry.since = now()
@@ -363,8 +372,11 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
           entry.state = state
           entry.since = since
         }
-        if (entry.state === 'working' && state === 'working' && agent.toolName && !isDelegateTool(agent.toolName) && entry.subs.size === 0) {
-          setActivity(entry, activityForTool(agent.toolName))
+        if (entry.state === 'working' && state === 'working' && agent.toolName) {
+          // A snapshot sees the tool running now: no call is counted, but it says what the agent does.
+          const toolActivity = isDelegateTool(agent.toolName) ? 'delegate' : activityForTool(agent.toolName)
+          noteToolSignal(entry.meter, toolActivity, now())
+          if (toolActivity !== 'delegate' && entry.subs.size === 0) setActivity(entry, toolActivity)
         }
         if (state === 'done') entry.subs.clear()
         // Subagents seen by ps are rebuilt on every snapshot; the ones from hooks stay.

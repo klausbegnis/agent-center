@@ -278,6 +278,8 @@ function describeEvents(recent, { projects, worlds, itemEntries, legendary, best
  *   states of the sessions no agent on screen runs
  * @param {object[]} input.recent
  * @param {object} input.debug counters from the last round
+ * @param {Record<string, object>} [input.skillSplits] by world: where its split between work skills
+ *   comes from and what a rebalance would do, added to the world as `skillSplit`
  * @param {(roomId: string, kills: number) => string | null} [input.sceneThemeOf] the theme a room
  *   that travels is in after that many kills, null for a room that stays put
  * @returns {object}
@@ -319,7 +321,8 @@ export function buildGameView(input) {
   const worlds = engineView.worlds.map(({ projects: worldProjects, ...world }) => ({
     ...world,
     roomIds: worldProjects.map((project) => project.id).filter((id) => roomIds.includes(id)),
-    orphans: orphansOf(worldProjects, roomIds)
+    orphans: orphansOf(worldProjects, roomIds),
+    ...(input.skillSplits?.[world.id] ? { skillSplit: input.skillSplits[world.id] } : {})
   }))
   const tickSeconds = engineView.tickSeconds ?? null
   const described = describeEvents(recent, {
