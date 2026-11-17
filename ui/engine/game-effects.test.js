@@ -94,9 +94,9 @@ test('a legendary drop is celebrated in gold with its picture', () => {
 
 test('a bestiary discovery, level, title, hunter rank and boss hunter level are celebrated over the room', () => {
   const events = [
-    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', discovered: true, name: 'Orcs' },
-    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', level: 2, name: 'Orcs' },
-    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', level: 27, name: 'Orcs', title: 'Orc-bane', prestige: 2 },
+    { type: 'bestiary', roomId: 'room', kind: 'race', creatureId: 'orc', discovered: true, name: 'Orcs' },
+    { type: 'bestiary', roomId: 'room', kind: 'race', creatureId: 'orc', level: 2, name: 'Orcs' },
+    { type: 'bestiary', roomId: 'room', kind: 'race', creatureId: 'orc', level: 27, name: 'Orcs', title: 'Orc-bane', prestige: 2 },
     { type: 'bestiary', roomId: 'room', kind: 'rank', level: 4 },
     { type: 'bestiary', roomId: 'room', kind: 'hunter', level: 1 }
   ]
@@ -110,8 +110,8 @@ test('a bestiary discovery, level, title, hunter rank and boss hunter level are 
 
 test('the newest bestiary lines win when there are more than a room shows at once', () => {
   const events = [
-    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', discovered: true, name: 'Orcs' },
-    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', level: 2, name: 'Orcs' }
+    { type: 'bestiary', roomId: 'room', kind: 'race', creatureId: 'orc', discovered: true, name: 'Orcs' },
+    { type: 'bestiary', roomId: 'room', kind: 'race', creatureId: 'orc', level: 2, name: 'Orcs' }
   ]
   assert.deepEqual(gameEffects({ ...none, events }, state()).map((effect) => effect.text),
     ['New in the bestiary: Orcs', 'Orcs: level 2!'])

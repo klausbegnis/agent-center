@@ -84,8 +84,11 @@ test('the first orc the world kills is a discovery in the recent events, named',
   await fight()
   const view = game.getView()
   const news = view.recent.filter((event) => event.type === 'bestiary')
-  assert.deepEqual(news.map(({ kind, id, discovered, name, roomId }) => ({ kind, id, discovered, name, roomId })),
-    [{ kind: 'race', id: 'orc', discovered: true, name: 'Orcs', roomId: BANANA }])
+  assert.deepEqual(news.filter((event) => event.discovered)
+    .map(({ kind, creatureId, discovered, name, roomId }) => ({ kind, creatureId, discovered, name, roomId })),
+  [{ kind: 'race', creatureId: 'orc', discovered: true, name: 'Orcs', roomId: BANANA }])
+  // Every event keeps its own increasing number, which is how a page tells what is new.
+  assert.ok(view.recent.every((event, at) => Number.isInteger(event.id) && (at === 0 || event.id > view.recent[at - 1].id)))
   assert.equal(view.recent.find((event) => event.type === 'kill').bestiary, undefined)
   assert.equal(view.worlds[0].bestiary.discovered, 2)
 })

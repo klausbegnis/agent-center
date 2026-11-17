@@ -110,7 +110,7 @@ function lineEffects(events, game) {
 
 /** What a bestiary event says over the room: a first kill, a level, a title, a hunter rank or level. */
 function bestiaryText(event) {
-  const name = event.name ?? nameFromId(event.id ?? '')
+  const name = event.name ?? nameFromId(event.creatureId ?? '')
   if (event.kind === 'hunter') return BESTIARY_EVENT.hunter(event.level)
   if (event.kind === 'rank') return BESTIARY_EVENT.rank(event.level)
   if (event.discovered) return event.kind === 'boss' ? BESTIARY_EVENT.boss(name) : BESTIARY_EVENT.race(name)

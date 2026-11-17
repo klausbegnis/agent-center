@@ -8,12 +8,12 @@ const bestiary = {
 }
 
 test('a bestiary event is named after its race or its boss', () => {
-  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', id: 'orc', discovered: true }, bestiary).name, 'Orcs')
-  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'boss', id: 'skrix', discovered: true }, bestiary).name,
+  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', creatureId: 'orc', discovered: true }, bestiary).name, 'Orcs')
+  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'boss', creatureId: 'skrix', discovered: true }, bestiary).name,
     'Skrix, the Lantern Thief')
   const hunter = { type: 'bestiary', kind: 'hunter', level: 2 }
   assert.deepEqual(describeBestiaryEvent(hunter, bestiary), hunter)
-  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', id: 'kraken' }, bestiary).name, undefined)
+  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', creatureId: 'kraken' }, bestiary).name, undefined)
 })
 
 test('only the boss items a world found are named in the state', () => {
@@ -23,7 +23,7 @@ test('only the boss items a world found are named in the state', () => {
 
 test('a level past the powered ones carries the race\'s title and its prestige rank', () => {
   const content = { ...bestiary, levels: 25, races: [{ id: 'orc', name: 'Orcs', title: 'Orc-bane' }] }
-  assert.deepEqual(describeBestiaryEvent({ type: 'bestiary', kind: 'race', id: 'orc', level: 27 }, content),
-    { type: 'bestiary', kind: 'race', id: 'orc', level: 27, name: 'Orcs', title: 'Orc-bane', prestige: 2 })
-  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', id: 'orc', level: 25 }, content).title, undefined)
+  assert.deepEqual(describeBestiaryEvent({ type: 'bestiary', kind: 'race', creatureId: 'orc', level: 27 }, content),
+    { type: 'bestiary', kind: 'race', creatureId: 'orc', level: 27, name: 'Orcs', title: 'Orc-bane', prestige: 2 })
+  assert.equal(describeBestiaryEvent({ type: 'bestiary', kind: 'race', creatureId: 'orc', level: 25 }, content).title, undefined)
 })
