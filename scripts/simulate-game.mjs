@@ -13,6 +13,8 @@ import { stageIndexOf, totalLevels } from '../src/game/settlement.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
 import { funnelGear } from './funnel-policy.mjs'
+import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
+import { newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
 import { visitMarket } from './market-policy.mjs'
 import {
   fixed,
@@ -36,7 +38,8 @@ const content = {
   cities: readJson('../game/cities.json'),
   legendary: readJson('../game/legendary.json'),
   bestiary: readJson('../game/bestiary.json'),
-  settlement: readJson('../game/settlement.json')
+  settlement: readJson('../game/settlement.json'),
+  instances: readJson('../game/instances.json')
 }
 const engine = createEngine({ content })
 /**
@@ -163,8 +166,11 @@ const newPeriod = () => ({
 /** Advances the engine and counts kills, kill materials and gathered materials. */
 function advanceAndCount(run, from, to, readings) {
   const before = materialTotal(run.save.worlds.main?.materials)
-  const { save, events } = run.engine.advanceWithEvents(run.save, { from, to, sessions: readings })
-  run.save = save
+  const advanced = run.engine.advanceWithEvents(run.save, { from, to, sessions: readings, autoPlay: Boolean(run.instances) })
+  run.save = advanced.save
+  // A run's steps are events too (instance policy); the rest of the simulator counts kills.
+  const events = advanced.events.filter((event) => event.type === 'kill')
+  if (run.instances) noteInstanceEvents(run, advanced.events, { day: Math.floor(to / DAY), remember: rememberRun })
   const killMaterials = sumOf(events.map((event) => materialTotal(event.materials)))
   for (const event of events) run.period.kills.push(event)
   run.dayKills += events.length
@@ -212,6 +218,7 @@ function closeFinished(run, now) {
 
 /** One working step: tokens for the working sessions, then the engine's advance. */
 function playStep(run, from, to) {
+  if (run.instances) run.save = enterHighestInstance(run.engine, run.save, run.instances.memory)
   const stepKey = `${from}`
   const readings = []
   for (const session of run.slots) {
@@ -375,13 +382,15 @@ function closePeriod(run, day) {
 
 /**
  * @param {object} scenario
- * @param {{ trades?: boolean, funnel?: boolean, withEngine?: object }} [policy] `trades` adds a visit
- *   to the market every working day; `funnel` sends every spare piece of gear into one room every
- *   working day; `withEngine` plays on another engine than the full one
+ * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, withEngine?: object }} [policy]
+ *   `trades` adds a visit to the market every working day; `funnel` sends every spare piece of gear
+ *   into one room every working day; `instances` runs the highest open instance whenever one is
+ *   available; `withEngine` plays on another engine than the full one
  */
-function simulate(scenario, { trades = false, funnel = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, instances = false, withEngine = engine } = {}) {
   const run = {
     scenario,
+    instances: instances ? newInstanceStats(content.instances) : null,
     trades,
     funnel,
     funnelled: { items: 0, relics: 0 },
@@ -617,6 +626,7 @@ printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
+printInstances(runs, SCENARIOS.map((scenario) => simulate(scenario, { instances: true })), { content, legendaryKind })
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +

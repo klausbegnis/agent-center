@@ -55,6 +55,18 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['sendRelic', ...input])
       return { changed: true }
     },
+    gameEnterInstance: async (...input) => {
+      calls.push(['enterInstance', ...input])
+      return { changed: true }
+    },
+    gameChooseBoon: async (...input) => {
+      calls.push(['chooseBoon', ...input])
+      return { changed: true }
+    },
+    gameRecallParty: async (...input) => {
+      calls.push(['recallParty', ...input])
+      return { changed: true }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -232,6 +244,20 @@ test('the market routes reach the controller with their fields', async (t) => {
   ])
 })
 
+test('the instance routes reach the controller with their fields', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  const room = 'local:/work/rumble-banana'
+  assert.equal((await post('/api/game/enter-instance', { roomId: room, instanceId: 'sunken-crypt', tier: 2 })).status, 200)
+  assert.equal((await post('/api/game/choose-boon', { roomId: room, boonId: 'second-wind' })).status, 200)
+  assert.equal((await post('/api/game/recall-party', { roomId: room })).status, 200)
+  assert.deepEqual(calls, [
+    ['enterInstance', room, 'sunken-crypt', 2],
+    ['chooseBoon', room, 'second-wind'],
+    ['recallParty', room]
+  ])
+})
+
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
   const { server, calls } = await setup(t)
   const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
@@ -252,7 +278,8 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'rebalance-skills',
   'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic']
+  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
+  'choose-boon', 'recall-party']
 
 const gameState = {
   rooms: [],

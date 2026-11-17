@@ -10,6 +10,8 @@ import { bestiaryItemIds } from './game-bestiary-view.mjs'
 function referencedIds({ rooms, characters, recent, worlds = [] }) {
   const ids = new Set(bestiaryItemIds(worlds))
   for (const world of worlds) {
+    // The roadmap shows every instance's relic, found or not.
+    for (const instance of world.instances?.list ?? []) ids.add(instance.relic)
     for (const city of world.market?.cities ?? []) {
       for (const id of Object.values(city.relic?.byRoom ?? {})) if (id) ids.add(id)
     }

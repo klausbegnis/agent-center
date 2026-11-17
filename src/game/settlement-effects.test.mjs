@@ -78,9 +78,10 @@ test('a whole settlement at its top, the strongest relic, all the legendary equi
   const top = { upgrades: { campfire: 1e9, workbench: 1e9, runeCircle: 1e9, storehouse: 1e9, defences: 1e9 } }
   const settlement = settlementEffects(top, index)
   const bestiary = bestiaryEffects(maxedBestiary, bestiaryIndex)
-  // Damage and race damage depend on qualifiers the settlement never gives; gathering is already
-  // at its cap from a relic and a tool (bestiary-effects.test.mjs).
-  const qualified = ['damage', 'raceDamage', 'gatherYield']
+  // Damage, race damage and a work skill's experience depend on qualifiers the settlement never
+  // gives; gathering is already at its cap from a relic and a tool (bestiary-effects.test.mjs
+  // checks all three).
+  const qualified = ['damage', 'raceDamage', 'gatherYield', 'skillXp']
   for (const type of Object.keys(LEGENDARY_EFFECT_CAPS).filter((each) => !qualified.includes(each))) {
     const entries = [...legendary.byId.values()].filter((entry) => entry.effect.effect === type)
     const relic = Math.max(0, ...entries.filter((entry) => entry.kind !== 'equipment').map((entry) => entry.effect.amount))

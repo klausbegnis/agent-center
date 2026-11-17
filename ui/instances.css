@@ -1,0 +1,150 @@
+/* Game mode's instances: the World tab's switch and Roadmap, an instance's card, a run's card, and a
+   room inside an instance (its band, its backdrop, its chip and its news). Colours come from Orca's
+   theme (--orca-*) and the game's own (--ac-game-*), with dark defaults. Pixel art is drawn
+   pixelated, at whole multiples where the width allows. */
+
+.ac-world-top { padding: 8px 10px; }
+.ac-world-bestiary { display: flex; flex-direction: column; gap: 10px; }
+.ac-world-bestiary[hidden], .ac-roadmap[hidden] { display: none; }
+
+/* The roadmap: the map fills the card's width, its markers placed in percent of it. */
+.ac-roadmap { display: flex; flex-direction: column; gap: 10px; }
+.ac-roadmap-map { position: relative; width: 100%; max-width: 768px; line-height: 0; }
+.ac-roadmap-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+.ac-roadmap-markers { position: absolute; inset: 0; pointer-events: none; }
+.ac-roadmap-marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -110%);
+  image-rendering: pixelated;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+  pointer-events: auto;
+}
+.ac-roadmap-marker-hidden, .ac-roadmap-marker-locked { opacity: 0.75; }
+.ac-roadmap-marker-inside { width: 20px; height: 20px; animation: ac-roadmap-bob 1.6s ease-in-out infinite; }
+@keyframes ac-roadmap-bob {
+  0%, 100% { transform: translate(-50%, -110%); }
+  50% { transform: translate(-50%, -130%); }
+}
+.ac-roadmap-complete { color: var(--ac-game-gold, #f2c14e); font-weight: 700; }
+.ac-roadmap-complete[hidden] { display: none; }
+
+/* The cards: one column in the sidebar, two as the panel widens. */
+.ac-instance-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.ac-instance-list[hidden] { display: none; }
+.ac-instance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: var(--orca-card, #161a22);
+}
+.ac-instance-card[data-state='inside'] { border-color: var(--ac-game-gold, #f2c14e); }
+.ac-instance-banner { position: relative; line-height: 0; border-radius: 4px; overflow: hidden; }
+.ac-instance-banner-art { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.ac-instance-name {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  margin: 0;
+  line-height: 1.2;
+  font-size: 15px;
+  color: #fff;
+  text-shadow: 0 1px 0 #000, 0 0 4px #000;
+}
+/* Hidden under fog: the banner greyed and blurred, the name "???". */
+.ac-instance-card[data-state='hidden'] .ac-instance-banner-art { filter: grayscale(1) blur(2px) brightness(0.55); }
+.ac-instance-card[data-state='locked'] .ac-instance-banner-art { filter: grayscale(0.7) brightness(0.75); }
+.ac-instance-state { margin: 0; font-size: 12px; font-weight: 700; }
+.ac-instance-cleared[hidden], .ac-instance-races[hidden], .ac-instance-boss[hidden], .ac-instance-relic[hidden], .ac-instance-enter[hidden] { display: none; }
+.ac-instance-relic { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.ac-instance-relic-art { flex: none; width: 32px; height: 32px; image-rendering: pixelated; }
+.ac-instance-relic[data-found='false'] .ac-instance-relic-art { filter: grayscale(1) brightness(0.6); }
+.ac-instance-relic-words { display: flex; flex-direction: column; min-width: 0; }
+.ac-instance-relic-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-instance-relic-text { color: var(--ac-game-good, #6fe0d2); }
+.ac-instance-enter { display: flex; flex-direction: column; gap: 4px; }
+.ac-instance-fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; }
+.ac-instance-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 11px; }
+.ac-instance-field-name { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-instance-room { max-width: 160px; }
+.ac-instance-why:empty { display: none; }
+
+/* A run's card. */
+.ac-run-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px dashed var(--orca-border, #2a2f3a);
+}
+.ac-run-card[hidden], .ac-run-route[hidden], .ac-run-vault[hidden], .ac-run-time[hidden] { display: none; }
+.ac-run-title { margin: 0; font-size: 13px; }
+.ac-run-route { display: block; width: 100%; max-width: 512px; height: auto; image-rendering: pixelated; border-radius: 3px; }
+.ac-run-icons { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.ac-run-icon { position: relative; line-height: 0; padding: 2px; border: 1px solid transparent; border-radius: 4px; }
+.ac-run-icon-art { width: 32px; height: 32px; image-rendering: pixelated; }
+.ac-run-icon-overlay { position: absolute; right: -2px; bottom: -2px; width: 16px; height: 16px; image-rendering: pixelated; }
+.ac-run-icon-ahead .ac-run-icon-art { opacity: 0.4; filter: grayscale(0.8); }
+.ac-run-icon-current { border-color: var(--ac-game-gold, #f2c14e); box-shadow: 0 0 0 1px var(--ac-game-gold, #f2c14e); }
+.ac-run-progress .ac-game-meter-fill { background: var(--ac-game-gold, #f2c14e); }
+.ac-run-time .ac-game-meter-fill { background: var(--orca-muted-foreground, #9aa3b2); }
+.ac-run-vault { display: flex; flex-direction: column; gap: 4px; }
+.ac-run-vault-title { margin: 2px 0 0; font-size: 12px; color: var(--ac-game-gold, #f2c14e); }
+.ac-run-boon-choice { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.ac-run-boon-words { display: flex; flex-direction: column; min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-roadmap-marker-inside { animation: none; }
+}
+
+/* A room inside an instance: the instance's banner as its backdrop, over the theme's scenery and
+   under its characters, fading into the theme's floor, which is shaded so characters stay clear. */
+.ac-instance-backdrop { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ac-instance-backdrop-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 72%;
+  object-fit: cover;
+  object-position: center 70%;
+  image-rendering: pixelated;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.ac-instance-backdrop-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, transparent, rgba(8, 10, 16, 0.55) 40%);
+}
+.ac-game-pill.ac-instance-pill { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; white-space: nowrap; }
+.ac-instance-pill[hidden] { display: none; }
+.ac-instance-pill-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+.ac-game-wave[hidden] { display: none; }
+
+/* Its chip in the room switcher: a small gold gate beside the other signs. */
+.ac-game-room-chip-inside {
+  width: 7px;
+  height: 8px;
+  border: 2px solid var(--ac-game-gold, #f2c14e);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+}
+.ac-game-room-chip-inside[hidden] { display: none; }
+
+/* A run's steps over the room, between the bestiary's and a legendary drop's in weight. */
+.ac-game-tone-instance { color: var(--ac-game-gold, #f2c14e); font-weight: 700; }

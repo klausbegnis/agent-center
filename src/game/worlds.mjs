@@ -2,6 +2,7 @@
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
 import { normalizeBestiary } from './bestiary.mjs'
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
+import { normalizeProjectInstance, normalizeWorldInstances } from './instance-save.mjs'
 import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
@@ -77,6 +78,16 @@ function worldHoldingProject(save, projectId) {
 }
 
 /**
+ * A room that moves to another world leaves the instance it is in, back on its frozen wave with no
+ * cooldown: the run belongs to its old world's road (instance-run.mjs).
+ */
+function outOfInstance(project) {
+  if (!project.run) return project
+  const { run, ...rest } = project
+  return { ...rest, ...run.frozen, restTicks: 0 }
+}
+
+/**
  * Puts a project in a world. Data it already has (wave, chest, characters, retirees) moves with
  * it. Skills and materials belong to the worlds and stay where they are.
  *
@@ -90,7 +101,7 @@ export function assignProject(save, projectId, worldId) {
   const assigned = { ...save, projectWorld: { ...save.projectWorld, [projectId]: worldId } }
   const sourceId = worldHoldingProject(save, projectId)
   if (sourceId === null || sourceId === worldId) return assigned
-  const data = save.worlds[sourceId].projects[projectId]
+  const data = outOfInstance(save.worlds[sourceId].projects[projectId])
   const withoutProject = withWorld(assigned, sourceId, (world) => {
     const projects = { ...world.projects }
     delete projects[projectId]
@@ -110,7 +121,12 @@ export function assignProject(save, projectId, worldId) {
  * @returns {object}
  */
 export function excludeProject(save, projectId) {
-  return { ...save, projectWorld: { ...save.projectWorld, [projectId]: null } }
+  const excluded = { ...save, projectWorld: { ...save.projectWorld, [projectId]: null } }
+  const worldId = worldHoldingProject(save, projectId)
+  const project = worldId === null ? null : save.worlds[worldId].projects[projectId]
+  if (!project?.run) return excluded
+  // A room put out of the game leaves its instance, so another room may enter it.
+  return withWorld(excluded, worldId, (world) => withProjectIn(world, projectId, outOfInstance(project)))
 }
 
 /**
@@ -239,14 +255,17 @@ function normalizeMarket(value) {
 function normalizeWorld(value) {
   const coins = isNumber(value.coins) ? Math.min(MARKET_MAX_COINS, Math.max(0, Math.floor(value.coins))) : 0
   const bestiary = normalizeBestiary(value.bestiary)
+  const instances = normalizeWorldInstances(value.instances)
   return {
     // Kept only once the world has killed; a save from before the bestiary has none.
     ...(bestiary ? { bestiary } : {}),
+    // Kept only once a room has entered an instance (instance-save.mjs).
+    ...(instances ? { instances } : {}),
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),
     projects: Object.fromEntries(Object.entries(keepEntries(value.projects, isPlainObject))
-      .map(([projectId, project]) => [projectId, normalizeProject(project)])),
+      .map(([projectId, project]) => [projectId, normalizeProjectInstance(normalizeProject(project))])),
     lastTokenAt: isNumber(value.lastTokenAt) ? value.lastTokenAt : null,
     // Saves from before the market have no coins.
     coins,

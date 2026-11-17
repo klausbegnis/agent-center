@@ -41,6 +41,9 @@ const transport = {
   sendItem: (roomId, toRoomId, itemIds, confirmHeld) =>
     orca.plugin.request('game.sendItem', { roomId, toRoomId, itemIds, confirmHeld }),
   sendRelic: (roomId, toRoomId, relicId) => orca.plugin.request('game.sendRelic', { roomId, toRoomId, relicId }),
+  enterInstance: (roomId, instanceId, tier) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier }),
+  chooseBoon: (roomId, boonId) => orca.plugin.request('game.chooseBoon', { roomId, boonId }),
+  recallParty: (roomId) => orca.plugin.request('game.recallParty', { roomId }),
   sellMaterial: (worldId, cityId, materialId, amount) =>
     orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) =>

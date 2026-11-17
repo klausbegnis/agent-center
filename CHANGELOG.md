@@ -29,6 +29,17 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: **instances**, a road of six dungeons a room can be sent into (the Sunken Crypt,
+  Emberdeep Foundry, the Hollow Hive, Frostwatch Keep, the Drowned Library and Wyrmrest Spire),
+  each with its races, a boss and an elite from the roster, original pixel-art banners and a
+  roadmap. They open one after another with the world's level. A run plays with the room's
+  working time through six rooms (entrance, hall, trap or puzzle, elite, vault with a choice of
+  two boons, boss) while the room's wave waits; failing ends the run softly, with a cooldown. The
+  first clear gives a signature relic (six new relics), every clear a purse and a better chance at
+  the boss's own item, and repeat runs climb endless tiers with a rotating modifier. The Bestiary
+  tab is now **World**, with Creatures, Bosses and the **Roadmap**; old links and saved tabs open
+  it. A room inside an instance shows its banner as its backdrop and the instance on its band.
+  New local-only routes `/api/game/enter-instance`, `/choose-boon` and `/recall-party`.
 - Game settings: **Rebalance work skills** shares a world's work-skill experience again by its
   mix, keeping the world level, for worlds that grew lopsided under the old attribution. It asks
   first and shows each skill's level before and after; it is never done on its own.

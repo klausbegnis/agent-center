@@ -6,9 +6,11 @@ import { bestiaryIndexOf } from './bestiary-content.mjs'
 import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
-import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
+import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MARKET_MAX_COINS, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
 import { playFight, partyOf, spawnMonster } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
+import { playRun } from './instance-fight.mjs'
+import { coolDown } from './instance-run.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import { gatherBonuses, heldEffects, legendaryIndexOf, relicEffects } from './legendary-effects.mjs'
 import { recoverMarket } from './market.mjs'
@@ -102,7 +104,7 @@ function workingMembers(world, project, readings, now) {
 }
 
 /** Moves one project forward over an interval: states, gathering, then the fight. */
-function advanceProject(world, { worldId, projectId, readings, from, to, content, referencePartyHit }) {
+function advanceProject(world, { worldId, projectId, readings, from, to, content, referencePartyHit, autoPlay }) {
   let current = settleCharacters(world, projectId, readings, { from, to, content })
   let project = current.projects[projectId]
   const themed = readings.find((reading) => reading.themeId)
@@ -118,34 +120,51 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
   const wholeTicks = Math.floor(elapsed / MS_PER_TICK)
   const ticks = Math.min(wholeTicks, MAX_FIGHT_TICKS_PER_ADVANCE)
   const fightMs = ticks < wholeTicks ? 0 : elapsed - ticks * MS_PER_TICK
-  const fight = playFight({
+  const options = {
     worldId,
     projectId,
-    project: { ...project, fightMs },
     world: current,
     worldLevel: worldLevel(current.skills),
     party: partyOf(members, current, project, content),
-    ticks,
     content,
     referencePartyHit,
     scenes,
     day: gameDayOf(to)
-  })
+  }
+  // A room inside an instance plays its run (instance-fight.mjs); one that ends hands the ticks
+  // left back to its waves.
+  const inside = project.run ? playRun({ ...options, project: { ...project, fightMs }, ticks, autoPlay }) : null
+  if (inside) current = withRunPaid(current, inside)
+  if (inside?.project.run) return { world: withProjectIn(current, projectId, inside.project), events: inside.events }
+  const waveTicks = inside ? inside.ticksLeft : ticks
+  const fight = playFight({ ...options, world: current, project: inside?.project ?? { ...project, fightMs }, ticks: waveTicks })
   current = { ...current, materials: addMaterials(current.materials, fight.materials) }
   if (fight.bestiary) current = { ...current, bestiary: fight.bestiary }
-  return { world: withProjectIn(current, projectId, fight.project), events: fight.events }
+  // Working time on the waves counts down the room's instance cooldowns (instance-run.mjs).
+  const fought = coolDown(fight.project, waveTicks * MS_PER_TICK)
+  return { world: withProjectIn(current, projectId, fought), events: [...(inside?.events ?? []), ...fight.events] }
+}
+
+/** The world with what a run paid: materials, coins, its bestiary's counts and its instance progress. */
+function withRunPaid(world, ran) {
+  const coins = Math.min(MARKET_MAX_COINS, (world.coins ?? 0) + ran.coins)
+  const paid = { ...world, coins, materials: addMaterials(world.materials, ran.materials) }
+  if (ran.bestiary) paid.bestiary = ran.bestiary
+  if (ran.instances) paid.instances = ran.instances
+  return paid
 }
 
 /**
  * Moves the world forward over an interval of real time, with the sessions as they were during it.
  *
  * @param {object} save
- * @param {{ from: number, to: number, sessions: SessionReading[] }} interval
+ * @param {{ from: number, to: number, sessions: SessionReading[], autoPlay?: boolean }} interval
+ *   `autoPlay`: a room in an instance's vault takes the first boon at once (Auto is on)
  * @param {{ content: object, referencePartyHit: (level: number) => object }} context the parsed
  *   game content, and the reference party hit by level
  * @returns {{ save: object, events: object[] }}
  */
-export function advanceWithEvents(save, { from, to, sessions = [] }, context) {
+export function advanceWithEvents(save, { from, to, sessions = [], autoPlay }, context) {
   if (!(to > from)) return { save, events: [] }
   // Once per world, before its first counted fight: kills from before the bestiary counted.
   const filled = backfillSave(save, { index: bestiaryIndexOf(context.content), day: gameDayOf(from) })
@@ -161,7 +180,7 @@ export function advanceWithEvents(save, { from, to, sessions = [] }, context) {
     const world = worldId === null ? null : next.worlds[worldId]
     if (!world?.projects[projectId]) continue
     const readings = byProject.get(projectId)
-    const moved = advanceProject(world, { worldId, projectId, readings, from, to, ...context })
+    const moved = advanceProject(world, { worldId, projectId, readings, from, to, autoPlay: autoPlay === true, ...context })
     next = { ...next, worlds: { ...next.worlds, [worldId]: moved.world } }
     events.push(...moved.events.map((event) => ({ ...event, worldId })))
   }
@@ -212,7 +231,8 @@ export function prepareFights(save, { sessions = [] }, context) {
     let project = inScene(recordStates(world, projectId, readings), projectId, scenesOf(readings))
     const partySize = readings.filter((reading) =>
       reading.state === 'working' && (reading.guest || project.characters[reading.sessionId])).length
-    if (!project.monster && partySize > 0) {
+    // A room inside an instance meets its run's monsters as it plays (instance-fight.mjs).
+    if (!project.monster && partySize > 0 && !project.run) {
       const where = { worldId, projectId, project, world, content: context.content }
       project = { ...project, monster: spawnMonster({ ...where, referencePartyHit: context.referencePartyHit, partySize }) }
     }

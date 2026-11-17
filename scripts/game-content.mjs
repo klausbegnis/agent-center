@@ -1,14 +1,17 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
-// be there. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
-// legendary-content.mjs, bestiary-content.mjs and settlement-content.mjs.
+// be there, and game/instances.json, whose art must be there too. The rules are in
+// src/game/content.mjs, content-races.mjs, content-cities.mjs, legendary-content.mjs,
+// bestiary-content.mjs, settlement-content.mjs and instance-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateBestiary } from '../src/game/bestiary-content.mjs'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
+import { validateRunContent } from '../src/game/instance-boons.mjs'
+import { validateInstances } from '../src/game/instance-content.mjs'
 import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
@@ -37,6 +40,7 @@ export function checkGameContent({ root, report, readJson }) {
   checkLegendary({ root, report, readJson, items })
   checkBestiary({ root, report, readJson })
   checkSettlement({ root, report, readJson })
+  checkInstances({ root, report, readJson })
 }
 
 /** game/settlement.json: its buildings against the group upgrades, and that every picture it names is there. */
@@ -114,5 +118,29 @@ function checkCities({ root, report, readJson }) {
   if (problems.length) return
   for (const city of cities.cities) {
     if (!fs.existsSync(path.join(root, city.banner))) report(citiesFile, `the banner ${city.banner} is missing`)
+  }
+}
+
+/** game/instances.json: its races, bosses and loot against the other files, and that every picture it names is there. */
+function checkInstances({ root, report, readJson }) {
+  const instancesFile = path.join(root, 'game', 'instances.json')
+  if (!fs.existsSync(instancesFile)) return report(instancesFile, 'is missing; the World tab needs it for the roadmap')
+  const instances = readJson(instancesFile)
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  if (instances === null) return
+  const others = { races: readIfThere('races.json'), bosses: readIfThere('bosses.json'), legendary: readIfThere('legendary.json') }
+  const problems = [...validateInstances(instances, others), ...validateRunContent(instances, others)]
+  for (const problem of problems) report(instancesFile, problem)
+  if (problems.length) return
+  const pictures = [
+    ...instances.region.maps.map((map) => map.art),
+    ...instances.instances.flatMap((entry) => [entry.banner, entry.card,
+      ...(entry.route ? [entry.route.start, entry.route.mid, entry.route.boss] : [])])
+  ]
+  for (const art of pictures) {
+    if (!fs.existsSync(path.join(root, art))) report(instancesFile, `the picture ${art} is missing`)
   }
 }

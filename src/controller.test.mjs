@@ -74,10 +74,31 @@ function recordingGame() {
     bestGear: record('bestGear'),
     setActiveRelic: record('activeRelic'),
     sendItem: record('sendItem'),
-    sendRelic: record('sendRelic')
+    sendRelic: record('sendRelic'),
+    enterInstance: record('enterInstance'),
+    chooseBoon: record('chooseBoon'),
+    recallParty: record('recallParty')
   }
   return { game, calls }
 }
+
+test('the instance actions reach the game with their fields; a tier that is not whole is refused first', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  const room = 'local:/work/rumble-banana'
+  await controller.gameEnterInstance(room, 'sunken-crypt', 2)
+  await assert.rejects(controller.gameEnterInstance(room, 'sunken-crypt', 1.5), /invalid tier/)
+  await assert.rejects(controller.gameEnterInstance(room, null, 1), /invalid instance/)
+  await controller.gameChooseBoon(room, 'second-wind')
+  await assert.rejects(controller.gameChooseBoon(room, 3), /invalid boon/)
+  await controller.gameRecallParty(room)
+  assert.deepEqual(calls, [
+    ['enterInstance', { roomId: room, instanceId: 'sunken-crypt', tier: 2 }],
+    ['chooseBoon', { roomId: room, boonId: 'second-wind' }],
+    ['recallParty', { roomId: room }]
+  ])
+  assert.equal(changes(), 3)
+})
 
 test('the view state carries the game part', () => {
   const { controller } = setup()

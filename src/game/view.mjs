@@ -9,6 +9,7 @@ import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { legendaryView } from './legendary-view.mjs'
 import { legendaryOf } from './legendary.mjs'
 import { marketView } from './market-view.mjs'
+import { cooldownsView, instancesContentView, runView, worldInstancesView } from './instance-view.mjs'
 import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
 import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
@@ -94,7 +95,7 @@ function monsterView(monster) {
   }
 }
 
-function projectView(projectId, project, world, names, index, content) {
+function projectView(projectId, project, world, names, index, content, worldId) {
   const prices = {
     workbenchLevel: groupLevel(world.upgrades, 'workbench'),
     level: worldLevel(world.skills),
@@ -117,7 +118,10 @@ function projectView(projectId, project, world, names, index, content) {
     retirees: project.retirees.map((retiree) => ({ ...retiree, attributes: { ...retiree.attributes } })),
     retiredCount: project.retiredCount,
     retireeBonus: retireeBonus(project),
-    relics: { owned: [...legendaryOf(project).relics], active: legendaryOf(project).active }
+    relics: { owned: [...legendaryOf(project).relics], active: legendaryOf(project).active },
+    // A room inside an instance, and its cooldowns after a run that did not clear (instance-view.mjs).
+    run: runView(worldId, projectId, project, world, content),
+    instanceCooldowns: cooldownsView(project)
   }
 }
 
@@ -138,11 +142,12 @@ function worldView(worldId, world, names, content, index) {
       return { id: upgradeId, level, cost, affordable, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()
-      .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content)),
+      .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content, worldId)),
     coins: world.coins ?? 0,
     market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary }),
     bestiary: worldBestiaryView(world, content),
-    settlement: settlementView(world, content)
+    settlement: settlementView(world, content),
+    instances: worldInstancesView(worldId, world, content)
   }
 }
 
@@ -169,7 +174,8 @@ export function viewOf(save, content) {
     tickSeconds: TICK_SECONDS,
     itemEntries: Object.fromEntries(content.items.items
       .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }])),
-    legendary: legendaryView(index, content.bosses),
-    bestiary: bestiaryContentView(content)
+    legendary: legendaryView(index, content.bosses, content.instances),
+    bestiary: bestiaryContentView(content),
+    instances: instancesContentView(content)
   }
 }

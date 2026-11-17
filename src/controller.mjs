@@ -40,6 +40,11 @@
  *   holds only with confirmHeld; says what was salvaged and what each holder took instead
  * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
  *   sends a relic that is not active to another room of the world
+ * @property {(roomId: string, instanceId: string, tier: number) => Promise<GameResult>} gameEnterInstance
+ *   sends a room's party into an open instance at a tier
+ * @property {(roomId: string, boonId: string) => Promise<GameResult>} gameChooseBoon takes a boon
+ *   the vault of a room's run offers
+ * @property {(roomId: string) => Promise<GameResult>} gameRecallParty ends a room's run by hand
  * @property {(roomId: string, sessionId: string, slot: string, itemId: string | null) =>
  *   Promise<GameResult>} gameSetEquipment sets what a character holds in a slot; itemId 'auto'
  *   hands the slot back to the automatic pick, null empties it
@@ -235,6 +240,16 @@ export function createController({
       offerIndex: requireWhole(offerIndex, 'offer'),
       entryId: requireText(entryId, 'offer'),
       roomId: requireText(roomId, 'room')
-    }))
+    })),
+    gameEnterInstance: (roomId, instanceId, tier) => playAction(() => game.enterInstance({
+      roomId: requireText(roomId, 'room'),
+      instanceId: requireText(instanceId, 'instance'),
+      tier: requireWhole(tier, 'tier')
+    })),
+    gameChooseBoon: (roomId, boonId) => playAction(() => game.chooseBoon({
+      roomId: requireText(roomId, 'room'),
+      boonId: requireText(boonId, 'boon')
+    })),
+    gameRecallParty: (roomId) => playAction(() => game.recallParty({ roomId: requireText(roomId, 'room') }))
   }
 }

@@ -47,9 +47,10 @@ test('a running status without its worlds and rooms is not drawn as running', ()
 })
 
 test('a saved tab is kept only when it is one of the tabs', () => {
-  assert.deepEqual(GAME_TABS, ['rooms', 'party', 'chest', 'camp', 'skills', 'market', 'bestiary'])
+  assert.deepEqual(GAME_TABS, ['rooms', 'party', 'chest', 'camp', 'skills', 'market', 'world'])
   assert.equal(tabOrDefault('skills'), 'skills')
-  assert.equal(tabOrDefault('bestiary'), 'bestiary')
+  assert.equal(tabOrDefault('bestiary'), 'world', 'the Bestiary is the World tab now')
+  assert.equal(tabOrDefault('world'), 'world')
   assert.equal(tabOrDefault('market'), 'market')
   assert.equal(tabOrDefault('chest'), 'chest')
   assert.equal(tabOrDefault('settings'), 'rooms')
@@ -68,17 +69,17 @@ test('a saved or linked Arsenal opens the tab its section became, its chest by d
 
 test('the arrow keys move along the tabs and wrap round, Home and End go to either end', () => {
   assert.equal(tabAfterKey('rooms', 'ArrowRight'), 'party')
-  assert.equal(tabAfterKey('market', 'ArrowRight'), 'bestiary')
-  assert.equal(tabAfterKey('bestiary', 'ArrowRight'), 'rooms')
-  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'bestiary')
+  assert.equal(tabAfterKey('market', 'ArrowRight'), 'world')
+  assert.equal(tabAfterKey('world', 'ArrowRight'), 'rooms')
+  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'world')
   assert.equal(tabAfterKey('camp', 'Home'), GAME_TABS[0])
-  assert.equal(tabAfterKey('party', 'End'), 'bestiary')
+  assert.equal(tabAfterKey('party', 'End'), 'world')
   assert.equal(tabAfterKey('chest', 'Enter'), null)
 })
 
 test('Party and Chest show one room, Camp, Skills, Market and Bestiary its world', () => {
   assert.deepEqual(ROOM_TABS, ['party', 'chest'])
-  assert.deepEqual(WORLD_TABS, ['camp', 'skills', 'market', 'bestiary'])
+  assert.deepEqual(WORLD_TABS, ['camp', 'skills', 'market', 'world'])
 })
 
 test('the Rooms tab narrows to a room that has joined, and shows all rooms otherwise', () => {

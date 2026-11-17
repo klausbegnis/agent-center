@@ -11,6 +11,8 @@ import { referencePartyHit as computeReferencePartyHit } from './power.mjs'
 import { moveProjectItems } from './orphans.mjs'
 import { canPrestige, prestige as prestigeSkill, worldLevel } from './progression.mjs'
 import { forgetTitles } from './retirement.mjs'
+import { instanceIndexOf } from './instance-content.mjs'
+import { boonProblem, chooseBoon, enterInstance, enterProblem, recallParty } from './instance-run.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { buildingProblem, buyGroupUpgrade } from './buildings.mjs'
@@ -207,7 +209,8 @@ export function createEngine({ content }) {
       legendary: content.legendary,
       bestiary: content.bestiary,
       bosses: content.bosses,
-      settlement: content.settlement
+      settlement: content.settlement,
+      instances: content.instances
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
@@ -220,6 +223,13 @@ export function createEngine({ content }) {
     ...marketActions(content),
     /** The name of an item's entry, plain or legendary, as the view gives it; the id when unknown. */
     itemName: (entryId) => itemNameOf(content, entryId),
+    // Instances (instance-run.mjs): entering one, choosing the vault's boon, recalling the party;
+    // each answers the same save when refused, and its problem function says why.
+    enterInstance: (save, entry) => enterInstance(save, entry, instanceIndexOf(content)),
+    enterProblem: (save, entry) => enterProblem(save, entry, instanceIndexOf(content)),
+    chooseBoon: (save, choice) => chooseBoon(save, choice, instanceIndexOf(content)),
+    boonProblem: (save, choice) => boonProblem(save, choice, instanceIndexOf(content)),
+    recallParty,
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }

@@ -2,6 +2,7 @@
 // something that exists (or, for a new world, be a well-formed name), so nothing made up is
 // stored. Each action answers whether it changed anything.
 import { worldWorkMix } from './domain/skill-mix.mjs'
+import { createInstanceActions } from './game-instance-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
@@ -35,8 +36,10 @@ function requireTrade(trade) {
  *   roomIds: () => string[],
  *   setKeepTitlesSetting: (value: boolean) => Promise<void>,
  *   replaceGame: (next: import('./game-save.mjs').GameData) => void,
- *   now: () => number
- * }} dependencies `replaceGame` commits an imported game and forgets everything read before it
+ *   now: () => number,
+ *   tell?: (events: object[]) => void
+ * }} dependencies `replaceGame` commits an imported game and forgets everything read before it;
+ *   `tell` adds events an action makes (an instance entered, a boon chosen) to `recent`
  */
 export function createGameActions(dependencies) {
   const { engine, data, commit, isRunning, canWriteSave, load, roomIds, setKeepTitlesSetting } = dependencies
@@ -449,6 +452,9 @@ export function createGameActions(dependencies) {
       if (!canWriteSave() || save.settings.keepTitles === keepTitles) return { changed: true }
       commit({ save: engine.setKeepTitles(save, keepTitles), bridge })
       return { changed: true }
-    }
+    },
+
+    // Entering an instance, choosing the vault's boon, recalling the party (game-instance-actions.mjs).
+    ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) })
   }
 }
