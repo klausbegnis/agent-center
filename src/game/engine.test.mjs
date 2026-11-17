@@ -175,7 +175,10 @@ test('an excluded project is left untouched by tokens, time and closing', () => 
   save = tokensFor(save, { sessionId: 'newcomer', tokens: 5_000_000 })
   save = engine.advance(save, { from: 0, to: 2 * HOUR, sessions: [working('first'), working('second')] })
   save = engine.closeSession(save, { projectId: 'rumble-banana', sessionId: 'first', now: 10 })
-  assert.deepEqual(save, before)
+  // Only the market's clock moves with time, in every world.
+  const withoutClock = (value) => ({ ...value, worlds: Object.fromEntries(Object.entries(value.worlds)
+    .map(([worldId, world]) => [worldId, { ...world, market: { ...world.market, clock: null } }])) })
+  assert.deepEqual(withoutClock(save), withoutClock(before))
 })
 
 test('a closed session retires and comes back with its level when it spends tokens again', () => {
@@ -436,4 +439,24 @@ test('a session with no character yet does not bring a monster, a working guest 
   assert.equal(project(stranger).monster, null)
   const guest = engine.prepareFights(joined, { sessions: [working('guest:pane-9', 'rumble-banana', { guest: true })] })
   assert.ok(project(guest).monster)
+})
+
+test('the engine trades in its cities and shows the market of every world', () => {
+  const cities = readJson('../../game/cities.json')
+  const market = createEngine({ content: { ...content, cities } })
+  let save = tokensFor(partyOfFour(), { sessionId: 'first', tokens: 0 })
+  save = { ...save, worlds: { main: { ...save.worlds.main, materials: { ore: 300 } } } }
+  const sold = market.sellMaterial(save, { worldId: 'main', cityId: 'goldmill', materialId: 'ore', amount: 100 })
+  assert.equal(sold.worlds.main.materials.ore, 200)
+  assert.ok(sold.worlds.main.coins > 0)
+  assert.equal(market.sellMaterial(save, { worldId: 'nowhere', cityId: 'goldmill', materialId: 'ore', amount: 1 }), save)
+  const [world] = market.view(sold).worlds
+  assert.equal(world.coins, sold.worlds.main.coins)
+  assert.deepEqual(world.market.cities.map((city) => city.id), cities.cities.map((city) => city.id))
+  const goldmill = world.market.cities[0]
+  assert.equal(goldmill.open, true)
+  assert.ok(goldmill.pressure.ore > 0)
+  assert.equal(goldmill.stall.length, 3)
+  assert.equal(world.market.cities.at(-1).open, false)
+  assert.equal(world.market.cities.at(-1).stall, undefined)
 })

@@ -1,5 +1,7 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
+import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
+import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
 
 export const SAVE_VERSION = 1
@@ -21,8 +23,9 @@ export function emptySave() {
   return { version: SAVE_VERSION, worlds: {}, projectWorld: {}, settings: { keepTitles: false } }
 }
 
+/** A world before its first tokens: no skills, no materials, no coins, a market at rest. */
 export function emptyWorld() {
-  return { skills: {}, materials: {}, upgrades: {}, projects: {}, lastTokenAt: null }
+  return { skills: {}, materials: {}, upgrades: {}, projects: {}, lastTokenAt: null, coins: 0, market: emptyMarket() }
 }
 
 /**
@@ -212,14 +215,34 @@ function normalizeProject(value) {
   }
 }
 
+const isPressure = (value) => isNumber(value) && value >= MARKET_PRESSURE_MIN && value <= MARKET_PRESSURE_MAX
+const isSold = (value) => isPlainObject(value) && Number.isInteger(value.day) && Array.isArray(value.offers) &&
+  value.offers.every(Number.isInteger)
+
+/** A world's market as stored; a save from before the market has none and starts at rest. */
+function normalizeMarket(value) {
+  const market = objectOr(value, {})
+  return {
+    clock: isNumber(market.clock) ? market.clock : null,
+    pressure: Object.fromEntries(Object.entries(keepEntries(market.pressure, isPlainObject))
+      .map(([cityId, materials]) => [cityId, keepEntries(materials, isPressure)])
+      .filter(([, materials]) => Object.keys(materials).length > 0)),
+    sold: keepEntries(market.sold, isSold)
+  }
+}
+
 function normalizeWorld(value) {
+  const coins = isNumber(value.coins) ? Math.min(MARKET_MAX_COINS, Math.max(0, Math.floor(value.coins))) : 0
   return {
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),
     projects: Object.fromEntries(Object.entries(keepEntries(value.projects, isPlainObject))
       .map(([projectId, project]) => [projectId, normalizeProject(project)])),
-    lastTokenAt: isNumber(value.lastTokenAt) ? value.lastTokenAt : null
+    lastTokenAt: isNumber(value.lastTokenAt) ? value.lastTokenAt : null,
+    // Saves from before the market have no coins.
+    coins,
+    market: normalizeMarket(value.market)
   }
 }
 

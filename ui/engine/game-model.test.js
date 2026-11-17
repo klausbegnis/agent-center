@@ -18,7 +18,11 @@ import {
   roomFight,
   roomWorlds,
   tabAfterKey,
-  tabOrDefault
+  tabOrDefault,
+  ROOM_TABS,
+  WORLD_TABS,
+  roomFilterOf,
+  filteredRooms
 } from './game-model.js'
 
 const running = { status: 'running', worlds: [], rooms: {}, characters: {}, recent: [] }
@@ -43,18 +47,47 @@ test('a running status without its worlds and rooms is not drawn as running', ()
 })
 
 test('a saved tab is kept only when it is one of the tabs', () => {
+  assert.deepEqual(GAME_TABS, ['rooms', 'party', 'chest', 'camp', 'skills', 'market'])
   assert.equal(tabOrDefault('skills'), 'skills')
+  assert.equal(tabOrDefault('market'), 'market')
+  assert.equal(tabOrDefault('chest'), 'chest')
   assert.equal(tabOrDefault('settings'), 'rooms')
   assert.equal(tabOrDefault(null), 'rooms')
 })
 
+test('a saved or linked Arsenal opens the tab its section became, its chest by default', () => {
+  assert.equal(tabOrDefault('arsenal', 'items'), 'chest')
+  assert.equal(tabOrDefault('arsenal', 'party'), 'party')
+  assert.equal(tabOrDefault('arsenal', 'camp'), 'camp')
+  assert.equal(tabOrDefault('arsenal', null), 'chest')
+  assert.equal(tabOrDefault('arsenal', 'toString'), 'chest')
+  // A section alone, without the Arsenal, changes nothing.
+  assert.equal(tabOrDefault('skills', 'party'), 'skills')
+})
+
 test('the arrow keys move along the tabs and wrap round, Home and End go to either end', () => {
-  assert.equal(tabAfterKey('rooms', 'ArrowRight'), 'arsenal')
-  assert.equal(tabAfterKey('skills', 'ArrowRight'), 'rooms')
-  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'skills')
-  assert.equal(tabAfterKey('arsenal', 'Home'), GAME_TABS[0])
-  assert.equal(tabAfterKey('arsenal', 'End'), 'skills')
-  assert.equal(tabAfterKey('arsenal', 'Enter'), null)
+  assert.equal(tabAfterKey('rooms', 'ArrowRight'), 'party')
+  assert.equal(tabAfterKey('market', 'ArrowRight'), 'rooms')
+  assert.equal(tabAfterKey('rooms', 'ArrowLeft'), 'market')
+  assert.equal(tabAfterKey('camp', 'Home'), GAME_TABS[0])
+  assert.equal(tabAfterKey('party', 'End'), 'market')
+  assert.equal(tabAfterKey('chest', 'Enter'), null)
+})
+
+test('Party and Chest show one room, Camp, Skills and Market its world', () => {
+  assert.deepEqual(ROOM_TABS, ['party', 'chest'])
+  assert.deepEqual(WORLD_TABS, ['camp', 'skills', 'market'])
+})
+
+test('the Rooms tab narrows to a room that has joined, and shows all rooms otherwise', () => {
+  const state = { rooms: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], game: { rooms: { a: { joined: true }, b: { joined: true } } } }
+  assert.equal(roomFilterOf(state, 'b'), 'b')
+  assert.equal(roomFilterOf(state, 'c'), null)
+  assert.equal(roomFilterOf(state, null), null)
+  assert.deepEqual(filteredRooms(state.rooms, 'b'), [{ id: 'b' }])
+  assert.deepEqual(filteredRooms(state.rooms, null), state.rooms)
+  // A room narrowed to that is hidden or gone shows every room rather than none.
+  assert.deepEqual(filteredRooms(state.rooms, 'gone'), state.rooms)
 })
 
 test('progress is estimated only when the worker says so; a missing source means measured', () => {

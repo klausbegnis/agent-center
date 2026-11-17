@@ -61,9 +61,9 @@ gone quiet, across every machine Orca is connected to.
 You do not play it so much as feed it. Your agents do their work, and the work is what moves
 the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
-| Rooms | Arsenal | Skills |
-| --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The chest with its item slots and the materials the world holds](docs/screenshots/game-arsenal.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) |
+| Rooms | Chest | Skills | Market |
+| --- | --- | --- | --- |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the six tabs, then the chest's item slots](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -79,11 +79,17 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   that monsters and prices follow.
 - **Idle agents gather.** A character whose agent has finished takes a trade (mining, fishing,
   farming, woodcutting, hunting or runecraft) and brings materials home. The game picks one for
-  each character (Auto); in the Arsenal's Party section you can set what everyone in a room
+  each character (Auto); on the Party tab you can set what everyone in a room
   gathers, or what one character gathers, which wins over the room's choice.
 - **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
   a new character takes the best free item of each slot by itself. Materials upgrade items and
   buy upgrades for the whole party, by hand or with auto-spend.
+- **A market with five cities.** Materials that pile up can be sold for coins or traded for
+  ones you lack, in cities that open as the world grows: Goldmill, Deepforge, Brinehaven,
+  Tallwood and Runespire. Each sells what it produces and pays best for what it wants; every
+  trade costs a fee and a big sale lowers the price until it recovers, so trading never makes
+  money out of nothing. Coins buy gear at a city's stall, new every day. Nothing is traded
+  unless you do it.
 - **Sessions retire.** Close a terminal and its character retires into the room's hall, leaves
   its gear in the chest for the next one and adds a small bonus to the room's gathering for
   good.
@@ -117,7 +123,10 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 ### Turning it on
 
 Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
-gains three tabs: **Rooms**, **Arsenal** (chest, party and camp) and **Skills**. The cog in the
+gains six tabs: **Rooms**, **Party**, **Chest**, **Camp**, **Skills** and **Market**, under a
+room picker and a strip with the world's coins and materials; the picker chooses the room that
+Party and Chest show (and the world of the others), and on Rooms it can show one room alone. In
+a narrow panel the tabs show their icons only. The cog in the
 panel's header opens the game's own settings: auto-spend, **New scene after each monster**
 (off by default; see "The party can travel" above), worlds and the save file.
 
@@ -151,7 +160,7 @@ counting starts again from the import. The file is private: it holds your projec
 paths, the names of paired machines, session ids and, when titles are kept, conversation
 titles. Do not attach it to a public bug report.
 
-A room that is no longer on screen keeps its chest and retirees. The Arsenal's Items section
+A room that is no longer on screen keeps its chest and retirees. The Chest tab
 lists them under **Chests left behind** for the chosen room's world; **Move here** moves them
 into that room after asking. Nothing moves by itself.
 

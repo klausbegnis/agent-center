@@ -10,8 +10,8 @@ const listeners = new Set()
 //   ?view=gallery|list   start in that view
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
-//   ?tab=rooms|arsenal|skills   open that tab of game mode
-//   ?section=items|party|camp   open that section of the Arsenal
+//   ?tab=rooms|party|chest|camp|skills|market   open that tab of game mode; the old
+//                ?tab=arsenal&section=items|party|camp opens Chest, Party or Camp
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>
@@ -52,6 +52,10 @@ const transport = {
   exportSave: () => postGame('export-save', {}),
   importSave: (file) => postGame('import-save', { file }),
   moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
+  sellMaterial: (worldId, cityId, materialId, amount) => postGame('sell', { worldId, cityId, materialId, amount }),
+  tradeMaterial: (worldId, cityId, fromId, toId, amount) => postGame('trade', { worldId, cityId, fromId, toId, amount }),
+  buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>
+    postGame('buy-offer', { worldId, cityId, offerIndex, entryId, roomId }),
   prefs: {
     get: (key) => params.get(key) ?? localStorage.getItem(`agent-center:${key}`),
     set: (key, value) => localStorage.setItem(`agent-center:${key}`, value)

@@ -65,7 +65,10 @@ function recordingGame() {
     setKeepTitles: record('keepTitles'),
     exportSave: async () => ({ format: 'agent-center-game' }),
     importSave: record('import'),
-    moveOrphanItems: record('moveOrphan')
+    moveOrphanItems: record('moveOrphan'),
+    sellMaterial: record('sell'),
+    tradeMaterial: record('trade'),
+    buyStallOffer: record('buyOffer')
   }
   return { game, calls }
 }
@@ -149,4 +152,24 @@ test('moving a left-behind room\'s items reaches the game with both rooms, which
   await controller.gameMoveOrphanItems('local:/work/fuzzy-anvil', 'local:/work/rumble-banana')
   assert.deepEqual(calls, [['moveOrphan', { fromRoomId: 'local:/work/fuzzy-anvil', toRoomId: 'local:/work/rumble-banana' }]])
   assert.equal(changes(), 1)
+})
+
+test('market actions reach the game with their fields, and amounts must be whole numbers', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  await controller.gameSellMaterial('main', 'goldmill', 'ore', 120)
+  await controller.gameTradeMaterial('main', 'deepforge', 'crops', 'ore', 50)
+  await controller.gameBuyStallOffer('main', 'goldmill', 2, 'runed-grimoire', 'local:/work/rumble-banana')
+  assert.deepEqual(calls, [
+    ['sell', { worldId: 'main', cityId: 'goldmill', materialId: 'ore', amount: 120 }],
+    ['trade', { worldId: 'main', cityId: 'deepforge', fromId: 'crops', toId: 'ore', amount: 50 }],
+    ['buyOffer', { worldId: 'main', cityId: 'goldmill', offerIndex: 2, entryId: 'runed-grimoire', roomId: 'local:/work/rumble-banana' }]
+  ])
+  assert.equal(changes(), 3)
+  await assert.rejects(controller.gameSellMaterial('main', 'goldmill', 'ore', '120'), /invalid amount/)
+  await assert.rejects(controller.gameSellMaterial('main', 'goldmill', 'ore', 1.5), /invalid amount/)
+  await assert.rejects(controller.gameTradeMaterial('main', 'deepforge', 'crops', null, 5), /invalid material/)
+  await assert.rejects(controller.gameBuyStallOffer('main', 'goldmill', '0', 'x', 'room'), /invalid offer/)
+  await assert.rejects(controller.gameBuyStallOffer('main', 7, 0, 'x', 'room'), /invalid city/)
+  assert.equal(calls.length, 3)
 })

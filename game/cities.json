@@ -1,0 +1,34 @@
+{
+  "cities": [
+    {
+      "id": "goldmill", "name": "Goldmill", "tagline": "Wheat fields and windmills",
+      "opensAt": 1, "produces": ["crops", "fish"], "wants": ["ore", "bars"],
+      "banner": "ui/cities/goldmill.png",
+      "bannerAlt": "Golden wheat fields at sunset, with windmills turning on a green hill"
+    },
+    {
+      "id": "deepforge", "name": "Deepforge", "tagline": "The dwarven mine and foundry",
+      "opensAt": 5, "produces": ["ore", "bars", "gears"], "wants": ["crops", "logs"],
+      "banner": "ui/cities/deepforge.png",
+      "bannerAlt": "Smoking foundry chimneys and a glowing dwarven gate carved into a night mountain"
+    },
+    {
+      "id": "brinehaven", "name": "Brinehaven", "tagline": "Harbour of fishers and traders",
+      "opensAt": 10, "produces": ["fish", "hides"], "wants": ["runes", "seals"],
+      "banner": "ui/cities/brinehaven.png",
+      "bannerAlt": "A harbour at dusk: a sailing ship, a red and white lighthouse and houses along the quay"
+    },
+    {
+      "id": "tallwood", "name": "Tallwood", "tagline": "Tree houses, sawmill and hunters",
+      "opensAt": 15, "produces": ["logs", "hides"], "wants": ["gears", "pages"],
+      "banner": "ui/cities/tallwood.png",
+      "bannerAlt": "Tree houses joined by rope bridges in a sunlit forest, a waterfall and a sawmill wheel"
+    },
+    {
+      "id": "runespire", "name": "Runespire", "tagline": "City of scribes, crystals and seals",
+      "opensAt": 25, "produces": ["runes", "crystals", "pages", "seals"], "wants": ["ore", "fish"],
+      "banner": "ui/cities/runespire.png",
+      "bannerAlt": "Violet towers under a green aurora, a beam of light rising from the tallest spire"
+    }
+  ]
+}

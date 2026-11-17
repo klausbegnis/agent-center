@@ -111,6 +111,12 @@ catches them walking in. Chrome keeps running because the page holds a live conn
 with Ctrl+C. The other shots use `--window-size=500,1180` with `?view=list`, and
 `--window-size=900,640` with `?view=list&only=rumble`, `only=cosmic` and `only=turbo`.
 
+The game tabs `game-rooms.png`, `game-chest.png`, `game-skills.png` and `game-market.png` are
+`GAME=1 FREEZE=1` on Guild Hall with `?view=list&tab=rooms` (`chest`, `skills`, `market`) at a
+500 × 900 window and scale 2. Look at each before committing it: `--screenshot` can fire before
+the city banners are painted, and then the Market shot shows empty cards. Taking the picture
+through Chrome's DevTools protocol once every image has loaded avoids that.
+
 ## Retaking the listing images
 
 The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
@@ -136,4 +142,5 @@ This project follows the [Code of Conduct](CODE_OF_CONDUCT.md). By taking part y
 
 By contributing you agree that your contribution is licensed under the [MIT licence](LICENSE).
 Art you did not make yourself needs a licence that allows redistribution; say which in the pull
-request.
+request. The city banners in `ui/cities/` are original pixel art made for this project, drawn by the
+scripts in `scripts/city-art/`.

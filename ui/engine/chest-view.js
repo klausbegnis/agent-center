@@ -1,4 +1,4 @@
-// The Arsenal's Items section: the room's chest as a framed box of square slots, and under it (or
+// The Chest tab: the room's chest as a framed box of square slots, and under it (or
 // beside it when there is room) the chosen item's details with its upgrade. The slots are buttons
 // reached with the arrow keys; the chosen one is kept per room across redraws.
 import { chestOrder, chestSlotCount, itemFactors, slotAfterKey } from './arsenal-model.js'

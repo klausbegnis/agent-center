@@ -5,52 +5,116 @@
       "slot": "weapon", "damageType": "physical", "tier": 1, "recipe": ["logs", "bars"]
     },
     {
+      "id": "iron-shod-quarterstaff", "name": "Iron-Shod Quarterstaff",
+      "slot": "weapon", "damageType": "physical", "tier": 2, "recipe": ["logs", "ore"]
+    },
+    {
       "id": "tempered-shortsword", "name": "Tempered Shortsword",
       "slot": "weapon", "damageType": "physical", "tier": 3, "recipe": ["bars", "hides"]
+    },
+    {
+      "id": "bearded-hand-axe", "name": "Bearded Hand Axe",
+      "slot": "weapon", "damageType": "physical", "tier": 4, "recipe": ["bars", "logs"]
     },
     {
       "id": "riveted-warpick", "name": "Riveted Warpick",
       "slot": "weapon", "damageType": "physical", "tier": 5, "recipe": ["bars", "ore"]
     },
     {
+      "id": "banded-war-maul", "name": "Banded War Maul",
+      "slot": "weapon", "damageType": "physical", "tier": 6, "recipe": ["bars", "gears"]
+    },
+    {
       "id": "thunder-tempered-glaive", "name": "Thunder-Tempered Glaive",
       "slot": "weapon", "damageType": "physical", "tier": 7, "recipe": ["bars", "gears"]
+    },
+    {
+      "id": "starforged-falchion", "name": "Starforged Falchion",
+      "slot": "weapon", "damageType": "physical", "tier": 8, "recipe": ["ore", "seals"]
     },
     {
       "id": "meteor-iron-greatblade", "name": "Meteor-Iron Greatblade",
       "slot": "weapon", "damageType": "physical", "tier": 9, "recipe": ["ore", "crystals"]
     },
     {
+      "id": "dawnbreaker-greatsword", "name": "Dawnbreaker Greatsword",
+      "slot": "weapon", "damageType": "physical", "tier": 10, "recipe": ["bars", "seals"]
+    },
+    {
       "id": "ashwood-wand", "name": "Ashwood Wand",
       "slot": "weapon", "damageType": "magical", "tier": 1, "recipe": ["logs", "crystals"]
+    },
+    {
+      "id": "etched-bone-wand", "name": "Etched Bone Wand",
+      "slot": "weapon", "damageType": "magical", "tier": 2, "recipe": ["hides", "runes"]
     },
     {
       "id": "inscribed-codex", "name": "Inscribed Codex",
       "slot": "weapon", "damageType": "magical", "tier": 3, "recipe": ["pages", "runes"]
     },
     {
+      "id": "runed-grimoire", "name": "Runed Grimoire",
+      "slot": "weapon", "damageType": "magical", "tier": 4, "recipe": ["pages", "crystals"]
+    },
+    {
       "id": "glimmer-orb", "name": "Glimmer Orb",
       "slot": "weapon", "damageType": "magical", "tier": 5, "recipe": ["crystals", "runes"]
+    },
+    {
+      "id": "tidecaller-staff", "name": "Tidecaller Staff",
+      "slot": "weapon", "damageType": "magical", "tier": 6, "recipe": ["fish", "runes"]
     },
     {
       "id": "brinesong-scepter", "name": "Brinesong Scepter",
       "slot": "weapon", "damageType": "magical", "tier": 7, "recipe": ["crystals", "fish"]
     },
     {
+      "id": "astral-lens", "name": "Astral Lens",
+      "slot": "weapon", "damageType": "magical", "tier": 8, "recipe": ["crystals", "seals"]
+    },
+    {
       "id": "eclipse-sigil-staff", "name": "Eclipse Sigil Staff",
       "slot": "weapon", "damageType": "magical", "tier": 9, "recipe": ["runes", "seals"]
+    },
+    {
+      "id": "worldsong-orrery", "name": "Worldsong Orrery",
+      "slot": "weapon", "damageType": "magical", "tier": 10, "recipe": ["gears", "crystals"]
     },
     {
       "id": "padded-jerkin", "name": "Padded Jerkin",
       "slot": "outfit", "tier": 1, "recipe": ["hides", "crops"]
     },
     {
+      "id": "quilted-gambeson", "name": "Quilted Gambeson",
+      "slot": "outfit", "tier": 2, "recipe": ["crops", "hides"]
+    },
+    {
+      "id": "boiled-leather-cuirass", "name": "Boiled-Leather Cuirass",
+      "slot": "outfit", "tier": 3, "recipe": ["hides", "logs"]
+    },
+    {
       "id": "scaled-brigandine", "name": "Scaled Brigandine",
       "slot": "outfit", "tier": 4, "recipe": ["hides", "ore"]
     },
     {
+      "id": "chainmail-hauberk", "name": "Chainmail Hauberk",
+      "slot": "outfit", "tier": 5, "recipe": ["ore", "bars"]
+    },
+    {
+      "id": "runestitched-robe", "name": "Runestitched Robe",
+      "slot": "outfit", "tier": 6, "recipe": ["runes", "pages"]
+    },
+    {
       "id": "wardweave-mantle", "name": "Wardweave Mantle",
       "slot": "outfit", "tier": 7, "recipe": ["pages", "seals"]
+    },
+    {
+      "id": "gilded-lamellar", "name": "Gilded Lamellar",
+      "slot": "outfit", "tier": 8, "recipe": ["bars", "seals"]
+    },
+    {
+      "id": "starweave-vestments", "name": "Starweave Vestments",
+      "slot": "outfit", "tier": 9, "recipe": ["crystals", "pages"]
     },
     {
       "id": "aurora-plate", "name": "Aurora Plate",
@@ -61,12 +125,36 @@
       "slot": "tool", "tier": 1, "recipe": ["ore", "logs"]
     },
     {
+      "id": "foragers-basket", "name": "Forager's Wicker Basket",
+      "slot": "tool", "tier": 2, "recipe": ["crops", "logs"]
+    },
+    {
+      "id": "sturdy-hatchet", "name": "Sturdy Hatchet",
+      "slot": "tool", "tier": 3, "recipe": ["logs", "ore"]
+    },
+    {
       "id": "brass-multitool", "name": "Brass Multitool",
       "slot": "tool", "tier": 4, "recipe": ["gears", "ore"]
     },
     {
+      "id": "lodestone-compass", "name": "Lodestone Compass",
+      "slot": "tool", "tier": 5, "recipe": ["ore", "crystals"]
+    },
+    {
+      "id": "tinkers-toolroll", "name": "Tinker's Toolroll",
+      "slot": "tool", "tier": 6, "recipe": ["gears", "hides"]
+    },
+    {
       "id": "surveyors-kit", "name": "Surveyor's Kit",
       "slot": "tool", "tier": 7, "recipe": ["gears", "pages"]
+    },
+    {
+      "id": "alchemists-retort", "name": "Alchemist's Retort",
+      "slot": "tool", "tier": 8, "recipe": ["crystals", "runes"]
+    },
+    {
+      "id": "cartographers-astrolabe", "name": "Cartographer's Astrolabe",
+      "slot": "tool", "tier": 9, "recipe": ["gears", "pages"]
     },
     {
       "id": "clockwork-harvester", "name": "Clockwork Harvester",

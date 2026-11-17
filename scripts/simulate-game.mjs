@@ -9,6 +9,7 @@ import { effectiveLevel, worldLevel } from '../src/game/progression.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from '../src/game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
+import { visitMarket } from './market-policy.mjs'
 import {
   fixed,
   hitShares,
@@ -25,7 +26,8 @@ const content = {
   monsters: readJson('../game/monsters.json'),
   items: readJson('../game/items.json'),
   races: readJson('../game/races.json'),
-  bosses: readJson('../game/bosses.json')
+  bosses: readJson('../game/bosses.json'),
+  cities: readJson('../game/cities.json')
 }
 const engine = createEngine({ content })
 
@@ -220,7 +222,23 @@ function playWorkday(run, day) {
   const spent = engine.autoSpendWithPurchases(run.save)
   run.save = spent.save
   run.period.purchases += spent.purchases.length
+  if (run.trades) tradeAtMarket(run)
   prestigeAll(run, day)
+}
+
+/** The market policy's visit: what it bought counts as purchases, like autoSpend's. */
+function tradeAtMarket(run) {
+  const before = upgradeLevels(run.save)
+  run.save = visitMarket(engine, run.save, { cities: content.cities.cities, items: content.items }, run.market)
+  run.period.purchases += upgradeLevels(run.save) - before
+}
+
+/** Every upgrade level bought in the world: items' levels and group upgrades. */
+function upgradeLevels(save) {
+  const world = save.worlds.main
+  if (!world) return 0
+  const items = Object.values(world.projects).flatMap((project) => project.chest).reduce((sum, item) => sum + item.level, 0)
+  return items + sumOf(Object.values(world.upgrades))
 }
 
 /** Days at which the most used work skill reached the milestones. */
@@ -277,9 +295,15 @@ function closePeriod(run, day) {
   run.period = newPeriod()
 }
 
-function simulate(scenario) {
+/**
+ * @param {object} scenario
+ * @param {{ trades?: boolean }} [policy] `trades` adds a visit to the market every working day
+ */
+function simulate(scenario, { trades = false } = {}) {
   const run = {
     scenario,
+    trades,
+    market: { trades: 0, gear: 0, earned: 0 },
     save: emptySave(),
     slots: Array.from({ length: scenario.concurrent }, (_, slot) => openSession(scenario, slot, slot)),
     serial: scenario.concurrent,
@@ -335,10 +359,32 @@ function printScenario(run) {
     `60 on day ${milestone(60)}, first prestige on day ${run.firstPrestige ?? `> ${DAYS}`}.`)
 }
 
+/** The same scenarios with and without a visit to the market every working day. */
+function printMarketComparison(plainRuns, tradingRuns) {
+  console.log('\n## Market: no market against a daily visit (trade for what is short, buy stall gear, sell surplus)\n')
+  const rows = []
+  plainRuns.forEach((plain, index) => {
+    const trading = tradingRuns[index]
+    for (const day of [30, 90, 180, 365]) {
+      const without = plain.rows.find((row) => row.day === day)
+      const withMarket = trading.rows.find((row) => row.day === day)
+      rows.push([plain.scenario.id, day, fixed(without.killsPerHour), fixed(withMarket.killsPerHour), fixed(without.gear),
+        fixed(withMarket.gear), percent(withMarket.gear / Math.max(without.gear, 1e-9) - 1), fixed(without.purchasesPerDay),
+        fixed(withMarket.purchasesPerDay), withMarket.level])
+    }
+  })
+  printTable(['scenario', 'day', 'kills/h', 'market', 'gear', 'market', 'gear +', 'buys/day', 'market', 'world'], rows)
+  for (const run of tradingRuns) {
+    console.log(`${run.scenario.id}: ${run.market.trades} trades, ${run.market.gear} stall pieces, ` +
+      `${compact(run.market.earned)} coins from sales in a year.`)
+  }
+}
+
 const started = Date.now()
-const runs = SCENARIOS.map(simulate)
+const runs = SCENARIOS.map((scenario) => simulate(scenario))
 for (const run of runs) printScenario(run)
 printBalanceCheck(runs, engine, tokensPerWorkingHour)
+printMarketComparison(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true })))
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +

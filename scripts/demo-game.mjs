@@ -34,11 +34,13 @@ const TOOL_CALLS_PER_MINUTE = 3.75
 const MINUTE_MS = 60_000
 
 /**
- * A room no longer on screen that left its chest and retirees in the main world, so the Arsenal's
+ * A room no longer on screen that left its chest and retirees in the main world, so the Chest tab's
  * "Chests left behind" card has something to show. The demo's fuzzy-anvil room is on build-box;
  * this one is an older checkout of it on this computer.
  */
 const LEFT_BEHIND = 'local:/work/fuzzy-anvil'
+/** Coins the demo's world starts with: enough for one piece of a stall, not for all of them. */
+const MARKET_COINS = 70_000
 
 /**
  * The stored game the demo starts from: empty but for the room left behind, with "new scene after
@@ -50,6 +52,10 @@ function startingSave(travel) {
   const save = emptySave()
   save.worlds.main = {
     ...emptyWorld(),
+    // Coins from earlier sales, and prices still moved by them, so the Market tab has something
+    // to show: Deepforge was sold ore, Goldmill was bought out of fish.
+    coins: MARKET_COINS,
+    market: { clock: null, pressure: { deepforge: { ore: 1.2 }, goldmill: { fish: -1.4 } }, sold: {} },
     projects: {
       [LEFT_BEHIND]: {
         ...emptyProject({ wave: 4 }),

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { GEAR_GROWTH, TIER_LEVELS, UPGRADE_COST_BASE, UPGRADE_COST_GROWTH } from './constants.mjs'
+import { GEAR_GROWTH, ITEM_MAX_TIER, TIER_LEVELS, UPGRADE_COST_BASE, UPGRADE_COST_GROWTH } from './constants.mjs'
 import {
   canAfford, createItem, effectiveGearLevel, itemFactor, payFor, tierFactor, upgradeCost, upgradeItem
 } from './items.mjs'
@@ -104,15 +104,17 @@ test('every default item entry has a valid shape and no balance number', () => {
   }
 })
 
-test('the generic items climb the agreed tier ladder in every slot', () => {
+test('the generic items have an entry of every slot and damage type at every tier', () => {
   const generic = readItems().filter((entry) => !entry.themes)
   const tiersOf = (slot, damageType) => generic
     .filter((entry) => entry.slot === slot && (!damageType || entry.damageType === damageType))
     .map((entry) => entry.tier).sort((a, b) => a - b)
-  assert.deepEqual(tiersOf('weapon', 'physical'), [1, 3, 5, 7, 9])
-  assert.deepEqual(tiersOf('weapon', 'magical'), [1, 3, 5, 7, 9])
-  assert.deepEqual(tiersOf('outfit'), [1, 4, 7, 10])
-  assert.deepEqual(tiersOf('tool'), [1, 4, 7, 10])
+  // Without a tier, a drop or a stall offer falls back to the tier below: gear stalls there.
+  const everyTier = Array.from({ length: ITEM_MAX_TIER }, (_, index) => index + 1)
+  assert.deepEqual(tiersOf('weapon', 'physical'), everyTier)
+  assert.deepEqual(tiersOf('weapon', 'magical'), everyTier)
+  assert.deepEqual(tiersOf('outfit'), everyTier)
+  assert.deepEqual(tiersOf('tool'), everyTier)
 })
 
 test('each shipped theme has a physical weapon, a magical weapon, an outfit and a tool', () => {

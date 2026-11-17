@@ -179,3 +179,62 @@ test('a key that would reach an object\'s prototype is refused wherever an id is
     }
   }
 })
+
+const cityIds = ['goldmill', 'deepforge']
+/** The played save with coins and a market that has moved. */
+function tradedSave() {
+  const save = structuredClone(playedSave())
+  save.worlds.main.coins = 1234
+  save.worlds.main.market = {
+    clock: 6 * HOUR,
+    pressure: { goldmill: { ore: 0.5, crops: -1.2 } },
+    sold: { deepforge: { day: 0, offers: [0, 2] } }
+  }
+  return save
+}
+
+test('coins and a market with known cities and pressures in range come back unchanged', () => {
+  const save = tradedSave()
+  assert.deepEqual(cleanSave(save, { cityIds }), { ok: true, save })
+})
+
+test('a save from before the market comes back with no coins and a market at rest', () => {
+  const save = structuredClone(playedSave())
+  delete save.worlds.main.coins
+  delete save.worlds.main.market
+  const cleaned = cleanSave(save, { cityIds })
+  assert.equal(cleaned.ok, true)
+  assert.equal(cleaned.save.worlds.main.coins, 0)
+  assert.deepEqual(cleaned.save.worlds.main.market, { clock: null, pressure: {}, sold: {} })
+})
+
+test('made-up coins, cities, materials, pressures and offers are refused', () => {
+  const broken = [
+    (world) => { world.coins = -1 },
+    (world) => { world.coins = 2.5 },
+    (world) => { world.coins = 1e200 },
+    (world) => { world.coins = 'lots' },
+    (world) => { world.market.pressure.atlantis = { ore: 1 } },
+    (world) => { world.market.pressure.goldmill.gold = 1 },
+    (world) => { world.market.pressure.goldmill.ore = 50 },
+    (world) => { world.market.pressure.goldmill.ore = -3 },
+    (world) => { world.market.pressure.goldmill.ore = Number.NaN },
+    (world) => { world.market.sold.deepforge.offers = [0, 0] },
+    (world) => { world.market.sold.deepforge.offers = [7] },
+    (world) => { world.market.sold.deepforge.day = -1 },
+    (world) => { world.market.sold = JSON.parse('{"__proto__": { "day": 0, "offers": [] }}') },
+    (world) => { world.market = [] }
+  ]
+  for (const [index, change] of broken.entries()) {
+    const save = tradedSave()
+    change(save.worlds.main)
+    assert.equal(cleanSave(save, { cityIds }).ok, false, `change ${index}`)
+  }
+})
+
+test('the engine checks a market against the cities of its content', () => {
+  const cities = readJson('../../game/cities.json')
+  const withCities = createEngine({ content: { ...content, cities } })
+  assert.equal(withCities.cleanSave(tradedSave()).ok, true)
+  assert.equal(engine.cleanSave(tradedSave()).ok, false)
+})

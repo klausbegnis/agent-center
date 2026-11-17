@@ -7,6 +7,7 @@ import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECO
 import { playFight, partyOf, spawnMonster } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
+import { recoverMarket } from './market.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
 import { inScene, scenesOf } from './scenes.mjs'
@@ -144,7 +145,14 @@ export function advanceWithEvents(save, { from, to, sessions = [] }, context) {
     next = { ...next, worlds: { ...next.worlds, [worldId]: moved.world } }
     events.push(...moved.events.map((event) => ({ ...event, worldId })))
   }
-  return { save: next, events }
+  return { save: recoverMarkets(next, from, to), events }
+}
+
+/** Every world's market prices recover over the interval, whether its rooms played or not. */
+function recoverMarkets(save, from, to) {
+  const worlds = Object.fromEntries(Object.entries(save.worlds)
+    .map(([worldId, world]) => [worldId, { ...world, market: recoverMarket(world.market, from, to) }]))
+  return { ...save, worlds }
 }
 
 /** Records each reported character's state, with no time passing: nothing is gathered. */

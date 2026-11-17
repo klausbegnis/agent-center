@@ -9,13 +9,14 @@ const MATERIALS = ['bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish',
 const CLASSES = ['physical', 'magical', 'defense', 'support']
 const SLOTS = ['weapon-physical', 'weapon-magical', 'outfit', 'tool']
 const UPGRADES = ['campfire', 'workbench', 'runeCircle']
-const EVERY_ICON = [...WORK, ...GATHERING, ...MATERIALS, ...CLASSES, ...SLOTS, ...UPGRADES, 'star']
+const TABS = ['tab-rooms', 'tab-party', 'tab-chest']
+const EVERY_ICON = [...WORK, ...GATHERING, ...MATERIALS, ...CLASSES, ...SLOTS, ...UPGRADES, ...TABS, 'star', 'coin']
 
 /** How many pixels differ between two drawings, counting a pixel of another ink as different. */
 const difference = (first, second) =>
   first.join('').split('').filter((pixel, index) => pixel !== second.join('')[index]).length
 
-test('every skill, material, class, slot, group upgrade and the star has an icon', () => {
+test('every skill, material, class, slot, group upgrade, game tab, the star and the coin have an icon', () => {
   for (const id of EVERY_ICON) assert.ok(ICONS[id], id)
   assert.equal(Object.keys(ICONS).length, EVERY_ICON.length)
 })

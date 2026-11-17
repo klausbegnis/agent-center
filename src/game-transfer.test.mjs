@@ -237,7 +237,13 @@ test('made-up fields are not kept, and made-up values refuse the file', () => {
   assert.equal(read.ok, true)
   assert.deepEqual(read.save, {
     version: SAVE_VERSION,
-    worlds: { main: { skills: {}, materials: { bars: 3 }, upgrades: {}, projects: {}, lastTokenAt: null } },
+    // A file from before the market: the world starts with no coins and a market at rest.
+    worlds: {
+      main: {
+        skills: {}, materials: { bars: 3 }, upgrades: {}, projects: {}, lastTokenAt: null, coins: 0,
+        market: { clock: null, pressure: {}, sold: {} }
+      }
+    },
     projectWorld: {},
     settings: { keepTitles: false }
   })

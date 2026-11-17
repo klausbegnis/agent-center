@@ -289,3 +289,68 @@ export const SPEND_MAX_PURCHASES = 500
 export const RETIREE_BONUS = 0.005
 export const RETIREES_KEPT = 50
 export const RETIREE_BONUS_MAX = RETIREE_BONUS * RETIREES_KEPT
+
+/**
+ * The market. A material's base value in coins is what it is worth: no city pays more for it and
+ * none sells it for less, fees aside, which is what keeps every trade from making money (see
+ * docs/GAME.md, "Market"). The values are the inverse of each material's share of what the
+ * three simulated players earn in a year (kills and gathering), scaled to a mean of 10 and
+ * rounded: what is scarce is worth more. Seals and fish come rarely; crystals and ore often.
+ */
+export const MATERIAL_BASE_VALUES = Object.freeze({
+  bars: 9,
+  pages: 12,
+  gears: 12,
+  crystals: 6,
+  seals: 18,
+  ore: 7,
+  fish: 17,
+  crops: 13,
+  logs: 8,
+  hides: 9,
+  runes: 11
+})
+/**
+ * A city's usual price for a material, as a share of its base value: full for what it wants,
+ * less for others, least for what it produces. None is above 1, so a sale never pays more than
+ * the base value.
+ */
+export const MARKET_CITY_FACTORS = Object.freeze({ wanted: 1, neutral: 0.8, produced: 0.6 })
+/** Every sale pays this share less than the price, and every purchase costs this share more. */
+export const MARKET_FEE = 0.1
+/**
+ * How much a city's price moves: selling MARKET_DEPTH_BASE * REWARD_GROWTH ** worldLevel units
+ * of a material in one city divides its price there by e, buying as much multiplies it by e. It
+ * grows like kill rewards, so the market means the same at every level: about two and a half
+ * upgrades at the reference gear. It also bounds a sale: a whole stock, however large, never
+ * brings more than about base value x depth.
+ */
+export const MARKET_DEPTH_BASE = 1000
+/**
+ * The pressure a city's price for a material can carry: purchases lower it (dearer) down to
+ * MARKET_PRESSURE_MIN, past which nothing more is sold; sales raise it (cheaper) and it is kept
+ * at MARKET_PRESSURE_MAX at most. The price is the usual price times e ** -pressure.
+ */
+export const MARKET_PRESSURE_MIN = -2
+export const MARKET_PRESSURE_MAX = 10
+/** Prices recover towards the usual: the pressure halves every this much game time. */
+export const MARKET_RECOVERY_HALF_LIFE_MS = 6 * 60 * 60 * 1000
+/** A pressure smaller than this is forgotten, so the save keeps only prices that moved. */
+export const MARKET_PRESSURE_FORGOTTEN = 1e-6
+/**
+ * Coins a world may hold and the amount one sale or trade may move. Far past anything a world
+ * reaches; they keep every number finite. Past 2 ** 53 an amount is not counted to the unit,
+ * as with materials.
+ */
+export const MARKET_MAX_COINS = 1e100
+export const MARKET_MAX_AMOUNT = 1e100
+/** The stall's offers change once a game day: a day of the clock the world is advanced to. */
+export const MARKET_DAY_MS = 24 * 60 * 60 * 1000
+/** Pieces of gear a city's stall offers a day. */
+export const STALL_OFFERS = 3
+/**
+ * A stall's piece costs, in coins, the base value of the materials that would upgrade a fresh
+ * tier 1 item of its recipe to its gear level in that world, times this: buying is dearer than
+ * upgrading by hand, and worth it with surplus to sell.
+ */
+export const STALL_MARKUP = 1.5

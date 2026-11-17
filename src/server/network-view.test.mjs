@@ -61,3 +61,10 @@ test('the rooms and everything outside the game are left as they are', () => {
   assert.deepEqual(shown.game.rooms['build-box:/srv/turbo-waffle'], { worldId: 'main', joined: false })
   assert.equal(original.game.viewOnly, undefined)
 })
+
+test('a page on another machine sees the worlds\' coins and markets as they are, to watch', () => {
+  const market = { day: 3, cities: [{ id: 'goldmill', open: true, pressure: { ore: 0.2 }, stall: [{ index: 0, price: 90 }] }] }
+  const shown = createNetworkView({ secret })({ ...state(), game: { ...state().game, worlds: [{ id: 'main', coins: 40, market }] } })
+  assert.equal(shown.game.viewOnly, true)
+  assert.deepEqual(shown.game.worlds, [{ id: 'main', coins: 40, market }])
+})

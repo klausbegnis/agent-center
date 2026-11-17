@@ -39,6 +39,18 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['roomTrade', roomId, trade])
       return { changed: true }
     },
+    gameSellMaterial: async (...input) => {
+      calls.push(['sell', ...input])
+      return { changed: true }
+    },
+    gameTradeMaterial: async (...input) => {
+      calls.push(['trade', ...input])
+      return { changed: true }
+    },
+    gameBuyStallOffer: async (...input) => {
+      calls.push(['buyOffer', ...input])
+      return { changed: true }
+    },
     gameImportSave: async (file) => {
       if (file?.format !== 'agent-center-game') throw new Error('this is not an Agent Center save file')
       calls.push(['import', JSON.stringify(file).length])
@@ -161,6 +173,21 @@ test('the trade routes pass their fields on, a missing trade as null for Auto', 
   assert.deepEqual(calls, [['characterTrade', room, 's1', 'fishing'], ['roomTrade', room, null]])
 })
 
+test('the market routes reach the controller with their fields', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  assert.equal((await post('/api/game/sell', { worldId: 'main', cityId: 'goldmill', materialId: 'ore', amount: 9 })).status, 200)
+  const trade = { worldId: 'main', cityId: 'deepforge', fromId: 'crops', toId: 'ore', amount: 4 }
+  assert.equal((await post('/api/game/trade', trade)).status, 200)
+  const offer = { worldId: 'main', cityId: 'goldmill', offerIndex: 1, entryId: 'astral-lens', roomId: 'local:/work/rumble-banana' }
+  assert.equal((await post('/api/game/buy-offer', offer)).status, 200)
+  assert.deepEqual(calls, [
+    ['sell', 'main', 'goldmill', 'ore', 9],
+    ['trade', 'main', 'deepforge', 'crops', 'ore', 4],
+    ['buyOffer', 'main', 'goldmill', 1, 'astral-lens', 'local:/work/rumble-banana']
+  ])
+})
+
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
   const { server, calls } = await setup(t)
   const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
@@ -179,7 +206,8 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
   .find((entry) => entry && !entry.internal && entry.family === 'IPv4')?.address
 
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
-  'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items']
+  'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
+  'sell', 'trade', 'buy-offer']
 
 const gameState = {
   rooms: [],

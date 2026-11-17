@@ -4,6 +4,7 @@ import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
+import { marketView } from './market-view.mjs'
 import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
 import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
@@ -121,7 +122,7 @@ function projectView(projectId, project, world, names) {
   }
 }
 
-function worldView(worldId, world, names) {
+function worldView(worldId, world, names, content) {
   return {
     id: worldId,
     level: worldLevel(world.skills),
@@ -136,7 +137,9 @@ function worldView(worldId, world, names) {
       return { id: upgradeId, level, cost, affordable, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()
-      .map((projectId) => projectView(projectId, world.projects[projectId], world, names))
+      .map((projectId) => projectView(projectId, world.projects[projectId], world, names)),
+    coins: world.coins ?? 0,
+    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items })
   }
 }
 
@@ -144,7 +147,8 @@ function worldView(worldId, world, names) {
  * The view of a save.
  *
  * @param {object} save
- * @param {{ items: { items: object[] } }} content for item names
+ * @param {{ items: { items: object[] }, cities?: { cities: object[] } }} content for item names,
+ *   the market's cities and the stalls' gear
  * @returns {{ worlds: object[], projectWorld: Record<string, string | null>, keepTitles: boolean,
  *   tickSeconds: number, itemEntries: Record<string, { name: string, tier: number }> }} `itemEntries`
  *   names the content's items by entry id, for telling what a drop was
@@ -152,7 +156,7 @@ function worldView(worldId, world, names) {
 export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
   return {
-    worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names)),
+    worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names, content)),
     projectWorld: { ...save.projectWorld },
     keepTitles: save.settings.keepTitles,
     tickSeconds: TICK_SECONDS,

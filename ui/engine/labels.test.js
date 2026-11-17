@@ -1,7 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { ICONS } from './game-icons.js'
+import { GAME_TABS } from './game-model.js'
 import {
   ARSENAL,
+  GAME_TAB_ICON,
+  GAME_TAB_LABEL,
   activityLabel,
   actorDescription,
   defaultThemeOptions,
@@ -259,4 +263,11 @@ test('a room left behind is described by its items and retirees, and the questio
   const orphan = { roomId: 'local:/work/fuzzy-anvil', name: 'fuzzy-anvil', chestSize: 1, retiredCount: 7 }
   assert.equal(ARSENAL.orphanFacts(orphan), '1 item · 7 retirees')
   assert.match(ARSENAL.moveQuestion(orphan, 'cosmic-llama'), /from fuzzy-anvil into cosmic-llama\?/)
+})
+
+test('every game tab has a name and an icon', () => {
+  for (const tab of GAME_TABS) {
+    assert.ok(GAME_TAB_LABEL[tab], tab)
+    assert.ok(ICONS[GAME_TAB_ICON[tab]], tab)
+  }
 })

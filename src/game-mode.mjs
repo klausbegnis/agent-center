@@ -445,6 +445,9 @@ export function createUnavailableGame(status) {
     setKeepTitles: refuse,
     exportSave: refuse,
     importSave: refuse,
-    moveOrphanItems: refuse
+    moveOrphanItems: refuse,
+    sellMaterial: refuse,
+    tradeMaterial: refuse,
+    buyStallOffer: refuse
   }
 }

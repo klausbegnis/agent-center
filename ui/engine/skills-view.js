@@ -2,7 +2,7 @@
 // skills and the six gathering skills in two groups. A row has the skill's icon, name, level,
 // stars, a progress bar in the skill's colour and one line of what it does, and prestige for a
 // skill at the cap.
-import { el, select, setOptions } from './dom.js'
+import { el } from './dom.js'
 import { confirmButton, replaceKeepingFocus, section } from './game-controls.js'
 import { clampShare, formatFactor, formatShare } from './game-format.js'
 import { iconColor } from './game-icons.js'
@@ -35,16 +35,8 @@ export function createSkillsView({ panel, actions }) {
   const openQuestions = new Set()
 
   const head = el('section', 'ac-game-card ac-game-skills-head')
-  const worldField = el('label', 'ac-game-field')
-  const worldSelect = select('ac-select', SKILLS.world)
-  worldSelect.removeAttribute('aria-label')
-  worldSelect.addEventListener('change', () => {
-    wantedWorldId = worldSelect.value
-    draw()
-  })
-  worldField.append(el('span', 'ac-game-field-label', SKILLS.world), worldSelect)
   const summary = el('div', 'ac-game-summary')
-  head.append(worldField, summary)
+  head.append(summary)
   const body = el('div', 'ac-game-panel-body')
   panel.append(head, body)
 
@@ -131,11 +123,7 @@ export function createSkillsView({ panel, actions }) {
 
   function draw() {
     if (!state) return
-    const worlds = state.game.worlds ?? []
-    setOptions(worldSelect, worlds.map((world) => [world.id, world.id]))
-    worldField.hidden = worlds.length < 2
-    const world = worldById(state.game, wantedWorldId) ?? worlds[0] ?? null
-    if (world) worldSelect.value = world.id
+    const world = worldById(state.game, wantedWorldId) ?? state.game.worlds?.[0] ?? null
     const signature = JSON.stringify(world)
     if (signature === drawn) return
     drawn = signature
@@ -153,9 +141,13 @@ export function createSkillsView({ panel, actions }) {
   }
 
   return {
-    /** @param {object} next the view state, with the game running */
-    update(next) {
+    /**
+     * @param {object} next the view state, with the game running
+     * @param {string | null} worldId the world of the room picked above the tabs
+     */
+    update(next, worldId) {
       state = next
+      wantedWorldId = worldId
       draw()
     }
   }

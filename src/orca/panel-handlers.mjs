@@ -41,4 +41,10 @@ export function registerPanelHandlers(orca, controller) {
   orca.panels.handle('game.importSave', (input) => controller.gameImportSave(input?.file))
   orca.panels.handle('game.moveOrphanItems', (input) =>
     controller.gameMoveOrphanItems(input?.fromRoomId, input?.toRoomId))
+  orca.panels.handle('game.sell', (input) =>
+    controller.gameSellMaterial(input?.worldId, input?.cityId, input?.materialId, input?.amount))
+  orca.panels.handle('game.trade', (input) =>
+    controller.gameTradeMaterial(input?.worldId, input?.cityId, input?.fromId, input?.toId, input?.amount))
+  orca.panels.handle('game.buyOffer', (input) =>
+    controller.gameBuyStallOffer(input?.worldId, input?.cityId, input?.offerIndex, input?.entryId, input?.roomId))
 }
