@@ -504,50 +504,77 @@ the same hash and order as everything else:
 - **Others**: a hand-made themed monster (`game/monsters.json`, shown as itself) has no race and
   counts under one counter of its own, by rank. They are a theme's local flavour, not creatures to
   master, so they have no entry, no mastery and no bonus.
-- A save from before the bestiary starts it empty; the rooms' own `kills` stay as they were and
-  nothing is back-filled. A world reset forgets it with the world. Content without
-  `game/bestiary.json` counts nothing.
+- **Points**: a kill is worth points by its rank (`points`): plain 1, veteran 2, elite 5,
+  champion 10, boss 25, legendary 60. They are worked out from the counters, never stored, so a
+  strong monster is an event for its race.
+- A world reset forgets the bestiary with the world. Content without `game/bestiary.json` counts
+  nothing.
+
+### Back-fill
+
+The rooms counted every kill (`kills`) long before the bestiary did. Once per world, at the start
+of its first advance with this version (`backfillSave` in `src/game/bestiary-backfill.mjs`, run by
+`advanceWithEvents`, where the races are known; `migrate` does not know the content), the kills its
+rooms counted and its bestiary lacks are given to its races as plain kills: each race gets a share
+weighted by `1 + chanceOf(worldId|bestiary-fill|raceId)` (between 1 and 2), whole kills, the
+remainder to the largest leftover parts, so every kill is given and the same world always gets the
+same spread. A race first given kills this way is first seen that day. Bosses are never
+back-filled (who was beaten is not known), nor are the others. Back-filled kills are no news, so
+no room celebrates them. The number given is kept as `bestiary.filled`, which is also the mark that
+it is done: it is kept on an otherwise empty bestiary, and the back-fill never runs again however
+the rooms' counts change later. A new world gets `filled: 0` on its first advance.
 
 A race or a boss with no kill is undiscovered: the UI shows its silhouette and "???".
 
 ### Mastery
 
-A race's mastery level is the number of its thresholds its kills have reached. The thresholds are
-the file's, times the race's `scale` (rounded); the four races that a theme prefers (they come up
-three times as often in Gothic Dungeon rooms) have `scale` 1.5.
+A race's mastery runs on a ladder of points with no top (`src/game/bestiary-ladder.mjs`): level n
+needs `firstCost × (growth^n − 1) / (growth − 1)` points in all, rounded, times the race's `scale`.
+The first step is cheap and each costs `growth` times the one before. The four races a theme
+prefers (they come up three times as often in Gothic Dungeon rooms) have `scale` 1.5.
 
-| Level | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|
-| Kills of a race | 10 | 50 | 200 | 800 | 3,000 |
-| Skeletons, zombies, vampires, ghosts (scale 1.5) | 15 | 75 | 300 | 1,200 | 4,500 |
+| Level | 1 | 2 | 3 | 4 | 5 | 10 | 15 | 20 | 25 | 26 | 27 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Points (`firstCost` 2, `growth` 1.35) | 2 | 5 | 8 | 13 | 20 | 109 | 509 | 2,304 | 10,353 | 13,979 | 18,873 |
 
-Each level gives `raceDamage` 0.01 against that race (5% at level 5). At levels 3 and 5
-(`perkLevels`) the race also gives its perk, once for each of those levels reached:
+Its first `levels` (25) are powered: each gives `raceDamage` 0.002 against that race (5% at level
+25), and every `perkEvery` (5th) level also the race's perk, once each time (five times at 25).
+Past level 25 mastery goes on without end as prestige ranks that give no more power: the race's
+card carries its title (`title`: "Slime-scourer", then "Slime-scourer II", III, ...) and a border
+that deepens with the rank.
 
 | Race | Perk, each time | Race | Perk, each time |
 |---|---|---|---|
-| Goblins | `itemDrop` +2% | Minotaurs | `upgradeCost` −1% |
-| Orcs | `damage` +0.5%, physical | Dragons | `damage` +0.5%, magical |
-| Trolls | `affixWeakening` 0.5% | Spiders | `affixWeakening` 2% |
-| Ogres | `staminaPool` +1% | Insects | `gatherHours` +6 min |
-| Humans | `characterXp` +0.5% | Slimes | `killMaterials` +1% |
-| Skeletons | `staminaDrain` −0.5% | Elementals | `gatherXp` +1% |
-| Zombies | `gatherHours` +6 min | Golems | `thorns` 0.5% |
-| Vampires | `staminaPerKill` +0.5% | Ghosts | `runeCircle` +1% |
-| Werewolves | `critDamage` +2% | Treants | `upgradeCost` −1% |
-| Demons | `damage` +1% against elites and champions | Lizardfolk | `gatherXp` +1% |
+| Goblins | `itemDrop` +0.8% | Minotaurs | `upgradeCost` −0.4% |
+| Orcs | `damage` +0.2%, physical | Dragons | `damage` +0.2%, magical |
+| Trolls | `affixWeakening` 0.2% | Spiders | `affixWeakening` 0.8% |
+| Ogres | `staminaPool` +0.4% | Insects | `gatherHours` +2.4 min |
+| Humans | `characterXp` +0.2% | Slimes | `killMaterials` +0.4% |
+| Skeletons | `staminaDrain` −0.2% | Elementals | `gatherXp` +0.4% |
+| Zombies | `gatherHours` +2.4 min | Golems | `thorns` 0.2% |
+| Vampires | `staminaPerKill` +0.2% | Ghosts | `runeCircle` +0.4% |
+| Werewolves | `critDamage` +0.8% | Treants | `upgradeCost` −0.4% |
+| Demons | `damage` +0.4% against elites and champions | Lizardfolk | `gatherXp` +0.4% |
+
+### Hunter rank
+
+The world's hunter rank is the level all its points (every race's and the others') reach on a
+ladder of their own (`rank`: `firstCost` 20, `growth` 1.25: rank 1 at 20 points, 5 at 164, 10 at
+665, 20 at 6,859, 30 at 64,543), with no end. It gives `killMaterials` `0.02 × r / (r + 20)`
+(`half` 20): 1% at rank 20, always under 2%. It is the bar that always moves.
 
 ### Boss hunter
 
 Every boss of the roster beaten at least once counts one; beating the same boss again counts only
-for that boss.
+for that boss. The first boss already gives a level.
 
 | Level | Distinct bosses | Adds |
 |---|---|---|
-| 1 | 5 | `damage` +1% against bosses and legendary bosses |
-| 2 | 15 | `legendaryPity` +25% |
-| 3 | 30 | `damage` +1% against bosses and legendary bosses |
-| 4 | 55 (all) | `legendaryPity` +25% |
+| 1 | 1 | `damage` +0.5% against bosses and legendary bosses |
+| 2 | 5 | `legendaryPity` +15% |
+| 3 | 15 | `damage` +0.5% against bosses and legendary bosses |
+| 4 | 30 | `legendaryPity` +15% |
+| 5 | 55 (all) | `damage` +0.5% against bosses and legendary bosses, `legendaryPity` +20% |
 
 ### As effects
 
@@ -559,19 +586,24 @@ caps. A level reached during an advance counts from the next one, as a relic tha
 
 ### In the save
 
-A world keeps `bestiary: { races, bosses, others? }` once it has killed: a race's (and the others')
-counter is `[normal, veteran, elite, champion, boss, legendary, firstDay]`, a boss's
-`[beaten, legendary, firstDay]`. Twenty races and 55 bosses fit in under 2 KB. `migrate` drops
-counters of another shape; `cleanSave` refuses a race or boss the content does not have, a list of
-the wrong length or with a number that is not a whole count, a counter with no kill (or no win),
-more legendary wins than wins, an empty bestiary, and any bestiary when the content has none.
+A world keeps `bestiary: { races, bosses, others?, filled? }` from its first advance: a race's (and
+the others') counter is `[normal, veteran, elite, champion, boss, legendary, firstDay]`, a boss's
+`[beaten, legendary, firstDay]`, `filled` the kills given by the back-fill. Points, levels and ranks
+are worked out from them and never stored. Twenty races and 55 bosses fit in under 2 KB. `migrate`
+drops counters of another shape and keeps `filled`; `cleanSave` refuses a race or boss the content
+does not have, a list of the wrong length or with a number that is not a whole count, a counter
+with no kill (or no win), more legendary wins than wins, a `filled` that is not a whole count, an
+empty bestiary without `filled`, and any bestiary when the content has none.
 Export and import carry it with the world.
 
 ### Kill news
 
 A kill event carries `bestiary: [...]` when it made something new: `{ kind: 'race', id,
 discovered: true }` for a race's first kill, `{ kind: 'race', id, level }` for a mastery level,
-`{ kind: 'boss', id, discovered: true }` for a boss's first win and `{ kind: 'hunter', level }`.
+`{ kind: 'boss', id, discovered: true }` for a boss's first win, `{ kind: 'hunter', level }` for a
+boss hunter level and `{ kind: 'rank', level }` for a hunter rank. A kill that lifts a race several
+levels at once (a champion, a boss) tells only the last. A race level past the powered ones is a
+prestige rank; the bridge adds its `title` and `prestige`.
 The bridge turns each into a `bestiary` event of `recent` (see "View state").
 
 ## Scenes
@@ -1182,11 +1214,13 @@ by the usual closing rules.
     },
     bestiary: {                     // about 9 KB a world
       discovered: 12, raceCount: 20, beaten: 12, bossCount: 55,
-      hunter: { count: 12, level: 1, maxLevel: 4, from: 5, to: 15, now: [effects], next: [effects] },
+      rank: { rank: 22, points: 11_819, from: 10_762, to: 13_473, now: [effects], next: [effects] },
+      hunter: { count: 12, level: 2, maxLevel: 5, from: 5, to: 15, now: [effects], next: [effects] },
       bonuses: [effects],           // the whole bestiary's, one per kind
-      races: [{ id: 'orc', discovered: true, kills: 187, ranks: [140, 28, 14, 3, 2, 0], eliteKills: 19,
-        firstDay: 20_399, level: 2, maxLevel: 5, from: 50, to: 200, now: [effects], next: [effects] },
-        { id: 'ogre', discovered: false, kills: 0, level: 0, maxLevel: 5, from: 0, to: 10 }],
+      races: [{ id: 'orc', discovered: true, kills: 187, points: 346, ranks: [140, 28, 14, 3, 2, 0],
+        eliteKills: 19, firstDay: 20_399, level: 13, maxLevel: 25, prestige: 0, from: 277, to: 376,
+        now: [effects], next: [effects] },   // next: [] past the powered levels
+        { id: 'ogre', discovered: false, kills: 0, points: 0, level: 0, maxLevel: 25, prestige: 0, from: 0, to: 2 }],
       bosses: [{ id: 'skrix', discovered: true, beaten: 3, legendary: 1, firstDay: 20_400,
         item: 'pilfered-lantern', found: false }],  // found: a room of the world owns the item
       others: { kills: 84, firstDay: 20_399 }       // or null
@@ -1228,10 +1262,11 @@ by the usual closing rules.
     entries: { rimeheart: { id, name, kind, effect, flavour, colour, boss?: { id, name }, city?,
       slot?, damageType?, class?, trade? } } },   // only the entries the state refers to
   bestiary: {                       // the content's, the same for every world; about 32 KB
-    races: [{ id: 'orc', name: 'Orcs', thresholds: [10, 50, 200, 800, 3000], look }],
+    races: [{ id: 'orc', name: 'Orcs', title: 'Orc-bane', look }],
     bosses: [{ id: 'skrix', name: 'Skrix', epithet: 'the Lantern Thief', race: 'goblin', look,
       item: 'pilfered-lantern' }],  // item: null for a boss that guards none
-    perkLevels: [3, 5], hunterThresholds: [5, 15, 30, 55]
+    points: { normal: 1, veteran: 2, elite: 5, champion: 10, boss: 25, legendary: 60 },
+    levels: 25, perkEvery: 5, hunterThresholds: [1, 5, 15, 30, 55]
   },
   debug: { tokenSource, readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
 }
@@ -1274,8 +1309,9 @@ by the usual closing rules.
 - `recent` keeps the last 20 events, newest last, each with an increasing `id`: `kill` (wave,
   kind, rank, affix, ticks, rested, materials, item, and `level`, the monster's, which is its wave),
   `drop` (item, with its `name` and `tier`), `legendary` (item, `kind`, `name`: a legendary
-  drop, which a UI celebrates), `bestiary` (`kind` race, boss or hunter, `id`, `discovered` or
-  `level`, and the race's or boss's `name`: a first kill or a new level, which a UI celebrates),
+  drop, which a UI celebrates), `bestiary` (`kind` race, boss, hunter or rank, `id`, `discovered`
+  or `level`, the race's or boss's `name`, and for a prestige rank the race's `title` and
+  `prestige`: a first kill or a new level, which a UI celebrates),
   `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
@@ -1350,12 +1386,12 @@ What the simulator measures now, legendary loot and the bestiary included:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight (normal rank) | 22 ticks, 3.7 min | 24 ticks, 4.0 min | 18 ticks, 3.0 min |
-| Kills per hour of fighting | 9.4 to 12.6 | 7.9 to 11.3 | 11.7 to 16.4 |
+| Median common fight (normal rank) | 21 ticks, 3.5 min | 25 ticks, 4.2 min | 18 ticks, 3.0 min |
+| Kills per hour of fighting | 9.7 to 12.8 | 8.3 to 11.1 | 12.0 to 16.6 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 6.9 to 13.7 |
-| Gathering share of materials | 25% | 22% | 16% |
-| Hit from world, gear, character (day 90 on) | 53%, 23%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
+| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 7.3 to 14.1 |
+| Gathering share of materials | 25% | 23% | 16% |
+| Hit from world, gear, character (day 90 on) | 54%, 22%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
 defender or a supporter in 50 to 100%; a party without magic takes 1.9 to 2.1 times as long
@@ -1505,42 +1541,50 @@ change.
 ### Bestiary
 
 `npm run simulate` plays with the bestiary and plays the three scenarios a second time without it
-(legendary loot in both). Its table, per scenario and day: races met, mastery levels in all, how
-many races are at each level, races with their perk, distinct bosses beaten, the hunter's level,
-the damage bonus against a race averaged over all twenty, and kills per hour without and with
-the bestiary.
+(legendary loot in both). Per scenario and day: races met, mastery levels in all, the lowest and
+highest race, races with a perk, the hunter rank, bosses beaten, the boss hunter's level, the damage
+bonus against a race averaged over all twenty, and kills per hour without and with the bestiary.
 
-| | day | races | levels (races at 1/2/3/4/5) | perks | bosses | hunter | race damage | kills/h without, with |
-|---|---|---|---|---|---|---|---|---|
-| light | 30 | 20 | 20 (20/0/0/0/0) | 0 | 2 | 0 | 1% | 10.9, 11.0 (+1%) |
-| light | 90 | 20 | 34 (6/14/0/0/0) | 0 | 3 | 0 | 2% | 9.4, 9.7 (+3%) |
-| light | 365 | 20 | 57 (0/3/17/0/0) | 17 | 5 | 1 | 3% | 12.2, 12.6 (+3%) |
-| medium | 30 | 20 | 40 (0/20/0/0/0) | 0 | 5 | 1 | 2% | 7.9, 7.9 (+1%) |
-| medium | 90 | 20 | 56 (0/4/16/0/0) | 16 | 9 | 1 | 3% | 9.0, 9.3 (+3%) |
-| medium | 365 | 20 | 77 (0/0/3/17/0) | 20 | 29 | 2 | 4% | 10.7, 11.3 (+6%) |
-| heavy | 30 | 20 | 46 (0/14/6/0/0) | 6 | 14 | 1 | 2% | 11.5, 11.7 (+1%) |
-| heavy | 90 | 20 | 60 (0/0/20/0/0) | 20 | 37 | 3 | 3% | 12.4, 13.4 (+8%) |
-| heavy | 365 | 20 | 94 (0/0/0/6/14) | 20 | 55 | 4 | 5% | 15.4, 16.4 (+7%) |
+| | day | races | levels (lowest to highest) | perks | rank | bosses | boss hunter | race damage | kills/h without, with |
+|---|---|---|---|---|---|---|---|---|---|
+| light | 7 | 16 | 20 (0 to 4) | 0 | 2 | 0 | 0 | 0% | 3.7, 3.7 (0%) |
+| light | 30 | 20 | 116 (3 to 9) | 18 | 10 | 2 | 1 | 1% | 10.9, 11.0 (+1%) |
+| light | 90 | 20 | 180 (7 to 11) | 20 | 14 | 3 | 1 | 2% | 9.4, 9.7 (+3%) |
+| light | 365 | 20 | 283 (13 to 15) | 20 | 21 | 5 | 2 | 3% | 12.2, 12.8 (+5%) |
+| medium | 7 | 20 | 121 (4 to 8) | 18 | 11 | 2 | 1 | 1% | 7.8, 8.2 (+4%) |
+| medium | 30 | 20 | 199 (9 to 11) | 20 | 16 | 5 | 2 | 2% | 7.9, 8.3 (+6%) |
+| medium | 90 | 20 | 274 (12 to 14) | 20 | 21 | 9 | 2 | 3% | 9.0, 9.9 (+10%) |
+| medium | 365 | 20 | 376 (18 to 19) | 20 | 28 | 29 | 3 | 4% | 10.7, 11.1 (+4%) |
+| heavy | 7 | 20 | 163 (7 to 10) | 20 | 14 | 6 | 2 | 2% | 9.4, 9.7 (+3%) |
+| heavy | 30 | 20 | 260 (12 to 14) | 20 | 21 | 14 | 2 | 3% | 11.5, 12.0 (+4%) |
+| heavy | 90 | 20 | 338 (16 to 18) | 20 | 26 | 37 | 4 | 3% | 12.4, 13.4 (+8%) |
+| heavy | 365 | 20 | 439 (21 to 23) | 20 | 33 | 55 | 5 | 4% | 15.4, 16.6 (+8%) |
+
+And its pace: when the first level comes, and mastery levels anywhere in the bestiary per working
+day.
+
+| | first level | levels a working day: week 1 | month 1 | month 6 | a common race's level 25 |
+|---|---|---|---|---|---|
+| light | day 1, after 50 min of fighting | 3.2 | 4.5 | 0.6 | after a year (13 to 15 then) |
+| medium | day 1, after 30 min | 21.6 | 8.5 | 0.6 | after a year (18 to 19) |
+| heavy | day 1, after 30 min | 28.8 | 11.0 | 0.7 | after a year (21 to 23) |
 
 Its balance check adds two kinds of target: in each scenario the bestiary adds at most about 10%
-kills per hour at a year (+3%, +6%, +7%), and a whole bestiary at its top (every race at level 5,
-every boss beaten) adds at most about 10% to a trained party of four that already has the full
-legendary set and the best relic for a fight (+8% at level 10, +7% at 60 and 150).
+kills per hour at a year (+5%, +4%, +8%), and a whole bestiary at its top (every race past its
+powered levels, the rank far up, every boss beaten) adds at most about 10% to a trained party of
+four that already has the full legendary set and the best relic for a fight (+8% at level 10, +7%
+at 60 and 150).
 
-- Every race comes up in every theme, so even a light user meets all twenty in the first month,
-  and reaches the first level of each within a few weeks. The collection that lasts is the
-  bosses: five in a year for a light user, 29 for a medium one; a heavy user beats all 55 within
-  the year. Races are not left out: a light user's are at level 2 or 3 after a year, a medium
-  user's at 4, and a heavy user reaches the top of a common race after about ten months.
-- The perks matter more than their size says: they act on every room of the world, and the ones
-  that touch materials and prices compound through gear. With perks at levels 2 and 4, 1.5% a
-  level and the trolls' shorter rests, the medium and heavy users gained 13% and 17% at a year;
-  perks at levels 3 and 5, 1% a level, a smaller ghost perk and no rest perk bring it to the
-  numbers above.
-- No target that passed before the bestiary fails with it. Small shifts: the median common fight
-  is 24 ticks for medium and 18 for heavy (25 and 19 before), the trading light player buys two
-  stall relics in a year instead of three, and the world levels do not change. The "Market" and
-  "Legendary loot" tables above were measured before the bestiary.
+- The first ladder (5 levels at 10, 50, 200, 800 and 3,000 kills) looked dead in real use: after
+  14 hours a medium user had 69 kills over twenty races, 6 at most, and no level anywhere. On
+  points and the long ladder the same 69 kills (about 1.6 points each) and the 191 the rooms had
+  counted before, back-filled, put every race at level 3 to 5 at once, and new levels come about
+  twice an hour of fighting in the first week, then slow to one every day or two by month six.
+- Growth 1.31 took the heavy user's races to level 23 to 25 in a year, nearly every perk, and +13%
+  kills per hour; 1.35 brings it to +8%. The light user gains more than its kills would say (+5%):
+  the ladder is geometric, so a tenth of the kills is only a few levels fewer.
+- No target that passed before fails with it; the four that failed before still fail, for the
+  same reasons. The world levels do not change.
 
 ### Sending gear
 

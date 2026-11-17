@@ -105,12 +105,14 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   always leaves a relic, and a city's stall sells one of its two relics now and then, for coins.
   They are a bonus on top: a full set adds well under a fifth to a party.
 - **A bestiary.** Each world keeps a book of every creature it has fought: the Bestiary tab
-  shows the races met and the bosses beaten (unknown ones as a dark silhouette and "???"), with
-  kills, mastery levels and the next threshold. Every mastery level adds a little damage against
-  that race, each race has a small perk of its own, and beating more different bosses levels a
-  boss hunter track. It is a small bonus too: a whole bestiary adds under a tenth to a party.
+  shows the races met and the bosses beaten (unknown ones as a dark silhouette and "???"). Every
+  kill is worth points by its rank, and points raise a race's level on a long ladder, quickly at
+  first and slower later, without end: each level adds a little damage against that race, every
+  fifth a small perk, and past level 25 a race earns titles. A hunter rank counts every point,
+  and beating more different bosses levels a boss hunter track. It is a small bonus too: a whole
+  bestiary adds under a tenth to a party.
 
-![The Bestiary tab: races discovered and bosses beaten, the boss hunter's track and the bestiary's bonuses, then cards of slimes, goblins, orcs, skeletons, humans and trolls with their kills, mastery pips and damage bonus](docs/screenshots/game-bestiary.png)
+![The Bestiary tab: the hunter rank and boss hunter bars, then cards of slimes with the title Slime-scourer II, goblins, orcs and skeletons, each with its level, points to the next level, damage bonus and next step](docs/screenshots/game-bestiary.png)
 
 ### The bestiary
 
