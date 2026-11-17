@@ -265,7 +265,10 @@ export const RUNE_CIRCLE_HALF = 10
 /**
  * The group upgrades of a world and the two materials each costs. Like items they are priced
  * against the world: level L costs GROUP_COST_BASE * REWARD_GROWTH ** worldLevel *
- * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded.
+ * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded. Each is a
+ * building of the world's settlement (game/settlement.json): the campfire is the Hearth, the
+ * workbench the Workshop and the rune circle the Sanctum. `settlementOnly` marks one that exists
+ * only where the content has a settlement, opened by its stage.
  */
 export const GROUP_UPGRADES = {
   campfire: { recipe: ['fish', 'crops'] },

@@ -33,7 +33,8 @@ const content = {
   bosses: readJson('../game/bosses.json'),
   cities: readJson('../game/cities.json'),
   legendary: readJson('../game/legendary.json'),
-  bestiary: readJson('../game/bestiary.json')
+  bestiary: readJson('../game/bestiary.json'),
+  settlement: readJson('../game/settlement.json')
 }
 const engine = createEngine({ content })
 /**

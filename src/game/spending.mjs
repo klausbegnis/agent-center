@@ -1,5 +1,6 @@
-// What a world can buy with its materials: item upgrades and the three group upgrades, their costs
-// and effects, and the autoSpend policy that buys the best affordable purchase repeatedly.
+// What a world can buy with its materials: item upgrades and the group upgrades (the settlement's
+// buildings, settlement.mjs), their costs and effects, and the autoSpend policy that buys the best
+// affordable purchase repeatedly.
 import {
   CAMPFIRE_HALF,
   CAMPFIRE_MAX,
@@ -16,9 +17,23 @@ import {
 import { canAfford, payFor, upgradeCost } from './items.mjs'
 import { upgradeDiscountOf } from './legendary-effects.mjs'
 import { worldLevel } from './progression.mjs'
+import { isBuildingOpen } from './settlement.mjs'
 
 /** The group upgrade ids, in the order they are shown and tried. */
 export const GROUP_UPGRADE_IDS = Object.freeze(Object.keys(GROUP_UPGRADES))
+/** The group upgrades every world can build, with or without a settlement in the content. */
+export const ALWAYS_OPEN_UPGRADE_IDS = Object.freeze(GROUP_UPGRADE_IDS.filter((id) => !GROUP_UPGRADES[id].settlementOnly))
+
+/**
+ * Whether a world may build a group upgrade now: it is open at the settlement's stage.
+ *
+ * @param {object} world
+ * @param {string} upgradeId
+ * @param {import('./settlement-content.mjs').SettlementIndex | null} [settlement]
+ * @returns {boolean}
+ */
+export const isUpgradeOpen = (world, upgradeId, settlement = null) =>
+  GROUP_UPGRADE_IDS.includes(upgradeId) && isBuildingOpen(world, upgradeId, settlement, ALWAYS_OPEN_UPGRADE_IDS)
 
 /**
  * @param {Record<string, number>} upgrades a world's group upgrade levels
@@ -72,7 +87,7 @@ export function itemsInUse(project) {
 }
 
 /** Every purchase a world could make now, affordable or not, in a stable order. */
-function purchasesOf(world, index, worldEffects) {
+function purchasesOf(world, index, worldEffects, settlement) {
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
   const level = worldLevel(world.skills)
   const purchases = []
@@ -83,7 +98,7 @@ function purchasesOf(world, index, worldEffects) {
       purchases.push({ kind: item.slot, projectId, itemId: item.id, cost })
     }
   }
-  for (const upgradeId of GROUP_UPGRADE_IDS) {
+  for (const upgradeId of GROUP_UPGRADE_IDS.filter((id) => isUpgradeOpen(world, id, settlement))) {
     const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), level)
     purchases.push({ kind: 'group', upgradeId, cost })
   }
@@ -101,11 +116,13 @@ const scoreOf = (purchase) =>
  *   a room's upgrades cheaper
  * @param {import('./legendary-effects.mjs').Effect[]} [worldEffects] the world's bestiary's, which
  *   can make them cheaper too
+ * @param {import('./settlement-content.mjs').SettlementIndex | null} [settlement] which buildings
+ *   are open
  * @returns {object | null} `{ kind, cost, projectId?, itemId?, upgradeId? }`
  */
-export function bestAffordablePurchase(world, index = null, worldEffects = []) {
+export function bestAffordablePurchase(world, index = null, worldEffects = [], settlement = null) {
   let best = null
-  for (const purchase of purchasesOf(world, index, worldEffects)) {
+  for (const purchase of purchasesOf(world, index, worldEffects, settlement)) {
     if (!canAfford(world.materials, purchase.cost)) continue
     if (!best || scoreOf(purchase) < scoreOf(best)) best = purchase
   }
@@ -138,13 +155,14 @@ export function applyPurchase(world, purchase) {
  * @param {object} world
  * @param {import('./legendary-content.mjs').LegendaryIndex | null} [index]
  * @param {import('./legendary-effects.mjs').Effect[]} [worldEffects] the world's bestiary's
+ * @param {import('./settlement-content.mjs').SettlementIndex | null} [settlement]
  * @returns {{ world: object, purchases: object[] }}
  */
-export function spendWorld(world, index = null, worldEffects = []) {
+export function spendWorld(world, index = null, worldEffects = [], settlement = null) {
   let current = world
   const purchases = []
   while (purchases.length < SPEND_MAX_PURCHASES) {
-    const purchase = bestAffordablePurchase(current, index, worldEffects)
+    const purchase = bestAffordablePurchase(current, index, worldEffects, settlement)
     if (!purchase) break
     current = applyPurchase(current, purchase)
     purchases.push(purchase)
