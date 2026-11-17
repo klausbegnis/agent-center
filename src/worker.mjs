@@ -134,9 +134,15 @@ export default async function activate(orca) {
   const onWorkspacesChanged = () => refresh({ remote: false })
   orca.events.on('workspace.created', onWorkspacesChanged)
   orca.events.on('workspace.removed', onWorkspacesChanged)
+  // Said once per worker, so the log shows whether tool hooks reach the plugin at all: without
+  // them every agent's activity is only what the snapshots show.
+  let hasSeenToolHook = false
   orca.hooks.on('agent.tool.before', (event) => {
     store.toolBefore(event)
     publish()
+    if (hasSeenToolHook) return
+    hasSeenToolHook = true
+    log('tool hooks: the first tool call arrived')
   })
   orca.hooks.on('agent.tool.after', (event) => {
     store.toolAfter(event)
