@@ -1,6 +1,7 @@
 // A plain summary of the save that a UI can draw without knowing any game rule: levels and
 // progress, materials, upgrades with their next cost, and each project's fight and party.
 import { worldEffectsOf } from './bestiary-effects.mjs'
+import { bestiaryContentView, worldBestiaryView } from './bestiary-view.mjs'
 import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
@@ -148,7 +149,8 @@ function worldView(worldId, world, names, content, index) {
     projects: Object.keys(world.projects).sort()
       .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content)),
     coins: world.coins ?? 0,
-    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary })
+    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary }),
+    bestiary: worldBestiaryView(world, content)
   }
 }
 
@@ -160,8 +162,9 @@ function worldView(worldId, world, names, content, index) {
  *   the market's cities and the stalls' gear
  * @returns {{ worlds: object[], projectWorld: Record<string, string | null>, keepTitles: boolean,
  *   tickSeconds: number, itemEntries: Record<string, { name: string, tier: number }>,
- *   legendary: object | null }} `itemEntries` names the content's items by entry id, for telling
- *   what a drop was; `legendary` describes the content's legendary loot (legendary-view.mjs)
+ *   legendary: object | null, bestiary: object | null }} `itemEntries` names the content's items by
+ *   entry id, for telling what a drop was; `legendary` describes the content's legendary loot
+ *   (legendary-view.mjs); `bestiary` the bestiary's races and bosses (bestiary-view.mjs)
  */
 export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
@@ -174,6 +177,7 @@ export function viewOf(save, content) {
     tickSeconds: TICK_SECONDS,
     itemEntries: Object.fromEntries(content.items.items
       .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }])),
-    legendary: legendaryView(index, content.bosses)
+    legendary: legendaryView(index, content.bosses),
+    bestiary: bestiaryContentView(content)
   }
 }

@@ -1,13 +1,14 @@
 // The legendary part of the game's view state: the content entries a UI needs to draw what the
 // rooms own, what their characters hold and what dropped lately, and nothing more, so the state
 // stays small. Pure.
+import { bestiaryItemIds } from './game-bestiary-view.mjs'
 
 /**
- * Every legendary id the state refers to: owned relics, legendary items shown, recent drops and the
- * relics a market's stalls offer.
+ * Every legendary id the state refers to: owned relics, legendary items shown, recent drops, the
+ * relics a market's stalls offer and the items the bestiary's boss cards show found.
  */
 function referencedIds({ rooms, characters, recent, worlds = [] }) {
-  const ids = new Set()
+  const ids = new Set(bestiaryItemIds(worlds))
   for (const world of worlds) {
     for (const city of world.market?.cities ?? []) {
       for (const id of Object.values(city.relic?.byRoom ?? {})) if (id) ids.add(id)
