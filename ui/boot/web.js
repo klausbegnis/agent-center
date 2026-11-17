@@ -12,6 +12,7 @@ const listeners = new Set()
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
 //   ?tab=rooms|party|chest|camp|skills|market   open that tab of game mode; the old
 //                ?tab=arsenal&section=items|party|camp opens Chest, Party or Camp
+//   ?room=<room id>      the room game mode's tabs show first
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>

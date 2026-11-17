@@ -60,15 +60,96 @@
 .ac-game-context-empty { margin: 0; }
 .ac-game-context-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
+  gap: 8px;
+  min-width: 0;
 }
-.ac-game-context-row .ac-game-field { flex: 1 1 180px; min-width: 0; max-width: 420px; }
-/* On the tabs that show a whole world the picker only picks the world: it steps back. */
-.ac-game-context-secondary .ac-game-field { opacity: 0.6; }
-.ac-game-context-secondary .ac-game-field:focus-within,
-.ac-game-context-secondary .ac-game-field:hover { opacity: 1; }
+/* The room switcher: one row of chips that scrolls sideways and never wraps, so its height, and
+   the tabs under it, never move. Arrows at the ends while it overflows; a compact list at the end
+   once there are many rooms. */
+.ac-game-rooms {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+}
+.ac-game-rooms-scroll {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  /* Room for the focus ring, which would otherwise be cut by the scrolling box. */
+  padding: 0 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.ac-game-rooms-scroll::-webkit-scrollbar { display: none; }
+.ac-game-rooms-arrow {
+  flex: none;
+  width: 18px;
+  min-height: 0;
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+.ac-game-rooms-arrow[hidden],
+.ac-game-rooms-jump[hidden] { display: none; }
+.ac-game-rooms-arrow:disabled { opacity: 0.35; cursor: default; }
+.ac-game-rooms-jump { flex: 0 0 auto; width: 62px; min-height: 0; height: 24px; padding: 0 2px; }
+.ac-game-room-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  max-width: 170px;
+  padding: 0 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 12px;
+  background: var(--orca-secondary, #1f232c);
+  color: var(--orca-secondary-foreground, #e8eaf0);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ac-game-room-chip:hover { background: var(--orca-accent, #2a2f3a); }
+.ac-game-room-chip:focus-visible {
+  outline: 2px solid var(--orca-foreground, #f2f4f8);
+  outline-offset: 1px;
+}
+.ac-game-room-chip-picked {
+  border-color: #6fe0d2;
+  background: rgba(111, 224, 210, 0.16);
+  color: var(--orca-foreground, #f2f4f8);
+  font-weight: 600;
+}
+.ac-game-room-chip [hidden] { display: none; }
+.ac-game-room-chip-name { overflow: hidden; text-overflow: ellipsis; }
+.ac-game-room-chip-host { font-size: 10px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-game-room-chip-count {
+  min-width: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+.ac-game-room-chip-fight { font-size: 8px; color: #ff7a6b; }
+.ac-game-room-chip-upgrade { font-size: 8px; color: #f2c14e; }
+/* On the tabs that show a whole world the switcher only picks the world: it steps back. */
+.ac-game-context-secondary .ac-game-rooms { opacity: 0.6; }
+.ac-game-context-secondary .ac-game-rooms:focus-within,
+.ac-game-context-secondary .ac-game-rooms:hover { opacity: 1; }
 .ac-game-tabs {
   display: flex;
   gap: 2px;
@@ -1553,7 +1634,10 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-market-offer-facts { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .ac-market-offer-name { font-size: 12px; }
 .ac-market-offer-price { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
-.ac-game-context-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
+@container ac-game-context (max-width: 460px) {
+  .ac-game-context-world-word { display: none; }
+}
+.ac-game-context-world { flex: none; font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
 .ac-market-no-world[hidden] { display: none; }
 
 /* Party: a character's equipment picker opens in place under its slots. */

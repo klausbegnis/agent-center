@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- Game mode: the room picker above the tabs is now a row of room chips, so switching rooms is one
+  click and every room is in sight. A chip shows the room's name (cut when long; the whole name
+  and host are its tooltip), its host when it is a paired machine, how many characters it has, a
+  dot while its party fights and a triangle when one of its items can be upgraded now. The row
+  never wraps, so the tabs under it never move: it scrolls sideways (wheel, trackpad or the
+  arrows at its ends) and keeps the picked room in view, and from eight rooms a **More…** list
+  reaches any of them. It is a radio group: Left and Right, Home and End move along it, and `[`
+  and `]` pick the room before or after from anywhere in the game except while typing. The saved
+  room, `?room=` and the older `arsenalRoom` preference still choose the room.
+
 - Game mode's tabs are now Rooms, Party, Chest, Camp, Skills, Market and Bestiary: the Arsenal tab and
   its Items, Party and Camp row are gone, Items is called Chest. Above the tabs, on every tab,
   are the room picker with its world and level and one strip with the world's coins and
