@@ -1,5 +1,6 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
+import { normalizeBestiary } from './bestiary.mjs'
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
 import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
@@ -237,7 +238,10 @@ function normalizeMarket(value) {
 
 function normalizeWorld(value) {
   const coins = isNumber(value.coins) ? Math.min(MARKET_MAX_COINS, Math.max(0, Math.floor(value.coins))) : 0
+  const bestiary = normalizeBestiary(value.bestiary)
   return {
+    // Kept only once the world has killed; a save from before the bestiary has none.
+    ...(bestiary ? { bestiary } : {}),
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),

@@ -199,7 +199,12 @@ export function createEngine({ content }) {
     autoSpend: (save) => autoSpendWithPurchases(save, content).save,
     autoSpendWithPurchases: (save) => autoSpendWithPurchases(save, content),
     view: (save) => viewOf(save, content),
-    cleanSave: (save) => cleanSave(save, { cityIds: (content.cities?.cities ?? []).map((city) => city.id), legendary: content.legendary }),
+    cleanSave: (save) => cleanSave(save, {
+      cityIds: (content.cities?.cities ?? []).map((city) => city.id),
+      legendary: content.legendary,
+      bestiary: content.bestiary,
+      bosses: content.bosses
+    }),
     moveProjectItems,
     ...marketActions(content),
     /** The ids of the market's cities, for the bridge to check an action's city against. */

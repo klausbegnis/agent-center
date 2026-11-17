@@ -1,5 +1,7 @@
 // A project's fight over some ticks of working time: the party its working members make, the
 // monster it meets, kills, rests, rewards and drops. Pure; works on copies and returns them.
+import { bestiaryIndexOf } from './bestiary-content.mjs'
+import { noteKill } from './bestiary.mjs'
 import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
@@ -151,8 +153,8 @@ function settleLegendaryDrops(state, { monster, seed, content }) {
 }
 
 /**
- * What a kill changes: reward, drop, legendary drops, campfire, the wave's and the room's counts,
- * the scene of a travelling room, and the next monster, which fits that scene.
+ * What a kill changes: reward, drop, legendary drops, the world's bestiary, campfire, the wave's
+ * and the room's counts, the scene of a travelling room, and the next monster, which fits that scene.
  */
 function settleKill(state, context) {
   const { worldId, projectId, world, content, party, worldLevel, events } = context
@@ -172,11 +174,14 @@ function settleKill(state, context) {
     state.materials = addMaterials(state.materials, salvage)
   }
   const legendary = settleLegendaryDrops(state, { monster, seed, content })
+  const noted = noteKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content) })
+  context.tally.bestiary = noted.bestiary
   events.push({
     type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
     affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
     materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null,
-    ...(legendary.length ? { legendary } : {})
+    ...(legendary.length ? { legendary } : {}),
+    ...(noted.news.length ? { bestiary: noted.news } : {})
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))
   state.stamina = Math.min(1, state.stamina + (loot?.staminaPerKill ?? 0))
@@ -235,11 +240,15 @@ function playTick(state, context) {
  * @param {{ monsters: object, items: object }} options.content
  * @param {(level: number) => object} options.referencePartyHit
  * @param {string[] | null} [options.scenes] the themes a travelling project moves through
- * @returns {{ project: object, materials: Record<string, number>, events: object[] }}
+ * @param {number} [options.day] the game day the kills are counted on in the world's bestiary
+ * @returns {{ project: object, materials: Record<string, number>, events: object[],
+ *   bestiary: object | null }} `bestiary` is the world's with this fight's kills counted
  */
 export function playFight(options) {
   const { worldId, projectId, project, world, worldLevel, party, ticks, content, referencePartyHit } = options
   const scenes = options.scenes ?? null
+  const day = options.day ?? 0
+  const tally = { bestiary: world.bestiary ?? null }
   const events = []
   const cache = new Map()
   const against = (level) => {
@@ -248,7 +257,7 @@ export function playFight(options) {
   }
   const state = { ...project, materials: {} }
   const context = {
-    worldId, projectId, world, content, party, worldLevel, events, against, referencePartyHit, scenes
+    worldId, projectId, world, content, party, worldLevel, events, against, referencePartyHit, scenes, day, tally
   }
   if (!state.monster) {
     const where = { worldId, projectId, project: state, world, content }
@@ -256,5 +265,5 @@ export function playFight(options) {
   }
   for (let tick = 0; tick < ticks; tick++) playTick(state, context)
   const { materials, ...next } = state
-  return { project: next, materials, events }
+  return { project: next, materials, events, bestiary: tally.bestiary }
 }

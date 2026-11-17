@@ -1,6 +1,7 @@
 // Real time passing for the projects that have sessions: each reported session's state is
 // recorded, idle characters gather, and the working party of a project fights. Also gets a
 // project ready for the next stretch of time: a party that works has a monster to face.
+import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
@@ -123,9 +124,11 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
     ticks,
     content,
     referencePartyHit,
-    scenes
+    scenes,
+    day: gameDayOf(to)
   })
   current = { ...current, materials: addMaterials(current.materials, fight.materials) }
+  if (fight.bestiary) current = { ...current, bestiary: fight.bestiary }
   return { world: withProjectIn(current, projectId, fight.project), events: fight.events }
 }
 

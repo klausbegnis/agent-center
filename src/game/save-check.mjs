@@ -2,6 +2,8 @@
 // from the fields the engine writes, so nothing made up can be stored. `migrate` repairs what the
 // plugin's own storage holds; a file is refused instead as soon as one part is not what the engine
 // would have written. Pure.
+import { indexBestiary } from './bestiary-content.mjs'
+import { checkWorldBestiary } from './bestiary-check.mjs'
 import {
   ITEM_MAX_TIER,
   MARKET_MAX_COINS,
@@ -330,9 +332,13 @@ function market(value, path, cityIds) {
   }
 }
 
-function world(value, path, cityIds, legendaryIndex) {
+function world(value, path, { cityIds, legendaryIndex, bestiaryIndex }) {
   const source = record(value, path)
+  const checked = checkWorldBestiary(source.bestiary, bestiaryIndex)
+  if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
   return {
+    // A world that never killed, or a save from before the bestiary, has none.
+    ...(checked.bestiary ? { bestiary: checked.bestiary } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
     materials: amounts(source.materials, `${path}.materials`, MATERIALS),
     upgrades: entries(source.upgrades, `${path}.upgrades`, {
@@ -355,19 +361,22 @@ function world(value, path, cityIds, legendaryIndex) {
  * that is not what the engine writes. Run it after `migrate`, which brings an older version up.
  *
  * @param {unknown} value
- * @param {{ cityIds?: string[], legendary?: object }} [content] the ids of the market's cities, which
- *   a market may name, and the parsed game/legendary.json: legendary loot must be loot it has, and
- *   without it a save that holds any is refused
+ * @param {{ cityIds?: string[], legendary?: object, bestiary?: object, bosses?: object }} [content] the
+ *   ids of the market's cities, which a market may name; the parsed game/legendary.json: legendary
+ *   loot must be loot it has, and without it a save that holds any is refused; the parsed
+ *   game/bestiary.json and game/bosses.json, whose races and bosses a bestiary may count, and
+ *   without which a save that keeps one is refused
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary } = {}) {
+export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
+  const bestiaryIndex = indexBestiary(bestiary, bosses)
   try {
     const source = record(value, 'the save')
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, cityIds, legendaryIndex)
+      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.
