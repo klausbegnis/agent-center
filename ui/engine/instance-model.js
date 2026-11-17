@@ -216,8 +216,40 @@ export function instanceBand(game, roomId, base) {
   if (!run || !content) return null
   return {
     text: INSTANCES.band(run.name, run.room, run.roomName),
+    short: INSTANCES.bandShort(run.name, run.room),
     icon: roomIconUrl(base, ROOM_ICON[run.roomKind] ?? 'icon-fight'),
     backdrop: instanceArtUrl(base, content.banner),
     alt: content.alt
+  }
+}
+
+/**
+ * What a room says of its run's news: entering and the clear celebrated like a legendary drop (with
+ * the instance's relic's picture on a first clear), the other steps as bestiary news. Null for an
+ * event it does not tell.
+ *
+ * @param {{ kind: string, instance: string, room: number, passed?: boolean, boon?: string,
+ *   drops?: { id: string }[] }} event
+ * @param {object | undefined} game
+ * @returns {{ text: string, tone: string, artId?: string } | null}
+ */
+export function instanceNews(event, game) {
+  const content = instanceContent(game, event.instance)
+  const name = content?.name ?? event.instance
+  const roomName = content?.rooms?.[event.room]?.name ?? ''
+  const relic = event.drops?.find((drop) => drop.id === content?.relic)
+  switch (event.kind) {
+    case 'enter': return { text: INSTANCES.news.enter(name), tone: 'legendary' }
+    case 'room': return { text: INSTANCES.news.room(roomName), tone: 'instance' }
+    case 'check': return { text: (event.passed ? INSTANCES.news.checkPassed : INSTANCES.news.checkFailed)(roomName), tone: 'instance' }
+    case 'vault': return { text: INSTANCES.news.vault, tone: 'instance' }
+    case 'boon': {
+      const boon = game?.rooms?.[event.roomId]?.run?.boon
+      return { text: INSTANCES.news.boon(boon?.id === event.boon ? boon.name : event.boon), tone: 'instance' }
+    }
+    case 'cleared': return { text: INSTANCES.news.cleared(name), tone: 'legendary', ...(relic ? { artId: relic.id } : {}) }
+    case 'failed': return { text: INSTANCES.news.failed(name), tone: 'instance' }
+    case 'recalled': return { text: INSTANCES.news.recalled(name), tone: 'instance' }
+    default: return null
   }
 }

@@ -59,8 +59,10 @@ function createChip(onPick, drop) {
   // Shapes, not only colours: a round mark while the party fights, a triangle when an upgrade is ready.
   const fighting = el('span', 'ac-game-room-chip-fight', '●')
   const upgrade = el('span', 'ac-game-room-chip-upgrade', '▲')
-  for (const part of [host, count, fighting, upgrade]) part.setAttribute('aria-hidden', 'true')
-  node.append(name, host, count, fighting, upgrade)
+  // A room inside an instance: a small gate (ui/instances.css); the label says it in words.
+  const inside = el('span', 'ac-game-room-chip-inside')
+  for (const part of [host, count, fighting, upgrade, inside]) part.setAttribute('aria-hidden', 'true')
+  node.append(name, host, count, fighting, upgrade, inside)
   node.addEventListener('click', () => onPick(node.dataset.value))
   if (drop) takeDrops(node, drop)
   let drawn = null
@@ -80,6 +82,7 @@ function createChip(onPick, drop) {
       count.hidden = chip.characters === null
       fighting.hidden = !chip.isFighting
       upgrade.hidden = !chip.canUpgrade
+      inside.hidden = !chip.isInside
       const label = CONTEXT.chip(chip)
       node.setAttribute('aria-label', label)
       node.title = label

@@ -203,3 +203,11 @@ test('the saved room comes from `room`, or else from the Arsenal days\' `arsenal
   assert.equal(savedRoomOf('', LEDGER), LEDGER)
   assert.equal(savedRoomOf(undefined, null), null)
 })
+
+test('a chip says when its party is inside an instance, in words too', () => {
+  const state = stateWith({ [STOREFRONT]: { joined: true, worldId: 'main', party: 'fighting', chest: [], run: { instance: 'sunken-crypt' } } })
+  const chip = roomChips(state, shown('chest')).chips[0]
+  assert.equal(chip.isInside, true)
+  assert.equal(roomChips(stateWith(), shown('chest')).chips[0].isInside, false)
+  assert.match(CONTEXT.chip(chip), /inside an instance/)
+})

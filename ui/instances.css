@@ -107,3 +107,44 @@
 @media (prefers-reduced-motion: reduce) {
   .ac-roadmap-marker-inside { animation: none; }
 }
+
+/* A room inside an instance: the instance's banner as its backdrop, over the theme's scenery and
+   under its characters, fading into the theme's floor, which is shaded so characters stay clear. */
+.ac-instance-backdrop { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ac-instance-backdrop-art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 72%;
+  object-fit: cover;
+  object-position: center 70%;
+  image-rendering: pixelated;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.ac-instance-backdrop-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, transparent, rgba(8, 10, 16, 0.55) 40%);
+}
+.ac-game-pill.ac-instance-pill { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; white-space: nowrap; }
+.ac-instance-pill[hidden] { display: none; }
+.ac-instance-pill-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+.ac-game-wave[hidden] { display: none; }
+
+/* Its chip in the room switcher: a small gold gate beside the other signs. */
+.ac-game-room-chip-inside {
+  width: 7px;
+  height: 8px;
+  border: 2px solid var(--ac-game-gold, #f2c14e);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+}
+.ac-game-room-chip-inside[hidden] { display: none; }
+
+/* A run's steps over the room, between the bestiary's and a legendary drop's in weight. */
+.ac-game-tone-instance { color: var(--ac-game-gold, #f2c14e); font-weight: 700; }

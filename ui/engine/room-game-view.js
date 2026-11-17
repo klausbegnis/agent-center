@@ -7,6 +7,7 @@ import { createFightSchedule, fightPeriodMs } from './fight-schedule.js'
 import { createFightView } from './fight-view.js'
 import { createFoePhases } from './foe-phases.js'
 import { bandHeight } from './game-band.js'
+import { instanceBand } from './instance-model.js'
 import { meter } from './game-controls.js'
 import { formatAmount, formatShare } from './game-format.js'
 import { characterBadge, roomFight, roomFighters, standingMonsterKey } from './game-model.js'
@@ -87,7 +88,25 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
   relicMark.setAttribute('role', 'img')
   relicMark.hidden = true
   let drawnRelic = null
-  band.append(wave, relicMark, foeInfo, party)
+  // Inside an instance the wave waits: the band names the instance and the room instead.
+  const instancePill = el('div', 'ac-game-pill ac-instance-pill')
+  const instanceIcon = el('img', 'ac-instance-pill-icon')
+  instanceIcon.alt = ''
+  instanceIcon.width = 16
+  instanceIcon.height = 16
+  instanceIcon.setAttribute('aria-hidden', 'true')
+  const instanceText = el('span', 'ac-instance-pill-text')
+  instancePill.append(instanceIcon, instanceText)
+  instancePill.hidden = true
+  band.append(wave, instancePill, relicMark, foeInfo, party)
+  // The instance's banner behind the room's characters, the theme's floor shaded under them.
+  const backdrop = el('div', 'ac-instance-backdrop')
+  backdrop.setAttribute('aria-hidden', 'true')
+  const backdropArt = el('img', 'ac-instance-backdrop-art')
+  backdropArt.alt = ''
+  backdropArt.decoding = 'async'
+  backdropArt.draggable = false
+  backdrop.append(backdropArt, el('div', 'ac-instance-backdrop-shade'))
 
   const foe = createMonsterView({ theme, spot: monsterSpot(theme), mirrored })
   foe.setPhase('gone')
@@ -124,6 +143,27 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
     relicMark.setAttribute('aria-label', label)
     relicMark.title = label
     relicMark.replaceChildren(legendaryPicture(base, relic.id, { glow: true, className: 'ac-legendary-band-art' }))
+  }
+
+  /** The instance on the band and behind the room, or the waves as usual. */
+  function drawInstance(inside) {
+    wave.hidden = Boolean(inside)
+    instancePill.hidden = !inside
+    scene.classList.toggle('ac-room-in-instance', Boolean(inside))
+    if (!inside) {
+      backdrop.remove()
+      return
+    }
+    instanceText.textContent = inside.short
+    instancePill.title = inside.text
+    instancePill.setAttribute('aria-label', inside.text)
+    if (instanceIcon.getAttribute('src') !== inside.icon) instanceIcon.src = inside.icon
+    if (backdropArt.getAttribute('src') !== inside.backdrop) backdropArt.src = inside.backdrop
+    if (!backdrop.isConnected) {
+      const scenery = scene.querySelector(':scope > .ac-bg')
+      if (scenery) scenery.after(backdrop)
+      else scene.prepend(backdrop)
+    }
   }
 
   function drawBand(fight) {
@@ -352,9 +392,11 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
       if (fight) {
         drawBand(fight)
         drawRelic(game)
+        drawInstance(instanceBand(game, room.id, base))
         if (!band.isConnected) scene.append(band)
       } else {
         band.remove()
+        drawInstance(null)
       }
       const shown = updateFoe(fight, now)
       lastPhase = shown.phase

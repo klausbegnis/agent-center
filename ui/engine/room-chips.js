@@ -39,6 +39,7 @@ export function shortText(text, limit) {
  * @property {number | null} characters the room's characters (guests left out); null for All rooms
  * @property {boolean} isFighting its party fights a monster now
  * @property {boolean} canUpgrade an item of its chest can be upgraded now
+ * @property {boolean} isInside its party is inside an instance
  * @property {boolean} isPicked
  */
 
@@ -54,6 +55,7 @@ function roomChip(state, room, pickedValue) {
     characters: roomCharacters(state, room.id).members.length,
     isFighting: partyStatusOf(game) === 'fighting' && Boolean(game.monster),
     canUpgrade: (game.chest ?? []).some((item) => item.affordable === true),
+    isInside: Boolean(game.run),
     isPicked: room.id === pickedValue
   }
 }
@@ -80,6 +82,7 @@ export function roomChips(state, { tab, roomId, filterId, allRoomsName }) {
       characters: null,
       isFighting: false,
       canUpgrade: false,
+      isInside: false,
       isPicked: pickedValue === ALL_ROOMS
     })
   }

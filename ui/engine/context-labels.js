@@ -21,13 +21,15 @@ export const CONTEXT = {
    * A chip's accessible name and tooltip: the room, then what its signs say in words, so nothing
    * is told by colour or shape alone.
    *
-   * @param {{ fullName: string, characters: number | null, isFighting: boolean, canUpgrade: boolean }} chip
+   * @param {{ fullName: string, characters: number | null, isFighting: boolean, canUpgrade: boolean,
+   *   isInside?: boolean }} chip
    */
-  chip({ fullName, characters, isFighting, canUpgrade }) {
+  chip({ fullName, characters, isFighting, canUpgrade, isInside }) {
     if (characters === null) return fullName
     const facts = [plural(characters, 'character', 'characters')]
     if (isFighting) facts.push('fighting')
     if (canUpgrade) facts.push('an upgrade ready')
+    if (isInside) facts.push('inside an instance')
     return `${fullName}: ${facts.join(', ')}`
   }
 }

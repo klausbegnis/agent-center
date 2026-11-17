@@ -5,6 +5,7 @@ import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
 import { BESTIARY_EVENT, prestigeTitle } from './bestiary-labels.js'
+import { instanceNews } from './instance-model.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
 import { SETTLEMENT_EVENT } from './settlement-labels.js'
 
@@ -18,7 +19,8 @@ export const MAX_ROOM_LINES = 3
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
  * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary' |
- *   'bestiary' | 'settlement' | 'stage'} tone `stage` is a new stage of the settlement, celebrated most
+ *   'bestiary' | 'settlement' | 'stage' | 'instance'} tone `stage` is a new stage of the settlement and
+ *   `legendary` a legendary drop or an instance entered or cleared, celebrated most
  * @property {string} [artId] a legendary entry whose picture plays with the line
  * @property {string} [settlementArt] a settlement picture (a path the view state gives) that plays with it
  */
@@ -107,6 +109,10 @@ function lineEffects(events, game) {
       // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
       const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'legendary', artId: event.item })
+    } else if (event.type === 'instance' && room) {
+      // Entering, a room cleared, the vault, a boon, the clear: the room tells its run (instance-model.js).
+      const news = instanceNews(event, game)
+      if (news) effects.push({ roomId: event.roomId, target: 'room', ...news })
     } else if (event.type === 'bestiary' && room) {
       const text = bestiaryText(event)
       if (text) effects.push({ roomId: event.roomId, target: 'room', text, tone: 'bestiary' })

@@ -151,5 +151,6 @@ export const INSTANCES = {
     recalled: (name) => `Back from ${name}`
   },
   band: (name, room, roomName) => `${name} · room ${room + 1} of 6 · ${roomName}`,
+  bandShort: (name, room) => `${name} · ${room + 1}/6`,
   chip: 'Inside an instance'
 }

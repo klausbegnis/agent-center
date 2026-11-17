@@ -8,6 +8,7 @@ import { legendaryIndexOf } from '../../src/game/legendary-effects.mjs'
 import { emptyProject } from '../../src/game/worlds.mjs'
 import {
   cooldownLines,
+  instanceNews,
   instanceBand,
   roadmapModel,
   runCardModel,
@@ -139,4 +140,15 @@ test('a room\'s cooldowns are worded with the working time left', () => {
 test('the World tab opens on a known view, the creatures otherwise', () => {
   assert.equal(worldViewOrDefault('roadmap'), 'roadmap')
   assert.equal(worldViewOrDefault('gallery'), 'creatures')
+})
+
+test('a run\'s news is told in its room: entering and the clear celebrated, with the relic on a first clear', () => {
+  const state = game()
+  const at = (event) => instanceNews({ instance: 'sunken-crypt', room: 2, roomId: ROOM, ...event }, state)
+  assert.deepEqual(at({ kind: 'enter' }), { text: 'Into The Sunken Crypt!', tone: 'legendary' })
+  assert.equal(at({ kind: 'room' }).text, 'The Collapsing Ossuary cleared')
+  assert.equal(at({ kind: 'check', passed: false }).text, 'The Collapsing Ossuary: failed')
+  assert.deepEqual(at({ kind: 'cleared', drops: [{ id: 'tidewake-bell', kind: 'instance-relic' }] }),
+    { text: 'The Sunken Crypt cleared!', tone: 'legendary', artId: 'tidewake-bell' })
+  assert.equal(at({ kind: 'retry' }), null)
 })
