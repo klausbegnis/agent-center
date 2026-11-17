@@ -34,6 +34,8 @@ milliseconds the caller passes.
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
+| `sendItem(save, { fromProjectId, toProjectId, itemId })` | Sends a free item of a project's chest to another project of the same world (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged }` with the copies the target's cap salvaged. The same save when refused; `sendItemProblem(save, sending)` says why, or null. |
+| `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
 | `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
@@ -44,7 +46,8 @@ milliseconds the caller passes.
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
 upgrades and `autoSpend`), `drops.mjs` (item drops), `market.mjs`, `market-prices.mjs` and
-`stall.mjs` (the market), and `view.mjs` with `market-view.mjs`, over the rule modules described
+`stall.mjs` (the market), `transfer.mjs` (sending to another room), and `view.mjs` with
+`market-view.mjs`, over the rule modules described
 below.
 
 Every number lives in `src/game/constants.mjs`. Formulas below name those constants.
@@ -339,6 +342,29 @@ comes back from retirement, and when a person asks for it. A person can also cho
   character holds never leaves the chest (moving a left-behind room's chest and salvage only
   touch free items), so a pin never points at a missing item; the save check refuses one that
   does.
+
+### Sending to another room
+
+Gear is per room on purpose: a room's chest serves its own characters. A person can still move
+what a room does not use to another room of the same world (`transfer.mjs`), from the Chest tab:
+
+- **An item** nobody holds (a free item is never pinned: a pin names a slot of a character, which
+  holds its item) leaves the chest and arrives free in the other room's, numbered as its copies
+  are. The target keeps at most `COPIES_PER_ITEM` copies of an entry, exactly as when a chest left
+  behind is moved (`mergeChests` in `orphans.mjs`): items held there always stay, the best of the
+  rest stay, and the lowest is salvaged into the world's materials as a drop past the cap would be.
+  That may be the item sent; the answer says which.
+- **Legendary equipment** is never salvaged and never doubled: one the target already owns is
+  refused.
+- **A relic** the room owns, other than its active one, moves to the target's relics, after its
+  own; a target with no relic makes it active, as a first drop does. One the target owns is
+  refused, and so is the active relic: make another one active first. Pity counters stay with
+  their room.
+- Both rooms must play in the same world, and the target must be on screen. Each refusal names
+  its reason (`TRANSFER_REFUSALS`).
+
+Sending is free: it only moves where the power sits. The simulator checks that funnelling every
+spare piece into one room does not let that room run away (see "Sending gear" under "Balance").
 
 ## Legendary loot
 
@@ -1060,11 +1086,14 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
+| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemId }`: two rooms that play in the same world, the target on screen, and a free item of the first's chest; answers `{ changed, salvaged, sentSalvaged }`, how many copies past the target's cap were salvaged and whether the item sent was one of them. A sending the rules refuse says why. |
+| `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
 
-Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
+Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
+`sendItem`, which add what they changed. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
 character of the room, a gathering skill, a city of `game/cities.json`, a material, an offer
 index from 0 to `STALL_OFFERS` (the last is the relic's); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
@@ -1286,7 +1315,13 @@ piece that beats what a room keeps of that slot, sells what is still surplus whe
 until the price there has fallen 30% below the usual, buys a stall's relic whenever its coins
 cover it (for the first room that lacks it), and runs `autoSpend` again. It uses only
 what the Market tab offers. The first policy's output does not change with the market: its
-player never trades. The whole run takes a few seconds.
+player never trades.
+
+Last, it plays the scenarios with more than one room (medium and heavy) with a third policy
+(`scripts/funnel-policy.mjs`): once a working day, after `autoSpend`, the player sends every free
+item and every relic that is not active from the other rooms into the first one, then presses
+**Best gear for everyone** there. It prints both runs side by side. The whole run takes under a
+minute.
 
 ## Balance
 
@@ -1499,3 +1534,21 @@ legendary set and the best relic for a fight (+8% at level 10, +7% at 60 and 150
   is 24 ticks for medium and 18 for heavy (25 and 19 before), the trading light player buys two
   stall relics in a year instead of three, and the world levels do not change. The "Market" and
   "Legendary loot" tables above were measured before the bestiary.
+
+### Sending gear
+
+Sending items and relics between the rooms of a world is free. It does not need a cost, because
+it only moves power around, and the simulator shows that piling everything into one room buys
+nothing: the waves follow the world level, not the party, so the first room's wave stays where it
+was, while the rooms that gave everything away fight their monsters with what their characters
+hold and new characters there find an empty chest.
+
+| | day | world level | waves as usual | waves funnelled | kills per hour as usual | funnelled |
+|---|---|---|---|---|---|---|
+| medium | 90 | 62 | 69/69 | 69/69 | 9.3 | 8.1 |
+| medium | 365 | 191 | 198/197 | 198/194 | 11.3 | 7.3 |
+| heavy | 90 | 219 | 222/222/222 | 222/218/218 | 13.4 | 6.1 |
+| heavy | 365 | 980 | 983/983/983 | 983/982/982 | 16.4 | 8.4 |
+
+Kills per hour of fighting are the world's, over every room. The world levels are the same in both runs:
+tokens alone make them.

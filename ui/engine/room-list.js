@@ -2,7 +2,7 @@
 // room's view when its theme changes (a travelling room's next scene included), and sizes them
 // for the current view.
 import { evenGrid, GALLERY_GAP, pinnedGrid } from './gallery.js'
-import { assignThemes, sceneThemesOf } from './room-themes.js'
+import { roomThemeIds } from './room-themes.js'
 import { createRoomView } from './room-view.js'
 import { LEAVING_SCENE_MS, swapRoomView } from './scene-swap.js'
 import { ROOM_ASPECT } from './stations.js'
@@ -31,12 +31,7 @@ export function createRoomList(options) {
 
   /** The theme of every room, hidden ones too, among the themes that loaded. */
   function themeIdsFor(state) {
-    return assignThemes(state.rooms, {
-      defaultTheme: state.theme,
-      roomThemes: state.roomThemes,
-      sceneThemes: sceneThemesOf(state),
-      usableThemeIds: state.themes.map((theme) => theme.id).filter((id) => library.has(id))
-    })
+    return roomThemeIds(state, (id) => library.has(id))
   }
 
   function viewFor(room, themeId, variants) {
@@ -194,6 +189,14 @@ export function createRoomList(options) {
     playGame,
     tickGame,
     has: (roomId) => views.has(roomId),
+    /** The character drawn for an agent in any room on screen, or null. */
+    actorOf(agentId) {
+      for (const view of views.values()) {
+        const actor = view.actorOf(agentId)
+        if (actor) return actor
+      }
+      return null
+    },
     gap: GALLERY_GAP
   }
 }

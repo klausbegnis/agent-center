@@ -31,6 +31,11 @@
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
  * @property {(fromRoomId: string, toRoomId: string) => Promise<GameResult>} gameMoveOrphanItems
  *   moves a room left behind's chest and retirees into a room on screen
+ * @property {(roomId: string, toRoomId: string, itemId: string) => Promise<GameResult &
+ *   { salvaged: number, sentSalvaged: boolean }>} gameSendItem sends a free item to another room of
+ *   the world; says how many copies past the cap were salvaged
+ * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
+ *   sends a relic that is not active to another room of the world
  * @property {(roomId: string, sessionId: string, slot: string, itemId: string | null) =>
  *   Promise<GameResult>} gameSetEquipment sets what a character holds in a slot; itemId 'auto'
  *   hands the slot back to the automatic pick, null empties it
@@ -182,6 +187,16 @@ export function createController({
     gameMoveOrphanItems: (fromRoomId, toRoomId) => playAction(() => game.moveOrphanItems({
       fromRoomId: requireText(fromRoomId, 'room'),
       toRoomId: requireText(toRoomId, 'room')
+    })),
+    gameSendItem: (roomId, toRoomId, itemId) => playAction(() => game.sendItem({
+      roomId: requireText(roomId, 'room'),
+      toRoomId: requireText(toRoomId, 'room'),
+      itemId: requireText(itemId, 'item')
+    })),
+    gameSendRelic: (roomId, toRoomId, relicId) => playAction(() => game.sendRelic({
+      roomId: requireText(roomId, 'room'),
+      toRoomId: requireText(toRoomId, 'room'),
+      relicId: requireText(relicId, 'relic')
     })),
     gameSellMaterial: (worldId, cityId, materialId, amount) => playAction(() => game.sellMaterial({
       worldId: requireText(worldId, 'world'),

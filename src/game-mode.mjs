@@ -454,6 +454,8 @@ export function createUnavailableGame(status) {
     exportSave: refuse,
     importSave: refuse,
     moveOrphanItems: refuse,
+    sendItem: refuse,
+    sendRelic: refuse,
     sellMaterial: refuse,
     tradeMaterial: refuse,
     buyStallOffer: refuse

@@ -8,6 +8,16 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- Game mode: the room picker above the tabs is now a row of room chips, so switching rooms is one
+  click and every room is in sight. A chip shows the room's name (cut when long; the whole name
+  and host are its tooltip), its host when it is a paired machine, how many characters it has, a
+  dot while its party fights and a triangle when one of its items can be upgraded now. The row
+  never wraps, so the tabs under it never move: it scrolls sideways (wheel, trackpad or the
+  arrows at its ends) and keeps the picked room in view, and from eight rooms a **More…** list
+  reaches any of them. It is a radio group: Left and Right, Home and End move along it, and `[`
+  and `]` pick the room before or after from anywhere in the game except while typing. The saved
+  room, `?room=` and the older `arsenalRoom` preference still choose the room.
+
 - Game mode's tabs are now Rooms, Party, Chest, Camp, Skills, Market and Bestiary: the Arsenal tab and
   its Items, Party and Camp row are gone, Items is called Chest. Above the tabs, on every tab,
   are the room picker with its world and level and one strip with the world's coins and
@@ -19,6 +29,20 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: each character card on the Party tab shows its agent's sprite, the same one its room
+  draws (the room's theme, its scene while it travels, and the agent's own outfit and tint),
+  standing idle, so a card is easy to match with its figure. A click on it opens the Rooms tab
+  with that agent selected and its card open. An agent not on screen (its room hidden) shows an
+  empty frame that says why.
+- Game mode: send an item or a relic to another room of the same world. In the Chest tab, a free
+  item's detail has **Send to [room]**: it leaves this chest and arrives in that one, whose copies
+  limit works as when a chest left behind is moved (the lowest copy past it is salvaged into the
+  world's materials, and the message says so). Legendary equipment is never salvaged or doubled:
+  a room that owns it already is refused. The Relics card sends any relic but the active one. New
+  local-only routes `/api/game/send-item` and `/api/game/send-relic` (panel requests
+  `game.sendItem`, `game.sendRelic`); a page opened from another machine does not offer them.
+  `npm run simulate` now also plays a player who funnels every spare piece into one room: it buys
+  nothing, so sending stays free.
 - Game mode: a **Bestiary** tab, the seventh. Each world counts the creatures it kills: every
   race by rank, every named boss beaten (and how often as legendary), the rooms' own themed
   monsters as "others", and the day of each first kill. A race or boss never killed shows as a

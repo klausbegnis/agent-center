@@ -113,7 +113,8 @@ with Ctrl+C. The other shots use `--window-size=500,1180` with `?view=list`, and
 
 The game tabs `game-rooms.png`, `game-chest.png`, `game-skills.png` and `game-market.png` are
 `GAME=1 FREEZE=1` on Guild Hall with `?view=list&tab=rooms` (`chest`, `skills`, `market`) at a
-500 × 900 window and scale 2. Look at each before committing it: `--screenshot` can fire before
+500 × 900 window and scale 2; the Chest one adds `&room=local:/work/rumble-banana` and has its free
+Whittled Cudgel chosen, so the item detail and its **Send to** show. Look at each before committing it: `--screenshot` can fire before
 the city banners are painted, and then the Market shot shows empty cards. Taking the picture
 through Chrome's DevTools protocol once every image has loaded avoids that.
 

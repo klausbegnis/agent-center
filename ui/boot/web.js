@@ -12,6 +12,7 @@ const listeners = new Set()
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
 //   ?tab=rooms|party|chest|camp|skills|market   open that tab of game mode; the old
 //                ?tab=arsenal&section=items|party|camp opens Chest, Party or Camp
+//   ?room=<room id>      the room game mode's tabs show first
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
 const narrow = (state) =>
@@ -55,6 +56,8 @@ const transport = {
   exportSave: () => postGame('export-save', {}),
   importSave: (file) => postGame('import-save', { file }),
   moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
+  sendItem: (roomId, toRoomId, itemId) => postGame('send-item', { roomId, toRoomId, itemId }),
+  sendRelic: (roomId, toRoomId, relicId) => postGame('send-relic', { roomId, toRoomId, relicId }),
   sellMaterial: (worldId, cityId, materialId, amount) => postGame('sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) => postGame('trade', { worldId, cityId, fromId, toId, amount }),
   buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>

@@ -1,5 +1,6 @@
 // The Chest tab: the room's chest as a framed box of square slots, and under it (or
-// beside it when there is room) the chosen item's details with its upgrade. The slots are buttons
+// beside it when there is room) the chosen item's details with its upgrade and, for a free item,
+// sending it to another room of the world. The slots are buttons
 // reached with the arrow keys; the chosen one is kept per room across redraws.
 import { chestOrder, chestSlotCount, itemFactors, slotAfterKey } from './arsenal-model.js'
 import { el } from './dom.js'
@@ -11,6 +12,9 @@ import { ARSENAL, holderText, itemEffectText, itemSlotLabel, slotText, tierLevel
 import { LEGENDARY_ITEM, madeForText, sourceText } from './legendary-labels.js'
 import { legendaryDetails } from './legendary-model.js'
 import { purchase } from './price-view.js'
+import { SEND } from './send-labels.js'
+import { canSendItem, sendTargets } from './send-model.js'
+import { sendControl } from './send-view.js'
 
 /**
  * @param {{
@@ -33,6 +37,10 @@ export function createChestView({ actions, onChosenChange, base }) {
   chest.append(lid, grid, empty, legend)
   const detail = el('section', 'ac-game-card ac-game-item-detail')
   detail.setAttribute('aria-live', 'polite')
+  // Says where a sent item went: the detail is redrawn without it once it has left the chest.
+  const sendStatus = el('p', 'ac-game-card-line ac-game-send-status')
+  sendStatus.setAttribute('role', 'status')
+  chest.append(sendStatus)
   element.append(chest, detail)
 
   /** The chosen item of each room, by room id. */
@@ -40,6 +48,7 @@ export function createChestView({ actions, onChosenChange, base }) {
   let current = null
   let gridDrawn = null
   let detailDrawn = null
+  let statusRoomId = null
 
   grid.addEventListener('keydown', (event) => {
     const slots = [...grid.querySelectorAll('button.ac-game-slotbox')]
@@ -140,12 +149,33 @@ export function createChestView({ actions, onChosenChange, base }) {
     return facts
   }
 
+  /** "Send to [room] Send" for a free item, when the surface can send and the world has another room. */
+  function sendPart(item) {
+    const { state, roomId } = current
+    const targets = sendTargets(state, roomId)
+    if (!actions.sendItem || !canSendItem(item) || targets.length === 0) return []
+    return [sendControl({
+      key: `send:${item.id}`,
+      prefix: SEND.to,
+      pickers: [{ label: SEND.itemLabel(item.name), key: 'send:item-room', options: targets.map((room) => [room.id, room.name]) }],
+      buttonLabel: SEND.send,
+      ariaLabel: SEND.sendItem(item.name),
+      onSend: async ([toRoomId]) => {
+        const answer = await actions.sendItem(roomId, toRoomId, item.id)
+        if (!answer) return
+        const target = targets.find((room) => room.id === toRoomId)
+        sendStatus.textContent = SEND.itemSent(item.name, target?.name ?? toRoomId, answer)
+      }
+    })]
+  }
+
   function drawDetail() {
     const { state, roomId, world } = current
     const item = chosenItem()
     const holder = item ? holderName(item, state, roomId) : null
     const legendary = legendaryDetails(current.game, item)
-    const signature = JSON.stringify([roomId, item, holder, item ? world.materials : null, legendary])
+    const targets = actions.sendItem ? sendTargets(state, roomId) : []
+    const signature = JSON.stringify([roomId, item, holder, item ? world.materials : null, legendary, targets])
     if (signature === detailDrawn) return
     detailDrawn = signature
     if (!item) {
@@ -180,7 +210,8 @@ export function createChestView({ actions, onChosenChange, base }) {
         ariaLabel: ARSENAL.upgradeItem(item.name),
         key: `item:${item.id}`,
         onBuy: actions.upgradeItem && (() => actions.upgradeItem(roomId, item.id))
-      })
+      }),
+      ...sendPart(item)
     ])
   }
 
@@ -191,6 +222,8 @@ export function createChestView({ actions, onChosenChange, base }) {
      */
     update(next) {
       current = next
+      if (statusRoomId !== next.roomId) sendStatus.textContent = ''
+      statusRoomId = next.roomId
       // An item that left the chest is no longer chosen.
       if (chosenByRoom.has(next.roomId) && !chosenItem()) chosenByRoom.delete(next.roomId)
       drawGrid()

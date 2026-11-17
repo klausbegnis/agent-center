@@ -36,6 +36,8 @@ const transport = {
   exportSave: () => orca.plugin.request('game.exportSave'),
   importSave: (file) => orca.plugin.request('game.importSave', { file }),
   moveOrphanItems: (fromRoomId, toRoomId) => orca.plugin.request('game.moveOrphanItems', { fromRoomId, toRoomId }),
+  sendItem: (roomId, toRoomId, itemId) => orca.plugin.request('game.sendItem', { roomId, toRoomId, itemId }),
+  sendRelic: (roomId, toRoomId, relicId) => orca.plugin.request('game.sendRelic', { roomId, toRoomId, relicId }),
   sellMaterial: (worldId, cityId, materialId, amount) =>
     orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) =>

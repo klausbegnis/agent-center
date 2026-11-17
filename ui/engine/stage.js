@@ -111,7 +111,9 @@ export async function mountStage(root, transport, options = {}) {
     roomsElement,
     transport,
     onTabChange: () => layout(),
-    onRoomsChange: () => render()
+    onRoomsChange: () => render(),
+    library,
+    onShowAgent: (agentId) => showAgentInRoom(agentId)
   })
   header.addTitleTool(game.settingsButton)
   root.append(header.element, game.top, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
@@ -166,6 +168,20 @@ export async function mountStage(root, transport, options = {}) {
     const room = agent && state.rooms.find((item) => item.agents.includes(agent))
     if (room) roomList.overlay(room.id, detail.element)
     detail.show(agent, agent?.parentId ? agents.find((item) => item.id === agent.parentId) : null, state)
+  }
+
+  /**
+   * From the Party tab's portrait: the Rooms tab, the agent's room on it, and the agent selected,
+   * its card open and its character in view with the focus.
+   */
+  function showAgentInRoom(agentId) {
+    const room = state?.rooms.find((entry) => entry.agents.some((agent) => agent.id === agentId))
+    if (!room) return
+    selectedAgentId = agentId
+    game.openRoomsAt(room.id)
+    const actor = roomList.actorOf(agentId)
+    actor?.scrollIntoView({ block: 'center' })
+    actor?.focus({ preventScroll: true })
   }
 
   /** Whether a theme loaded for the rooms that have not picked their own. */

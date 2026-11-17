@@ -63,7 +63,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the seven tabs, then the chest's item slots with a legendary sword in a gold frame, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips and the world's coins and materials over the seven tabs, then the chest's item slots with a legendary sword in a gold frame, a free cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -139,11 +139,17 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 Open Orca's Settings, go to Plugins, then Agent Center, and turn on **Game mode**. The panel
 gains seven tabs: **Rooms**, **Party**, **Chest**, **Camp**, **Skills**, **Market** and **Bestiary**, under a
-room picker and a strip with the world's coins and materials; the picker chooses the room that
-Party and Chest show (and the world of the others), and on Rooms it can show one room alone. In
-a narrow panel the tabs show their icons only. The cog in the
-panel's header opens the game's own settings: auto-spend, **New scene after each monster**
-(off by default; see "The party can travel" above), worlds and the save file.
+row of room chips and a strip with the world's coins and materials. One click on a chip picks the
+room that Party and Chest show (and the world of the others), and on Rooms it can show one room
+alone. Each chip shows the room's characters, a dot while its party fights and a triangle when
+an upgrade is ready; the arrow keys move along the row, and `[` and `]` pick the room before or
+after from anywhere in the game. A long row scrolls sideways, and from eight rooms a **More…**
+list reaches any of them. In the Chest tab, an item nobody holds, or a relic that is not active,
+can be sent to another room of the same world. On the Party tab each character shows its agent's
+sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
+panel the tabs show their icons only. The cog in the panel's header opens the game's own
+settings: auto-spend, **New scene after each monster** (off by default; see "The party can
+travel" above), worlds and the save file.
 
 **Game mode: keep conversation titles** keeps a finished session's title on its retired
 character; it is off by default. Everything the game keeps stays on your computer. The full

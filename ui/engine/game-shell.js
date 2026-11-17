@@ -1,4 +1,4 @@
-// The game's frame around the rooms: above the tabs, the room picker and the world's coins and
+// The game's frame around the rooms: above the tabs, the room switcher and the world's coins and
 // materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market, Bestiary); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { button, el, svgIcon } from './dom.js'
@@ -10,6 +10,7 @@ import {
   chosenRoomId,
   gameModeOf,
   isEstimated,
+  joinedRooms,
   roomFilterOf,
   tabOrDefault,
   worldById
@@ -18,6 +19,7 @@ import { createGamePanels } from './game-panels.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
 import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
 import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
+import { isTypingKey, roomAfterShortcut, savedRoomOf } from './room-chips.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
 
@@ -30,11 +32,15 @@ const NOTICE_MS = 6000
  *   roomsElement: HTMLElement,
  *   transport: object,
  *   onTabChange: () => void,
- *   onRoomsChange: () => void
+ *   onRoomsChange: () => void,
+ *   library?: object,
+ *   onShowAgent?: (agentId: string) => void
  * }} options `onTabChange` is called after the open tab changed, so the rooms can be laid out;
- *   `onRoomsChange` after the Rooms tab was narrowed to one room or opened to all again
+ *   `onRoomsChange` after the Rooms tab was narrowed to one room or opened to all again;
+ *   `library` holds the loaded themes, for the Party tab's portraits, and `onShowAgent` is called
+ *   when a portrait asks to show its agent in the room
  */
-export function createGameShell({ root, roomsElement, transport, onTabChange, onRoomsChange }) {
+export function createGameShell({ root, roomsElement, transport, onTabChange, onRoomsChange, library, onShowAgent }) {
   let tab = 'rooms'
   let mode = 'off'
   let state = null
@@ -90,7 +96,15 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
 
   /** What draws each panel while the game runs. */
   const base = transport.base ?? ''
-  const views = createGamePanels({ contents, actions, base, onChosenItem: () => drawPanel() })
+  const views = createGamePanels({
+    contents,
+    actions,
+    base,
+    onChosenItem: () => drawPanel(),
+    library,
+    onShowAgent,
+    onThemeLoaded: () => drawPanel()
+  })
 
   /**
    * A room picked above the tabs. On Rooms it narrows the rooms shown (ALL_ROOMS opens them all
@@ -107,6 +121,22 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     }
     show()
   }
+
+  /**
+   * `[` and `]` pick the room before or after, from anywhere in the page, unless the person is
+   * typing (a field, a list) or holds a modifier. Heard on the page and on the root, which the
+   * mini view moves to a window of its own; a key handled once is not handled again.
+   */
+  function onShortcut(event) {
+    if (event.defaultPrevented || mode !== 'running' || !state || isTypingKey(event.target, event)) return
+    const current = tab === 'rooms' ? roomFilterOf(state, filterId) : chosenRoomId(state, wantedRoomId)
+    const next = roomAfterShortcut(joinedRooms(state).map((room) => room.id), current, event.key)
+    if (next === null) return
+    event.preventDefault()
+    pickRoom(next)
+  }
+  root.addEventListener('keydown', onShortcut)
+  root.ownerDocument.addEventListener('keydown', onShortcut)
 
   function showNotice(message, action) {
     notice.textContent = message
@@ -224,8 +254,19 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
         await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom')])
       // Saved before the Arsenal became Party, Chest and Camp: its section names the tab.
       tab = tabOrDefault(saved, section)
-      const savedRoom = [room, arsenalRoom].find((value) => typeof value === 'string' && value)
+      const savedRoom = savedRoomOf(room, arsenalRoom)
       if (savedRoom && wantedRoomId === null) wantedRoomId = savedRoom
+    },
+    /**
+     * Opens the Rooms tab so a room is on it: a tab narrowed to another room is narrowed to this
+     * one instead.
+     *
+     * @param {string} roomId
+     */
+    openRoomsAt(roomId) {
+      if (filterId && filterId !== roomId) filterId = roomId
+      select('rooms')
+      onRoomsChange()
     },
     /** The one room the Rooms tab is narrowed to, or null to show every room. */
     roomFilter() {

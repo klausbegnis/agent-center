@@ -190,6 +190,8 @@ const ACTION_NAMES = {
   exportSave: 'The export',
   importSave: 'The import',
   moveOrphanItems: 'Moving the items',
+  sendItem: 'Sending the item',
+  sendRelic: 'Sending the relic',
   setEquipment: 'The change of gear',
   bestGear: 'Best gear',
   sellMaterial: 'The sale',
