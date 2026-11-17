@@ -25,3 +25,10 @@ scripts/city-art/__pycache__/
 scripts/settlement-art/*.png
 scripts/settlement-art/png/
 scripts/settlement-art/__pycache__/
+
+# outputs of the instance art generator (see scripts/instance-art/README.md)
+scripts/instance-art/*.png
+scripts/instance-art/png/
+scripts/instance-art/__pycache__/
+scripts/instance-art/palette-report.txt
+scripts/instance-art/rewards.json

@@ -1,0 +1,159 @@
+{
+  "region": {
+    "id": "old-road",
+    "name": "The Old Road",
+    "title": "Roadwarden",
+    "map": { "width": 256, "height": 144 },
+    "maps": [
+      { "cleared": 0, "art": "ui/instances/roadmap-1.png", "alt": "A parchment map: a road leaves a harbour town for a marsh crypt, the rest of the land under fog and clouds" },
+      { "cleared": 3, "art": "ui/instances/roadmap-3.png", "alt": "The parchment map with flags on the crypt, the foundry by the volcano and the hive in the forest, and the road climbing to a keep" },
+      { "cleared": 6, "art": "ui/instances/roadmap-6.png", "alt": "The whole parchment map cleared: flags on all six sites, from the marsh crypt to the spire in the far mountains" }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sunken-crypt",
+      "name": "The Sunken Crypt",
+      "races": ["skeleton", "zombie", "ghost"],
+      "opensAt": 5,
+      "banner": "ui/instances/sunken-crypt.png",
+      "card": "ui/instances/sunken-crypt-fade.png",
+      "alt": "A flooded mausoleum at dusk, green witch-light in its door and a skeletal hand rising from the marsh",
+      "route": {
+        "start": "ui/instances/route-start.png",
+        "mid": "ui/instances/route-mid.png",
+        "boss": "ui/instances/route-boss.png",
+        "alt": "The crypt cut open from the side: six rooms under the marsh, from the stair down to the throne"
+      },
+      "map": { "x": 82, "y": 94 },
+      "boss": "ossric",
+      "elite": "old-mattock",
+      "relic": "tidewake-bell",
+      "loot": { "seals": 2, "runes": 2, "pages": 1 },
+      "vault": ["sunken-deck-harpoon", "gravewake-mattock", "veil-of-the-regent"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Drowned Stair" },
+        { "kind": "hall", "name": "Hall of Niches" },
+        { "kind": "trap", "name": "The Collapsing Ossuary", "check": { "attribute": "agility" } },
+        { "kind": "elite", "name": "The Gravedigger's Pit" },
+        { "kind": "vault", "name": "The Reliquary" },
+        { "kind": "boss", "name": "The Bone Throne" }
+      ]
+    },
+    {
+      "id": "emberdeep-foundry",
+      "name": "Emberdeep Foundry",
+      "races": ["demon", "golem", "elemental"],
+      "opensAt": 10,
+      "banner": "ui/instances/emberdeep-foundry.png",
+      "card": "ui/instances/emberdeep-foundry-fade.png",
+      "alt": "A foundry gate cut into a volcano at night, a molten channel running past a stone golem",
+      "map": { "x": 126, "y": 116 },
+      "boss": "vorzhaal",
+      "elite": "warden-seventeen",
+      "relic": "heart-of-the-last-pour",
+      "loot": { "bars": 2, "gears": 2, "ore": 1 },
+      "vault": ["the-seventeenth-key", "labyrinth-cleaver", "oathbreaker"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Slag Gate" },
+        { "kind": "hall", "name": "The Casting Floor" },
+        { "kind": "puzzle", "name": "The Sluice Valves", "check": { "skill": "engineering" } },
+        { "kind": "elite", "name": "The Sentry's Post" },
+        { "kind": "vault", "name": "The Ingot Store" },
+        { "kind": "boss", "name": "The Crucible" }
+      ]
+    },
+    {
+      "id": "hollow-hive",
+      "name": "The Hollow Hive",
+      "races": ["insect", "spider"],
+      "opensAt": 16,
+      "banner": "ui/instances/hollow-hive.png",
+      "card": "ui/instances/hollow-hive-fade.png",
+      "alt": "A hollow tree at night glowing with honeycomb, a great web strung beside it and a wasp at the edge",
+      "map": { "x": 163, "y": 84 },
+      "boss": "queen-zarra",
+      "elite": "mother-skein",
+      "relic": "amber-of-the-sleeping-queen",
+      "loot": { "crops": 2, "hides": 2, "logs": 1 },
+      "vault": ["silk-widows-spindle", "blightmoon-sickle", "pilfered-lantern"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Knothole" },
+        { "kind": "hall", "name": "The Brood Galleries" },
+        { "kind": "trap", "name": "The Web Bridge", "check": { "attribute": "precision" } },
+        { "kind": "elite", "name": "The Silk Larder" },
+        { "kind": "vault", "name": "The Honey Cells" },
+        { "kind": "boss", "name": "The Royal Comb" }
+      ]
+    },
+    {
+      "id": "frostwatch-keep",
+      "name": "Frostwatch Keep",
+      "races": ["troll", "ogre", "werewolf"],
+      "opensAt": 24,
+      "banner": "ui/instances/frostwatch-keep.png",
+      "card": "ui/instances/frostwatch-keep-fade.png",
+      "alt": "A snowbound keep under green northern lights, a frozen waterfall beside it and eyes in its gate",
+      "map": { "x": 110, "y": 48 },
+      "boss": "old-hessa",
+      "elite": "grumlaw",
+      "relic": "rimebitten-horn",
+      "loot": { "hides": 2, "ore": 2, "fish": 1 },
+      "vault": ["bridgewardens-maul", "jawbone-lyre"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Snowed Gate" },
+        { "kind": "hall", "name": "The Wolf Barracks" },
+        { "kind": "trap", "name": "The Ice Bridge", "check": { "attribute": "strength" } },
+        { "kind": "elite", "name": "The Bridgekeeper's Hall" },
+        { "kind": "vault", "name": "The Frozen Armoury" },
+        { "kind": "boss", "name": "The Crone's Tower" }
+      ]
+    },
+    {
+      "id": "drowned-library",
+      "name": "The Drowned Library",
+      "races": ["vampire", "human", "ghost"],
+      "opensAt": 34,
+      "banner": "ui/instances/drowned-library.png",
+      "card": "ui/instances/drowned-library-fade.png",
+      "alt": "A domed library half sunk in a moonlit lake, its windows lit and books stacked behind the glass",
+      "map": { "x": 172, "y": 41 },
+      "boss": "varesh",
+      "elite": "brother-hollis",
+      "relic": "drowned-concordance",
+      "loot": { "pages": 2, "crystals": 2, "seals": 1 },
+      "vault": ["vigil-censer", "moonwane-scepter", "unquenched-candle"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Flooded Porch" },
+        { "kind": "hall", "name": "The Reading Room" },
+        { "kind": "puzzle", "name": "The Shifting Stacks", "check": { "skill": "lore" } },
+        { "kind": "elite", "name": "The Lantern Cloister" },
+        { "kind": "vault", "name": "The Sealed Archive" },
+        { "kind": "boss", "name": "The Velvet Gallery" }
+      ]
+    },
+    {
+      "id": "wyrmrest-spire",
+      "name": "Wyrmrest Spire",
+      "races": ["dragon", "lizardfolk"],
+      "opensAt": 46,
+      "banner": "ui/instances/wyrmrest-spire.png",
+      "card": "ui/instances/wyrmrest-spire-fade.png",
+      "alt": "A twisted tower wrapped in a dragon's bones under a storm, lightning striking the peaks behind",
+      "map": { "x": 222, "y": 30 },
+      "boss": "azhrenn",
+      "elite": "tethra",
+      "relic": "fang-of-the-coiled-wyrm",
+      "loot": { "crystals": 2, "runes": 2, "bars": 1 },
+      "vault": ["coldscale-hauberk", "hoard-sleepers-egg"],
+      "rooms": [
+        { "kind": "entrance", "name": "The Bone Stair" },
+        { "kind": "hall", "name": "The Molting Halls" },
+        { "kind": "puzzle", "name": "The Storm Wards", "check": { "skill": "arcana" } },
+        { "kind": "elite", "name": "The Reed Hunter's Ledge" },
+        { "kind": "vault", "name": "The Shed Hoard" },
+        { "kind": "boss", "name": "The Coil" }
+      ]
+    }
+  ]
+}

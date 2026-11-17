@@ -7,6 +7,7 @@ import { validateCities } from './game/content-cities.mjs'
 import { validateItems, validateMonsters } from './game/content.mjs'
 import { validateBosses, validateRaces } from './game/content-races.mjs'
 import { createEngine } from './game/engine.mjs'
+import { validateInstances } from './game/instance-content.mjs'
 import { validateLegendary } from './game/legendary-content.mjs'
 import { validateSettlement } from './game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
@@ -27,7 +28,8 @@ export function loadGameEngine(root, log) {
       cities: readJson('cities.json'),
       legendary: readJson('legendary.json'),
       bestiary: readJson('bestiary.json'),
-      settlement: readJson('settlement.json')
+      settlement: readJson('settlement.json'),
+      instances: readJson('instances.json')
     }
     const problems = [
       ...validateMonsters(content.monsters),
@@ -37,7 +39,8 @@ export function loadGameEngine(root, log) {
       ...validateCities(content.cities),
       ...validateLegendary(content.legendary, content),
       ...validateBestiary(content.bestiary, content),
-      ...validateSettlement(content.settlement, { upgradeIds: GROUP_UPGRADE_IDS })
+      ...validateSettlement(content.settlement, { upgradeIds: GROUP_UPGRADE_IDS }),
+      ...validateInstances(content.instances, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)
