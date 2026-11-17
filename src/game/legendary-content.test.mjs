@@ -108,8 +108,20 @@ test('the index lists the pool relics in the file\'s order and each boss\'s own 
   assert.equal(index.poolRelicIds.length, 10)
   assert.equal(index.poolRelicIds[0], 'sheaf-of-the-long-summer')
   assert.equal(index.byBoss.get('gorrath').id, 'labyrinth-cleaver')
-  assert.equal(index.relicCount, 22)
+  assert.equal(index.relicCount, 28)
   assert.equal(index.equipmentCount, 12)
+})
+
+test('an instance relic names its instance and is never in the pool a city sells', () => {
+  const index = indexLegendary(shipped)
+  assert.equal(index.byId.get('tidewake-bell').kind, 'instance-relic')
+  assert.ok(index.relicIds.has('tidewake-bell'))
+  assert.ok(!index.poolRelicIds.includes('tidewake-bell'))
+  const entry = { ...shipped.legendary.find((each) => each.id === 'tidewake-bell'), instance: 'Not An Id' }
+  const problems = validateLegendary({ legendary: [entry] })
+  assert.ok(problems.some((problem) => problem.includes('"instance" must be')), problems.join('\n'))
+  const withCity = validateLegendary({ legendary: [{ ...entry, instance: 'sunken-crypt', city: 'goldmill' }] })
+  assert.ok(withCity.some((problem) => problem.includes('"city" is not a known key')), withCity.join('\n'))
 })
 
 test('a city offers its own relics that the room does not own, never a boss relic', () => {

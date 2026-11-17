@@ -67,7 +67,7 @@ test('the view state shows a room\'s relics, the active one, and the entries it 
   const { game } = await setup()
   const view = game.getView()
   assert.deepEqual(view.rooms[BANANA].relics, { owned: ['tidecall-conch', 'rimeheart'], active: 'tidecall-conch' })
-  assert.equal(view.legendary.relicCount, 22)
+  assert.equal(view.legendary.relicCount, 28)
   assert.deepEqual(Object.keys(view.legendary.entries).sort(), ['labyrinth-cleaver', 'rimeheart', 'tidecall-conch'])
   assert.deepEqual(view.legendary.entries.rimeheart.effect, { effect: 'staminaDrain', scope: 'party', amount: 0.05 })
   assert.equal(view.legendary.entries['labyrinth-cleaver'].boss.name, 'Gorrath')

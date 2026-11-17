@@ -9,6 +9,7 @@ import { partyOf } from './fight.mjs'
 import { chanceOf } from './hash.mjs'
 import { rollLegendaryDrops } from './legendary-drops.mjs'
 import { legendaryIndexOf, memberBonuses, partyBonuses, tokenBonuses, totalOf, upgradeDiscountOf } from './legendary-effects.mjs'
+import { WORK_SKILLS } from './skills.mjs'
 
 const readJson = (name) => JSON.parse(readFileSync(new URL(`../../game/${name}`, import.meta.url), 'utf8'))
 const content = {
@@ -166,6 +167,8 @@ test('the strongest relic, all the legendary equipment and a whole bestiary at i
         (!effect.damageType || effect.damageType === damageType) && (!effect.ranks || effect.ranks.includes(rank))))
     }
     if (type === 'raceDamage') cases = index.raceIds.map((raceId) => (effect) => effect.races.includes(raceId))
+    // An instance relic gives one work skill's experience to the party, the Moonwane Scepter another.
+    if (type === 'skillXp') cases = WORK_SKILLS.map((skill) => (effect) => effect.skill === skill)
     for (const applies of cases) {
       const { relic, held, bestiary } = mostOf(type, applies)
       assert.ok(relic + held + bestiary <= LEGENDARY_EFFECT_CAPS[type] + 1e-9, `${type}: ${relic} + ${held} + ${bestiary}`)

@@ -180,7 +180,7 @@ export function gatherBonuses(relic, held, material) {
 
 /**
  * What a character's tokens are worth more: its own experience (the relic) and the experience of
- * the work skill they train (its equipment).
+ * the work skill they train (its equipment, or an instance relic for the whole party).
  *
  * @param {Effect[]} relic
  * @param {Effect[]} held
@@ -190,7 +190,7 @@ export function gatherBonuses(relic, held, material) {
 export function tokenBonuses(relic, held, skillId) {
   return {
     characterFactor: 1 + totalOf(relic, 'characterXp'),
-    skillFactor: 1 + totalOf(held, 'skillXp', (effect) => effect.skill === skillId)
+    skillFactor: 1 + totalOf([...relic, ...held], 'skillXp', (effect) => effect.skill === skillId)
   }
 }
 

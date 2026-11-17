@@ -10,6 +10,7 @@ import { validateBestiary } from '../src/game/bestiary-content.mjs'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
+import { validateRunContent } from '../src/game/instance-boons.mjs'
 import { validateInstances } from '../src/game/instance-content.mjs'
 import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
@@ -131,7 +132,7 @@ function checkInstances({ root, report, readJson }) {
   }
   if (instances === null) return
   const others = { races: readIfThere('races.json'), bosses: readIfThere('bosses.json'), legendary: readIfThere('legendary.json') }
-  const problems = validateInstances(instances, others)
+  const problems = [...validateInstances(instances, others), ...validateRunContent(instances, others)]
   for (const problem of problems) report(instancesFile, problem)
   if (problems.length) return
   const pictures = [

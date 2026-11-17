@@ -78,3 +78,12 @@ test('damage against a race names the race as the bestiary calls it', () => {
   assert.equal(effectText(effect, undefined, { raceNames: { orc: 'Orcs' } }), '+4.5% damage against orcs')
   assert.equal(effectText(effect), '+4.5% damage against orc')
 })
+
+test('an instance relic is worded for the whole party and says where it is won', () => {
+  assert.equal(effectText({ effect: 'raceDamage', scope: 'party', amount: 0.05, races: ['skeleton', 'lizardfolk'] }),
+    '+5% damage against skeletons and lizardfolk')
+  assert.equal(effectText({ effect: 'skillXp', scope: 'party', amount: 0.05, skill: 'lore' }),
+    'Every character\'s tokens give 5% more lore experience')
+  assert.equal(sourceText({ kind: 'instance-relic', instance: { name: 'The Sunken Crypt' } }),
+    'Won by clearing The Sunken Crypt the first time, never sold')
+})

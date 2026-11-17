@@ -7,6 +7,7 @@ import { validateCities } from './game/content-cities.mjs'
 import { validateItems, validateMonsters } from './game/content.mjs'
 import { validateBosses, validateRaces } from './game/content-races.mjs'
 import { createEngine } from './game/engine.mjs'
+import { validateRunContent } from './game/instance-boons.mjs'
 import { validateInstances } from './game/instance-content.mjs'
 import { validateLegendary } from './game/legendary-content.mjs'
 import { validateSettlement } from './game/settlement-content.mjs'
@@ -40,7 +41,8 @@ export function loadGameEngine(root, log) {
       ...validateLegendary(content.legendary, content),
       ...validateBestiary(content.bestiary, content),
       ...validateSettlement(content.settlement, { upgradeIds: GROUP_UPGRADE_IDS }),
-      ...validateInstances(content.instances, content)
+      ...validateInstances(content.instances, content),
+      ...validateRunContent(content.instances, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)

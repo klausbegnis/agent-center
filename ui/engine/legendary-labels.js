@@ -23,6 +23,8 @@ const HOLDER_WORD = { weapon: 'wielder', outfit: 'wearer', tool: 'holder' }
 /** What a character does to gather a material: "while the holder mines". */
 const GATHER_VERB = { ore: 'mines', fish: 'fishes', crops: 'farms', logs: 'cuts wood', hides: 'hunts', runes: 'carves runes' }
 
+/** A race id as a plural when no name is given: "skeletons", "lizardfolk". */
+const pluralRace = (id) => (id.endsWith('folk') ? id : `${id}s`)
 const ranksText = (ranks) => listText(ranks.map((rank) => RANK_WORDS[rank] ?? rank))
 const materialsText = (materials) => listText(materials)
 
@@ -77,11 +79,15 @@ const EFFECT_TEXT = {
   gatherXp: { party: (effect) => `+${percent(effect.amount)} experience to gathering skills` },
   characterXp: { party: (effect) => `+${percent(effect.amount)} experience for every character in the room` },
   skillXp: {
+    party: (effect) =>
+      `Every character's tokens give ${percent(effect.amount)} more ${(SKILL_LABEL[effect.skill] ?? effect.skill).toLowerCase()} experience`,
     holder: (effect, who) =>
       `The ${who}'s tokens give ${percent(effect.amount)} more ${(SKILL_LABEL[effect.skill] ?? effect.skill).toLowerCase()} experience`
   },
   upgradeCost: { party: (effect) => `Item upgrades cost ${percent(effect.amount)} fewer materials` },
   raceDamage: {
+    party: (effect, who, { raceNames = {} } = {}) => `+${percent(effect.amount)} damage against ` +
+      listText((effect.races ?? []).map((id) => (raceNames[id] ?? pluralRace(id)).toLowerCase())),
     world: (effect, who, { raceNames = {} } = {}) => `+${percent(effect.amount)} damage against ` +
       listText((effect.races ?? []).map((id) => (raceNames[id] ?? id).toLowerCase()))
   },
@@ -118,10 +124,11 @@ export function effectText(effect, slot, context = {}) {
 export const WORDED_EFFECTS = Object.fromEntries(Object.entries(EFFECT_TEXT).map(([type, scopes]) => [type, Object.keys(scopes)]))
 
 /** What each kind of legendary loot is called. */
-export const KIND_LABEL = { relic: 'Relic', 'boss-relic': 'Boss relic', equipment: 'Legendary' }
+export const KIND_LABEL = { relic: 'Relic', 'boss-relic': 'Boss relic', equipment: 'Legendary', 'instance-relic': 'Instance relic' }
 
 /** Where an entry comes from, for its details: "Gorrath's own, never sold". */
 export function sourceText(entry) {
+  if (entry.instance) return `Won by clearing ${entry.instance.name} the first time, never sold`
   if (entry.boss) return entry.kind === 'equipment' ? `Dropped by ${entry.boss.name}` : `${entry.boss.name}'s own, never sold`
   return 'Dropped by legendary bosses'
 }

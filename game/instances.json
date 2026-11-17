@@ -10,6 +10,30 @@
       { "cleared": 6, "art": "ui/instances/roadmap-6.png", "alt": "The whole parchment map cleared: flags on all six sites, from the marsh crypt to the spire in the far mountains" }
     ]
   },
+  "boons": [
+    { "id": "whetted-blades", "name": "Whetted Blades", "effect": { "effect": "bossDamage", "amount": 0.15 } },
+    { "id": "second-wind", "name": "Second Wind", "effect": { "effect": "staminaNow", "amount": 1 } },
+    { "id": "gamblers-coin", "name": "Gambler's Coin", "effect": { "effect": "rewardRoll", "amount": 1 } },
+    { "id": "seekers-candle", "name": "Seeker's Candle", "effect": { "effect": "bossItem", "amount": 0.2 } },
+    { "id": "hoarders-map", "name": "Hoarder's Map", "effect": { "effect": "purse", "amount": 0.5 } },
+    { "id": "spare-torch", "name": "Spare Torch", "effect": { "effect": "tries", "amount": 1 } },
+    { "id": "sand-glass", "name": "Sand Glass", "effect": { "effect": "timeLimit", "amount": 0.3 } },
+    { "id": "warding-salt", "name": "Warding Salt", "effect": { "effect": "bossAttack", "amount": 0.2 } },
+    { "id": "smelling-salts", "name": "Smelling Salts", "effect": { "effect": "restShort", "amount": 0.5 } },
+    { "id": "binding-chalk", "name": "Binding Chalk", "effect": { "effect": "noBossAffix", "amount": 1 } }
+  ],
+  "modifiers": [
+    { "id": "enraged-rooms", "name": "Enraged rooms", "effect": { "effect": "affix", "affix": "enraged", "rooms": ["entrance", "hall", "elite", "boss"] } },
+    { "id": "no-campfire", "name": "No rest between rooms", "effect": { "effect": "noCampfire" } },
+    { "id": "armored-boss", "name": "Armored boss", "effect": { "effect": "affix", "affix": "armored", "rooms": ["boss"] } },
+    { "id": "ethereal-boss", "name": "Ethereal boss", "effect": { "effect": "affix", "affix": "ethereal", "rooms": ["boss"] } },
+    { "id": "regenerating-boss", "name": "Regenerating boss", "effect": { "effect": "affix", "affix": "regenerating", "rooms": ["boss"] } },
+    { "id": "swift-hall", "name": "Swift hall", "effect": { "effect": "affix", "affix": "swift", "rooms": ["hall"] } },
+    { "id": "thorny-elite", "name": "Thorny elite", "effect": { "effect": "affix", "affix": "thorny", "rooms": ["elite"] } },
+    { "id": "long-rests", "name": "Long rests", "effect": { "effect": "restLonger", "amount": 1 } },
+    { "id": "cunning-checks", "name": "Cunning traps", "effect": { "effect": "checkHarder", "amount": 0.3 } },
+    { "id": "crowded-hall", "name": "Crowded hall", "effect": { "effect": "hallFights", "amount": 5 } }
+  ],
   "instances": [
     {
       "id": "sunken-crypt",
@@ -31,6 +55,7 @@
       "relic": "tidewake-bell",
       "loot": { "seals": 2, "runes": 2, "pages": 1 },
       "vault": ["sunken-deck-harpoon", "gravewake-mattock", "veil-of-the-regent"],
+      "modifiers": ["regenerating-boss", "enraged-rooms", "no-campfire"],
       "rooms": [
         { "kind": "entrance", "name": "The Drowned Stair" },
         { "kind": "hall", "name": "Hall of Niches" },
@@ -54,6 +79,7 @@
       "relic": "heart-of-the-last-pour",
       "loot": { "bars": 2, "gears": 2, "ore": 1 },
       "vault": ["the-seventeenth-key", "labyrinth-cleaver", "oathbreaker"],
+      "modifiers": ["armored-boss", "long-rests", "crowded-hall"],
       "rooms": [
         { "kind": "entrance", "name": "The Slag Gate" },
         { "kind": "hall", "name": "The Casting Floor" },
@@ -77,6 +103,7 @@
       "relic": "amber-of-the-sleeping-queen",
       "loot": { "crops": 2, "hides": 2, "logs": 1 },
       "vault": ["silk-widows-spindle", "blightmoon-sickle", "pilfered-lantern"],
+      "modifiers": ["swift-hall", "thorny-elite", "cunning-checks"],
       "rooms": [
         { "kind": "entrance", "name": "The Knothole" },
         { "kind": "hall", "name": "The Brood Galleries" },
@@ -100,6 +127,7 @@
       "relic": "rimebitten-horn",
       "loot": { "hides": 2, "ore": 2, "fish": 1 },
       "vault": ["bridgewardens-maul", "jawbone-lyre"],
+      "modifiers": ["enraged-rooms", "armored-boss", "long-rests"],
       "rooms": [
         { "kind": "entrance", "name": "The Snowed Gate" },
         { "kind": "hall", "name": "The Wolf Barracks" },
@@ -123,6 +151,7 @@
       "relic": "drowned-concordance",
       "loot": { "pages": 2, "crystals": 2, "seals": 1 },
       "vault": ["vigil-censer", "moonwane-scepter", "unquenched-candle"],
+      "modifiers": ["ethereal-boss", "cunning-checks", "no-campfire"],
       "rooms": [
         { "kind": "entrance", "name": "The Flooded Porch" },
         { "kind": "hall", "name": "The Reading Room" },
@@ -146,6 +175,7 @@
       "relic": "fang-of-the-coiled-wyrm",
       "loot": { "crystals": 2, "runes": 2, "bars": 1 },
       "vault": ["coldscale-hauberk", "hoard-sleepers-egg"],
+      "modifiers": ["swift-hall", "regenerating-boss", "crowded-hall", "thorny-elite"],
       "rooms": [
         { "kind": "entrance", "name": "The Bone Stair" },
         { "kind": "hall", "name": "The Molting Halls" },

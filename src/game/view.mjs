@@ -169,7 +169,7 @@ export function viewOf(save, content) {
     tickSeconds: TICK_SECONDS,
     itemEntries: Object.fromEntries(content.items.items
       .map((entry) => [entry.id, { name: entry.name, tier: entry.tier }])),
-    legendary: legendaryView(index, content.bosses),
+    legendary: legendaryView(index, content.bosses, content.instances),
     bestiary: bestiaryContentView(content)
   }
 }

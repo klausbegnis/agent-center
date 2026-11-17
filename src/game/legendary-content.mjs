@@ -5,9 +5,12 @@
 import { LEGENDARY_EFFECT_CAPS, MONSTER_RANKS } from './constants.mjs'
 import { CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 
-export const LEGENDARY_KINDS = Object.freeze(['relic', 'boss-relic', 'equipment'])
-/** The kinds a room owns as relics, one of which it can make active. */
-export const RELIC_KINDS = Object.freeze(['relic', 'boss-relic'])
+export const LEGENDARY_KINDS = Object.freeze(['relic', 'boss-relic', 'equipment', 'instance-relic'])
+/**
+ * The kinds a room owns as relics, one of which it can make active. An instance relic is the reward
+ * of an instance's first clear (game/instances.json): never sold and never dropped.
+ */
+export const RELIC_KINDS = Object.freeze(['relic', 'boss-relic', 'instance-relic'])
 
 /**
  * The effect types: where each may act (`party` for an active relic, `holder` for equipment, on
@@ -36,10 +39,12 @@ export const EFFECT_TYPES = Object.freeze({
   gatherHours: { scopes: ['party', 'world'], qualifiers: [] },
   gatherXp: { scopes: ['party', 'world'], qualifiers: [] },
   characterXp: { scopes: ['party', 'world'], qualifiers: [] },
-  skillXp: { scopes: ['holder'], qualifiers: ['skill'] },
+  // An instance relic's (game/instances.json) acts on every character of the room.
+  skillXp: { scopes: ['party', 'holder'], qualifiers: ['skill'] },
   upgradeCost: { scopes: ['party', 'world'], qualifiers: [] },
   // The bestiary's: damage against monsters of the races listed, and legendary pity that grows faster.
-  raceDamage: { scopes: ['world'], qualifiers: ['races'] },
+  // An instance relic's acts on its room's party.
+  raceDamage: { scopes: ['party', 'world'], qualifiers: ['races'] },
   legendaryPity: { scopes: ['world'], qualifiers: [] },
   // The settlement's Storehouse: the market's fee lowered by the amount.
   marketFee: { scopes: ['world'], qualifiers: [] }
@@ -47,13 +52,14 @@ export const EFFECT_TYPES = Object.freeze({
 
 const ENTRY_KEYS = [
   'id', 'name', 'kind', 'city', 'boss', 'slot', 'damageType', 'class', 'trade', 'recipe', 'effect', 'flavour',
-  'colour'
+  'colour', 'instance'
 ]
 /** The keys each kind may have beyond the shared ones. */
 const KIND_KEYS = {
   relic: ['city'],
   'boss-relic': ['boss'],
-  equipment: ['boss', 'slot', 'damageType', 'class', 'trade', 'recipe']
+  equipment: ['boss', 'slot', 'damageType', 'class', 'trade', 'recipe'],
+  'instance-relic': ['instance']
 }
 const SHARED_KEYS = ['id', 'name', 'kind', 'effect', 'flavour', 'colour']
 const SLOTS = ['weapon', 'outfit', 'tool']
@@ -156,9 +162,15 @@ function checkEquipment(name, entry) {
 
 /**
  * Problems of where an entry comes from: a city of game/cities.json for a relic (any kebab-case id
- * when no cities are given), a boss of the roster otherwise.
+ * when no cities are given), an instance for an instance relic (instance-content.mjs checks that it
+ * exists and names the relic), a boss of the roster otherwise.
  */
 function checkSource(name, entry, { bossIds, bossesUsed, cityIds }) {
+  if (entry.kind === 'instance-relic') {
+    return typeof entry.instance === 'string' && KEBAB_CASE.test(entry.instance)
+      ? []
+      : [`${name}: "instance" must be the id of an instance in game/instances.json`]
+  }
   if (entry.kind === 'relic') {
     if (typeof entry.city !== 'string' || !KEBAB_CASE.test(entry.city)) return [`${name}: "city" must be a city id in kebab-case`]
     return cityIds && !cityIds.has(entry.city) ? [`${name}: "city" must be the id of a city in game/cities.json`] : []
