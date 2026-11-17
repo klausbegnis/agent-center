@@ -1,5 +1,6 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
+import { GATHERING_SKILLS } from './skills.mjs'
 
 export const SAVE_VERSION = 1
 /** The world a project plays in until it is assigned another one. */
@@ -28,7 +29,8 @@ export function emptyWorld() {
  * A project before its first fight. `kills` counts every monster it ever killed (only a world
  * reset starts it over), `stamina` is a share of the party's pool, `restTicks` the
  * fight ticks of rest left, `fightMs` fight time not yet worth a whole tick, and `fightTicks` and
- * `fightRested` describe the fight under way.
+ * `fightRested` describe the fight under way. `tradeChoice` is the trade chosen for the room's
+ * idle characters, null for Auto (see trades.mjs).
  *
  * @param {{ wave?: number }} [start] the wave is the world level when the project first joins
  */
@@ -44,6 +46,7 @@ export function emptyProject({ wave = FIRST_WAVE } = {}) {
     fightTicks: 0,
     fightRested: false,
     themeId: null,
+    tradeChoice: null,
     chest: [],
     characters: {},
     retirees: [],
@@ -200,6 +203,8 @@ function normalizeProject(value) {
     stamina: isNumber(project.stamina) ? Math.min(1, Math.max(0, project.stamina)) : 1,
     restTicks: isNumber(project.restTicks) ? project.restTicks : 0,
     fightMs: isNumber(project.fightMs) ? project.fightMs : 0,
+    // Saves from before trades could be chosen, or with an unknown one, have Auto.
+    tradeChoice: GATHERING_SKILLS.includes(project.tradeChoice) ? project.tradeChoice : null,
     chest: Array.isArray(project.chest) ? project.chest.filter(isPlainObject) : [],
     characters: keepEntries(project.characters, isPlainObject),
     retirees: Array.isArray(project.retirees) ? project.retirees.filter(isPlainObject) : [],

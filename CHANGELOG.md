@@ -12,6 +12,14 @@ All notable changes to this project are recorded here. The format follows
   browser from Orca's panel and tab (Orca may ask once before opening the site), in a new tab
   from the external view. The title, the counters and the header's icon buttons now always keep
   one row, with the other controls wrapping below it.
+- Choose what idle characters gather. The Arsenal's Party section has a trade picker on each
+  character and one for the whole room ("Everyone here gathers"); a character's own choice wins
+  over the room's, and the room's over Auto, the trade the game picks, which stays the default.
+  The choices are kept in the save and in save files, a session that comes back from retirement
+  keeps its own, and older saves load with Auto everywhere. New game routes
+  `/api/game/character-trade` and `/api/game/room-trade` (panel requests `game.characterTrade`
+  and `game.roomTrade`) answer this computer only; a page that only watches shows the trades
+  without the pickers.
 
 ## 0.2.0 - 2026-11-16
 

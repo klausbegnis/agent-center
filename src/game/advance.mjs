@@ -11,6 +11,7 @@ import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel 
 import { retireeBonus } from './retirement.mjs'
 import { inScene, scenesOf } from './scenes.mjs'
 import { materialOfSkill } from './skills.mjs'
+import { effectiveTrade } from './trades.mjs'
 import { addMaterials, withCharacter, withProjectIn, worldIdOf } from './worlds.mjs'
 
 const MS_PER_TICK = TICK_SECONDS * 1000
@@ -24,9 +25,10 @@ const PAUSING_STATES = new Set(['waiting', 'blocked'])
  *   through, one per kill (see scenes.mjs); its `themeId` then follows its kill count instead
  */
 
-/** An idle character gathers its trade for the hours gathering still runs. */
+/** An idle character gathers its trade (see trades.mjs) for the hours gathering still runs. */
 function gatherFor(world, project, character, hours) {
-  const tradeSkill = world.skills[character.trade] ?? emptySkill()
+  const trade = effectiveTrade(character, project)
+  const tradeSkill = world.skills[trade] ?? emptySkill()
   const tool = character.equipment?.tool ? findItem(project.chest, character.equipment.tool) : null
   const ratePerHour = gatherRate({
     tradeLevel: effectiveLevel(tradeSkill),
@@ -37,9 +39,9 @@ function gatherFor(world, project, character, hours) {
     retireeBonus: retireeBonus(project)
   })
   const { units, carry } = gather({ ratePerHour, hours, carry: character.gatherCarry ?? 0 })
-  const gathered = { [materialOfSkill(character.trade)]: units }
+  const gathered = { [materialOfSkill(trade)]: units }
   const materials = units > 0 ? addMaterials(world.materials, gathered) : world.materials
-  const skills = { ...world.skills, [character.trade]: grantSkillXp(tradeSkill, hours * GATHER_XP_PER_HOUR) }
+  const skills = { ...world.skills, [trade]: grantSkillXp(tradeSkill, hours * GATHER_XP_PER_HOUR) }
   return { world: { ...world, materials, skills }, character: { ...character, gatherCarry: carry }, units }
 }
 
@@ -53,7 +55,7 @@ function settleCharacters(world, projectId, readings, { from, to }) {
     let character = project.characters[reading.sessionId]
     if (!character || reading.guest) continue
     character = { ...character, state: reading.state }
-    if (reading.state === 'idle' && hours > 0 && character.trade) {
+    if (reading.state === 'idle' && hours > 0 && effectiveTrade(character, project)) {
       const gathered = gatherFor(current, project, character, hours)
       current = gathered.world
       character = gathered.character

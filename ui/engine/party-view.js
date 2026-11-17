@@ -1,6 +1,6 @@
-// The Arsenal's Party section: the room's characters as cards with class, level and progress,
-// the seven attributes and the three equipment slots drawn like the chest's, then the retirees
-// and the bonus they leave the project.
+// The Arsenal's Party section: what the room's idle characters gather, the characters as cards
+// with class, level, progress, trade picker, the seven attributes and the three equipment slots
+// drawn like the chest's, then the retirees and the bonus they leave the project.
 import { el } from './dom.js'
 import { meter, replaceKeepingFocus, section } from './game-controls.js'
 import { clampShare, formatShare } from './game-format.js'
@@ -16,8 +16,13 @@ import {
   equipmentSlotLabel,
   retireeBonusText,
   retireeFacts,
+  roomTitle,
+  skillLabel,
   SLOT_LABEL
 } from './labels.js'
+import { TRADES_TEXT } from './trade-labels.js'
+import { canChooseTrades, characterTradeOptions, pickerValue, roomTradeOptions } from './trade-model.js'
+import { tradePicker } from './trade-picker.js'
 
 /** A Mage's weapon is a magical one; the others' are physical. */
 const weaponType = (character) => (character.class === 'magical' ? 'magical' : 'physical')
@@ -62,34 +67,128 @@ function slotList(character) {
   return list
 }
 
-function characterCard({ agent, character }) {
+/** A character's card, kept while the character stays, so its trade picker is never rebuilt. */
+function createCharacterCard({ roomId, sessionId, name, actions }) {
   const node = el('article', 'ac-game-hero')
   const top = el('div', 'ac-game-hero-head')
   const who = el('div', 'ac-game-hero-who')
-  who.append(
-    el('strong', 'ac-game-entry-name', agent.name),
-    el('span', 'ac-muted', characterFacts(character))
-  )
-  top.append(gameIcon(character.class, 'ac-game-hero-icon'), who)
-  const progress = meter('ac-game-hero-progress', ARSENAL.levelProgress(agent.name))
-  const share = clampShare(character.levelProgress)
-  progress.set(share, formatShare(share))
-  node.append(top, progress.element, attributeList(character, agent.name), slotList(character))
-  return node
+  const nameText = el('strong', 'ac-game-entry-name')
+  const facts = el('span', 'ac-muted')
+  who.append(nameText, facts)
+  let classIcon = el('span')
+  // Holds the picker, or on a page that cannot choose, the trade as text.
+  const tradeSlot = el('span', 'ac-game-trade-slot')
+  top.append(classIcon, who, tradeSlot)
+  const picker = tradePicker({
+    key: `trade:${sessionId}`,
+    onPick: (choice) => actions.setCharacterTrade(roomId, sessionId, choice)
+  })
+  const tradeText = el('span', 'ac-game-trade')
+  const progress = meter('ac-game-hero-progress', ARSENAL.levelProgress(name))
+  const details = el('div', 'ac-game-hero-details')
+  node.append(top, progress.element, details)
+  let drawnDetails = null
+  return {
+    element: node,
+    update({ agent, character }, { roomChoice, canChoose }) {
+      nameText.textContent = agent.name
+      facts.textContent = characterFacts(character)
+      if (classIcon.dataset.iconId !== character.class) {
+        const nextIcon = gameIcon(character.class, 'ac-game-hero-icon')
+        nextIcon.dataset.iconId = character.class
+        classIcon.replaceWith(nextIcon)
+        classIcon = nextIcon
+      }
+      const share = clampShare(character.levelProgress)
+      progress.set(share, formatShare(share))
+      if (canChoose) {
+        picker.set({
+          label: TRADES_TEXT.characterTrade(agent.name),
+          options: characterTradeOptions(character, roomChoice),
+          value: pickerValue(character.tradeChoice),
+          iconId: character.trade ?? null
+        })
+      } else {
+        tradeText.replaceChildren(gameIcon(character.trade, 'ac-game-trade-icon'),
+          el('span', '', character.trade ? skillLabel(character.trade) : ''))
+      }
+      const shown = canChoose ? picker.element : tradeText
+      if (tradeSlot.firstChild !== shown) tradeSlot.replaceChildren(shown)
+      const shownDetails = JSON.stringify([agent.name, character.attributes, character.equipment])
+      if (shownDetails === drawnDetails) return
+      drawnDetails = shownDetails
+      details.replaceChildren(attributeList(character, agent.name), slotList(character))
+    }
+  }
 }
 
-function charactersCard(state, roomId) {
-  const { members, guests } = roomCharacters(state, roomId)
-  const children = []
-  if (members.length) {
-    const list = el('div', 'ac-game-heroes')
-    list.append(...members.map(characterCard))
-    children.push(list)
-  } else {
-    children.push(el('p', 'ac-game-card-line', ARSENAL.noCharacters))
+/** The room-wide picker: what every character here without a choice of its own gathers. */
+function createRoomTradeRow(actions, getRoomId) {
+  const element = el('div', 'ac-game-field ac-game-room-trade')
+  const label = el('span', 'ac-game-field-label', TRADES_TEXT.roomTrade)
+  const picker = tradePicker({
+    key: 'trade:room',
+    onPick: (choice) => actions.setRoomTrade(getRoomId(), choice)
+  })
+  label.setAttribute('aria-hidden', 'true')
+  element.append(label, picker.element)
+  return { element, set: picker.set }
+}
+
+/** The Characters card: the room's picker, its note, then a card per character. */
+function createCharactersCard(actions) {
+  let roomId = null
+  const cards = new Map()
+  const roomTrade = createRoomTradeRow(actions, () => roomId)
+  const note = el('p', 'ac-game-card-line ac-muted', TRADES_TEXT.note)
+  const list = el('div', 'ac-game-heroes')
+  const empty = el('p', 'ac-game-card-line', ARSENAL.noCharacters)
+  const guestLine = el('p', 'ac-game-card-line')
+  const element = section(ARSENAL.characters, [roomTrade.element, note, list, empty, guestLine], 'ac-game-party-card')
+  return {
+    element,
+    update({ state, roomId: nextRoomId, room, actions: offered }) {
+      if (nextRoomId !== roomId) cards.clear()
+      roomId = nextRoomId
+      const { members, guests } = roomCharacters(state, roomId)
+      const canChoose = canChooseTrades(state.game, offered)
+      const roomChoice = room.tradeChoice ?? null
+      roomTrade.element.hidden = !canChoose || members.length === 0
+      note.hidden = roomTrade.element.hidden
+      if (canChoose) {
+        roomTrade.set({
+          label: TRADES_TEXT.roomTradeLabel(roomName(state, roomId)),
+          options: roomTradeOptions(),
+          value: pickerValue(roomChoice),
+          iconId: roomChoice
+        })
+      }
+      const shown = members.map((member) => {
+        const sessionId = member.character.sessionId
+        if (!cards.has(sessionId)) {
+          cards.set(sessionId, createCharacterCard({ roomId, sessionId, name: member.agent.name, actions }))
+        }
+        const card = cards.get(sessionId)
+        card.update(member, { roomChoice, canChoose })
+        return card.element
+      })
+      const kept = new Set(members.map((member) => member.character.sessionId))
+      for (const sessionId of cards.keys()) if (!kept.has(sessionId)) cards.delete(sessionId)
+      // Nodes move only when who is here changes, so a picker in use stays where it is.
+      const isSame = shown.length === list.children.length && shown.every((node, index) => list.children[index] === node)
+      if (!isSame) replaceKeepingFocus(list, shown)
+      list.hidden = members.length === 0
+      empty.hidden = members.length > 0
+      guestLine.hidden = guests === 0
+      guestLine.textContent = guests ? ARSENAL.guests(guests) : ''
+    }
   }
-  if (guests) children.push(el('p', 'ac-game-card-line', ARSENAL.guests(guests)))
-  return section(ARSENAL.characters, children, 'ac-game-party-card')
+}
+
+/** The room's name as the room list shows it, for a picker's label. */
+function roomName(state, roomId) {
+  const shown = state.rooms.find((entry) => entry.id === roomId)
+  return shown ? roomTitle(shown) : roomId
 }
 
 function retireesCard(room) {
@@ -116,29 +215,25 @@ function retireesCard(room) {
 }
 
 /**
+ * @param {{ actions: Record<string, (...args: unknown[]) => Promise<boolean>> }} options
  * @returns {{ element: HTMLElement,
  *   update: (next: { state: object, roomId: string, room: object }) => void }}
  */
-export function createPartyView() {
+export function createPartyView({ actions }) {
   const element = el('div', 'ac-game-party-section')
+  const characters = createCharactersCard(actions)
+  const retirees = el('div', 'ac-game-party-retirees')
+  element.append(characters.element, retirees)
   let drawn = null
   return {
     element,
     update({ state, roomId, room }) {
-      // Only what the cards show: an agent changing activity does not redraw them.
-      const { members, guests } = roomCharacters(state, roomId)
-      const shown = members.map(({ agent, character }) => [
-        agent.name,
-        character.class,
-        character.level,
-        character.levelProgress,
-        character.attributes,
-        character.equipment
-      ])
-      const signature = JSON.stringify([roomId, shown, guests, room.retirees, room.retiredCount, room.bonus])
+      // The characters are changed in place; the retirees only when what they show changed.
+      characters.update({ state, roomId, room, actions })
+      const signature = JSON.stringify([roomId, room.retirees, room.retiredCount, room.bonus])
       if (signature === drawn) return
       drawn = signature
-      replaceKeepingFocus(element, [charactersCard(state, roomId), retireesCard(room)])
+      replaceKeepingFocus(retirees, [retireesCard(room)])
     }
   }
 }

@@ -11,6 +11,7 @@ import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
+import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { viewOf } from './view.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
@@ -130,6 +131,8 @@ export function createEngine({ content }) {
     upgradeItem,
     buyGroupUpgrade,
     setKeepTitles,
+    setCharacterTrade,
+    setRoomTrade,
     autoSpend: (save) => autoSpendWithPurchases(save).save,
     autoSpendWithPurchases,
     view: (save) => viewOf(save, content),

@@ -13,6 +13,11 @@ const SKILL_IDS = new Set([...WORK_SKILLS, ...GATHERING_SKILLS])
 /** An error whose message names what was refused, cut so a long input cannot flood the log. */
 const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)}`)
 
+/** A trade to gather, or null for none chosen (Auto). */
+function requireTrade(trade) {
+  if (trade !== null && !GATHERING_SKILLS.includes(trade)) throw refuse('unknown trade', trade)
+}
+
 /**
  * @param {{
  *   engine: ReturnType<typeof import('./game/engine.mjs').createEngine>,
@@ -55,6 +60,14 @@ export function createGameActions(dependencies) {
     if (typeof roomId !== 'string' || !(roomIds().includes(roomId) || plays)) throw refuse('unknown room', roomId)
   }
 
+  /** The project of a room that plays in its own world: anything else is refused. */
+  function joinedProject(save, roomId) {
+    const worldId = typeof roomId === 'string' ? worldIdOf(save, roomId) : null
+    const project = worldId === null ? null : save.worlds[worldId]?.projects[roomId]
+    if (!project) throw refuse('unknown room', roomId)
+    return project
+  }
+
   return {
     /** @param {{ worldId: string, skillId: string }} input */
     async prestigeSkill({ worldId, skillId }) {
@@ -68,9 +81,7 @@ export function createGameActions(dependencies) {
     /** @param {{ roomId: string, itemId: string }} input */
     async upgradeItem({ roomId, itemId }) {
       return change((save) => {
-        const worldId = typeof roomId === 'string' ? worldIdOf(save, roomId) : null
-        const project = worldId === null ? null : save.worlds[worldId]?.projects[roomId]
-        if (!project) throw refuse('unknown room', roomId)
+        const project = joinedProject(save, roomId)
         if (typeof itemId !== 'string' || !findItem(project.chest, itemId)) throw refuse('unknown item', itemId)
         return engine.upgradeItem(save, { projectId: roomId, itemId })
       })
@@ -129,6 +140,36 @@ export function createGameActions(dependencies) {
           worldIdOf(save, toRoomId) === sourceWorldId && Object.hasOwn(save.worlds[sourceWorldId].projects, toRoomId)
         if (!plays) throw refuse('not a room on screen in the same world', toRoomId)
         return engine.moveProjectItems(save, { fromProjectId: fromRoomId, toProjectId: toRoomId, now: now() })
+      })
+    },
+
+    /**
+     * Sets what a living character of a room gathers while idle, or null to follow its room.
+     *
+     * @param {{ roomId: string, sessionId: string, trade: string | null }} input
+     */
+    async setCharacterTrade({ roomId, sessionId, trade }) {
+      return change((save) => {
+        const project = joinedProject(save, roomId)
+        if (typeof sessionId !== 'string' || !Object.hasOwn(project.characters, sessionId)) {
+          throw refuse('unknown character', sessionId)
+        }
+        requireTrade(trade)
+        return engine.setCharacterTrade(save, { projectId: roomId, sessionId, trade })
+      })
+    },
+
+    /**
+     * Sets what a room's idle characters gather when they have no choice of their own, or null
+     * for the engine's own pick.
+     *
+     * @param {{ roomId: string, trade: string | null }} input
+     */
+    async setRoomTrade({ roomId, trade }) {
+      return change((save) => {
+        joinedProject(save, roomId)
+        requireTrade(trade)
+        return engine.setRoomTrade(save, { projectId: roomId, trade })
       })
     },
 

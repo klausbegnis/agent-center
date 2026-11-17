@@ -9,6 +9,7 @@ import { engineeringSpeed } from './power.mjs'
 import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
+import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
 import {
   GROUP_UPGRADE_IDS,
   campfireShare,
@@ -70,7 +71,9 @@ function characterView(character, project, names, prices) {
       outfit: equipped(character.equipment?.outfit),
       tool: equipped(character.equipment?.tool)
     },
-    trade: character.trade,
+    trade: effectiveTrade(character, project),
+    tradeChoice: tradeChoiceOf(character.tradeChoice),
+    autoTrade: character.trade ?? null,
     state: character.state ?? 'idle',
     tokens: character.tokens
   }
@@ -108,6 +111,7 @@ function projectView(projectId, project, world, names) {
     monster: monsterView(project.monster),
     stamina: project.stamina,
     resting: project.restTicks > 0,
+    tradeChoice: tradeChoiceOf(project.tradeChoice),
     party: Object.keys(project.characters).sort()
       .map((sessionId) => characterView(project.characters[sessionId], project, names, prices)),
     chest: project.chest.map((item) => itemView(item, names, prices)),

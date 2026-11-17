@@ -135,6 +135,9 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/reset-world': (input) => controller.gameResetWorld(input.worldId),
     '/api/game/auto-spend': (input) => controller.gameSetAutoSpend(input.on),
     '/api/game/travel': (input) => controller.gameSetTravel(input.on),
+    '/api/game/character-trade': (input) =>
+      controller.gameSetCharacterTrade(input.roomId, input.sessionId, input.trade ?? null),
+    '/api/game/room-trade': (input) => controller.gameSetRoomTrade(input.roomId, input.trade ?? null),
     '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on),
     '/api/game/export-save': () => controller.gameExportSave(),
     '/api/game/import-save': (input) => controller.gameImportSave(input.file),

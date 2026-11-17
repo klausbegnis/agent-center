@@ -36,7 +36,7 @@ function newProject(wave, content) {
 
 /** The fields the engine adds to a character, filled in for one that came back from an older record. */
 const withEngineFields = (character) => ({
-  skillXp: {}, gatherCarry: 0, title: null, state: 'idle', ...character
+  skillXp: {}, gatherCarry: 0, title: null, state: 'idle', tradeChoice: null, ...character
 })
 
 /** The session's character, created, or back from retirement, and equipped from the chest. */

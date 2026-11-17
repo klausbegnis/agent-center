@@ -23,6 +23,8 @@ milliseconds the caller passes.
 | `prestige(save, { worldId, skillId })` | Prestiges a skill at the cap; otherwise returns the save unchanged. |
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
 | `buyGroupUpgrade(save, { worldId, upgradeId })` | Buys the next level of a group upgrade; unchanged when it cannot pay. |
+| `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
+| `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
@@ -41,7 +43,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
 - Experience comes from tokens only. Kills and gathering give materials, never experience
   for work skills.
 - Nothing is ever lost: no death, no stolen materials, no decay.
-- No input is needed. The only choice is prestige.
+- No input is needed. Prestige is the one choice the game offers by itself; a person may also
+  choose what idle characters gather (see "Gathering"), and Auto plays as well.
 - A character is one agent session. It is short lived, so most power is accumulated in the
   world and the project, not in the character.
 - Everything is deterministic: the same save and the same inputs give the same result. Anything
@@ -89,7 +92,8 @@ Every number lives in `src/game/constants.mjs`. Formulas below name those consta
   `ACTIVITY_POINTS_PER_LEVEL` to the attribute of the activity that earned most experience
   during that level, and `FORTUNE_POINTS_PER_LEVEL` to precision on even levels and luck on odd
   ones. So every attribute has a source that needs no input.
-- Gathering trade: `hash(sessionId) mod 6` over the gathering skills.
+- Gathering trade: `hash(sessionId) mod 6` over the gathering skills (`trade`, the engine's own
+  pick, called Auto). What it gathers can be chosen (see "Gathering").
 
 ## Power
 
@@ -232,6 +236,15 @@ project id:
 
 ## Gathering
 
+- The trade a character gathers (`effectiveTrade` in `trades.mjs`) is decided in this order:
+  1. the character's own `tradeChoice`, when it has one;
+  2. otherwise its project's `tradeChoice`, when the room has one;
+  3. otherwise its `trade`, the engine's pick (Auto).
+  So the room's choice reaches every character without one of its own, those that join later
+  included, and changing it leaves characters with their own choice alone. Null, missing or
+  unknown values are no choice. A character keeps its choice in its retiree record and has it
+  again when its session comes back. A world reset forgets the room's choice with the rest of
+  the project.
 - An idle character gathers its trade:
   `GATHER_PER_HOUR * REWARD_GROWTH ** worldLevel * (1 + GATHER_SKILL_BONUS *
   effectiveLevel(trade)) * (1 + STAR_EFFECT_BONUS * stars(trade)) * toolFactor * seasoning *
@@ -388,10 +401,10 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
-            themeId, chest: Item[], characters: { [sessionId]: Character },
+            themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
-            tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state }
+            tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
@@ -401,7 +414,9 @@ A monster keeps the part ids and colours it was given, not a seed, so it never c
 when parts or races are added later; a look is about 300 bytes. A monster saved before ranks and
 looks has neither `rank` nor `look`: it keeps its `sprite` and is drawn and fought as before.
 
-`kills` counts every kill of the project (see "Scenes"); `stamina` is a share of the party's
+`tradeChoice`, on a project and on a character (and kept on a retiree record), is a gathering
+skill or null (see "Gathering"); a save from before it existed has null everywhere. `kills`
+counts every kill of the project (see "Scenes"); `stamina` is a share of the party's
 pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
 a character's experience by work skill, for the retiree's main skill.
@@ -640,13 +655,16 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.resetWorld` | `/api/game/reset-world` | `{ worldId }` |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
+| `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, or null to follow the room |
+| `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, or null for Auto |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
-screen or in the save, an item of that room's chest, a skill, a group upgrade. A new world is a
+screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
+character of the room, a gathering skill. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
 refused with an error, and nothing is stored. Every action but `keepTitles` needs the game to be
 running; `keepTitles` writes the setting, and the save follows. A refusal carries its reason:
@@ -718,6 +736,7 @@ by the usual closing rules.
       party: 'fighting',            // fighting | resting | paused | idle
       pausedBy: null,               // blocked | waiting while paused, otherwise null
       stamina: 0.8,                 // share of the party's pool
+      tradeChoice: null,            // what characters without their own choice gather; null: Auto
       chest: [{ id, name, slot, damageType, tier, level, power, heldBy, upgradeCost, affordable }],
       chestSize: 6,
       retirees: [{ nameId, class, level, mainSkill, retiredAt, title }],
@@ -728,7 +747,7 @@ by the usual closing rules.
   characters: {
     'pane-13': { sessionId, link: 'title', guest: false, class: 'physical', level: 6,
       levelProgress: 0.4, attributes: {...}, equipment: { weapon: { id, name, tier, level },
-      outfit, tool }, trade: 'mining', state: 'working' },
+      outfit, tool }, trade: 'mining', tradeChoice: null, autoTrade: 'mining', state: 'working' },
     'pane-5': { sessionId: null, link: 'guest', guest: true, level: 1 }
   },
   recent: [{ id: 570, at, type: 'level', roomId, sessionId, agentId, level: 9 }],
@@ -754,6 +773,9 @@ by the usual closing rules.
   screen plays in still lists its orphans, though nothing can take them.
 - `tokenSource` is `history` or `estimated` (see "When it runs"). A UI should say plainly when
   progress is estimated.
+- A character's `trade` is the one it gathers now (see "Gathering"), `tradeChoice` its own
+  choice or null, and `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
+  to.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
   right character. `link` is how it was matched: `session`, `title`, `only`, `agent` (the
   estimate: one character per agent, on this computer or a paired one) or `guest` (a paired
@@ -850,3 +872,13 @@ Targets the numbers do not meet, and why:
 - Most projects have one or two sessions at a time, so most parties are not balanced and a
   fight with a rest is the usual case: 60 to 90% of fights early, 25 to 60% after a year as
   the campfire grows.
+Choosing a trade gives no material more worth than another: every material is gathered at the
+same rate and costs the same in each recipe it is in. Putting a whole world on one trade gathers
+more units (1.4 to 1.6 times Auto's over a year in light, 2.8 to 3.0 in medium, 4.3 to 4.4 in
+heavy), because that trade's skill takes all the gathering experience (level 183, 478 and 744
+after a year, against 40 to 130 for each of six under Auto), but
+the six materials are needed in pairs, so the surplus waits in the store: over a year it bought
+55 to 59 purchases in light against 61 under Auto, 322 to 339 in medium against 339, and 2,865
+to 2,880 in heavy against 2,872, with the same gear. Steering every room each working day to the
+material the world has least of did a little better than Auto: 5% more purchases in light, 2%
+in medium, under 1% in heavy. The simulator plays Auto, so its numbers above do not change.

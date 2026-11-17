@@ -11,6 +11,8 @@ export const GAME_ACTION_METHODS = [
   'resetWorld',
   'setAutoSpend',
   'setTravel',
+  'setCharacterTrade',
+  'setRoomTrade',
   'setKeepTitles',
   'exportSave',
   'importSave',

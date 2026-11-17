@@ -32,8 +32,9 @@ const LUCK_HASH_SALT = '|luck'
  * @typedef {{
  *   sessionId: string, class: string, level: number, xp: number,
  *   attributes: { [attribute: string]: number }, levelActivityXp: { [activity: string]: number },
- *   equipment: Equipment, trade: string, tokens: number, bornAt: number, lastSeenAt: number
- * }} Character
+ *   equipment: Equipment, trade: string, tradeChoice: string | null, tokens: number,
+ *   bornAt: number, lastSeenAt: number
+ * }} Character `trade` is the engine's own pick (Auto), `tradeChoice` the person's, null for none
  */
 
 /**
@@ -102,6 +103,7 @@ export function createCharacter({ sessionId, livingClasses, skills, now }) {
     levelActivityXp: {},
     equipment: { weapon: null, outfit: null, tool: null },
     trade: tradeFor(sessionId),
+    tradeChoice: null,
     tokens: 0,
     bornAt: now,
     lastSeenAt: now

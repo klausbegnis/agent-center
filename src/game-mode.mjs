@@ -440,6 +440,8 @@ export function createUnavailableGame(status) {
     resetWorld: refuse,
     setAutoSpend: refuse,
     setTravel: refuse,
+    setCharacterTrade: refuse,
+    setRoomTrade: refuse,
     setKeepTitles: refuse,
     exportSave: refuse,
     importSave: refuse,

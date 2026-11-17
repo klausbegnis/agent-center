@@ -60,6 +60,8 @@ function recordingGame() {
     resetWorld: record('reset'),
     setAutoSpend: record('autoSpend'),
     setTravel: record('travel'),
+    setCharacterTrade: record('characterTrade'),
+    setRoomTrade: record('roomTrade'),
     setKeepTitles: record('keepTitles'),
     exportSave: async () => ({ format: 'agent-center-game' }),
     importSave: record('import'),
@@ -99,6 +101,27 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
   await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
   await assert.rejects(controller.gameImportSave([]), /invalid save file/)
+  assert.equal(calls.length, 0)
+})
+
+test('trade choices reach the game with their fields, null meaning no choice', async () => {
+  const { game, calls } = recordingGame()
+  const { controller } = setup({ game })
+  await controller.gameSetCharacterTrade('local:/work/rumble-banana', 's1', 'mining')
+  await controller.gameSetRoomTrade('local:/work/rumble-banana', null)
+  assert.deepEqual(calls, [
+    ['characterTrade', { roomId: 'local:/work/rumble-banana', sessionId: 's1', trade: 'mining' }],
+    ['roomTrade', { roomId: 'local:/work/rumble-banana', trade: null }]
+  ])
+})
+
+test('trade choices with values of the wrong kind are refused before they reach the game', async () => {
+  const { game, calls } = recordingGame()
+  const { controller } = setup({ game })
+  await assert.rejects(controller.gameSetCharacterTrade('room', undefined, 'mining'), /invalid session/)
+  await assert.rejects(controller.gameSetCharacterTrade('room', 's1', 3), /invalid trade/)
+  await assert.rejects(controller.gameSetRoomTrade(null, 'mining'), /invalid room/)
+  await assert.rejects(controller.gameSetRoomTrade('room', ''), /invalid trade/)
   assert.equal(calls.length, 0)
 })
 

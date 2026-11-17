@@ -109,6 +109,8 @@ otherwise.
   | `/api/game/reset-world` | starts a world over (cannot be undone) |
   | `/api/game/auto-spend` | turns auto-spend on or off |
   | `/api/game/travel` | turns "new scene after each monster" on or off |
+  | `/api/game/character-trade` | sets what one character gathers while idle |
+  | `/api/game/room-trade` | sets what a room's characters gather while idle |
   | `/api/game/keep-titles` | turns keeping conversation titles on or off |
   | `/api/game/export-save` | answers the whole save file (see "The save file" below) |
   | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |

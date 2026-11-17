@@ -33,6 +33,9 @@ export function registerPanelHandlers(orca, controller) {
   orca.panels.handle('game.resetWorld', (input) => controller.gameResetWorld(input?.worldId))
   orca.panels.handle('game.autoSpend', (input) => controller.gameSetAutoSpend(input?.on))
   orca.panels.handle('game.travel', (input) => controller.gameSetTravel(input?.on))
+  orca.panels.handle('game.characterTrade', (input) =>
+    controller.gameSetCharacterTrade(input?.roomId, input?.sessionId, input?.trade ?? null))
+  orca.panels.handle('game.roomTrade', (input) => controller.gameSetRoomTrade(input?.roomId, input?.trade ?? null))
   orca.panels.handle('game.keepTitles', (input) => controller.gameSetKeepTitles(input?.on))
   orca.panels.handle('game.exportSave', () => controller.gameExportSave())
   orca.panels.handle('game.importSave', (input) => controller.gameImportSave(input?.file))
