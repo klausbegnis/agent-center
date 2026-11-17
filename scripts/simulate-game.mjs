@@ -2,6 +2,7 @@
 // fights, materials and upgrades progress, then a balance check against the design targets.
 // Deterministic: every "random" choice is a hash. Run it with `npm run simulate`.
 import { readFileSync } from 'node:fs'
+import { bestiaryIndexOf } from '../src/game/bestiary-content.mjs'
 import { createEngine } from '../src/game/engine.mjs'
 import { chanceOf, hashOf } from '../src/game/hash.mjs'
 import { effectiveGearLevel, referenceGearLevel } from '../src/game/items.mjs'
@@ -21,7 +22,7 @@ import {
   printTable,
   sumOf
 } from './game-balance.mjs'
-import { bestiaryGain, bestiaryProgress } from './bestiary-balance.mjs'
+import { bestiaryGain, bestiaryProgress, levelUpsIn } from './bestiary-balance.mjs'
 import { legendaryGain } from './legendary-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
@@ -164,8 +165,20 @@ function advanceAndCount(run, from, to, readings) {
   const killMaterials = sumOf(events.map((event) => materialTotal(event.materials)))
   for (const event of events) run.period.kills.push(event)
   run.dayKills += events.length
+  trackLevelUps(run, to, levelUpsIn(events))
   run.period.killMaterials += killMaterials
   run.period.gathered += materialTotal(run.save.worlds.main?.materials) - before - killMaterials
+}
+
+/**
+ * The bestiary's pace: mastery levels each day, and when the first came, in days and in hours of
+ * fighting since the start.
+ */
+function trackLevelUps(run, to, count) {
+  if (count === 0) return
+  const day = Math.floor(to / DAY)
+  run.levelUps[day] = (run.levelUps[day] ?? 0) + count
+  run.firstLevelUp ??= { day: day + 1, fightHours: run.totalFightHours + run.period.fightHours }
 }
 
 /** Adds the time each project's party fought: someone working and nobody waiting. */
@@ -272,6 +285,14 @@ function upgradeLevels(save) {
   return items + sumOf(Object.values(world.upgrades))
 }
 
+/** The day the first race that comes up as often as any reached its last powered level. */
+function trackLastPowered(run, day) {
+  if (run.lastPoweredDay !== null || !run.save.worlds.main?.bestiary) return
+  const index = bestiaryIndexOf(content)
+  if (!index) return
+  if (bestiaryProgress(run.save.worlds.main, content).common >= index.levels) run.lastPoweredDay = day + 1
+}
+
 /** The day each room first owned a relic and a boss-owned item. */
 function trackLegendary(run, day) {
   for (const [projectId, project] of Object.entries(run.save.worlds.main?.projects ?? {})) {
@@ -331,6 +352,7 @@ function snapshot(run, day) {
 }
 
 function closePeriod(run, day) {
+  run.totalFightHours += run.period.fightHours
   run.rows.push(snapshot(run, day))
   for (const event of run.period.kills) run.allKills.push(event)
   run.totals.killMaterials += run.period.killMaterials
@@ -357,6 +379,10 @@ function simulate(scenario, { trades = false, funnel = false, withEngine = engin
     serial: scenario.concurrent,
     period: newPeriod(),
     milestones: {},
+    levelUps: [],
+    firstLevelUp: null,
+    lastPoweredDay: null,
+    totalFightHours: 0,
     legendaryFirsts: {},
     firstPrestige: null,
     daysWithoutKill: 0,
@@ -369,6 +395,7 @@ function simulate(scenario, { trades = false, funnel = false, withEngine = engin
     else advanceAndCount(run, day * DAY, (day + 1) * DAY, idleReadings(run))
     trackMilestones(run, day)
     trackLegendary(run, day)
+    trackLastPowered(run, day)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -467,24 +494,43 @@ function printFunnelComparison(plainRuns, funnelRuns) {
   }
 }
 
-/** What each scenario's bestiary reached at day 30, 90 and 365, and what it adds to kills per hour. */
+/** Mastery levels a day, on average, over working days `from` to `to` (0-based, `to` excluded). */
+function levelUpsPerWorkday(run, from, to) {
+  let levels = 0
+  let workdays = 0
+  for (let day = from; day < to; day++) {
+    levels += run.levelUps[day] ?? 0
+    if (isWorkday(day)) workdays += 1
+  }
+  return levels / Math.max(1, workdays)
+}
+
+/** What each scenario's bestiary reached, its pace, and what it adds to kills per hour. */
 function printBestiary(runs, plainRuns) {
-  console.log('\n## Bestiary: races met, mastery, bosses, bonus; kills per hour without and with it\n')
+  console.log('\n## Bestiary: races met, mastery, ranks and bosses; kills per hour without and with it\n')
   const rows = []
   runs.forEach((run, at) => {
-    for (const day of [30, 90, 365]) {
+    for (const day of [1, 7, 30, 90, 180, 365]) {
       const row = run.rows.find((each) => each.day === day)
       const without = plainRuns[at].rows.find((each) => each.day === day)
-      const { discovered, levels, byLevel, bosses, hunter, meanRaceDamage, perks } = row.bestiary
-      rows.push([run.scenario.id, day, `${discovered}/20`, levels, byLevel.slice(1).join('/'), perks, `${bosses}/55`, hunter,
-        percent(meanRaceDamage), fixed(without.killsPerHour), fixed(row.killsPerHour),
+      const { discovered, levels, lowest, highest, prestige, perks, bosses, hunter, rank, meanRaceDamage } = row.bestiary
+      rows.push([run.scenario.id, day, `${discovered}/20`, levels, `${lowest}-${highest}`, prestige, perks, rank,
+        `${bosses}/55`, hunter, percent(meanRaceDamage), fixed(without.killsPerHour), fixed(row.killsPerHour),
         percent(row.killsPerHour / without.killsPerHour - 1)])
     }
   })
-  printTable(['scenario', 'day', 'races', 'levels', 'at 1/2/3/4/5', 'perks', 'bosses', 'hunter', 'race dmg',
-    'kills/h', 'bestiary', 'gain'], rows)
-  console.log('Levels: mastery levels in all. At 1/2/3/4/5: races at each level. Perks: races with their ' +
-    'perk. Race dmg: the damage bonus against a race, averaged over all twenty.')
+  printTable(['scenario', 'day', 'races', 'levels', 'low-high', 'prestige', 'perks', 'rank', 'bosses', 'hunter',
+    'race dmg', 'kills/h', 'bestiary', 'gain'], rows)
+  console.log('Levels: mastery levels in all. Low-high: the lowest and highest race. Prestige: races past their ' +
+    'powered levels. Perks: races with a perk. Rank: the hunter rank. Race dmg: the damage bonus against a race, ' +
+    'averaged over all twenty.\n')
+  printTable(['scenario', 'first level', 'levels/day week 1', 'month 1', 'month 6', 'last powered level'],
+    runs.map((run) => [run.scenario.id,
+      run.firstLevelUp ? `day ${run.firstLevelUp.day}, ${fixed(run.firstLevelUp.fightHours * 60)} min of fighting` : '-',
+      fixed(levelUpsPerWorkday(run, 0, 7)), fixed(levelUpsPerWorkday(run, 0, 30)), fixed(levelUpsPerWorkday(run, 150, 180)),
+      run.lastPoweredDay ? `day ${run.lastPoweredDay}` : `> ${DAYS}`]))
+  console.log('Levels/day: mastery levels anywhere in the bestiary per working day. Last powered level: the day ' +
+    'the first race that comes up as often as any reaches it.')
 }
 
 /** The bestiary's balance targets: what it adds in the scenarios at a year, and when maxed. */

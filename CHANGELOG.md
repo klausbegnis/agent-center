@@ -54,14 +54,20 @@ All notable changes to this project are recorded here. The format follows
 - Game mode: a **Bestiary** tab, the seventh. Each world counts the creatures it kills: every
   race by rank, every named boss beaten (and how often as legendary), the rooms' own themed
   monsters as "others", and the day of each first kill. A race or boss never killed shows as a
-  silhouette and "???". A race's mastery levels (at 10, 50, 200, 800 and 3,000 kills) each add
-  1% damage against it, and at levels 3 and 5 its small themed perk (slimes: a little more
-  materials from kills; goblins: a little more item drops; and so on); beating 5, 15, 30 and all
-  55 different bosses levels a boss hunter track with a little damage against bosses and faster
-  legendary pity. Every bonus is data in `game/bestiary.json`, an effect of the set legendary
-  loot uses, summed with the relic and the equipment under the same caps; the damage cap is now
-  0.15. A first kill and a new level are celebrated in the room. The counters are kept in the
-  save and in save files; older saves load with an empty bestiary, and a world reset clears it.
+  silhouette and "???". A kill is worth points by its rank (plain 1 up to legendary 60), and
+  points raise a race's mastery on a long ladder: the first level comes with its first couple of
+  kills, new ones every hour or so at first, then every few days. Its first 25 levels each add
+  0.2% damage against that race, with its small themed perk every fifth (slimes: a little more
+  materials from kills; goblins: a little more item drops; and so on); past them it goes on for
+  ever as prestige titles ("Goblin-bane II") that add no power. A world-wide hunter rank, from
+  every point, gives a little more materials from kills, never over 2%; beating 1, 5, 15, 30 and
+  all 55 different bosses levels a boss hunter track with a little damage against bosses and
+  faster legendary pity. Every bonus is data in `game/bestiary.json`, an effect of the set
+  legendary loot uses, summed with the relic and the equipment under the same caps; the damage
+  cap is now 0.15. A first kill, a new level, a title and a new rank are celebrated in the room.
+  The counters are kept in the save and in save files; a world reset clears them. A world that
+  played before its bestiary counted gets its rooms' earlier kills once, spread over the races as
+  plain kills (never bosses), so it does not start from nothing.
 - Choose what a character holds. On the Party tab each of a character's three slots opens, in
   place, the room's chest items that fit it, best first, with what each changes and whether it
   is free or a swap with the character holding it (refused, with the reason, when that one

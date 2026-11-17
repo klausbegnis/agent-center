@@ -208,7 +208,10 @@ export function createGameMode(dependencies) {
         events.push({ type: 'legendary', roomId: projectId, worldId, item: drop.id, kind: drop.kind })
       }
       // A first kill of a race or a boss, and a mastery or boss hunter level, for the room to celebrate.
-      for (const news of kill.bestiary ?? []) events.push({ type: 'bestiary', roomId: projectId, worldId, ...news })
+      for (const { id: creatureId, ...news } of kill.bestiary ?? []) {
+        // The race or boss goes under its own key: `id` is the event's own number in `recent`.
+        events.push({ type: 'bestiary', roomId: projectId, worldId, ...news, ...(creatureId ? { creatureId } : {}) })
+      }
     }
     return { save: moved.save, events }
   }

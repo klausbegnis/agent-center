@@ -117,8 +117,8 @@ function startingSave(travel, frozen) {
 
 /**
  * The frozen demo's bestiary. A day of play meets every race, so the frozen world's book is set to
- * one of weeks of play instead: twelve races met, a few mastered, slimes to the top, eight still
- * unknown, and a dozen bosses beaten, among them the owner of the legendary room's Rimeheart, so
+ * one of weeks of play instead: twelve races met at levels from 1 to 20, slimes past their
+ * powered levels with the title "Slime-scourer II", eight still unknown, and a dozen bosses beaten, among them the owner of the legendary room's Rimeheart, so
  * its card shows the item found. Kills by rank, then the game day of the first.
  */
 function demoBestiary(day) {
@@ -127,7 +127,7 @@ function demoBestiary(day) {
   const boss = (beaten, legendary, daysAgo) => [beaten, legendary, day - daysAgo]
   return {
     races: {
-      slime: race(2410, 410, 210, 45, 2, 0, 61),
+      slime: race(7600, 410, 210, 45, 2, 150, 61),
       goblin: race(520, 105, 52, 12, 3, 1, 61),
       orc: race(140, 28, 14, 3, 2, 0, 60),
       skeleton: race(88, 17, 9, 2, 1, 0, 58),
@@ -154,7 +154,9 @@ function demoBestiary(day) {
       'queen-zarra': boss(1, 0, 6),
       'old-rusk': boss(1, 0, 1)
     },
-    others: race(64, 12, 6, 1, 1, 0, 61)
+    others: race(64, 12, 6, 1, 1, 0, 61),
+    // Its one back-fill is done: the rooms' kills are all in it already.
+    filled: 0
   }
 }
 

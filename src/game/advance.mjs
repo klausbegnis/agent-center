@@ -1,6 +1,8 @@
 // Real time passing for the projects that have sessions: each reported session's state is
 // recorded, idle characters gather, and the working party of a project fights. Also gets a
 // project ready for the next stretch of time: a party that works has a monster to face.
+import { backfillSave } from './bestiary-backfill.mjs'
+import { bestiaryIndexOf } from './bestiary-content.mjs'
 import { worldEffectsOf } from './bestiary-effects.mjs'
 import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
@@ -145,12 +147,14 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
  */
 export function advanceWithEvents(save, { from, to, sessions = [] }, context) {
   if (!(to > from)) return { save, events: [] }
+  // Once per world, before its first counted fight: kills from before the bestiary counted.
+  const filled = backfillSave(save, { index: bestiaryIndexOf(context.content), day: gameDayOf(from) })
   const byProject = new Map()
   for (const reading of sessions) {
     if (!byProject.has(reading.projectId)) byProject.set(reading.projectId, [])
     byProject.get(reading.projectId).push(reading)
   }
-  let next = save
+  let next = filled
   const events = []
   for (const projectId of [...byProject.keys()].sort()) {
     const worldId = worldIdOf(next, projectId)

@@ -36,6 +36,12 @@
   font-weight: 700;
 }
 .ac-bestiary-others { margin-top: 2px; }
+.ac-bestiary-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.ac-bestiary-sort { align-items: center; }
+.ac-bestiary-sort[hidden] { display: none; }
+.ac-bestiary-sort-label { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-bestiary-sort .ac-bestiary-switch-button { padding: 2px 8px; font-size: 11px; }
+.ac-bestiary-rank-track[hidden] { display: none; }
 
 /* The grid: two cards a row in the sidebar, more as the panel widens. An open card takes its whole
    row, where it stands; the others keep their order. */
@@ -88,6 +94,25 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.ac-bestiary-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 6px; min-width: 0; }
+.ac-bestiary-heading .ac-bestiary-name { flex: 0 1 auto; min-width: 0; }
+.ac-bestiary-level {
+  flex: none;
+  color: var(--ac-game-gold, #f2c14e);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ac-bestiary-title { color: var(--ac-game-gold, #f2c14e); font-style: italic; }
+.ac-bestiary-title:empty,
+.ac-bestiary-next:empty { display: none; }
+.ac-bestiary-next { color: var(--orca-muted-foreground, #9aa3b2); }
+/* Prestige: the border deepens from a gold line to a double gold frame, as the title goes on. */
+.ac-bestiary-card[data-prestige='1'] { border-color: color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent); }
+.ac-bestiary-card[data-prestige='2'] { border-color: var(--ac-game-gold, #f2c14e); }
+.ac-bestiary-card[data-prestige='3'] {
+  border-color: var(--ac-game-gold, #f2c14e);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent);
 }
 .ac-bestiary-kills,
 .ac-bestiary-progress,

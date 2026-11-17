@@ -1,11 +1,11 @@
 // Checks a world's bestiary in a save from outside the plugin (an imported file), for
 // save-check.mjs: counters of races and bosses the content has, each a list of whole numbers of the
-// length the engine writes, with at least one kill, no more legendary wins than wins, and no
-// empty part. Answers the cleaned bestiary or the first problem, as the path under the world and
+// length the engine writes, with at least one kill, no more legendary wins than wins, a whole
+// back-fill mark, and nothing empty unless it marks the back-fill done. Answers the cleaned bestiary or the first problem, as the path under the world and
 // what is wrong.
 import { BESTIARY_RANKS, BOSS_BEATEN, BOSS_FIRST_DAY, BOSS_LEGENDARY, RACE_FIRST_DAY, killsOf } from './bestiary.mjs'
 
-const KEYS = ['races', 'bosses', 'others']
+const KEYS = ['races', 'bosses', 'others', 'filled']
 /** The longest list the engine writes; a longer one is refused before it is read. */
 const LIST_LENGTH = BESTIARY_RANKS.length + 1
 
@@ -54,7 +54,10 @@ function bestiaryProblem(value, index) {
     counterMapProblem(value.bosses, 'bestiary.bosses', bosses) ??
     (value.others === undefined ? null : raceCounterProblem(value.others, 'bestiary.others'))
   if (problem) return problem
-  const isEmpty = Object.keys(value.races).length === 0 && Object.keys(value.bosses).length === 0 && value.others === undefined
+  if (value.filled !== undefined && !isCount(value.filled)) return ['bestiary.filled', 'is not a whole count']
+  // An empty bestiary is kept only to mark that its one back-fill is done.
+  const isEmpty = Object.keys(value.races).length === 0 && Object.keys(value.bosses).length === 0 &&
+    value.others === undefined && value.filled === undefined
   return isEmpty ? ['bestiary', 'counts nothing; the game leaves it out'] : null
 }
 
@@ -72,5 +75,6 @@ export function checkWorldBestiary(value, index) {
   const copy = (counters) => Object.fromEntries(Object.entries(counters).map(([id, counter]) => [id, [...counter]]))
   const bestiary = { races: copy(value.races), bosses: copy(value.bosses) }
   if (value.others !== undefined) bestiary.others = [...value.others]
+  if (value.filled !== undefined) bestiary.filled = value.filled
   return { ok: true, bestiary }
 }
