@@ -24,7 +24,7 @@ import {
 } from './instance-constants.mjs'
 import { runLevel } from './instance-monsters.mjs'
 import { progressOf, runContext } from './instance-run.mjs'
-import { legendaryItemFor, rollBossItem, rollPoolRelic } from './legendary-drops.mjs'
+import { legendaryItemFor, rollBossItem } from './legendary-drops.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { ownsLegendary, withRelic } from './legendary.mjs'
 import { addMaterials } from './worlds.mjs'
@@ -84,15 +84,15 @@ export function vaultLoot(state, context, seed) {
   return legendary
 }
 
-/** The boss's legendary rolls: a pool relic as a wave boss gives, then its own item, again with a boon. */
+/**
+ * The boss's own item, rolled again with a boon. A wave boss's roll for a city's relic is left out:
+ * a run meets its boss far more often than the waves do, and those relics are the stalls' to sell.
+ */
 function bossLoot(state, context, { monster, seed, bonuses, tier }) {
   const index = legendaryIndexOf(context.content)
   if (!index) return []
   const pityFactor = 1 + (context.party.legendary?.legendaryPity ?? 0)
   const drops = []
-  const relic = rollPoolRelic(state, { rank: 'boss', seed, index, pityFactor })
-  Object.assign(state, relic.project)
-  if (relic.drop) drops.push(relic.drop.id)
   const chance = Math.min(1, bossItemChance(tier) + bonuses.bossItem)
   for (let roll = 0; roll <= bonuses.rewardRolls; roll++) {
     const own = rollBossItem(state, {

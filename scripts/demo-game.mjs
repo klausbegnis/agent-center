@@ -15,6 +15,7 @@ import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
 import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
 import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { showDemoInstances } from './demo-instances.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
@@ -288,7 +289,7 @@ function relicDaysAhead() {
  */
 export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
-  const { settlementLevels = null } = options
+  const { settlementLevels = null, instanceVault = false } = options
   let { store } = options
   const startedAt = Date.now()
   let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
@@ -355,10 +356,12 @@ export async function createDemoGame(options) {
     }
     await showDemoBestiary(game, frozenClock)
     await showDemoSettlement(game, settlementLevels ?? DEMO_VILLAGE)
+    await showDemoInstances(game, { vault: instanceVault })
     return game
   }
   await game.round()
   if (settlementLevels) await showDemoSettlement(game, settlementLevels)
+  if (instanceVault) await showDemoInstances(game, { vault: true })
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

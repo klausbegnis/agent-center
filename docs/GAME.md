@@ -7,12 +7,13 @@ timers, no Orca API, no DOM. The UI does not draw the game yet.
 
 ## The engine
 
-`createEngine({ content: { monsters, items, races, bosses, cities, legendary, bestiary, settlement } })` takes
+`createEngine({ content: { monsters, items, races, bosses, cities, legendary, bestiary, settlement, instances } })` takes
 the parsed `game/monsters.json`, `game/items.json`, `game/races.json`, `game/bosses.json`,
 `game/cities.json`, `game/legendary.json` (optional: without it there is no legendary loot) and
 `game/bestiary.json` (optional: without it nothing is counted and no bestiary bonus is given) and
 `game/settlement.json` (optional: without it there are no stages and only the campfire, the
-workbench and the rune circle can be built; see "Settlement") and returns
+workbench and the rune circle can be built; see "Settlement") and `game/instances.json` (optional:
+without it there are no instances; see "Instances") and returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -37,6 +38,9 @@ milliseconds the caller passes.
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
 | `sendItem(save, { fromProjectId, toProjectId, itemId \| itemIds, confirmHeld? })` | Sends items of a project's chest to another project of the same world, one a character holds only with `confirmHeld` (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged, sentSalvaged, repicks }`: the copies the target's cap salvaged, which of them were sent ones, and what each holder took instead. The same save when refused; `sendItemProblem(save, sending)` says why, or null. `itemName(entryId)` names an item's entry. |
+| `enterInstance(save, { projectId, instanceId, tier })` | Sends a room's party into an open instance at a tier, freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
+| `chooseBoon(save, { projectId, boonId })` | Takes one of the two boons a room's run is offered in the vault; the same save when refused, and `boonProblem(save, choice)` says why. |
+| `recallParty(save, { projectId })` | Ends a room's run by hand, as a failed run ends: what it found is kept, its wave comes back, and the instance waits on a cooldown for that room. |
 | `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
@@ -382,7 +386,7 @@ spare piece into one room does not let that room run away (see "Sending gear" un
 
 ## Legendary loot
 
-Three kinds, in `game/legendary.json` (checked by `src/game/legendary-content.mjs`), each with a
+Four kinds, in `game/legendary.json` (checked by `src/game/legendary-content.mjs`), each with a
 name, a flavour line, a colour and a picture in `ui/art/legendary/`:
 
 - **Relics** (`relic`, ten, two per city): a room owns any number and has one **active**; only the
@@ -397,6 +401,8 @@ name, a flavour line, a colour and a picture in `ui/art/legendary/`:
   chest like other gear (`legendary: true` on the item, its id its entry's id), is upgraded the
   same way, goes back to the chest on retirement and moves with a chest left behind. It is never
   salvaged or capped away, and a room never holds two of one.
+- **Instance relics** (`instance-relic`, six): relics too, each the reward of an instance's first
+  clear (`instance`, its id; see "Instances"), never sold and never dropped.
 
 ### Effects
 
@@ -429,9 +435,9 @@ and a test checks every shipped item's text against its effect.
 | `gatherHours` | party | gathering stops a hours later after the last tokens |
 | `gatherXp` | party | gathering skill experience × (1 + a) |
 | `characterXp` | party | the room's characters' experience from tokens × (1 + a) |
-| `skillXp` | holder | the holder's tokens give the named work skill × (1 + a) |
+| `skillXp` | party, holder | the holder's tokens (with an instance relic, every character's) give the named work skill × (1 + a) |
 | `upgradeCost` | party | the room's item upgrades cost × (1 − a), after the workbench |
-| `raceDamage` | world | hits × (1 + damage + a) against a monster of one of `races` |
+| `raceDamage` | party, world | hits × (1 + damage + a) against a monster of one of `races` |
 | `legendaryPity` | world | each step of a boss's legendary pity counts × (1 + a) |
 | `marketFee` | world | the market's fee − a (the Storehouse's; see "Settlement") |
 
@@ -613,6 +619,191 @@ boss hunter level and `{ kind: 'rank', level }` for a hunter rank. A kill that l
 levels at once (a champion, a boss) tells only the last. A race level past the powered ones is a
 prestige rank; the bridge adds its `title` and `prestige`.
 The bridge turns each into a `bestiary` event of `recent` (see "View state").
+
+## Instances
+
+A road of six dungeons (`game/instances.json`, checked by `src/game/instance-content.mjs` and
+`instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
+and `instance-rewards.mjs`, its numbers `instance-constants.mjs`). A room sends its party into an
+open instance at a tier; while inside, its wave, wave kills and standing monster are frozen, and its
+working time, in the same rounds and ticks as the waves, plays the instance's six rooms. The other
+rooms keep fighting their waves; one room is inside an instance at a time, and an instance holds
+one room at a time.
+
+### The road
+
+| | Instance | Races | Opens at World Lv | Boss | Elite (mini-boss) | Third room | Relic |
+|---|---|---|---|---|---|---|---|
+| 1 | The Sunken Crypt | skeletons, zombies, ghosts | 5 | Ossric, the Ossuary Lord | Old Mattock, the Gravedigger | trap, agility | The Tidewake Bell |
+| 2 | Emberdeep Foundry | demons, golems, elementals | 10 | Vorzhaal, the Ember Prince | Warden Seventeen, the Last Sentry | puzzle, Engineering | Heart of the Last Pour |
+| 3 | The Hollow Hive | insects, spiders | 16 | Queen Zarra, of the Golden Hive | Mother Skein, the Silk Widow | trap, precision | Amber of the Sleeping Queen |
+| 4 | Frostwatch Keep | trolls, ogres, werewolves | 24 | Old Hessa, the Frost Crone | Grumlaw, the Bridge Warden | trap, strength | The Rimebitten Horn |
+| 5 | The Drowned Library | vampires, humans, ghosts | 34 | Count Varesh, the Velvet Thirst | Brother Hollis, the Lantern Monk | puzzle, Lore | The Drowned Concordance |
+| 6 | Wyrmrest Spire | dragons, lizardfolk | 46 | Azhrenn, the Storm Wing | Tethra Coldscale, the Reed Hunter | puzzle, Arcana | Fang of the Coiled Wyrm |
+
+- The first instance opens when the world reaches its level; each next one when the one before it
+  has been cleared once and the world reaches its level (`openness` in `instance-run.mjs`). Opened
+  is worked out from the world's progress and level, never stored. Clearing all six gives the world
+  the region's title (**Roadwarden**) and leaves the map complete.
+- Bosses and elites come from the existing roster, of the instance's races, each in at most one
+  instance; all twelve guard an item of their own (`game/legendary.json`), which is what a clear
+  rolls for. The vault's pool lists other bosses' items (its elite's among them), never an
+  instance boss's.
+- The site of each instance on the 256×144 roadmap is `map: { x, y }`; the three roadmap pictures
+  (0, 3 and 6 cleared) are enough because the UI places live markers over them.
+
+### Rooms
+
+| Room | What happens |
+|---|---|
+| 1 entrance | one fight: a plain monster of the instance's races (common, armored or ethereal by hash) |
+| 2 hall | three fights in a row, one in three a veteran |
+| 3 trap or puzzle | no fight: a check (below), at once |
+| 4 elite's chamber | the instance's elite, a roster boss, as a champion with an affix |
+| 5 vault | no fight: loot now and a choice of one of two boons |
+| 6 boss | the instance's boss, rank `boss`, with `INSTANCE_BOSS_HP` (×1.5) the health of a wave's boss |
+
+- Monsters are made like a wave's (`instance-monsters.mjs`): health `HITS_TO_KILL ×
+  referencePartyHit(level) × party share × kind.hp × rank.hp`, the kind's attack and resistances,
+  rewards `kind.reward × rank.reward`, the instance's loot table, at the run's level `world level
+  + INSTANCE_FIRST_LEVELS (3) + INSTANCE_TIER_LEVELS (2) × (tier − 1)`. They fight in
+  `combat.mjs`'s `fightTick` with the party `fight.mjs` builds, so the active relic, legendary gear,
+  the bestiary and the settlement act inside as on waves.
+- A kill pays the waves' materials and item drop, counts for the room's kills and the world's
+  bestiary (the elite as a champion of its race, the boss as a beaten roster boss), and the
+  campfire gives stamina back after it, as on waves.
+- **Failing is soft.** A party out of stamina rests as on waves; each room allows a try of
+  `INSTANCE_TRY_SLACK` (4) times the ticks a reference party needs for its monsters' health, rests
+  included. A party that runs out of that time (it rests too often, or hits too softly for the
+  tier) has failed a try: it rests and starts the room over. After `INSTANCE_TRIES` (3) failed
+  tries on one room the run ends. Why a time and not "out of stamina": a lone character has no
+  defender or healer and runs out of stamina in every fight on waves too (`STAMINA_TICKS` <
+  `HITS_TO_KILL`), so that rule would shut it out; a time limit lets it clear tier 1 with its rests
+  and makes the tiers above a real wall.
+- A run that ends without a clear, or a party recalled by hand, keeps what it found; the room goes
+  back to its frozen wave and waits `INSTANCE_COOLDOWN_MS` (two hours) of working time on its waves
+  before it may enter that instance again.
+- A run moves only with working time: a waiting or blocked party pauses it, idle characters gather
+  as usual, characters keep levelling from their tokens, and a run whose characters all retired
+  waits for the next one (it never fails for that). A room moved to another world or out of the
+  game leaves its instance with no cooldown.
+
+### Checks
+
+The third room checks the party against an attribute (its best living character's, divided by the
+mean of the four reference characters' at the world level) or a work skill (the world's effective
+level of it divided by the world level), so 1 is the reference. It passes when the score is at least
+`INSTANCE_CHECK_DIFFICULTY` (0.8) × (1 + 0.1 × (tier − 1)) × the modifier's factor × a roll between
+0.6 and 1.4 (by hash of the run, the room and the try): 4 times in 5 for a score of 1 at tier 1.
+
+| Result | Trap | Puzzle |
+|---|---|---|
+| passed | materials worth two plain kills, then on | the same |
+| failed | the party loses 35% of its stamina pool and moves on | a failed try; it tries again after one minute of working time |
+
+### Boons
+
+The vault offers two different boons of the pool (by hash of the run). The person picks one on the
+run's card; with **Auto** on, or after `INSTANCE_VAULT_WAIT_TICKS` (five minutes) of working time,
+the first is taken, so the game never stalls. A boon lasts the rest of the run: the boss's room and
+the rewards. Boons have a closed set of types of their own (`BOON_TYPES` in `instance-boons.mjs`),
+never a capped legendary effect type, so they cannot push those sums past their caps.
+
+| Boon | Effect | Type |
+|---|---|---|
+| Whetted Blades | +15% damage against the boss | `bossDamage` 0.15 |
+| Second Wind | stamina back to full now | `staminaNow` 1 |
+| Gambler's Coin | a second roll at the boss's own item | `rewardRoll` 1 |
+| Seeker's Candle | +20% chance the boss leaves its own item | `bossItem` 0.2 |
+| Hoarder's Map | the boss's purse holds 50% more | `purse` 0.5 |
+| Spare Torch | one more try in every room left | `tries` 1 |
+| Sand Glass | 30% more time in every room left | `timeLimit` 0.3 |
+| Warding Salt | the boss strikes 20% softer | `bossAttack` 0.2 |
+| Smelling Salts | rests take 50% less time | `restShort` 0.5 |
+| Binding Chalk | the boss comes without an affix | `noBossAffix` 1 |
+
+### Tiers
+
+A world may enter an instance at any tier up to one above the best it has cleared there; there is no
+last tier. Each tier above the first puts the monsters two levels higher (health, drain and rewards
+grow with the level), makes the check 10% harder, adds 5% to the purse and 1% to the boss's item
+chance, and brings the instance's modifier for that tier: its rotation (`modifiers` in the
+instance's entry) in turn, tier 2 the first, round and round.
+
+| Modifier | Effect | Rotations it is in |
+|---|---|---|
+| Enraged rooms | every monster is enraged | crypt (2nd), keep (1st) |
+| No rest between rooms | the campfire gives no stamina back after a kill | crypt (3rd), library (3rd) |
+| Armored boss | the boss is armored | foundry (1st), keep (2nd) |
+| Ethereal boss | the boss is ethereal | library (1st) |
+| Regenerating boss | the boss regenerates | crypt (1st), spire (2nd) |
+| Swift hall | the hall's monsters are swift | hive (1st), spire (1st) |
+| Thorny elite | the elite is thorny | hive (2nd), spire (4th) |
+| Long rests | rests take twice as long | foundry (2nd), keep (3rd) |
+| Cunning traps | the trap or puzzle is 30% harder | hive (3rd), library (2nd) |
+| Crowded hall | the hall holds five fights | foundry (3rd), spire (3rd) |
+
+An affix modifier replaces the monster's own affix (a monster carries one); Binding Chalk takes the
+boss's away.
+
+### Rewards
+
+| When | What | Numbers |
+|---|---|---|
+| every kill | the waves' materials and item drop | as on waves, at the run's level |
+| a check passed | materials | two plain kills of the run's level |
+| the vault | materials, and sometimes an item of its pool the room lacks | three plain kills; `INSTANCE_VAULT_ITEM_CHANCE` 1% + 0.25% a tier, at most 4% |
+| every clear | the purse: materials of the instance's loot table and coins | `INSTANCE_PURSE_KILLS` 16 plain kills and `INSTANCE_PURSE_COINS` 40 × `REWARD_GROWTH ** level` coins, × (1 + 5% a tier) × (1 + the Hoarder's Map) |
+| every clear | each of the instance's races counted as `tier` champion kills | 10 bestiary points each |
+| every clear | the boss's own item, when the room lacks it | `INSTANCE_BOSS_ITEM_CHANCE` 10% + 1% a tier, at most 30%, plus the waves' boss pity (5% a miss, × the boss hunter's pity bonus); the Seeker's Candle adds, the Gambler's Coin rolls again |
+| the world's first clear | the instance's relic, to the clearing room (active when it is its first) | a room that owns it already gets `INSTANCE_RELIC_COINS` 3000 × `REWARD_GROWTH ** level` coins, a city relic's price |
+
+A clear's boss does not roll for a city's relic as a wave's boss does: a run meets its boss about once
+a working day, and with the waves' pity that roll handed a light user every city relic within weeks.
+No roll ever gives a second copy (`rollBossItem` and the vault pick only what the room lacks).
+Materials and coins go to the world as they are found, so a run that fails keeps them.
+
+### The relics
+
+Six relics of a new legendary kind, `instance-relic` (`instance` names its instance): never sold and
+never dropped. Two existing effect types gained the `party` scope for them (`raceDamage` and
+`skillXp`), with words for it; no new type was needed.
+
+| Relic | Instance | Effect | Why |
+|---|---|---|---|
+| The Tidewake Bell | Sunken Crypt | `raceDamage` +5% against skeletons, zombies and ghosts | It rings for the dead who stayed: the undead answer it and falter. No relic gave race damage; it helps most in the crypt and the library and in Gothic rooms, where those races come up three times as often. With a whole bestiary (+5% against a race) it reaches the 10% cap exactly. |
+| Heart of the Last Pour | Emberdeep Foundry | `damage` +5% magical | Forge heat in every spell: the fire the owner asked for. The Jawbone Lyre gives physical damage; nothing gave magical. Magical damage is one class of four, so it stays modest. |
+| Amber of the Sleeping Queen | Hollow Hive | `gatherHours` +30 min | The queen sleeps and the hive works: idle characters keep gathering half an hour longer. The Millwind Vane gives 15 minutes; with the bestiary and the settlement's Outpost it reaches 1 h 9 min of the 2 h cap. |
+| The Rimebitten Horn | Frostwatch Keep | `damage` +6% against champions and legendary bosses | Blown to warn the pass of what is coming: the strongest monsters. The Stagcall Horn covers elites and champions, the Crown of the Ossuary bosses; this one meets every elite's chamber and every legendary boss. It does not raise the strongest damage relic (the Crown's 6%). |
+| The Drowned Concordance | Drowned Library | `skillXp` +5% Lore, for every character of the room | Read it anyway: reading trains Lore. It is the only relic that moves a work skill, so a room with it nudges its world's level (Lore is one fifth of it): about +1% world experience from that room. |
+| Fang of the Coiled Wyrm | Wyrmrest Spire | `attackSpeed` +4% | It hums when storms gather: strikes come like lightning. The last instance's relic is the broadest: every hit, every fight. With the Pale Duelist's Coat it reaches the 8% cap exactly. |
+
+The caps tests (`bestiary-effects.test.mjs`, `settlement-effects.test.mjs`) include them: the
+strongest relic of each type, all the legendary equipment, a whole bestiary and a whole settlement
+stay within every cap, now checked per work skill for `skillXp` as for races and ranks.
+
+### In the save
+
+A world keeps `instances: { [instanceId]: { runs, clears, bestTier } }` once a room entered one; a
+room inside keeps `run: { instance, tier, attempt, room, fight, tries, tryTicks, waitTicks, ticks,
+boon, offered, found: { materials, coins, legendary, kills }, frozen: { wave, waveKills, monster,
+fightTicks, fightRested } }` (about 700 bytes with its frozen monster), and a room after a failed
+run `instanceCooldowns: { [instanceId]: ms }`. None of them exists in a save from before, which loads
+unchanged. `migrate` drops a run it cannot play (the room back on the monster it left) and
+cooldowns without time left; `cleanSave` refuses an instance or boon the content does not have, a
+room index, tier or count out of range, found loot that is not content, progress with more clears
+than runs or a best tier without a clear, a cooldown longer than a whole one, two rooms inside one
+instance, and any of it when the content has no instances. A world reset forgets it all; a chest
+left behind moves as before, and a room left behind inside an instance frees it when its chest
+moves (or can be recalled).
+
+### Actions and view
+
+Entering, choosing a boon and recalling are actions (see "Actions"). The view state gains the
+instances' content once (`game.instances`), each world's roadmap (`worlds[].instances`) and each
+room's `run` and `instanceCooldowns` (see "View state"). A run's steps are `instance` events of
+`recent`; the items a run gives are `legendary` events as well, so the rooms celebrate them like a
+boss's drop.
 
 ## Settlement
 
@@ -954,12 +1145,12 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles } }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market, bestiary? }
+            coins, market: Market, bestiary?, instances? }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
-            retirees: Retiree[], retiredCount, legendary? }
+            retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns? }
 Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
@@ -1323,6 +1514,9 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
+| `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier }`: a room that plays, an instance of `game/instances.json` and a whole tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
+| `game.chooseBoon` | `/api/game/choose-boon` | `{ roomId, boonId }`: a room whose run is at the vault and one of the two boons it offers |
+| `game.recallParty` | `/api/game/recall-party` | `{ roomId }`: a room inside an instance (one left behind too, so it frees its instance) |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
@@ -1430,6 +1624,14 @@ by the usual closing rules.
                                     // a room's relic is null once it owns the city's two
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
+    instances: {                    // the world's road; under 2 KB
+      map: { cleared: 0, art: 'ui/instances/roadmap-1.png', alt },  // the picture for its progress
+      cleared: 1, total: 6, complete: false,
+      list: [{ id: 'sunken-crypt', state: 'open',  // hidden | locked | open | inside
+        runs: 3, clears: 2, bestTier: 1, highestTier: 2, relic: 'tidewake-bell', relicFound: true,
+        roomInside: null, roomIndex: null,          // the room inside and the room of the run it is in
+        entry: { 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
+    },
     bestiary: {                     // about 9 KB a world
       discovered: 12, raceCount: 20, beaten: 12, bossCount: 55,
       rank: { rank: 22, points: 11_819, from: 10_762, to: 13_473, now: [effects], next: [effects] },
@@ -1462,6 +1664,11 @@ by the usual closing rules.
       chest: [{ id, name, slot, damageType, tier, level, power, heldBy, upgradeCost, affordable }],
                                     // a legendary item adds legendary: true and entryId
       relics: { owned: ['tidecall-conch', 'rimeheart'], active: 'rimeheart' },
+      run: null,                    // inside an instance: { instance, name, tier, level, room, roomName,
+                                    // roomKind, fight, fights, progress, triesLeft, timeShare, workedMs,
+                                    // boon, offered, vaultWaitMs, modifier, found }; boon, offered and
+                                    // modifier as { id, name, effect }
+      instanceCooldowns: null,      // or { [instanceId]: ms of working time left }
       chestSize: 6,
       retirees: [{ nameId, class, level, mainSkill, retiredAt, title }],
       retiredCount: 9, bonus: 0.045
@@ -1485,6 +1692,14 @@ by the usual closing rules.
       item: 'pilfered-lantern' }],  // item: null for a boss that guards none
     points: { normal: 1, veteran: 2, elite: 5, champion: 10, boss: 25, legendary: 60 },
     levels: 25, perkEvery: 5, hunterThresholds: [1, 5, 15, 30, 55]
+  },
+  instances: {                      // the content's, the same for every world; about 6 KB
+    region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144 },
+    instances: [{ id: 'sunken-crypt', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
+      alt, route?: { start, mid, boss, alt }, relic: 'tidewake-bell', boss: 'ossric', elite: 'old-mattock',
+      rooms: [{ kind: 'entrance', name }, ..., { kind: 'trap', name, check: { attribute: 'agility' } }, ...],
+      rotation: ['regenerating-boss', ...] }],
+    modifiers: { 'regenerating-boss': { name, effect } }
   },
   debug: { tokenSource, readAt, sessionsRead, truncated, resets, unmatched, unplaced, guests }
 }
@@ -1534,6 +1749,11 @@ by the usual closing rules.
   `building` and its `tier` and `name`; a stage's `stage`, `stageId` and `name`; `stars`: a new
   tier, stage or renovation star of the world's settlement, which a UI celebrates in every room of
   the world, a stage most),
+  `instance` (`kind` enter, room, check, vault, boon, cleared, failed or recalled, `instance`,
+  `tier`, `room`, and as the kind has them `passed` and `check`, `offered`, `boon` and `chosenBy`
+  (person, auto or wait), `found` and `ticks`, `drops`: a step of a room's run, which its room
+  tells; entering and the clear are celebrated like a legendary drop; a kill inside an instance
+  carries `instance` too),
   `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
@@ -1588,7 +1808,15 @@ Last, it plays the scenarios with more than one room (medium and heavy) with a t
 item and every relic that is not active from the other rooms into the first one, then presses
 **Best gear for everyone** there. It prints both runs side by side. It also prints the day each
 scenario's settlement reached each stage, with and without the market, and its building levels at
-day 365. The whole run takes under a minute.
+day 365.
+
+Then it plays the three scenarios with a fourth policy (`scripts/instance-policy.mjs`, reported by
+`scripts/instance-balance.mjs`): at every working step, the first room that may enter the highest
+open instance goes in, one tier above its last clear there and one below after a failure, with Auto
+taking the vault's first boon. It prints the day each instance is first cleared, the runs, clears
+and failures, the best tier of each, the share of fighting time spent inside, what an hour inside
+pays against an hour on the waves, and the legendary items owned and kills per hour against the
+plain scenarios. The whole run takes under a minute.
 
 ## Balance
 
@@ -1833,3 +2061,50 @@ hold and new characters there find an empty chest.
 
 Kills per hour of fighting are the world's, over every room. The world levels are the same in both runs:
 tokens alone make them.
+
+### Instances
+
+The fourth policy, against the scenarios as usual (the world levels are the same: tokens alone
+make them). The number of balance targets that pass does not change (54 of 59; the same five fail
+as before), and a player who never enters an instance plays exactly as before.
+
+| | crypt | foundry | hive | keep | library | spire (and the title) |
+|---|---|---|---|---|---|---|
+| First clear: light | day 5 | 15 | 39 | 88 | 180 | 318 |
+| medium | day 1 | 2 | 4 | 12 | 26 | 51 |
+| heavy | day 1 | 1 | 2 | 3 | 5 | 10 |
+
+| | runs a year | clears | failed | best tiers | time inside | materials/h inside | on waves (plain) | coins/h inside |
+|---|---|---|---|---|---|---|---|---|
+| light | 279 | 158 | 43% | 14/8/13/11/8/7 | 86% | 711 | 805 | 86 |
+| medium | 1,263 | 657 | 48% | 16/7/17/15/11/10 | 90% | 12.3 k | 10.6 k | 1.5 k |
+| heavy | 2,717 | 1,388 | 49% | 18/7/18/17/14/11 | 89% | 41.0 T | 41.8 T | 5.4 T |
+
+| | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
+|---|---|---|---|---|---|
+| light | 30, 90, 365 | 3, 3, 4 | 5, 11, 20 | 11.0, 9.8, 12.7 | 4.4, 3.5, 4.1 |
+| medium | 30, 90, 365 | 3/3, 4/3, 9/7 | 9/7, 13/14, 25/23 | 8.1, 9.0, 11.4 | 3.1, 3.7, 3.9 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 9/14/11, 17/22/18, 33/32/30 | 12.0, 13.9, 17.4 | 3.6, 4.2, 4.9 |
+
+- **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
+  clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
+- **A real trade, not strictly better.** An hour inside pays 88% (light) to 117% (medium) of the
+  materials an hour on the waves pays, plus coins (the waves give none) and the rare rewards. The
+  purse (16 plain kills a clear, +5% a tier) was set to that; at 8 kills an hour inside paid 73% for
+  a light user, and with +15% a tier it paid 120% for a medium one. Kills per hour fall to about a
+  third: instance monsters stand above the world, the elite and the boss are long fights, and the
+  purse pays for the time instead of kills.
+- **Failures** are 43 to 49% of runs because the policy climbs a tier after every clear until it
+  fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
+  it found and costs two hours of working time on the waves before that room may try again.
+- **Collection** is the reward the owner asked for, and the one to watch: a light user owns 20 of
+  40 legendary items after a year instead of 4 (the six instance relics, the six instance bosses'
+  items, and the vaults'). The first tuning gave 36: the instance's boss also rolled for a city's
+  relic with the waves' pity (a run meets its boss about once a working day), the boss's own item
+  came at 25% + 5% a tier and the vault's at 10% + 4% a tier. The city relic roll is gone, and the
+  boss item (10% + 1% a tier, at most 30%) and the vault (1% + 0.25% a tier, at most 4%) are now
+  rare enough that a light room's collection still grows all year.
+- **The caps.** The six relics' buffs are summed with the strongest relic of each type, all the
+  legendary equipment, a whole bestiary and a whole settlement in the caps tests, and stay within
+  every cap (the Tidewake Bell and the Fang reach theirs exactly). Boons and tier modifiers use types
+  of their own, outside those sums.

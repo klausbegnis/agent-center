@@ -41,7 +41,7 @@ const ownsBossItem = (project, index) =>
   legendaryOf(project).relics.some((id) => index.byId.get(id)?.kind === 'boss-relic') || legendaryItems(project).length > 0
 
 /** The pool relic roll: a relic the room lacks, or a step of pity. */
-export function rollPoolRelic(project, { rank, seed, index, pityFactor }) {
+function rollPoolRelic(project, { rank, seed, index, pityFactor }) {
   const legendary = legendaryOf(project)
   const missing = index.poolRelicIds.filter((id) => !ownsLegendary(project, id))
   if (missing.length === 0) return { project, drop: null }

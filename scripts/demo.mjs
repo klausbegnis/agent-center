@@ -15,6 +15,9 @@
 //                 theme each time its monster dies
 //   SETTLEMENT=n  with GAME, the world's settlement at stage n (1 Camp to 7 Citadel); the frozen
 //                 game shows a Village otherwise
+//   INSTANCE_VAULT=1  with GAME, a room waits in the Sunken Crypt's vault at tier 2, so the boon
+//                 choice, the route's picture and a tier's modifier can be seen (the frozen game
+//                 shows the roadmap with one instance cleared and a room facing a boss otherwise)
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -190,7 +193,9 @@ const game = engine
     travel: Boolean(process.env.TRAVEL),
     listThemeIds: () => demoThemes().map((listed) => listed.id),
     // SETTLEMENT=n shows the settlement at stage n (1 to 7), to review its picture.
-    settlementLevels: process.env.SETTLEMENT ? levelsForStage(Number(process.env.SETTLEMENT), settlementContent()) : null
+    settlementLevels: process.env.SETTLEMENT ? levelsForStage(Number(process.env.SETTLEMENT), settlementContent()) : null,
+    // INSTANCE_VAULT=1 puts a room in the Sunken Crypt's vault, to see the boon choice.
+    instanceVault: process.env.INSTANCE_VAULT === '1'
   })
   : createUnavailableGame('off')
 controller = createController({

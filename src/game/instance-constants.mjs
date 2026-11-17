@@ -58,25 +58,31 @@ export const INSTANCE_COOLDOWN_MS = 2 * 60 * 60 * 1000
 
 /**
  * A clear's purse: materials worth this many plain kills of the run's level, split by the
- * instance's loot, this share more for each tier above the first, and coins.
+ * instance's loot, this share more for each tier above the first, and coins. Set with the
+ * simulator so an hour inside pays about what an hour on the waves does (88 to 117%).
  */
-export const INSTANCE_PURSE_KILLS = 8
-export const INSTANCE_PURSE_TIER_STEP = 0.15
+export const INSTANCE_PURSE_KILLS = 16
+export const INSTANCE_PURSE_TIER_STEP = 0.05
 /** The purse's coins: this many times REWARD_GROWTH ** level, with the same tier factor. */
 export const INSTANCE_PURSE_COINS = 40
 /** The vault's loot: materials worth this many plain kills of the run's level. */
 export const INSTANCE_VAULT_KILLS = 3
 /**
  * The instance's boss leaves its own item with this chance, plus this much for each tier above
- * the first, up to the most, plus the usual pity: five times a wave boss's 5% at tier 1.
+ * the first, up to the most, plus the usual pity: twice a wave boss's 5% at tier 1. A run meets
+ * its boss about once a working day, so with the waves' pity a cleared instance gives its boss's
+ * item within a few weeks; higher odds made a light user own half the legendary loot in a year.
  */
-export const INSTANCE_BOSS_ITEM_CHANCE = 0.25
-export const INSTANCE_BOSS_ITEM_TIER_STEP = 0.05
-export const INSTANCE_BOSS_ITEM_MAX = 0.75
-/** The vault holds a legendary item of its pool with this chance, more at higher tiers, up to the most. */
-export const INSTANCE_VAULT_ITEM_CHANCE = 0.1
-export const INSTANCE_VAULT_ITEM_TIER_STEP = 0.04
-export const INSTANCE_VAULT_ITEM_MAX = 0.5
+export const INSTANCE_BOSS_ITEM_CHANCE = 0.1
+export const INSTANCE_BOSS_ITEM_TIER_STEP = 0.01
+export const INSTANCE_BOSS_ITEM_MAX = 0.3
+/**
+ * The vault holds a legendary item of its pool with this chance, more at higher tiers, up to the
+ * most: now and then, so a run that pays one is news (about one in fifty runs).
+ */
+export const INSTANCE_VAULT_ITEM_CHANCE = 0.01
+export const INSTANCE_VAULT_ITEM_TIER_STEP = 0.0025
+export const INSTANCE_VAULT_ITEM_MAX = 0.04
 /** A clear credits each of the instance's races with this many champion kills per tier. */
 export const INSTANCE_BESTIARY_CHAMPIONS = 1
 /**
