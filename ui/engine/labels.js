@@ -187,6 +187,8 @@ const ACTION_NAMES = {
   exportSave: 'The export',
   importSave: 'The import',
   moveOrphanItems: 'Moving the items',
+  setEquipment: 'The change of gear',
+  bestGear: 'Best gear',
   sellMaterial: 'The sale',
   tradeMaterial: 'The trade',
   buyStallOffer: 'The purchase'
