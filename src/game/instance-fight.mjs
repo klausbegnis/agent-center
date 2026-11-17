@@ -26,7 +26,7 @@ import { instanceIndexOf } from './instance-content.mjs'
 import { fightsIn, instanceMonster, roomHealthShare, runLevel } from './instance-monsters.mjs'
 import { clearRewards, vaultLoot } from './instance-rewards.mjs'
 import { leaveInstance, runContext, withBoon } from './instance-run.mjs'
-import { withKillMaterials } from './legendary-effects.mjs'
+import { legendaryIndexOf, withKillMaterials } from './legendary-effects.mjs'
 import { rankOf } from './monsters.mjs'
 import { referenceAttributes } from './power.mjs'
 import { effectiveLevel, emptySkill } from './progression.mjs'
@@ -45,10 +45,16 @@ function tell(context, run, fields) {
   context.events.push({ type: 'instance', projectId: context.projectId, instance: run.instance, tier: run.tier, room: run.room, ...fields })
 }
 
-/** The ticks a try at a room may last, rests included (INSTANCE_TRY_SLACK). */
-function roomTimeLimit(context, run) {
-  const { room, bonuses } = runContext(run, context.index)
-  const share = roomHealthShare(room.kind, bonuses, (fight) => seedOf(context, run, fight))
+/**
+ * The ticks a try at a run's room may last, rests included (INSTANCE_TRY_SLACK); 0 for a room
+ * without a fight.
+ *
+ * @param {{ worldId: string, projectId: string, index: import('./instance-content.mjs').InstanceIndex }} where
+ * @param {object} run
+ */
+export function roomTimeLimit(where, run) {
+  const { room, bonuses } = runContext(run, where.index)
+  const share = roomHealthShare(room.kind, bonuses, (fight) => seedOf(where, run, fight))
   return Math.ceil(INSTANCE_TRY_SLACK * HITS_TO_KILL * share * bonuses.timeFactor)
 }
 
@@ -64,10 +70,14 @@ function nextRoom(state, context) {
   state.monster = null
 }
 
+/** Legendary ids as a run's event names them: each with its kind, for the room to celebrate. */
+const dropsOf = (context, ids) => ids.map((id) => ({ id, kind: legendaryIndexOf(context.content)?.byId.get(id)?.kind ?? 'relic' }))
+
 /** The run is over: the room goes back to its waves; what was found is kept. */
-function endRun(state, context, outcome) {
+function endRun(state, context, outcome, legendary = []) {
   const { materials } = state
-  tell(context, state.run, { kind: outcome, found: state.run.found, ticks: state.run.ticks })
+  const drops = dropsOf(context, legendary)
+  tell(context, state.run, { kind: outcome, found: state.run.found, ticks: state.run.ticks, ...(drops.length ? { drops } : {}) })
   const back = leaveInstance({ ...state, materials: undefined }, { cleared: outcome === 'cleared' })
   for (const key of Object.keys(state)) delete state[key]
   Object.assign(state, back, { materials })
@@ -154,8 +164,8 @@ function settleVault(state, context) {
   if (!run.offered) {
     const offered = boonsOffered(context.index, seedOf(context, run))
     state.run = { ...run, offered, waitTicks: 0 }
-    vaultLoot(state, context, seedOf(context, run))
-    tell(context, state.run, { kind: 'vault', offered, legendary: state.run.found.legendary })
+    const drops = dropsOf(context, vaultLoot(state, context, seedOf(context, run)))
+    tell(context, state.run, { kind: 'vault', offered, ...(drops.length ? { drops } : {}) })
     if (!context.autoPlay) return
   }
   if (context.autoPlay) return takeBoon(state, context, state.run.offered[0], 'auto')
@@ -236,8 +246,8 @@ function settleRunKill(state, context) {
   state.monster = null
   state.run = { ...state.run, fight: run.fight + 1, found: { ...state.run.found, kills: state.run.found.kills + 1 } }
   if (room.kind === 'boss') {
-    clearRewards(state, context, { monster, seed })
-    return endRun(state, context, 'cleared')
+    const legendary = clearRewards(state, context, { monster, seed })
+    return endRun(state, context, 'cleared', legendary)
   }
   if (state.run.fight >= fightsIn(room.kind, bonuses)) nextRoom(state, context)
 }

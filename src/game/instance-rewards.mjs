@@ -66,6 +66,7 @@ function gain(state, entry, level) {
  * @param {object} state the run's working copy of the project
  * @param {object} context the run's (instance-fight.mjs)
  * @param {string} seed the vault's
+ * @returns {string[]} the legendary ids it gave
  */
 export function vaultLoot(state, context, seed) {
   const run = state.run
@@ -80,6 +81,7 @@ export function vaultLoot(state, context, seed) {
     legendary.push(entry.id)
   }
   addFound(state, context, { materials: materialsWorth(instance, level, INSTANCE_VAULT_KILLS, `${seed}|vault`), legendary })
+  return legendary
 }
 
 /** The boss's legendary rolls: a pool relic as a wave boss gives, then its own item, again with a boon. */
@@ -125,6 +127,7 @@ function creditRaces(context, instance, tier) {
  * @param {object} state the run's working copy of the project
  * @param {object} context the run's (instance-fight.mjs)
  * @param {{ monster: object, seed: string }} kill the boss and its kill's seed
+ * @returns {string[]} the legendary ids it gave
  */
 export function clearRewards(state, context, { monster, seed }) {
   const run = state.run
@@ -151,4 +154,5 @@ export function clearRewards(state, context, { monster, seed }) {
     ...context.tally.instances,
     [run.instance]: { ...progress, clears: progress.clears + 1, bestTier: Math.max(progress.bestTier, run.tier) }
   }
+  return legendary
 }

@@ -4,6 +4,7 @@
 // save, and builds the game part of the view state. Every Orca call comes in as a function, so
 // the demo and the tests run it without Orca.
 import { estimatedToClose } from './domain/game-estimate.mjs'
+import { instanceEventsOf } from './domain/game-instance-view.mjs'
 import { buildReadings, mainAgents, sessionsToClose } from './domain/game-sessions.mjs'
 import { buildGameView, gameStatus, keepRecent, tokenSourceOf } from './domain/game-view.mjs'
 import { createGameActions } from './game-actions.mjs'
@@ -206,12 +207,17 @@ export function createGameMode(dependencies) {
   }
 
   /** Moves the fights forward over the time since the last round, with the states seen now. */
-  function advance(save, states, at) {
+  function advance(save, states, at, autoSpend) {
     if (lastRoundAt === null || at <= lastRoundAt) return { save, events: [] }
     const from = Math.max(lastRoundAt, at - MAX_ROUND_GAP_MS)
-    const moved = engine.advanceWithEvents(save, { from, to: at, sessions: states })
+    // With Auto on, a run's vault takes its first boon at once.
+    const moved = engine.advanceWithEvents(save, { from, to: at, sessions: states, autoPlay: autoSpend })
     const events = []
     for (const kill of moved.events) {
+      if (kill.type === 'instance') {
+        events.push(...instanceEventsOf(kill))
+        continue
+      }
       const { type, projectId, worldId, bestiary: _news, ...details } = kill
       events.push({ type: 'kill', roomId: projectId, worldId, ...details })
       if (kill.item) events.push({ type: 'drop', roomId: projectId, worldId, item: kill.item })
@@ -333,7 +339,7 @@ export function createGameMode(dependencies) {
     const states = withScenes(readings.states, themeIds)
 
     let save = syncKeepTitles(data().save)
-    const advanced = advance(save, states, at)
+    const advanced = advance(save, states, at, bridge.autoSpend)
     const counted = countTokens(advanced.save, readings.tokens, agentOf, at)
     // A room that just joined, or a party that just started working, meets its monster now, so
     // the state published with it already shows the fight.
@@ -452,7 +458,13 @@ export function createGameMode(dependencies) {
       keepTitles = value
     },
     replaceGame,
-    now
+    now,
+    tell: (events) => {
+      const { save } = data()
+      recent = keepRecent(recent, stamp(events.map((event) => ({ worldId: worldIdOf(save, event.roomId), ...event })), now()))
+      cachedView = null
+      onChange()
+    }
   })
 
   return {
@@ -498,6 +510,9 @@ export function createUnavailableGame(status) {
     moveOrphanItems: refuse,
     sendItem: refuse,
     sendRelic: refuse,
+    enterInstance: refuse,
+    chooseBoon: refuse,
+    recallParty: refuse,
     sellMaterial: refuse,
     tradeMaterial: refuse,
     buyStallOffer: refuse

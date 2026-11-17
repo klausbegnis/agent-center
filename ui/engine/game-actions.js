@@ -25,18 +25,21 @@ export const GAME_ACTION_METHODS = [
   'sendRelic',
   'sellMaterial',
   'tradeMaterial',
-  'buyStallOffer'
+  'buyStallOffer',
+  'enterInstance',
+  'chooseBoon',
+  'recallParty'
 ]
 
 /** Actions that should change something; an answer of `{ changed: false }` is worth saying. */
 const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade', 'resetWorld', 'rebalanceSkills',
   'moveOrphanItems',
-  'sellMaterial', 'tradeMaterial', 'buyStallOffer', 'setEquipment', 'sendRelic'])
+  'sellMaterial', 'tradeMaterial', 'buyStallOffer', 'setEquipment', 'sendRelic', 'enterInstance', 'chooseBoon', 'recallParty'])
 /** Actions that answer with something to show instead of `{ changed }`. */
 const GIVES_ANSWER = new Set(['exportSave', 'bestGear', 'sendItem'])
 /** Actions the worker refuses for reasons a person can act on, such as a damaged file: say why. */
 const SAYS_WHY = new Set(['exportSave', 'importSave', 'moveOrphanItems', 'setEquipment', 'bestGear', 'sendItem',
-  'sendRelic', 'buyGroupUpgrade'])
+  'sendRelic', 'buyGroupUpgrade', 'enterInstance', 'chooseBoon', 'recallParty'])
 
 /** The longest refusal reason shown; the worker's are a line. */
 const REASON_LIMIT = 200

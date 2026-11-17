@@ -71,7 +71,8 @@ test('every game route is for this machine only', () => {
   for (const route of ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'rebalance-skills',
   'auto-spend',
     'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-    'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic']) {
+    'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
+    'choose-boon', 'recall-party']) {
     assert.equal(isLocalOnlyRoute(`/api/game/${route}`), true, route)
   }
 })

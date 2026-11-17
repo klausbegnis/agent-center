@@ -59,4 +59,8 @@ export function registerPanelHandlers(orca, controller) {
     controller.gameTradeMaterial(input?.worldId, input?.cityId, input?.fromId, input?.toId, input?.amount))
   orca.panels.handle('game.buyOffer', (input) =>
     controller.gameBuyStallOffer(input?.worldId, input?.cityId, input?.offerIndex, input?.entryId, input?.roomId))
+  orca.panels.handle('game.enterInstance', (input) =>
+    controller.gameEnterInstance(input?.roomId, input?.instanceId, input?.tier))
+  orca.panels.handle('game.chooseBoon', (input) => controller.gameChooseBoon(input?.roomId, input?.boonId))
+  orca.panels.handle('game.recallParty', (input) => controller.gameRecallParty(input?.roomId))
 }

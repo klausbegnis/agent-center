@@ -280,7 +280,9 @@ test('the view state of a busy save stays far below the panel post limit', async
     await game.round()
   }
   const size = Buffer.byteLength(JSON.stringify(game.getView()))
-  assert.ok(size < 64 * 1024, `${size} bytes`)
+  // A post may carry 256 KiB. The budget was 64 KiB until the instances' content (about 6 KiB, the
+  // same for every world) and each world's roadmap (under 2 KiB) took a busy save past 69 KiB.
+  assert.ok(size < 80 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
 })
 

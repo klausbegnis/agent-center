@@ -123,6 +123,9 @@ otherwise.
   | `/api/game/send-relic` | sends a relic that is not active to another room of the same world |
   | `/api/game/sell` | sells a world's materials to a market city for coins |
   | `/api/game/trade` | turns a world's materials into another material in a market city |
+  | `/api/game/enter-instance` | sends a room's party into an instance at a tier, freezing its wave until the run ends |
+  | `/api/game/choose-boon` | takes one of the two boons the vault of a room's run offers |
+  | `/api/game/recall-party` | ends a room's run by hand, with the instance's cooldown |
   | `/api/game/buy-offer` | spends a world's coins on a piece of a city's stall, into a room's chest, or on its relic, into a room's relics |
 
   Any program or user account on this machine can still use them, like the other settings.

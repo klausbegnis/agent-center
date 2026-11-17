@@ -137,7 +137,10 @@ function roomView(project, worldId, readings, keepTitles, sceneTheme) {
     retirees: shownRetirees(project.retirees, keepTitles),
     retiredCount: project.retirees.length + project.retiredCount,
     bonus: project.retireeBonus,
-    relics: project.relics ?? { owned: [], active: null }
+    relics: project.relics ?? { owned: [], active: null },
+    // Inside an instance: where its run is (docs/GAME.md, "Instances"); null on the waves.
+    run: project.run ?? null,
+    instanceCooldowns: project.instanceCooldowns ?? null
   }
 }
 
@@ -334,6 +337,8 @@ export function buildGameView(input) {
     status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug,
     ...(legendary ? { legendary } : {}),
     // The races' and bosses' names and looks, the same for every world; each world has its counts.
-    ...(engineView.bestiary ? { bestiary: engineView.bestiary } : {})
+    ...(engineView.bestiary ? { bestiary: engineView.bestiary } : {}),
+    // The instances' names, art and rooms, the same for every world; each world has its progress.
+    ...(engineView.instances ? { instances: engineView.instances } : {})
   }
 }
