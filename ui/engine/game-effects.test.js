@@ -51,7 +51,28 @@ test('a drop is named after the chest item it became, a retiree by its generated
 test('a group purchase shows in every room of its world', () => {
   const purchase = { type: 'purchase', kind: 'group', worldId: 'main', upgradeId: 'campfire' }
   const [effect] = gameEffects({ ...none, events: [purchase] }, state())
-  assert.equal(effect.text, 'Built Campfire level 4')
+  assert.equal(effect.text, 'Built Hearth level 4')
+})
+
+test('a settlement\'s new tier and new stage play in every room of its world, the stage with its picture', () => {
+  const settlement = {
+    buildings: [{ id: 'hearth', tierCount: 3, current: { tier: 2, art: 'ui/settlement/building-hearth-2.png' } }],
+    stages: [{ id: 'outpost', art: 'ui/settlement/stage-2-outpost.png' }]
+  }
+  const game = { ...state(), game: { ...state().game, worlds: [{ ...state().game.worlds[0], settlement }] } }
+  const news = (extra) => ({ type: 'settlement', worldId: 'main', ...extra })
+  const effects = gameEffects({ ...none, events: [
+    news({ kind: 'tier', buildingId: 'hearth', building: 'Hearth', tier: 2, name: 'Cooking hearth' }),
+    news({ kind: 'stage', stageId: 'outpost', name: 'Outpost' }),
+    news({ kind: 'tier', buildingId: 'hearth', building: 'Workshop', tier: 1, name: 'Workshop' })
+  ] }, game)
+  assert.deepEqual(effects.map((effect) => [effect.roomId, effect.tone, effect.text]), [
+    ['room', 'settlement', 'Hearth grew into a Cooking hearth!'],
+    ['room', 'stage', 'The settlement is now an Outpost!'],
+    ['room', 'settlement', 'Workshop built!']
+  ])
+  assert.equal(effects[0].settlementArt, 'ui/settlement/building-hearth-2.png')
+  assert.equal(effects[1].settlementArt, 'ui/settlement/stage-2-outpost.png')
 })
 
 test('health lost between states adds no line of its own: the fight shows each blow', () => {

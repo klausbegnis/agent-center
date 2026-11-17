@@ -63,6 +63,8 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   bar.append(tabs.element, estimated, viewOnly)
   const context = createGameContext({
     onPick: (value) => pickRoom(value),
+    onOpenSettlement: () => select('camp'),
+    base: transport.base ?? '',
     // A chest slot dragged onto the chip of another room of its world is sent there.
     drop: {
       accepts: (roomId) => {

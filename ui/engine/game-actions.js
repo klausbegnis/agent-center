@@ -36,7 +36,7 @@ const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade
 const GIVES_ANSWER = new Set(['exportSave', 'bestGear', 'sendItem'])
 /** Actions the worker refuses for reasons a person can act on, such as a damaged file: say why. */
 const SAYS_WHY = new Set(['exportSave', 'importSave', 'moveOrphanItems', 'setEquipment', 'bestGear', 'sendItem',
-  'sendRelic'])
+  'sendRelic', 'buyGroupUpgrade'])
 
 /** The longest refusal reason shown; the worker's are a line. */
 const REASON_LIMIT = 200

@@ -6,6 +6,7 @@ import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
 import { BESTIARY_EVENT, prestigeTitle } from './bestiary-labels.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
+import { SETTLEMENT_EVENT } from './settlement-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
 export const MAX_ROOM_LINES = 3
@@ -17,8 +18,9 @@ export const MAX_ROOM_LINES = 3
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
  * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary' |
- *   'bestiary'} tone
+ *   'bestiary' | 'settlement' | 'stage'} tone `stage` is a new stage of the settlement, celebrated most
  * @property {string} [artId] a legendary entry whose picture plays with the line
+ * @property {string} [settlementArt] a settlement picture (a path the view state gives) that plays with it
  */
 
 /** The name of a chest item or of a dropped entry, from what the room's chest shows. */
@@ -66,13 +68,16 @@ function levelEffects(events, rooms) {
     ({ roomId, target: 'agent', agentId, text: EFFECT.level(level), tone: 'level' }))
 }
 
+/** The rooms on screen that play in a world: where its news plays. */
+const roomsOfWorld = (game, worldId) => (game.worlds?.find((item) => item.id === worldId)?.roomIds ?? [])
+  .filter((roomId) => game.rooms[roomId]?.joined)
+
 function purchaseEffects(event, game) {
   if (event.kind === 'group') {
     const world = game.worlds?.find((item) => item.id === event.worldId)
     const level = event.level ?? world?.upgrades?.find((upgrade) => upgrade.id === event.upgradeId)?.level
     const text = EFFECT.built(UPGRADE_LABEL[event.upgradeId] ?? event.upgradeId, level ?? '')
-    return (world?.roomIds ?? []).filter((roomId) => game.rooms[roomId]?.joined)
-      .map((roomId) => ({ roomId, target: 'room', text, tone: 'purchase' }))
+    return roomsOfWorld(game, event.worldId).map((roomId) => ({ roomId, target: 'room', text, tone: 'purchase' }))
   }
   // The worker names the item and the level it reached; an older worker leaves them out.
   const roomId = event.roomId ?? event.projectId
@@ -96,6 +101,8 @@ function lineEffects(events, game) {
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'drop' })
     } else if (event.type === 'purchase') {
       effects.push(...purchaseEffects(event, game))
+    } else if (event.type === 'settlement') {
+      effects.push(...settlementEffects(event, game))
     } else if (event.type === 'legendary' && room && event.item) {
       // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
       const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))
@@ -106,6 +113,29 @@ function lineEffects(events, game) {
     }
   }
   return effects
+}
+
+/**
+ * A settlement's news in every room of its world: a building's new tier with its picture, and a new
+ * stage, bigger, with the stage's picture.
+ */
+function settlementEffects(event, game) {
+  const settlement = game.worlds?.find((item) => item.id === event.worldId)?.settlement
+  let line = null
+  if (event.kind === 'tier') {
+    const building = settlement?.buildings.find((item) => item.id === event.buildingId)
+    const text = event.tier === 1 ? SETTLEMENT_EVENT.built(event.building) : SETTLEMENT_EVENT.tier(event.building, event.name)
+    // The picture of the tier it reached, while that is still the one it has.
+    const art = building?.current?.tier === event.tier ? building.current.art : null
+    line = { text, tone: 'settlement', ...(art ? { settlementArt: art } : {}) }
+  } else if (event.kind === 'stage') {
+    const art = settlement?.stages?.find((stage) => stage.id === event.stageId)?.art
+    line = { text: SETTLEMENT_EVENT.stage(event.name), tone: 'stage', ...(art ? { settlementArt: art } : {}) }
+  } else if (event.kind === 'stars') {
+    line = { text: SETTLEMENT_EVENT.stars(event.stars), tone: 'settlement' }
+  }
+  if (!line) return []
+  return roomsOfWorld(game, event.worldId).map((roomId) => ({ roomId, target: 'room', ...line }))
 }
 
 /** What a bestiary event says over the room: a first kill, a level, a title, a hunter rank or level. */

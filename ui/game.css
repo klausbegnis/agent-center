@@ -625,11 +625,6 @@
   .ac-game-chest-section { grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr); }
   .ac-game-party-section { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); }
 }
-.ac-game-camp-upgrades {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
-  gap: 10px;
-}
 
 /* Item tiers, from common to rare: one ladder, used by every slot. The tier is also written in
    the slot's corner, so it never rests on colour alone. */
@@ -814,7 +809,6 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-game-item-fact { display: contents; }
 .ac-game-item-fact dt { color: var(--orca-muted-foreground, #9aa3b2); }
 .ac-game-item-fact dd { margin: 0; }
-.ac-game-camp-upgrade { font-size: 12px; }
 /* A price on Chest or Camp: its label, the materials stacked as they need, the button at the right. */
 .ac-game-tab-section .ac-game-buy {
   display: grid;

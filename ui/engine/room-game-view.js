@@ -35,11 +35,23 @@ import { bandRelicLabel } from './legendary-labels.js'
 import { activeRelic } from './legendary-model.js'
 import { monsterSpot } from './monster-place.js'
 import { createMonsterView } from './monster-view.js'
+import { settlementArtUrl } from './settlement-model.js'
 
 /** How long an event stays over the room; the CSS animation lasts as long. */
 const EFFECT_MS = 2600
-/** A legendary drop is celebrated twice as long (ui/legendary.css). */
+/** A legendary drop and a new stage of the settlement are celebrated twice as long (ui/legendary.css, ui/settlement.css). */
 const LEGENDARY_EFFECT_MS = 5200
+const LONG_TONES = new Set(['legendary', 'stage'])
+
+/** A settlement picture by a line over the room: a building's sprite, or the stage's picture, larger. */
+function settlementPicture(base, path, tone) {
+  const image = el('img', tone === 'stage' ? 'ac-settlement-pop-stage' : 'ac-settlement-pop-art')
+  image.src = settlementArtUrl(base, path)
+  image.alt = ''
+  image.decoding = 'async'
+  image.draggable = false
+  return image
+}
 
 /**
  * @param {{ scene: HTMLElement, theme: object, roomId: string, mirrored: boolean, base?: string }} options
@@ -287,9 +299,10 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
         const className = `ac-game-pop ac-game-pop-${effect.target} ac-game-tone-${effect.tone}`
         const node = el('span', className, effect.text)
         if (effect.artId) node.prepend(legendaryPicture(base, effect.artId, { glow: true, className: 'ac-legendary-pop-art' }))
+        if (effect.settlementArt) node.prepend(settlementPicture(base, effect.settlementArt, effect.tone))
         node.setAttribute('aria-hidden', 'true')
         place.append(node)
-        playing.set(node, now + (effect.tone === 'legendary' ? LEGENDARY_EFFECT_MS : EFFECT_MS))
+        playing.set(node, now + (LONG_TONES.has(effect.tone) ? LEGENDARY_EFFECT_MS : EFFECT_MS))
       }
     },
     /**

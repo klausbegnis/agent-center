@@ -167,17 +167,6 @@ test('an item says its slot, damage type, tier and level, and who holds it', asy
   assert.equal(holderText(''), 'In use')
 })
 
-test('a group upgrade says what it does now, or what it will do once built', async () => {
-  const { upgradeEffectText } = await import('./labels.js')
-  const percent = (share) => `${Math.round(share * 100)}%`
-  assert.equal(
-    upgradeEffectText({ id: 'campfire', level: 3, effect: { staminaAfterKill: 0.12 } }, percent),
-    'Restores 12% of missing stamina after each kill'
-  )
-  const circle = { id: 'runeCircle', level: 0, effect: {} }
-  assert.equal(upgradeEffectText(circle, percent), 'Once built, takes health off every new monster')
-})
-
 test('a retiree shows its class, level and main skill', async () => {
   const { retireeFacts } = await import('./labels.js')
   const retiree = { class: 'magical', level: 10, mainSkill: 'command' }
