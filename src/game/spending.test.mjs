@@ -40,8 +40,8 @@ function worldWith(chest, materials) {
   }
 }
 
-test('there are three group upgrades, each costing two materials that grow by level', () => {
-  assert.deepEqual(GROUP_UPGRADE_IDS, ['campfire', 'workbench', 'runeCircle'])
+test('there are five group upgrades, each costing two materials that grow by level', () => {
+  assert.deepEqual(GROUP_UPGRADE_IDS, ['campfire', 'workbench', 'runeCircle', 'storehouse', 'defences'])
   for (const upgradeId of GROUP_UPGRADE_IDS) {
     const [first, second] = GROUP_UPGRADES[upgradeId].recipe
     assert.deepEqual(groupUpgradeCost(upgradeId, 0), { [first]: GROUP_COST_BASE, [second]: GROUP_COST_BASE })

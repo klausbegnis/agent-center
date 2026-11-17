@@ -32,6 +32,28 @@
         { "name": "Rune shrine", "from": 5, "art": "ui/settlement/building-rune-circle-2.png" },
         { "name": "Sanctum", "from": 15, "art": "ui/settlement/building-rune-circle-3.png" }
       ]
+    },
+    {
+      "id": "storehouse",
+      "name": "Storehouse",
+      "upgrade": "storehouse",
+      "opensAt": "outpost",
+      "tiers": [
+        { "name": "Supply shed", "from": 1, "art": "ui/settlement/building-storehouse-1.png" },
+        { "name": "Storehouse", "from": 5, "art": "ui/settlement/building-storehouse-2.png" },
+        { "name": "Trading house", "from": 15, "art": "ui/settlement/building-storehouse-3.png" }
+      ]
+    },
+    {
+      "id": "defences",
+      "name": "Defences",
+      "upgrade": "defences",
+      "opensAt": "hamlet",
+      "tiers": [
+        { "name": "Palisade", "from": 1, "art": "ui/settlement/building-defences-1.png" },
+        { "name": "Watchtower", "from": 5, "art": "ui/settlement/building-defences-2.png" },
+        { "name": "Gatehouse", "from": 15, "art": "ui/settlement/building-defences-3.png" }
+      ]
     }
   ],
   "stages": [
@@ -54,7 +76,7 @@
     {
       "id": "hamlet",
       "name": "Hamlet",
-      "from": 3,
+      "from": 5,
       "art": "ui/settlement/stage-3-hamlet.png",
       "alt": "A few thatched houses inside a wooden palisade, a rune shrine on the knoll and a field by the river",
       "bonus": [{ "effect": "staminaPool", "scope": "world", "amount": 0.01 }]
@@ -62,7 +84,7 @@
     {
       "id": "village",
       "name": "Village",
-      "from": 20,
+      "from": 30,
       "art": "ui/settlement/stage-4-village.png",
       "alt": "A village of thatched and red-roofed houses behind a palisade, with a shrine, a watchtower and fields",
       "bonus": [{ "effect": "runeCircle", "scope": "world", "amount": 0.02 }]
@@ -70,7 +92,7 @@
     {
       "id": "town",
       "name": "Town",
-      "from": 45,
+      "from": 60,
       "art": "ui/settlement/stage-5-town.png",
       "alt": "A walled town of red roofs with a stone tower on the hill, a windmill and a temple by the river",
       "bonus": [{ "effect": "thorns", "scope": "world", "amount": 0.01 }]
@@ -78,7 +100,7 @@
     {
       "id": "stronghold",
       "name": "Stronghold",
-      "from": 150,
+      "from": 200,
       "art": "ui/settlement/stage-6-stronghold.png",
       "alt": "A stronghold with a stone keep on the hill, thick walls, smoking forges and a crystal spire",
       "bonus": [{ "effect": "staminaPool", "scope": "world", "amount": 0.01 }]
@@ -86,12 +108,12 @@
     {
       "id": "citadel",
       "name": "Citadel",
-      "from": 400,
+      "from": 500,
       "art": "ui/settlement/stage-7-citadel.png",
       "alt": "A citadel at night: castle towers with lit windows, a glowing crystal spire and fireworks over the walls",
       "bonus": [{ "effect": "restTime", "scope": "world", "amount": 5 }]
     }
   ],
   "coinsFromTier": 2,
-  "renovation": { "every": 25 }
+  "renovation": { "every": 50 }
 }

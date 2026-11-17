@@ -1,7 +1,6 @@
 // A project's fight over some ticks of working time: the party its working members make, the
 // monster it meets, kills, rests, rewards and drops. Pure; works on copies and returns them.
 import { bestiaryIndexOf } from './bestiary-content.mjs'
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { noteKill } from './bestiary.mjs'
 import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
@@ -22,6 +21,7 @@ import { killsToPass, monsterFor, rankOf } from './monsters.mjs'
 import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
 import { inScene } from './scenes.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 import { addMaterials } from './worlds.mjs'
 
 const REST_TICKS = Math.ceil(REST_SECONDS / TICK_SECONDS)

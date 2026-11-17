@@ -1,12 +1,13 @@
 // A world's market as a UI draws it: the cities with whether they are open, their prices'
 // pressure and the day's stall, and the numbers a UI needs to quote any amount the way the
 // engine will (docs/GAME.md, "Market"). Pure.
-import { MARKET_CITY_FACTORS, MARKET_FEE, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN, MATERIAL_BASE_VALUES } from './constants.mjs'
+import { MARKET_CITY_FACTORS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN, MATERIAL_BASE_VALUES } from './constants.mjs'
 import { effectiveGearLevel } from './items.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { marketDepth } from './market-prices.mjs'
 import { emptyMarket, isCityOpen, marketDay } from './market.mjs'
 import { worldLevel } from './progression.mjs'
+import { marketFeeOf } from './settlement-effects.mjs'
 import { isChestFullOf, soldOffers, stallOffers } from './stall.mjs'
 import { stallRelicView } from './stall-relic.mjs'
 
@@ -71,7 +72,8 @@ export function marketView(worldId, world, { cities, items, legendary }) {
   const index = legendaryIndexOf({ legendary })
   return {
     day,
-    fee: MARKET_FEE,
+    // The world's fee: its Storehouse lowers it.
+    fee: marketFeeOf(world),
     depth: marketDepth(level),
     pressureRange: [MARKET_PRESSURE_MIN, MARKET_PRESSURE_MAX],
     baseValues: { ...MATERIAL_BASE_VALUES },

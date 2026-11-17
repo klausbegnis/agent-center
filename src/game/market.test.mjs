@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import {
   MARKET_FEE,
+  MARKET_FEE_FLOOR,
   MARKET_PRESSURE_MAX,
   MARKET_PRESSURE_MIN,
   MARKET_RECOVERY_HALF_LIFE_MS,
@@ -26,11 +27,13 @@ import { emptyWorld, migrate } from './worlds.mjs'
 const { cities } = JSON.parse(readFileSync(new URL('../../game/cities.json', import.meta.url), 'utf8'))
 const HOUR = 60 * 60 * 1000
 
-/** A world at a level (up to 99), with materials and coins. */
-function worldAt(level, { materials = {}, coins = 0, market = emptyMarket() } = {}) {
+/** A world at a level (up to 99), with materials, coins and building levels. */
+function worldAt(level, { materials = {}, coins = 0, market = emptyMarket(), upgrades = {} } = {}) {
   const skills = Object.fromEntries(WORK_SKILLS.map((id) => [id, { level, xp: 0, banked: 0, stars: 0 }]))
-  return { ...emptyWorld(), skills, materials, coins, market }
+  return { ...emptyWorld(), skills, materials, coins, market, upgrades }
 }
+/** A Storehouse so far up that the fee sits at its floor (to well under a millionth). */
+const AT_FLOOR = { storehouse: 1e12 }
 
 const city = (id) => cities.find((entry) => entry.id === id)
 const pressureOf = (world, cityId, materialId) => world.market.pressure[cityId]?.[materialId] ?? 0
@@ -160,7 +163,7 @@ const pick = (random, list) => list[Math.floor(random() * list.length)]
 /** An amount from 1 to about 10 ** digits, spread over its orders of magnitude. */
 const amountFrom = (random, digits) => Math.max(1, Math.floor(10 ** (random() * digits)))
 
-function randomWorld(random) {
+function randomWorld(random, upgrades = {}) {
   const level = 25 + Math.floor(random() * 75)
   const pressure = {}
   for (const entry of cities) {
@@ -170,7 +173,7 @@ function randomWorld(random) {
     }
   }
   const materials = Object.fromEntries(MATERIALS.map((id) => [id, amountFrom(random, 7)]))
-  return worldAt(level, { materials, coins: amountFrom(random, 8), market: { clock: 0, pressure, sold: {} } })
+  return worldAt(level, { materials, coins: amountFrom(random, 8), market: { clock: 0, pressure, sold: {} }, upgrades })
 }
 
 function randomStep(world, random) {
@@ -208,11 +211,12 @@ function assertSound(world) {
   }
 }
 
-test('no sequence of trades, from any price state, makes coins and materials worth more at base value', () => {
+/** Trades at random from random price states, and checks that no step makes the world richer. */
+function checkNoArbitrage(seed, upgrades) {
   let madeTrades = 0
   for (let run = 0; run < 150; run += 1) {
-    const random = randomStream(`no-arbitrage|${run}`)
-    let world = randomWorld(random)
+    const random = randomStream(`${seed}|${run}`)
+    let world = randomWorld(random, upgrades)
     for (let step = 0; step < 60; step += 1) {
       const before = wealthOf(world)
       const next = randomStep(world, random)
@@ -225,11 +229,20 @@ test('no sequence of trades, from any price state, makes coins and materials wor
   // A good share of the steps must really trade (some are refused: stock, coins, ceiling), or the
   // property says little.
   assert.ok(madeTrades > 150 * 60 * 0.25, `${madeTrades} trades made`)
+}
+
+test('no sequence of trades, from any price state, makes coins and materials worth more at base value', () => {
+  checkNoArbitrage('no-arbitrage', {})
 })
 
-test('the best price any city pays is below the best price any city asks, in every state', () => {
-  for (let run = 0; run < 40; run += 1) {
-    const world = randomWorld(randomStream(`spread|${run}`))
+test('with the Storehouse\'s fee at its floor, still no sequence of trades makes anything', () => {
+  assert.ok(Math.abs(pricePoint(worldAt(40, { upgrades: AT_FLOOR }), city('goldmill'), 'ore').fee - MARKET_FEE_FLOOR) < 1e-9)
+  checkNoArbitrage('no-arbitrage-floor', AT_FLOOR)
+})
+
+test('the best price any city pays is below the best price any city asks, in every state, at any fee', () => {
+  for (let run = 0; run < 80; run += 1) {
+    const world = randomWorld(randomStream(`spread|${run}`), run % 2 ? AT_FLOOR : {})
     for (const id of MATERIALS) {
       const bestSale = Math.max(...cities.map((entry) => unitSellPrice(pricePoint(world, entry, id))))
       const sellers = cities.filter((entry) => entry.produces.includes(id))
@@ -239,12 +252,12 @@ test('the best price any city pays is below the best price any city asks, in eve
   }
 })
 
-test('buying where a material is produced and selling it where it is wanted loses coins, for any amount', () => {
-  for (const amount of [1, 7, 100, 999, 5000, 40_000]) {
+test('buying where a material is produced and selling it where it is wanted loses coins, for any amount and fee', () => {
+  for (const [amount, upgrades] of [1, 7, 100, 999, 5000, 40_000].flatMap((each) => [[each, {}], [each, AT_FLOOR]])) {
     for (const seller of cities) {
       for (const materialId of seller.produces) {
         for (const buyer of cities) {
-          const world = worldAt(40, { coins: 1e9 })
+          const world = worldAt(40, { coins: 1e9, upgrades })
           const bought = buyMaterial(world, cities, { cityId: seller.id, materialId, amount })
           if (bought === world) continue
           const sold = sellMaterial(bought, cities, { cityId: buyer.id, materialId, amount })

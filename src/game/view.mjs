@@ -1,12 +1,11 @@
 // A plain summary of the save that a UI can draw without knowing any game rule: levels and
 // progress, materials, upgrades with their next cost, and each project's fight and party.
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { bestiaryContentView, worldBestiaryView } from './bestiary-view.mjs'
 import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
-import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
+import { legendaryIndexOf, totalOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { legendaryView } from './legendary-view.mjs'
 import { legendaryOf } from './legendary.mjs'
 import { marketView } from './market-view.mjs'
@@ -14,6 +13,8 @@ import { killsToPass, rankOf } from './monsters.mjs'
 import { engineeringSpeed } from './power.mjs'
 import { canPrestige, characterXpToNext, effectiveLevel, emptySkill, worldLevel, xpToNext } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
+import { settlementIndexOf } from './settlement-content.mjs'
+import { buildingEffects, marketFeeOf } from './settlement-effects.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
 import {
@@ -21,8 +22,10 @@ import {
   campfireShare,
   groupLevel,
   groupUpgradeCost,
+  isUpgradeOpen,
   runeCircleShare
 } from './spending.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 
 /** A skill as a UI shows it: level, stars, effective level and progress to the next level. */
 function skillView(skillId, skill = emptySkill()) {
@@ -40,6 +43,8 @@ function skillView(skillId, skill = emptySkill()) {
 function groupEffect(upgradeId, level) {
   if (upgradeId === 'campfire') return { staminaAfterKill: campfireShare(level) }
   if (upgradeId === 'runeCircle') return { monsterHealthCut: runeCircleShare(level) }
+  if (upgradeId === 'storehouse') return { marketFee: marketFeeOf({ upgrades: { storehouse: level } }) }
+  if (upgradeId === 'defences') return { staminaDrainCut: totalOf(buildingEffects({ defences: level }), 'staminaDrain') }
   return { upgradeCostFactor: 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * level) }
 }
 
@@ -140,7 +145,8 @@ function worldView(worldId, world, names, content, index) {
     workSkills: WORK_SKILLS.map((skillId) => skillView(skillId, world.skills[skillId])),
     gatheringSkills: GATHERING_SKILLS.map((skillId) => skillView(skillId, world.skills[skillId])),
     materials: Object.fromEntries(MATERIALS.map((id) => [id, world.materials[id] ?? 0])),
-    upgrades: GROUP_UPGRADE_IDS.map((upgradeId) => {
+    // The buildings the settlement has opened: the Storehouse and the Defences come with its stages.
+    upgrades: GROUP_UPGRADE_IDS.filter((id) => isUpgradeOpen(world, id, settlementIndexOf(content))).map((upgradeId) => {
       const level = groupLevel(world.upgrades, upgradeId)
       const cost = groupUpgradeCost(upgradeId, level, worldLevel(world.skills))
       const affordable = canAfford(world.materials, cost)

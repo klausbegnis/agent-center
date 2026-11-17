@@ -4,13 +4,13 @@
 import { createCharacter, grantCharacterXp } from './characters.mjs'
 import { addToChest, equipFromChest } from './chest.mjs'
 import { createItem } from './items.mjs'
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { heldEffects, legendaryIndexOf, relicEffects, tokenBonuses } from './legendary-effects.mjs'
 import { equipLegendary } from './legendary-equip.mjs'
 import { emptySkill, grantSkillXp, worldLevel, xpFromTokens } from './progression.mjs'
 import { comeBack, retire } from './retirement.mjs'
 import { CLASSES, skillForActivity } from './skills.mjs'
 import { effectiveTrade } from './trades.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 import { emptyProject, withCharacter, withProjectIn, withWorld, worldIdOf } from './worlds.mjs'
 
 /** The lowest generic tier of a slot (and damage type), for a new project's starting chest. */

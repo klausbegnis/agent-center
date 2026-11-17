@@ -12,6 +12,7 @@ import {
 } from './constants.mjs'
 import { affordableUnits, buyQuote, cityStance, marketDepth, sellQuote, usualPrice } from './market-prices.mjs'
 import { worldLevel } from './progression.mjs'
+import { marketFeeOf } from './settlement-effects.mjs'
 
 /**
  * @typedef {{ id: string, name: string, tagline: string, opensAt: number, produces: string[],
@@ -55,7 +56,8 @@ export function pricePoint(world, city, materialId) {
     base,
     usual: usualPrice(base, cityStance(city, materialId)),
     pressure: marketOf(world).pressure[city.id]?.[materialId] ?? 0,
-    depth: marketDepth(worldLevel(world.skills))
+    depth: marketDepth(worldLevel(world.skills)),
+    fee: marketFeeOf(world)
   }
 }
 

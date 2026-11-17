@@ -1,7 +1,8 @@
 // The market's prices as pure numbers: what a city pays for a material and what it asks, how a
 // sale or a purchase moves that price, and how much a sum buys. A price is the city's usual
 // price times e ** -pressure; every sale is paid at most the base value less the fee and every
-// purchase costs at least the base value plus the fee, so no trade can make money.
+// purchase costs at least the base value plus the fee, so no trade can make money. The fee is the
+// world's: MARKET_FEE, less what its Storehouse takes off (settlement-effects.mjs), never 0.
 import {
   MARKET_CITY_FACTORS,
   MARKET_DEPTH_BASE,
@@ -12,10 +13,14 @@ import {
 } from './constants.mjs'
 
 /**
- * @typedef {{ base: number, usual: number, pressure: number, depth: number }} PricePoint a
- *   material in a city: its base value, the city's usual price, the pressure on it now and the
- *   world's depth (units that move the price by a factor of e)
+ * @typedef {{ base: number, usual: number, pressure: number, depth: number, fee?: number }} PricePoint
+ *   a material in a city: its base value, the city's usual price, the pressure on it now, the
+ *   world's depth (units that move the price by a factor of e) and the world's fee (MARKET_FEE
+ *   when not given)
  */
+
+/** The fee a price point is quoted with. */
+const feeOf = (point) => point.fee ?? MARKET_FEE
 
 /**
  * What a city thinks of a material: one it wants, one it produces, or neither.
@@ -73,7 +78,7 @@ function flooredArea(point, from, to) {
  * @param {PricePoint} point
  */
 export function unitSellPrice(point) {
-  return Math.min(point.usual * Math.exp(-point.pressure), point.base) * (1 - MARKET_FEE)
+  return Math.min(point.usual * Math.exp(-point.pressure), point.base) * (1 - feeOf(point))
 }
 
 /**
@@ -82,7 +87,7 @@ export function unitSellPrice(point) {
  * @param {PricePoint} point
  */
 export function unitBuyPrice(point) {
-  return Math.max(point.usual * Math.exp(-point.pressure), point.base) * (1 + MARKET_FEE)
+  return Math.max(point.usual * Math.exp(-point.pressure), point.base) * (1 + feeOf(point))
 }
 
 /**
@@ -95,7 +100,7 @@ export function unitBuyPrice(point) {
  */
 export function sellQuote(point, amount) {
   const to = point.pressure + amount / point.depth
-  const coins = Math.floor(cappedArea(point, point.pressure, to) * point.depth * (1 - MARKET_FEE))
+  const coins = Math.floor(cappedArea(point, point.pressure, to) * point.depth * (1 - feeOf(point)))
   return { coins, pressure: Math.min(to, MARKET_PRESSURE_MAX) }
 }
 
@@ -119,7 +124,7 @@ export function buyableUnits(point) {
 export function buyQuote(point, amount) {
   if (amount > buyableUnits(point)) return null
   const to = point.pressure - amount / point.depth
-  const coins = Math.ceil(flooredArea(point, to, point.pressure) * point.depth * (1 + MARKET_FEE))
+  const coins = Math.ceil(flooredArea(point, to, point.pressure) * point.depth * (1 + feeOf(point)))
   return { coins, pressure: Math.max(to, MARKET_PRESSURE_MIN) }
 }
 
@@ -141,7 +146,7 @@ function pressureSpan(point, area) {
  */
 export function affordableUnits(point, coins) {
   if (!(coins > 0)) return 0
-  const span = pressureSpan(point, coins / (point.depth * (1 + MARKET_FEE)))
+  const span = pressureSpan(point, coins / (point.depth * (1 + feeOf(point))))
   let units = Math.min(buyableUnits(point), Math.floor(span * point.depth))
   // Rounding can leave the last unit a coin short: step back until the quote fits.
   while (units > 0 && buyQuote(point, units).coins > coins) units -= Math.max(1, Math.ceil(units * 1e-12))

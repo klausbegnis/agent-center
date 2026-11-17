@@ -2,7 +2,6 @@
 // and gathering, closed sessions retire, and materials buy upgrades. Never mutates, no I/O, no
 // clock and no randomness: the same save and the same calls always give the same result.
 import { advanceWithEvents, prepareFights } from './advance.mjs'
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
@@ -15,13 +14,14 @@ import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
-import { applyPurchase, groupLevel, groupUpgradeCost, isUpgradeOpen, spendWorld } from './spending.mjs'
+import { applyPurchase, coinPrice, groupLevel, groupUpgradeCost, isUpgradeOpen, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
 /**
@@ -68,19 +68,26 @@ function upgradeItem(save, { projectId, itemId }, content) {
 }
 
 /**
- * Buys the next level of a group upgrade (a building of the settlement) for a world. Unchanged
- * when it cannot pay or the building is not open yet.
+ * Buys the next level of a group upgrade (a building of the settlement) for a world, in materials
+ * alone or, with `useCoins`, partly in coins once the building has reached the tier that allows it
+ * (`coinPrice`). Unchanged when it cannot pay, the building is not open yet, or coins were asked
+ * for and the building does not take them yet.
  *
  * @param {object} save
- * @param {{ worldId: string, upgradeId: string }} which one of GROUP_UPGRADE_IDS
+ * @param {{ worldId: string, upgradeId: string, useCoins?: boolean }} which `upgradeId` one of
+ *   GROUP_UPGRADE_IDS
  * @param {object} [content] the game content, for the settlement
  * @returns {object}
  */
-function buyGroupUpgrade(save, { worldId, upgradeId }, content) {
+function buyGroupUpgrade(save, { worldId, upgradeId, useCoins = false }, content) {
   const world = save.worlds[worldId]
-  if (!world || !isUpgradeOpen(world, upgradeId, settlementIndexOf(content))) return save
-  const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), worldLevel(world.skills))
-  const next = applyPurchase(world, { kind: 'group', upgradeId, cost })
+  const settlement = settlementIndexOf(content)
+  if (!world || !isUpgradeOpen(world, upgradeId, settlement)) return save
+  const level = groupLevel(world.upgrades, upgradeId)
+  const cost = groupUpgradeCost(upgradeId, level, worldLevel(world.skills))
+  const withCoins = useCoins === true ? coinPrice(cost, upgradeId, level, settlement) : null
+  if (useCoins === true && !withCoins) return save
+  const next = applyPurchase(world, { kind: 'group', upgradeId, ...(withCoins ?? { cost }) })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }
 
