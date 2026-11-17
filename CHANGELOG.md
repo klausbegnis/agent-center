@@ -29,6 +29,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: each character card on the Party tab shows its agent's sprite, the same one its room
+  draws (the room's theme, its scene while it travels, and the agent's own outfit and tint),
+  standing idle, so a card is easy to match with its figure. A click on it opens the Rooms tab
+  with that agent selected and its card open. An agent not on screen (its room hidden) shows an
+  empty frame that says why.
 - Game mode: send an item or a relic to another room of the same world. In the Chest tab, a free
   item's detail has **Send to [room]**: it leaves this chest and arrives in that one, whose copies
   limit works as when a chest left behind is moved (the lowest copy past it is salvaged into the

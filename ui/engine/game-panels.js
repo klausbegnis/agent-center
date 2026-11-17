@@ -12,6 +12,8 @@ import { createMarketView } from './market-view.js'
 import { createOrphansCard } from './orphans-view.js'
 import { createPartyView } from './party-view.js'
 import { createRelicsCard } from './relics-view.js'
+import { portraitOf } from './portraits.js'
+import { roomThemeIds } from './room-themes.js'
 import { createSkillsView } from './skills-view.js'
 
 /**
@@ -19,12 +21,34 @@ import { createSkillsView } from './skills-view.js'
  *   contents: Record<string, HTMLElement>,
  *   actions: Record<string, (...args: unknown[]) => Promise<boolean>>,
  *   base: string,
- *   onChosenItem: () => void
+ *   onChosenItem: () => void,
+ *   library?: { get: (id: string) => object | undefined, has: (id: string) => boolean,
+ *     ensure: (id: string) => Promise<object | null> },
+ *   onShowAgent?: (agentId: string) => void,
+ *   onThemeLoaded?: () => void
  * }} options `contents` is the element each tab's panel draws into, by tab; `onChosenItem` is
- *   called when another chest item is chosen, so the strip can mark what its upgrade lacks
+ *   called when another chest item is chosen, so the strip can mark what its upgrade lacks;
+ *   `library` holds the themes the rooms are drawn with, for the Party tab's portraits, and
+ *   `onThemeLoaded` asks for a redraw once a theme a portrait waits for has loaded
  */
-export function createGamePanels({ contents, actions, base, onChosenItem }) {
-  const party = createPartyView({ actions, base })
+export function createGamePanels({ contents, actions, base, onChosenItem, library, onShowAgent, onThemeLoaded }) {
+  const party = createPartyView({ actions, base, onShowAgent })
+  /** Themes a portrait asked for, so each is loaded once. */
+  const asked = new Set()
+
+  /** The portrait of each agent of the Party tab, worked out once per draw. */
+  function portraitsFor(state, roomId) {
+    if (!library) return undefined
+    const themeIds = roomThemeIds(state, (id) => library.has(id))
+    return (agent) => {
+      const portrait = portraitOf(state, { roomId, agentId: agent.id, themeIds, isLoaded: (id) => library.has(id) })
+      if (portrait.reason === 'loading' && portrait.themeId && !asked.has(portrait.themeId)) {
+        asked.add(portrait.themeId)
+        library.ensure(portrait.themeId).then(() => onThemeLoaded?.())
+      }
+      return [portrait, { name: agent.name, theme: portrait.themeId ? library.get(portrait.themeId) : undefined }]
+    }
+  }
   const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
   const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })
@@ -56,7 +80,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
       if (tab === 'market') market.update(state, { worldId: world?.id ?? null, roomId })
       if (tab === 'bestiary') bestiary.update(state, world?.id ?? null)
       if (!room || !world) return new Map()
-      if (tab === 'party') party.update({ state, game, roomId, room, world })
+      if (tab === 'party') party.update({ state, game, roomId, room, world, portraitFor: portraitsFor(state, roomId) })
       if (tab === 'chest') {
         chest.update({ state, game, roomId, room, world })
         relics.update({ game, roomId, state })

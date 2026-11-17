@@ -1,5 +1,6 @@
 // The Party tab: what the room's idle characters gather, "Best gear for everyone here", the
-// characters as cards with class, level, progress, trade picker, the seven attributes and the
+// characters as cards with their agent's sprite (a click shows the agent in its room), class,
+// level, progress, trade picker, the seven attributes and the
 // three equipment slots, each opening a picker of the chest's items (equip-view.js), then the
 // retirees and the bonus they leave the project.
 import { button, el } from './dom.js'
@@ -10,6 +11,7 @@ import { retireeName } from './game-names.js'
 import { gameIcon } from './icon-view.js'
 import { EQUIP } from './equip-labels.js'
 import { createEquipSlots } from './equip-view.js'
+import { createPortrait } from './portrait-view.js'
 import {
   ARSENAL,
   ATTRIBUTE_LABEL,
@@ -41,9 +43,11 @@ function attributeList(character, name) {
 }
 
 /** A character's card, kept while the character stays, so its trade picker is never rebuilt. */
-function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base }) {
+function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base, onShowAgent }) {
   const node = el('article', 'ac-game-hero')
   const top = el('div', 'ac-game-hero-head')
+  let agentId = null
+  const portrait = createPortrait({ onShow: () => agentId && onShowAgent(agentId) })
   const who = el('div', 'ac-game-hero-who')
   const nameText = el('strong', 'ac-game-entry-name')
   const facts = el('span', 'ac-muted')
@@ -51,7 +55,7 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base 
   let classIcon = el('span')
   // Holds the picker, or on a page that cannot choose, the trade as text.
   const tradeSlot = el('span', 'ac-game-trade-slot')
-  top.append(classIcon, who, tradeSlot)
+  top.append(portrait.element, classIcon, who, tradeSlot)
   const picker = tradePicker({
     key: `trade:${sessionId}`,
     onPick: (choice) => actions.setCharacterTrade(roomId, sessionId, choice)
@@ -67,8 +71,11 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base 
   return {
     element: node,
     equip,
-    update({ agent, character }, { roomChoice, canChoose, canEquip, state, room }) {
+    update({ agent, character }, { roomChoice, canChoose, canEquip, state, room, portraitFor }) {
+      agentId = agent.id
       nameText.textContent = agent.name
+      if (portraitFor) portrait.set(...portraitFor(agent))
+      portrait.element.hidden = !portraitFor
       facts.textContent = characterFacts(character)
       if (classIcon.dataset.iconId !== character.class) {
         const nextIcon = gameIcon(character.class, 'ac-game-hero-icon')
@@ -131,7 +138,7 @@ function createBestGearRow(actions, getRoomId) {
 }
 
 /** The Characters card: the room's picker, its note, then a card per character. */
-function createCharactersCard(actions, base = '') {
+function createCharactersCard(actions, base = '', onShowAgent = () => {}) {
   let roomId = null
   const cards = new Map()
   /** The one equipment picker open in the tab, as "sessionId|slot", or null. */
@@ -153,7 +160,7 @@ function createCharactersCard(actions, base = '') {
     'ac-game-party-card')
   return {
     element,
-    update({ state, roomId: nextRoomId, room, actions: offered }) {
+    update({ state, roomId: nextRoomId, room, actions: offered, portraitFor }) {
       if (nextRoomId !== roomId) {
         cards.clear()
         openSlot.key = null
@@ -178,10 +185,10 @@ function createCharactersCard(actions, base = '') {
         const sessionId = member.character.sessionId
         if (!cards.has(sessionId)) {
           const name = member.agent.name
-          cards.set(sessionId, createCharacterCard({ roomId, sessionId, name, actions, openSlot, base }))
+          cards.set(sessionId, createCharacterCard({ roomId, sessionId, name, actions, openSlot, base, onShowAgent }))
         }
         const card = cards.get(sessionId)
-        card.update(member, { roomChoice, canChoose, canEquip, state, room })
+        card.update(member, { roomChoice, canChoose, canEquip, state, room, portraitFor })
         return card.element
       })
       const kept = new Set(members.map((member) => member.character.sessionId))
@@ -227,22 +234,25 @@ function retireesCard(room) {
 }
 
 /**
- * @param {{ actions: Record<string, (...args: unknown[]) => Promise<boolean>>, base?: string }} options
- *   `base` is where the surface loads legendary pictures from
+ * @param {{ actions: Record<string, (...args: unknown[]) => Promise<boolean>>, base?: string,
+ *   onShowAgent?: (agentId: string) => void }} options `base` is where the surface loads legendary
+ *   pictures from; `onShowAgent` opens the Rooms tab on an agent
  * @returns {{ element: HTMLElement,
- *   update: (next: { state: object, roomId: string, room: object }) => void }}
+ *   update: (next: { state: object, roomId: string, room: object,
+ *     portraitFor?: (agent: object) => [object, { name: string, theme: object | undefined }] }) => void }}
+ *   `portraitFor` gives an agent's portrait and the theme to draw it with; without it no portrait shows
  */
-export function createPartyView({ actions, base = '' }) {
+export function createPartyView({ actions, base = '', onShowAgent }) {
   const element = el('div', 'ac-game-party-section')
-  const characters = createCharactersCard(actions, base)
+  const characters = createCharactersCard(actions, base, onShowAgent)
   const retirees = el('div', 'ac-game-party-retirees')
   element.append(characters.element, retirees)
   let drawn = null
   return {
     element,
-    update({ state, roomId, room }) {
+    update({ state, roomId, room, portraitFor }) {
       // The characters are changed in place; the retirees only when what they show changed.
-      characters.update({ state, roomId, room, actions })
+      characters.update({ state, roomId, room, actions, portraitFor })
       const signature = JSON.stringify([roomId, room.retirees, room.retiredCount, room.bonus])
       if (signature === drawn) return
       drawn = signature

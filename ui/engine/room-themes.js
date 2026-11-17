@@ -58,6 +58,25 @@ export function themeIdsToLoad(state) {
 }
 
 /**
+ * The theme every room of the view state is drawn with, as the rooms on screen draw them: its own,
+ * the default or Random's choice, or a travelling room's scene. The room list and the Party tab's
+ * portraits both ask here, so a character's portrait wears the room's theme.
+ *
+ * @param {{ rooms: { id: string }[], theme: string, themes: { id: string }[],
+ *   roomThemes?: Record<string, string>, game?: object }} state
+ * @param {(themeId: string) => boolean} isLoaded whether a theme is ready to draw with
+ * @returns {Map<string, string>} room id -> theme id
+ */
+export function roomThemeIds(state, isLoaded) {
+  return assignThemes(state.rooms, {
+    defaultTheme: state.theme,
+    roomThemes: state.roomThemes,
+    sceneThemes: sceneThemesOf(state),
+    usableThemeIds: state.themes.map((theme) => theme.id).filter(isLoaded)
+  })
+}
+
+/**
  * The least used theme, starting the search at the one the room's id points to. Rooms therefore
  * get different themes while there are enough, and repeats stay as even as possible after that.
  */

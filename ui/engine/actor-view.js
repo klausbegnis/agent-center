@@ -63,6 +63,18 @@ export function applyLook(theme, actor, kind, lookId) {
 }
 
 /**
+ * Draws an agent's sprite standing idle, facing forward, in a box of its own: the same species,
+ * outfit, outfit colour and tint as its character in the room. `node` holds an `.ac-sprite`.
+ *
+ * @param {{ kind: string | null, lookId: string }} who `lookId` is the id the look is derived from
+ */
+export function drawPortrait(theme, node, { kind, lookId }) {
+  const poses = theme.actors.poses ?? {}
+  const { species, look } = applyLook(theme, node, kind, lookId)
+  drawSprite(theme, node, [poses.idle, ...(species.parts ?? []), ...look.outfit].filter(Boolean))
+}
+
+/**
  * Updates a character to show an agent's current activity.
  *
  * @param {{ id: string, name: string } | null} [parent] the agent this one is a subagent of; a

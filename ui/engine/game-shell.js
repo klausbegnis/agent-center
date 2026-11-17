@@ -32,11 +32,15 @@ const NOTICE_MS = 6000
  *   roomsElement: HTMLElement,
  *   transport: object,
  *   onTabChange: () => void,
- *   onRoomsChange: () => void
+ *   onRoomsChange: () => void,
+ *   library?: object,
+ *   onShowAgent?: (agentId: string) => void
  * }} options `onTabChange` is called after the open tab changed, so the rooms can be laid out;
- *   `onRoomsChange` after the Rooms tab was narrowed to one room or opened to all again
+ *   `onRoomsChange` after the Rooms tab was narrowed to one room or opened to all again;
+ *   `library` holds the loaded themes, for the Party tab's portraits, and `onShowAgent` is called
+ *   when a portrait asks to show its agent in the room
  */
-export function createGameShell({ root, roomsElement, transport, onTabChange, onRoomsChange }) {
+export function createGameShell({ root, roomsElement, transport, onTabChange, onRoomsChange, library, onShowAgent }) {
   let tab = 'rooms'
   let mode = 'off'
   let state = null
@@ -92,7 +96,15 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
 
   /** What draws each panel while the game runs. */
   const base = transport.base ?? ''
-  const views = createGamePanels({ contents, actions, base, onChosenItem: () => drawPanel() })
+  const views = createGamePanels({
+    contents,
+    actions,
+    base,
+    onChosenItem: () => drawPanel(),
+    library,
+    onShowAgent,
+    onThemeLoaded: () => drawPanel()
+  })
 
   /**
    * A room picked above the tabs. On Rooms it narrows the rooms shown (ALL_ROOMS opens them all
@@ -244,6 +256,17 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
       tab = tabOrDefault(saved, section)
       const savedRoom = savedRoomOf(room, arsenalRoom)
       if (savedRoom && wantedRoomId === null) wantedRoomId = savedRoom
+    },
+    /**
+     * Opens the Rooms tab so a room is on it: a tab narrowed to another room is narrowed to this
+     * one instead.
+     *
+     * @param {string} roomId
+     */
+    openRoomsAt(roomId) {
+      if (filterId && filterId !== roomId) filterId = roomId
+      select('rooms')
+      onRoomsChange()
     },
     /** The one room the Rooms tab is narrowed to, or null to show every room. */
     roomFilter() {

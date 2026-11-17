@@ -145,9 +145,11 @@ alone. Each chip shows the room's characters, a dot while its party fights and a
 an upgrade is ready; the arrow keys move along the row, and `[` and `]` pick the room before or
 after from anywhere in the game. A long row scrolls sideways, and from eight rooms a **More…**
 list reaches any of them. In the Chest tab, an item nobody holds, or a relic that is not active,
-can be sent to another room of the same world. In a narrow panel the tabs show their icons only.
-The cog in the panel's header opens the game's own settings: auto-spend, **New scene after each
-monster** (off by default; see "The party can travel" above), worlds and the save file.
+can be sent to another room of the same world. On the Party tab each character shows its agent's
+sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
+panel the tabs show their icons only. The cog in the panel's header opens the game's own
+settings: auto-spend, **New scene after each monster** (off by default; see "The party can
+travel" above), worlds and the save file.
 
 **Game mode: keep conversation titles** keeps a finished session's title on its retired
 character; it is off by default. Everything the game keeps stays on your computer. The full

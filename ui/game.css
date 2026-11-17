@@ -803,6 +803,43 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 }
 .ac-game-hero-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ac-game-hero-icon { width: 28px; height: 28px; }
+/* The agent's sprite as its room draws it, in a box of fixed size: a theme that arrives later
+   fills it without moving anything. A click shows the agent in its room. */
+.ac-game-portrait {
+  flex: none;
+  width: 40px;
+  height: 48px;
+  padding: 2px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+.ac-game-portrait[hidden] { display: none; }
+.ac-game-portrait:hover { border-color: #6fe0d2; }
+.ac-game-portrait:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-game-portrait-frame,
+.ac-game-portrait-frame .ac-sprite { display: block; width: 100%; height: 100%; }
+.ac-game-portrait-frame .ac-sprite svg { width: 100%; height: 100%; overflow: hidden; }
+.ac-game-portrait-frame.ac-pixelated .ac-sprite svg { image-rendering: pixelated; shape-rendering: crispEdges; }
+/* No sprite to show: a dashed box with a question mark, the reason in its tooltip. */
+.ac-game-portrait { position: relative; }
+.ac-game-portrait-empty {
+  border-style: dashed;
+  border-color: var(--orca-muted-foreground, #9aa3b2);
+  background: none;
+  cursor: help;
+}
+.ac-game-portrait-empty::after {
+  content: '?';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
 .ac-game-hero-who { display: flex; flex-direction: column; min-width: 0; }
 .ac-game-hero-who .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-game-hero-progress { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
