@@ -142,6 +142,14 @@ export const LEGENDARY_ITEM = {
   slotNote: 'legendary'
 }
 
+/** A relic on a city's stall. */
+export const STALL_RELIC = {
+  kicker: 'Relic',
+  ownsAll: 'A relic of this city is on offer, but the room it would go to owns them both.',
+  soldToday: 'Today\'s relic is sold. Another comes now and then.',
+  buyLabel: (name, price) => `Buy the relic ${name} for ${price}`
+}
+
 export const LEGENDARY_EVENT = {
   found: (name) => `Legendary! ${name}`
 }

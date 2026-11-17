@@ -3,10 +3,12 @@
 // engine will (docs/GAME.md, "Market"). Pure.
 import { MARKET_CITY_FACTORS, MARKET_FEE, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN, MATERIAL_BASE_VALUES } from './constants.mjs'
 import { effectiveGearLevel } from './items.mjs'
+import { legendaryIndexOf } from './legendary-effects.mjs'
 import { marketDepth } from './market-prices.mjs'
 import { emptyMarket, isCityOpen, marketDay } from './market.mjs'
 import { worldLevel } from './progression.mjs'
 import { isChestFullOf, soldOffers, stallOffers } from './stall.mjs'
+import { stallRelicView } from './stall-relic.mjs'
 
 function offerView(offer, { sold, coins, projects }) {
   const { entry } = offer
@@ -27,7 +29,7 @@ function offerView(offer, { sold, coins, projects }) {
   }
 }
 
-function cityView(city, { worldId, world, level, day, items }) {
+function cityView(city, { worldId, world, level, day, items, index }) {
   const open = isCityOpen(city, level)
   const view = {
     id: city.id,
@@ -47,7 +49,9 @@ function cityView(city, { worldId, world, level, day, items }) {
   return {
     ...view,
     pressure: { ...market.pressure[city.id] },
-    stall: offers.map((offer) => offerView(offer, context))
+    stall: offers.map((offer) => offerView(offer, context)),
+    // Now and then one of the city's relics, the one each room would get (stall-relic.mjs).
+    relic: stallRelicView(world, { worldId, cityId: city.id, day, level, index })
   }
 }
 
@@ -56,13 +60,15 @@ function cityView(city, { worldId, world, level, day, items }) {
  *
  * @param {string} worldId
  * @param {object} world
- * @param {{ cities: object[], items: { items: object[] } }} content
+ * @param {{ cities: object[], items: { items: object[] }, legendary?: object }} content `legendary`,
+ *   the parsed game/legendary.json, lets a stall offer relics
  * @returns {{ day: number, fee: number, depth: number, pressureRange: [number, number],
  *   baseValues: Record<string, number>, cityFactors: Record<string, number>, cities: object[] }}
  */
-export function marketView(worldId, world, { cities, items }) {
+export function marketView(worldId, world, { cities, items, legendary }) {
   const level = worldLevel(world.skills)
   const day = marketDay(world.market)
+  const index = legendaryIndexOf({ legendary })
   return {
     day,
     fee: MARKET_FEE,
@@ -70,6 +76,6 @@ export function marketView(worldId, world, { cities, items }) {
     pressureRange: [MARKET_PRESSURE_MIN, MARKET_PRESSURE_MAX],
     baseValues: { ...MATERIAL_BASE_VALUES },
     cityFactors: { ...MARKET_CITY_FACTORS },
-    cities: cities.map((city) => cityView(city, { worldId, world, level, day, items }))
+    cities: cities.map((city) => cityView(city, { worldId, world, level, day, items, index }))
   }
 }

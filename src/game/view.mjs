@@ -147,7 +147,7 @@ function worldView(worldId, world, names, content, index) {
     projects: Object.keys(world.projects).sort()
       .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index)),
     coins: world.coins ?? 0,
-    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items })
+    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary })
   }
 }
 

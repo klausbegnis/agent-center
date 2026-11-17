@@ -303,11 +303,11 @@ function project(value, path, legendaryIndex) {
   }
 }
 
-/** The day's offers bought in a city: each offer once, by its index. */
+/** The day's offers bought in a city: each offer once, by its index (the relic's is STALL_OFFERS). */
 function soldToday(value, path) {
   const source = record(value, path)
   const offers = list(source.offers, `${path}.offers`)
-    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS - 1 }))
+    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS }))
   if (new Set(offers).size !== offers.length) fail(`${path}.offers`, 'names an offer twice')
   return { day: whole(source.day, `${path}.day`), offers }
 }

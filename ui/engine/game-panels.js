@@ -1,7 +1,7 @@
 // The game's tabs other than Rooms, as panels: Party, Chest (with the room's relics and the chests
-// rooms left behind), Camp, Skills and Market. Each draws the room or the world picked above the tabs; only the open
-// one is drawn, the others when they are opened. Says which materials the prices on screen lack,
-// for the strip above the tabs.
+// rooms left behind), Camp, Skills and Market. Each draws the room or the world picked above the
+// tabs; only the open one is drawn, the others when they are opened. Says which materials the
+// prices on screen lack, for the strip above the tabs.
 import { costsOnScreen, shortMaterials } from './arsenal-model.js'
 import { createCampView } from './camp-view.js'
 import { createChestView } from './chest-view.js'

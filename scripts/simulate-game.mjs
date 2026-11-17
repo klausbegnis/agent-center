@@ -245,7 +245,7 @@ function playWorkday(run, day) {
 /** The market policy's visit: what it bought counts as purchases, like autoSpend's. */
 function tradeAtMarket(run) {
   const before = upgradeLevels(run.save)
-  run.save = visitMarket(engine, run.save, { cities: content.cities.cities, items: content.items }, run.market)
+  run.save = visitMarket(engine, run.save, { cities: content.cities.cities, items: content.items, legendary: content.legendary }, run.market)
   run.period.purchases += upgradeLevels(run.save) - before
 }
 
@@ -330,7 +330,7 @@ function simulate(scenario, { trades = false } = {}) {
   const run = {
     scenario,
     trades,
-    market: { trades: 0, gear: 0, earned: 0 },
+    market: { trades: 0, gear: 0, earned: 0, relics: 0 },
     save: emptySave(),
     slots: Array.from({ length: scenario.concurrent }, (_, slot) => openSession(scenario, slot, slot)),
     serial: scenario.concurrent,
@@ -386,14 +386,18 @@ function printScenario(run) {
   const milestone = (level) => run.milestones[level] ?? '-'
   console.log(`\nMost used skill: 10 on day ${milestone(10)}, 30 on day ${milestone(30)}, ` +
     `60 on day ${milestone(60)}, first prestige on day ${run.firstPrestige ?? `> ${DAYS}`}.`)
+  console.log(`Legendary items owned per room: ${legendaryPace(run)}.`)
+}
+
+/** What each room owns of legendary loot at day 30, 90 and 365, and when it got its first ones. */
+function legendaryPace(run) {
   const owned = (day) => run.rows.find((row) => row.day === day)?.legendary.join('/') ?? '-'
   const firsts = Object.keys(run.legendaryFirsts).sort().map((projectId) => {
     const { relic, bossItem } = run.legendaryFirsts[projectId]
     return `${projectId} day ${relic ?? '-'} / ${bossItem ?? '-'}`
   })
-  console.log(`Legendary items owned per room: ${owned(30)} at day 30, ${owned(90)} at day 90, ` +
-    `${owned(365)} at day 365 (of ${content.legendary.legendary.length}). First relic / boss-owned item: ` +
-    `${firsts.join(', ')}.`)
+  return `${owned(30)} at day 30, ${owned(90)} at day 90, ${owned(365)} at day 365 ` +
+    `(of ${content.legendary.legendary.length}); first relic / boss-owned item: ${firsts.join(', ')}`
 }
 
 /** The same scenarios with and without a visit to the market every working day. */
@@ -413,7 +417,8 @@ function printMarketComparison(plainRuns, tradingRuns) {
   printTable(['scenario', 'day', 'kills/h', 'market', 'gear', 'market', 'gear +', 'buys/day', 'market', 'world'], rows)
   for (const run of tradingRuns) {
     console.log(`${run.scenario.id}: ${run.market.trades} trades, ${run.market.gear} stall pieces, ` +
-      `${compact(run.market.earned)} coins from sales in a year.`)
+      `${run.market.relics} stall relics, ` +
+      `${compact(run.market.earned)} coins from sales in a year. Legendary items owned per room: ${legendaryPace(run)}.`)
   }
 }
 

@@ -120,7 +120,7 @@ otherwise.
   | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
   | `/api/game/sell` | sells a world's materials to a market city for coins |
   | `/api/game/trade` | turns a world's materials into another material in a market city |
-  | `/api/game/buy-offer` | spends a world's coins on a piece of a city's stall, into a room's chest |
+  | `/api/game/buy-offer` | spends a world's coins on a piece of a city's stall, into a room's chest, or on its relic, into a room's relics |
 
   Any program or user account on this machine can still use them, like the other settings.
 

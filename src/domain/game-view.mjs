@@ -323,7 +323,7 @@ export function buildGameView(input) {
   const described = describeEvents(recent, {
     projects, worlds, itemEntries: engineView.itemEntries ?? {}, legendary: engineView.legendary
   })
-  const legendary = legendaryShown(engineView.legendary, { rooms, characters, recent: described })
+  const legendary = legendaryShown(engineView.legendary, { rooms, characters, recent: described, worlds })
   return {
     status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug,
     ...(legendary ? { legendary } : {})

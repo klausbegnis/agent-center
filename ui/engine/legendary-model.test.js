@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { activeRelic, itemLegendary, legendaryArtUrl, legendaryDetails, RELIC_SLOTS_PER_ROW, relicsCard } from './legendary-model.js'
+import { activeRelic, itemLegendary, legendaryArtUrl, legendaryDetails, RELIC_SLOTS_PER_ROW, relicsCard, stallRelic } from './legendary-model.js'
 
 const entries = {
   rimeheart: { id: 'rimeheart', name: 'Rimeheart', kind: 'boss-relic', effect: { effect: 'staminaDrain', scope: 'party', amount: 0.05 }, flavour: 'Cold.' },
@@ -45,4 +45,18 @@ test('a legendary item finds its entry; a plain one has none', () => {
   assert.equal(itemLegendary(game(), { legendary: true, entryId: 'oathbreaker' }).name, 'Oathbreaker')
   assert.equal(itemLegendary(game(), { id: 'blade' }), null)
   assert.equal(legendaryDetails(game(), { legendary: true, entryId: 'oathbreaker' }).text, '+4% critical chance for the wielder')
+})
+
+test('a stall\'s relic is the one the receiving room lacks, with the reason Buy is off', () => {
+  const city = { relic: { index: 3, price: 5000, sold: false, byRoom: { room: 'rimeheart', other: null } } }
+  const buyer = { roomId: 'room', coins: 9000, canBuy: true }
+  const offer = stallRelic(game(), city, buyer)
+  assert.equal(offer.entry.name, 'Rimeheart')
+  assert.equal(offer.block, null)
+  assert.equal(stallRelic(game(), city, { ...buyer, coins: 10 }).block, 'coins')
+  assert.equal(stallRelic(game(), city, { ...buyer, roomId: 'other' }).block, 'owned')
+  const sold = stallRelic(game(), { relic: { ...city.relic, sold: true } }, buyer)
+  assert.deepEqual([sold.block, sold.entry], ['sold', null])
+  assert.equal(stallRelic(game(), city, { ...buyer, canBuy: false }).block, 'viewOnly')
+  assert.equal(stallRelic(game(), {}, buyer), null)
 })

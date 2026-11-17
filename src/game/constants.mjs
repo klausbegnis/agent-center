@@ -414,3 +414,15 @@ export const BOSS_ITEM_CHANCE = { boss: 0.05, legendary: 0.15 }
 export const BOSS_ITEM_PITY_STEP = 0.05
 /** Pity counters stop here; the chance is certain long before. Bounds what an imported save may hold. */
 export const LEGENDARY_PITY_MAX = 1000
+/**
+ * A city's stall also offers one of that city's relics (game/legendary.json) on a game day with
+ * this chance, by hash of world, city and day: now and then, so a relic on offer is an event.
+ * Which relic depends on the room it would go to: one of the city's two that room lacks.
+ */
+export const STALL_RELIC_CHANCE = 0.25
+/**
+ * A stall relic costs STALL_RELIC_PRICE_BASE * REWARD_GROWTH ** worldLevel coins, rounded: it
+ * grows like kill rewards, so it stays steep at every level. Set with the simulator's trading
+ * player so that a medium user affords one every few weeks and a light user a few a year.
+ */
+export const STALL_RELIC_PRICE_BASE = 3000

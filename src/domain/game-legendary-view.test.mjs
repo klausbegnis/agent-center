@@ -34,3 +34,11 @@ test('only a legendary item carries the legendary marks', () => {
   assert.deepEqual(legendaryMarks({ legendary: true, entryId: 'oathbreaker' }), { legendary: true, entryId: 'oathbreaker' })
   assert.deepEqual(legendaryMarks({ id: 'blade' }), {})
 })
+
+test('a relic a market\'s stall offers is among the entries sent', () => {
+  const shown = legendaryShown(content, {
+    rooms: {}, characters: {}, recent: [],
+    worlds: [{ market: { cities: [{ relic: { byRoom: { a: 'elder-acorn', b: null } } }, { id: 'closed' }] } }]
+  })
+  assert.deepEqual(Object.keys(shown.entries), ['elder-acorn'])
+})

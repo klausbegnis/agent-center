@@ -21,8 +21,16 @@ const weapon = (extra = {}) => ({
 })
 const problemsOf = (...entries) => validateLegendary({ legendary: entries }, { bosses, items })
 
-test('the shipped legendary file is valid against the shipped bosses and items', () => {
-  assert.deepEqual(validateLegendary(shipped, { bosses: readJson('bosses.json'), items: readJson('items.json') }), [])
+test('the shipped legendary file is valid against the shipped bosses, items and cities', () => {
+  const others = { bosses: readJson('bosses.json'), items: readJson('items.json'), cities: readJson('cities.json') }
+  assert.deepEqual(validateLegendary(shipped, others), [])
+})
+
+test('a relic names a city of the market', () => {
+  const cities = { cities: [{ id: 'brinehaven' }] }
+  assert.deepEqual(validateLegendary({ legendary: [relic()] }, { bosses, items, cities }), [])
+  const problems = validateLegendary({ legendary: [relic({ city: 'atlantis' })] }, { bosses, items, cities })
+  assert.match(problems.join(), /a city in game\/cities.json/)
 })
 
 test('the shipped file holds ten city relics, twelve boss relics and twelve pieces of equipment', () => {

@@ -135,12 +135,14 @@ function checkEquipment(name, entry) {
   return problems
 }
 
-/** Problems of where an entry comes from: a city for a relic, a boss of the roster otherwise. */
-function checkSource(name, entry, bossIds, bossesUsed) {
+/**
+ * Problems of where an entry comes from: a city of game/cities.json for a relic (any kebab-case id
+ * when no cities are given), a boss of the roster otherwise.
+ */
+function checkSource(name, entry, { bossIds, bossesUsed, cityIds }) {
   if (entry.kind === 'relic') {
-    return typeof entry.city === 'string' && KEBAB_CASE.test(entry.city)
-      ? []
-      : [`${name}: "city" must be a city id in kebab-case`]
+    if (typeof entry.city !== 'string' || !KEBAB_CASE.test(entry.city)) return [`${name}: "city" must be a city id in kebab-case`]
+    return cityIds && !cityIds.has(entry.city) ? [`${name}: "city" must be the id of a city in game/cities.json`] : []
   }
   if (!bossIds.has(entry.boss)) return [`${name}: "boss" must be the id of a boss in game/bosses.json`]
   if (bossesUsed.has(entry.boss)) return [`${name}: the boss "${entry.boss}" already has an item`]
@@ -167,7 +169,7 @@ function checkEntry(entry, index, context) {
     if (!isFilledString(entry[key])) problems.push(`${name}: "${key}" must be a non-empty string`)
   }
   if (!HEX_COLOUR.test(entry.colour ?? '')) problems.push(`${name}: "colour" must be a colour like #A0522D`)
-  problems.push(...checkSource(name, entry, context.bossIds, context.bossesUsed))
+  problems.push(...checkSource(name, entry, context))
   if (entry.kind === 'equipment') problems.push(...checkEquipment(name, entry))
   return [...problems, ...checkEffect(name, entry)]
 }
@@ -176,18 +178,20 @@ function checkEntry(entry, index, context) {
  * Everything wrong with a parsed game/legendary.json. Empty when it is valid.
  *
  * @param {unknown} data
- * @param {{ bosses?: { bosses: { id: string }[] }, items?: { items: { id: string }[] } }} [others]
- *   the parsed bosses (the ids entries name) and items (ids an entry must not reuse)
+ * @param {{ bosses?: { bosses: { id: string }[] }, items?: { items: { id: string }[] },
+ *   cities?: { cities: { id: string }[] } }} [others] the parsed bosses (the ids entries name),
+ *   items (ids an entry must not reuse) and cities (the ids relics name)
  * @returns {string[]}
  */
-export function validateLegendary(data, { bosses, items } = {}) {
+export function validateLegendary(data, { bosses, items, cities } = {}) {
   if (!isObject(data) || !Array.isArray(data.legendary)) return ['must be an object with a "legendary" list']
   const problems = Object.keys(data).filter((key) => key !== 'legendary').map((key) => `"${key}" is not a known key`)
   const context = {
     seenIds: new Set(),
     bossesUsed: new Set(),
     bossIds: new Set((bosses?.bosses ?? []).map((boss) => boss.id)),
-    itemIds: new Set((items?.items ?? []).map((item) => item.id))
+    itemIds: new Set((items?.items ?? []).map((item) => item.id)),
+    cityIds: Array.isArray(cities?.cities) ? new Set(cities.cities.map((city) => city.id)) : null
   }
   data.legendary.forEach((entry, index) => problems.push(...checkEntry(entry, index, context)))
   return problems

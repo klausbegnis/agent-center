@@ -343,11 +343,11 @@ comes back from retirement, and when a person asks for it. A person can also cho
 Three kinds, in `game/legendary.json` (checked by `src/game/legendary-content.mjs`), each with a
 name, a flavour line, a colour and a picture in `ui/art/legendary/`:
 
-- **Relics** (`relic`, ten): a room owns any number and has one **active**; only the active one
-  acts, on the whole party. Each names the city that will sell it (`city`, an id). They drop from
-  bosses; `relicsCityCanOffer(index, { cityId, ownedIds })` is the pure function a city's market
-  stall calls for what it can offer a room (that city's relics the room does not own; boss relics
-  are never sold).
+- **Relics** (`relic`, ten, two per city): a room owns any number and has one **active**; only the
+  active one acts, on the whole party. Each names the city of `game/cities.json` that sells it
+  (`city`, checked). They drop from bosses, and a city's stall sells one now and then (see "The
+  stall"); `relicsCityCanOffer(index, { cityId, ownedIds })` gives that city's relics a room does
+  not own.
 - **Boss relics** (`boss-relic`, twelve): relics too, but each is the signature of one named boss
   of `game/bosses.json` (`boss`, its id), drops only from that boss and is never sold.
 - **Legendary equipment** (`equipment`, twelve): a weapon, outfit or tool dropped only by its boss,
@@ -649,7 +649,20 @@ costs), so a piece ahead of the world's reference gear is dear and one behind it
 records the offer as sold for that day. It is refused when the city is closed, the offer is not
 today's (the caller names the entry it saw), it was sold already, the coins do not cover it, or
 the chest already keeps `COPIES_PER_ITEM` copies of that entry: a purchase is never salvaged.
-Offers have a `kind` (`item` in this version) so later kinds can join them.
+Offers have a `kind`: `item` for gear, `relic` for a relic.
+
+**A relic now and then** (`src/game/stall-relic.mjs`). On a game day an open city's stall also
+offers a relic with chance `STALL_RELIC_CHANCE` (25%), by hash of world, city and day: one of that
+city's two relics (never a boss relic) that the room it would go to does not own, picked by hash,
+so each room sees one relic all day and none once it owns both. It is the offer after the gear,
+index `STALL_OFFERS` (3), and is bought through the same `buyStallOffer` with that index and the
+relic's id as `entryId`: the relic joins the project's relics (`withRelic`: a room's first relic
+becomes active), the coins are paid and the offer is sold for the day, for every room. It costs
+`round(STALL_RELIC_PRICE_BASE * REWARD_GROWTH ** L)` coins (base 3,000), steep and growing like
+kill rewards: 4,814 coins at level 16, 13,000 at 50, 57,000 at 100. With the simulator's trading
+player that is three a year for a light user and twelve for a medium one, a burst in the first
+month while the world is young and its stock of starter surplus sells, then one every three to
+five weeks; a heavy user buys every relic its cities have as soon as each is offered.
 
 ## Save shape
 
@@ -940,7 +953,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 Each answers `{ changed }`, except `exportSave`, which answers the save file. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
 character of the room, a gathering skill, a city of `game/cities.json`, a material, an offer
-index below `STALL_OFFERS`; an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
+index from 0 to `STALL_OFFERS` (the last is the relic's); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
 trade or a purchase the market cannot make (a city not open yet, more than the world holds, an
 offer sold or changed) answers `{ changed: false }`. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
@@ -1011,7 +1024,10 @@ by the usual closing rules.
         opensAt: 1, open: true, produces: ['crops', 'fish'], wants: ['ore', 'bars'],
         pressure: { ore: 0.31 },      // only the prices that moved; open cities only
         stall: [{ index: 0, kind: 'item', entryId, name, slot, damageType, tier, power, price,
-          sold: false, affordable: true, fullIn: [] }]   // open cities only
+          sold: false, affordable: true, fullIn: [] }],  // open cities only
+        relic: { index: 3, kind: 'relic', price: 4814, sold: false, affordable: true,
+          byRoom: { 'local:/work/sneaky-pancake': 'millwind-vane' } }  // or null: none today;
+                                    // a room's relic is null once it owns the city's two
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
     roomIds: ['local:/work/sneaky-pancake'],
@@ -1134,7 +1150,8 @@ It then plays the same three scenarios again with a second policy
 once a working day. It trades surplus for what the three cheapest purchases out of reach lack
 (surplus being what is left above three times the most any one purchase needs), buys each stall
 piece that beats what a room keeps of that slot, sells what is still surplus where it pays best
-until the price there has fallen 30% below the usual, and runs `autoSpend` again. It uses only
+until the price there has fallen 30% below the usual, buys a stall's relic whenever its coins
+cover it (for the first room that lacks it), and runs `autoSpend` again. It uses only
 what the Market tab offers. The first policy's output does not change with the market: its
 player never trades. The whole run takes a few seconds.
 
@@ -1158,12 +1175,12 @@ What the simulator measures now, legendary loot included:
 | Most used skill reaches 10, 30, first prestige | day 5, 93, after a year | day 1, 11, 166 | day 1, 2, 32 |
 | World level at day 1, 7, 30, 90, 180, 365 | 2, 6, 14, 24, 34, 49 | 8, 18, 36, 62, 98, 191 | 16, 38, 80, 219, 445, 980 |
 | Wave above the world level (day 30 on) | 6 to 8 | 6 to 7 | 3 to 6 |
-| Median common fight (normal rank) | 22 ticks, 3.7 min | 26 ticks, 4.3 min | 19 ticks, 3.2 min |
-| Kills per hour of fighting | 9.3 to 12.2 | 7.9 to 10.5 | 11.5 to 15.5 |
+| Median common fight (normal rank) | 22 ticks, 3.7 min | 25 ticks, 4.2 min | 19 ticks, 3.2 min |
+| Kills per hour of fighting | 9.3 to 12.2 | 7.9 to 10.7 | 11.5 to 15.4 |
 | Character level at retirement | 37 to 45 | 24 to 33 | 24 to 26 |
-| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.7 | 6.9 to 12.1 |
-| Gathering share of materials | 25% | 24% | 16% |
-| Hit from world, gear, character (day 90 on) | 53%, 23%, 24% | 72%, 22%, 7% | 77%, 22%, 1% |
+| Purchases per working day (day 30 on) | 0.2 to 0.6 | 1.0 to 1.8 | 7.0 to 13.8 |
+| Gathering share of materials | 26% | 23% | 16% |
+| Hit from world, gear, character (day 90 on) | 53%, 23%, 24% | 71%, 22%, 7% | 77%, 22%, 1% |
 
 At levels 10, 60 and 150 a balanced party rests in 1 to 10% of its fights, one without a
 defender or a supporter in 50 to 100%; a party without magic takes 1.9 to 2.1 times as long
@@ -1237,14 +1254,15 @@ level of the weapons in use):
 | | day | kills/h | with market | gear | with market | purchases/day | with market |
 |---|---|---|---|---|---|---|---|
 | light | 90 | 9.4 | 9.8 | 5.0 | 5.0 | 0.5 | 0.4 |
-| light | 365 | 12.2 | 12.8 | 10.0 | 10.0 | 0.2 | 0.1 |
-| medium | 90 | 9.0 | 9.6 | 9.3 | 10.3 (+11%) | 1.1 | 1.2 |
-| medium | 365 | 10.5 | 11.4 | 25.7 | 26.7 (+4%) | 1.2 | 1.2 |
-| heavy | 90 | 12.6 | 12.5 | 28.7 | 28.5 (-1%) | 9.6 | 9.6 |
-| heavy | 365 | 15.5 | 15.3 | 125.5 | 125.3 | 12.1 | 12.1 |
+| light | 365 | 12.2 | 13.0 | 10.0 | 10.0 | 0.2 | 0.1 |
+| medium | 90 | 9.0 | 9.7 | 9.7 | 10.3 (+7%) | 1.1 | 1.2 |
+| medium | 365 | 10.7 | 11.3 | 26.3 | 26.7 (+1%) | 1.2 | 1.2 |
+| heavy | 90 | 12.4 | 12.6 | 28.3 | 28.5 (+1%) | 10.0 | 9.9 |
+| heavy | 365 | 15.4 | 15.7 | 125.3 | 125.5 | 13.8 | 13.7 |
 
-In a year the trader makes 400 to 800 trades, buys 0 to 2 stall pieces and sells for 16 k
-(light), 3 M (medium) and 2e16 (heavy) coins.
+With legendary loot in play (measured with it). In a year the trader makes 300 to 800 trades,
+buys no stall pieces but 3 (light), 12 (medium) and 18 (heavy) stall relics (see "Legendary
+loot" below), and sells for 22 k (light), 2 M (medium) and 5e15 (heavy) coins.
 
 - The market helps modestly, as intended: at a year gear is at most 4% higher and kills per
   hour up to 9% (medium), within the "at most about +25%" target. Gear grows little because
@@ -1274,6 +1292,8 @@ kills at most about 15% more in a day than without any.
 | | light | medium | heavy |
 |---|---|---|---|
 | Legendary items owned per room at day 30, 90, 365 (of 34) | 3, 3, 4 | 3, 3 to 4, 7 to 9 | 2 to 5, 8 to 10, 16 to 19 |
+| The same with the trading player's market visits | 3, 4, 7 | 5 to 7, 6 to 10, 11 to 12 | 8 to 10, 11 to 12, 16 to 19 |
+| Relics bought at stalls in a year (whole world) | 3 | 12 | 18 |
 | First relic, first boss-owned item | day 8, day 8 | day 1, day 1 to 12 | day 1, day 1 to 46 |
 
 | Level | Kills a day without, with the set and best relic | Gain | Best relic |
@@ -1287,5 +1307,22 @@ is why a room's first relic and first boss-owned item are certain: the light roo
 first boss, on day 8. Its first boss has an item of its own only when that boss is one of the 24
 that do (44%); otherwise its first boss-owned item waits for the next boss with one. Collections
 stay long-term goals: a light room owns 4 of 34 after a year, a heavy one about half. The Millwind
-Vane gives 15 minutes, not hours: the light scenario's gathering share sits at the 30% top of its
-target, and every quarter of an hour of gathering moves it by about half a point.
+Vane gives 15 minutes, not hours: when it was set, the light scenario's gathering share sat at the
+30% top of its target and every quarter of an hour of gathering moved it by about half a point.
+With the trade choice and the market it is 26% now, so there is room to give it more later.
+
+Stalls give relics a second source that coins pay for. The trading player buys three a year as a
+light user and twelve as a medium one; a heavy one buys every city relic its rooms lack within the
+first month, so stalls change its pace early and not at all by the end of the year, when its rooms
+own every city relic either way. The full-set gain is measured with relics alone and is the same
+with or without the market. The trading player spends coins on relics it would otherwise have
+kept, so it buys fewer stall pieces (none in a year, against two before); no balance target
+changes.
+
+Legendary equipment drops at the reference gear of the boss's level: the drop tier, with the
+upgrade levels that tier lacks. With the generic items of every tier the stall now sells one tier
+above the drops at level 0, which is at most two upgrade levels ahead of a fresh legendary item
+(level 16: tier 2 +0 against the stall's tier 3, gear level 2 against 4; level 100: tier 7 +1
+against tier 8, 13 against 14). That is within `LEGENDARY_PICK_MARGIN`, so a new character still
+takes the legendary item it fits, and auto-spend keeps it level from then on. The rule needs no
+change.

@@ -283,7 +283,8 @@ export function createGameActions(dependencies) {
       return change((save) => {
         requireWorld(save, worldId)
         requireCity(cityId)
-        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= STALL_OFFERS) throw refuse('unknown offer', offerIndex)
+        // The gear's offers, then the relic's at STALL_OFFERS (stall-relic.mjs).
+        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex > STALL_OFFERS) throw refuse('unknown offer', offerIndex)
         if (typeof entryId !== 'string') throw refuse('unknown offer', entryId)
         requireRoomOf(save, worldId, roomId)
         return engine.buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId: roomId })

@@ -134,3 +134,9 @@ button.ac-legendary-slot:hover { filter: brightness(1.15); }
 @media (prefers-reduced-motion: reduce) {
   .ac-game-tone-legendary { animation: none !important; }
 }
+
+/* A relic on a city's stall: its picture framed in gold beside its name, buff and flavour line. */
+.ac-legendary-offer-picture { width: 44px; }
+.ac-legendary-offer .ac-market-offer-facts { display: flex; flex-direction: column; min-width: 0; }
+.ac-legendary-offer .ac-legendary-name { font-weight: 700; }
+.ac-legendary-offer { border-color: color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent); }

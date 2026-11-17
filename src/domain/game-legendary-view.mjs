@@ -2,9 +2,17 @@
 // rooms own, what their characters hold and what dropped lately, and nothing more, so the state
 // stays small. Pure.
 
-/** Every legendary id the state refers to: owned relics, legendary items shown, recent drops. */
-function referencedIds({ rooms, characters, recent }) {
+/**
+ * Every legendary id the state refers to: owned relics, legendary items shown, recent drops and the
+ * relics a market's stalls offer.
+ */
+function referencedIds({ rooms, characters, recent, worlds = [] }) {
   const ids = new Set()
+  for (const world of worlds) {
+    for (const city of world.market?.cities ?? []) {
+      for (const id of Object.values(city.relic?.byRoom ?? {})) if (id) ids.add(id)
+    }
+  }
   for (const room of Object.values(rooms)) {
     for (const id of room.relics?.owned ?? []) ids.add(id)
     for (const item of room.chest ?? []) if (item.legendary) ids.add(item.entryId)
@@ -22,7 +30,8 @@ function referencedIds({ rooms, characters, recent }) {
  *
  * @param {{ relicCount: number, equipmentCount: number, entries: Record<string, object> } | null | undefined} legendary
  *   the engine's view of the content
- * @param {{ rooms: Record<string, object>, characters: Record<string, object>, recent: object[] }} shown
+ * @param {{ rooms: Record<string, object>, characters: Record<string, object>, recent: object[],
+ *   worlds?: object[] }} shown
  */
 export function legendaryShown(legendary, shown) {
   if (!legendary) return null

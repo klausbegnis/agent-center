@@ -15,6 +15,7 @@ import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
 import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
+import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
@@ -157,8 +158,11 @@ function marketActions(content) {
     buyMaterial: (save, { worldId, ...purchase }) =>
       inWorld(save, worldId, (world) => buyMaterial(world, cities, purchase)),
     tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, cities, trade)),
+    // The relic's offer follows the gear's (stall-relic.mjs).
     buyStallOffer: (save, { worldId, ...purchase }) => inWorld(save, worldId, (world) =>
-      buyStallOffer(world, { worldId, cities, items: content.items }, purchase))
+      (purchase.offerIndex === RELIC_OFFER_INDEX
+        ? buyStallRelic(world, { worldId, cities, index: legendaryIndexOf(content) }, purchase)
+        : buyStallOffer(world, { worldId, cities, items: content.items }, purchase)))
   }
 }
 

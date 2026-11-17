@@ -33,15 +33,20 @@ export function checkGameContent({ root, report, readJson }) {
   checkLegendary({ root, report, readJson, items })
 }
 
-/** game/legendary.json, its bosses checked against game/bosses.json and its ids against the items. */
+/**
+ * game/legendary.json, its bosses checked against game/bosses.json, its cities against
+ * game/cities.json and its ids against the items.
+ */
 function checkLegendary({ root, report, readJson, items }) {
   const legendaryFile = path.join(root, 'game', 'legendary.json')
   if (!fs.existsSync(legendaryFile)) return report(legendaryFile, 'is missing; the game needs it for legendary loot')
   const legendary = readJson(legendaryFile)
   const bossesFile = path.join(root, 'game', 'bosses.json')
   const bosses = fs.existsSync(bossesFile) ? readJson(bossesFile) : null
+  const citiesFile = path.join(root, 'game', 'cities.json')
+  const cities = fs.existsSync(citiesFile) ? readJson(citiesFile) : null
   if (legendary === null) return
-  for (const problem of validateLegendary(legendary, { bosses, items })) report(legendaryFile, problem)
+  for (const problem of validateLegendary(legendary, { bosses, items, cities })) report(legendaryFile, problem)
 }
 
 /** game/races.json and game/bosses.json, the bosses checked against the races. */

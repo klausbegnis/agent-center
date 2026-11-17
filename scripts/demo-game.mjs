@@ -11,8 +11,10 @@
 // paired machines are characters like the others.
 import { createGameMode } from '../src/game-mode.mjs'
 import { createGameSave } from '../src/game-save.mjs'
+import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
-import { SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
+import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -192,6 +194,17 @@ function createHistory(store) {
   }
 }
 
+/** The frozen demo's day: days after its usual one until Goldmill's stall has a relic on offer. */
+const RELIC_CITY = 'goldmill'
+
+/** How many days the frozen demo starts later, so the day it shows has a relic on Goldmill's stall. */
+function relicDaysAhead() {
+  const lastDay = Math.floor((EPOCH + FROZEN_ROUNDS * ROUND_MS * SPEED) / MARKET_DAY_MS)
+  let ahead = 0
+  while (!hasRelicOnDay({ worldId: DEFAULT_WORLD, cityId: RELIC_CITY, day: lastDay + ahead })) ahead += 1
+  return ahead
+}
+
 /**
  * The demo's game: a game mode over an in-memory storage and the made-up history.
  *
@@ -205,7 +218,7 @@ export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
   let { store } = options
   const startedAt = Date.now()
-  let frozenClock = EPOCH
+  let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
   const values = new Map([['game', startingSave(travel, frozen)]])
   const settings = { gameMode: true, gameKeepTitles: true }

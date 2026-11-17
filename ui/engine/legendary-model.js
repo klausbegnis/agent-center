@@ -84,3 +84,29 @@ export function legendaryDetails(game, item) {
   const entry = itemLegendary(game, item)
   return entry ? described(entry) : null
 }
+
+/**
+ * The relic a city's stall offers the room a purchase goes to, with what stops buying it: null
+ * when the stall has no relic today. `block` is one of 'viewOnly', 'sold', 'noRoom', 'owned' (the
+ * room owns the city's relics), 'coins', or null when it can be bought.
+ *
+ * @param {object | undefined} game
+ * @param {{ relic?: { index: number, price: number, sold: boolean, byRoom: Record<string, string | null> } }} city
+ * @param {{ roomId: string | null, coins: number, canBuy: boolean }} buyer
+ */
+export function stallRelic(game, city, { roomId, coins, canBuy }) {
+  const offer = city.relic
+  if (!offer) return null
+  // Once sold, the room would be offered the city's other relic: the row says it was sold instead.
+  const offeredId = roomId ? offer.byRoom[roomId] ?? null : Object.values(offer.byRoom).find(Boolean) ?? null
+  const entry = offer.sold ? null : legendaryEntry(game, offeredId)
+  const blocks = [
+    [!canBuy, 'viewOnly'], [offer.sold, 'sold'], [!roomId, 'noRoom'], [!entry, 'owned'], [coins < offer.price, 'coins']
+  ]
+  return {
+    index: offer.index,
+    price: offer.price,
+    entry: entry ? described(entry) : null,
+    block: blocks.find(([applies]) => applies)?.[1] ?? null
+  }
+}

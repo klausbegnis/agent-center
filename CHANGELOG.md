@@ -59,6 +59,10 @@ All notable changes to this project are recorded here. The format follows
   by hash like every other drop, a room's first relic and first boss-owned item are certain, and
   bad luck is bounded by pity. Every buff is data in `game/legendary.json` and its text is
   derived from it. Saves from before load unchanged; exported saves carry the loot.
+- Game mode: a city's stall sells one of that city's two relics now and then (one day in four),
+  the one the room in "Goes to" lacks, at a steep price in coins that grows with the world. It is
+  bought through the stall's usual Buy (`/api/game/buy-offer` with the offer after the gear);
+  boss relics are never sold.
 
 ## 0.2.0 - 2026-11-16
 
