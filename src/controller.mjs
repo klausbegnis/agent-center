@@ -31,9 +31,10 @@
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
  * @property {(fromRoomId: string, toRoomId: string) => Promise<GameResult>} gameMoveOrphanItems
  *   moves a room left behind's chest and retirees into a room on screen
- * @property {(roomId: string, toRoomId: string, itemId: string) => Promise<GameResult &
- *   { salvaged: number, sentSalvaged: boolean }>} gameSendItem sends a free item to another room of
- *   the world; says how many copies past the cap were salvaged
+ * @property {(roomId: string, toRoomId: string, itemIds: string[], confirmHeld: boolean) =>
+ *   Promise<GameResult & { sent: number, salvaged: number, sentSalvaged: number,
+ *   repicks: object[] }>} gameSendItem sends items to another room of the world; one a character
+ *   holds only with confirmHeld; says what was salvaged and what each holder took instead
  * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
  *   sends a relic that is not active to another room of the world
  * @property {(roomId: string, sessionId: string, slot: string, itemId: string | null) =>
@@ -51,6 +52,9 @@
 
 /** @typedef {{ changed: boolean }} GameResult whether the action changed the game */
 
+/** The longest list of ids a surface may send in one action; the game checks its own limit. */
+const MAX_LIST = 100
+
 /** Text from a surface, or an error: ids are compared with what exists, never stored as given. */
 function requireText(value, what) {
   if (typeof value !== 'string' || value === '' || value.length > 512) throw new Error(`invalid ${what}`)
@@ -66,6 +70,12 @@ function requireObject(value, what) {
 function requireWhole(value, what) {
   if (!Number.isInteger(value)) throw new Error(`invalid ${what}`)
   return value
+}
+
+/** A short list of texts: ids a surface sends at once, such as the items of one sending. */
+function requireTexts(values, what) {
+  if (!Array.isArray(values) || values.length === 0 || values.length > MAX_LIST) throw new Error(`invalid ${what}`)
+  return values.map((value) => requireText(value, what))
 }
 
 function requireBoolean(value, what) {
@@ -188,10 +198,11 @@ export function createController({
       fromRoomId: requireText(fromRoomId, 'room'),
       toRoomId: requireText(toRoomId, 'room')
     })),
-    gameSendItem: (roomId, toRoomId, itemId) => playAction(() => game.sendItem({
+    gameSendItem: (roomId, toRoomId, itemIds, confirmHeld = false) => playAction(() => game.sendItem({
       roomId: requireText(roomId, 'room'),
       toRoomId: requireText(toRoomId, 'room'),
-      itemId: requireText(itemId, 'item')
+      itemIds: requireTexts(itemIds, 'item'),
+      confirmHeld: requireBoolean(confirmHeld, 'confirmation')
     })),
     gameSendRelic: (roomId, toRoomId, relicId) => playAction(() => game.sendRelic({
       roomId: requireText(roomId, 'room'),

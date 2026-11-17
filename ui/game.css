@@ -665,6 +665,12 @@
   font-size: 13px;
   font-weight: 700;
 }
+/* The lid holds the title and "Move items"; the button stays clear of the lock. */
+.ac-game-chest-lid { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ac-game-chest-title { margin: 0; font-size: inherit; font-weight: inherit; }
+.ac-game-chest-move { min-height: 22px; margin-right: 18px; padding: 0 8px; font-size: 11px; }
+.ac-game-chest-move[hidden] { display: none; }
+.ac-game-chest-move[aria-pressed='true'] { border-color: #6fe0d2; color: #6fe0d2; }
 /* The lock on the lid. */
 .ac-game-chest-lid::after {
   content: '';
@@ -753,6 +759,33 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-game-send .ac-game-send-picker { flex: 1 1 120px; min-width: 0; max-width: 100%; }
 .ac-game-send-status { margin: 6px 0 0; font-size: 11px; color: var(--ac-game-good, #7bd88f); }
 .ac-game-send-status:empty { display: none; }
+.ac-game-send-reason { margin: 4px 0 0; font-size: 11px; }
+.ac-game-send .ac-select:disabled,
+.ac-game-send .ac-button:disabled { opacity: 0.5; cursor: not-allowed; }
+/* "Move items": the picked slots wear a thick ring and a tint (and are pressed buttons); the bar under the grid sends them. */
+.ac-game-chest-moving .ac-game-slotbox.ac-game-slotbox-moving {
+  outline: 3px solid #f2c14e;
+  outline-offset: 1px;
+  background-color: rgba(242, 193, 78, 0.3);
+}
+.ac-game-move:empty { display: none; }
+.ac-game-move-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px 10px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border: 1px solid #5b4630;
+  border-radius: 6px;
+  background: #221b14;
+}
+.ac-game-move-bar .ac-game-send { align-self: stretch; margin-top: 0; }
+.ac-game-send-ask[hidden] { display: none; }
+.ac-game-send-ask { margin-top: 8px; padding: 6px 8px; border: 1px solid #6fe0d2; border-radius: 6px; }
+.ac-game-send-ask .ac-game-card-line { margin: 0 0 6px; }
+/* A room chip a chest slot can be dropped on. */
+.ac-game-room-chip-drop { border-color: #f2c14e; background: rgba(242, 193, 78, 0.22); }
 /* Chests left behind: one row per room no longer on screen, its facts beside its move button. */
 .ac-game-orphans-card[hidden] { display: none; }
 .ac-game-orphans-card { margin-top: 10px; font-size: 12px; }

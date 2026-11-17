@@ -67,6 +67,8 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   const bestiary = createBestiaryView({ panel: contents.bestiary, base })
 
   return {
+    /** The Chest tab's drag of a slot onto a room chip (chest-view.js). */
+    chestDrop: { draggingFrom: () => chest.draggingFrom(), dropOn: (payload, toRoomId) => chest.dropOn(payload, toRoomId) },
     /**
      * Draws the open tab and answers what the prices on it lack.
      *

@@ -146,7 +146,9 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/export-save': () => controller.gameExportSave(),
     '/api/game/import-save': (input) => controller.gameImportSave(input.file),
     '/api/game/move-orphan-items': (input) => controller.gameMoveOrphanItems(input.fromRoomId, input.toRoomId),
-    '/api/game/send-item': (input) => controller.gameSendItem(input.roomId, input.toRoomId, input.itemId),
+    // One item (`itemId`) or several (`itemIds`); `confirmHeld` lets an item a character holds go.
+    '/api/game/send-item': (input) => controller.gameSendItem(input.roomId, input.toRoomId,
+      input.itemIds ?? (input.itemId === undefined ? undefined : [input.itemId]), input.confirmHeld ?? false),
     '/api/game/send-relic': (input) => controller.gameSendRelic(input.roomId, input.toRoomId, input.relicId),
     '/api/game/sell': (input) => controller.gameSellMaterial(input.worldId, input.cityId, input.materialId, input.amount),
     '/api/game/trade': (input) =>

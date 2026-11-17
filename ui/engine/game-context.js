@@ -8,6 +8,7 @@ import { CONTEXT } from './context-labels.js'
 import { WORLD_TABS } from './game-model.js'
 import { ARSENAL, levelShort } from './labels.js'
 import { createMaterialStrip } from './material-strip.js'
+import { ITEM_DRAG_TYPE } from './send-model.js'
 import { ALL_ROOMS, MANY_ROOMS, SCROLL_PAGE_SHARE, chipAfterKey, roomChips, rowOverflow, scrollToShow } from './room-chips.js'
 
 export { ALL_ROOMS }
@@ -15,8 +16,39 @@ export { ALL_ROOMS }
 /** The value of the "More…" list's prompt: a room id never starts with a space. */
 const JUMP_PROMPT = ' more'
 
+/**
+ * Lets a chip take chest slots dragged onto it, to send them to its room. Only a drag that carries
+ * items, onto a room the drop is accepted for, is highlighted and taken.
+ *
+ * @param {HTMLElement} node
+ * @param {{ accepts: (roomId: string) => boolean, take: (roomId: string, payload: object) => void }} drop
+ */
+function takeDrops(node, drop) {
+  const isItemDrag = (event) => [...(event.dataTransfer?.types ?? [])].includes(ITEM_DRAG_TYPE)
+  const isTaken = (event) => isItemDrag(event) && drop.accepts(node.dataset.value)
+  node.addEventListener('dragover', (event) => {
+    if (!isTaken(event)) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    node.classList.add('ac-game-room-chip-drop')
+  })
+  node.addEventListener('dragleave', () => node.classList.remove('ac-game-room-chip-drop'))
+  node.addEventListener('drop', (event) => {
+    node.classList.remove('ac-game-room-chip-drop')
+    if (!isTaken(event)) return
+    event.preventDefault()
+    let payload = null
+    try {
+      payload = JSON.parse(event.dataTransfer.getData(ITEM_DRAG_TYPE))
+    } catch (error) {
+      console.error('game: a dropped item could not be read', error)
+    }
+    if (payload && Array.isArray(payload.itemIds)) drop.take(node.dataset.value, payload)
+  })
+}
+
 /** One chip: a radio button with the room's short name, its host and its signs. */
-function createChip(onPick) {
+function createChip(onPick, drop) {
   const node = el('button', 'ac-game-room-chip')
   node.type = 'button'
   node.setAttribute('role', 'radio')
@@ -29,6 +61,7 @@ function createChip(onPick) {
   for (const part of [host, count, fighting, upgrade]) part.setAttribute('aria-hidden', 'true')
   node.append(name, host, count, fighting, upgrade)
   node.addEventListener('click', () => onPick(node.dataset.value))
+  if (drop) takeDrops(node, drop)
   let drawn = null
   return {
     node,
@@ -67,8 +100,12 @@ function arrowButton(text, label, onClick) {
   return node
 }
 
-/** @param {{ onPick: (roomId: string) => void }} options `onPick` gets ALL_ROOMS or a room id */
-export function createGameContext({ onPick }) {
+/**
+ * @param {{ onPick: (roomId: string) => void,
+ *   drop?: { accepts: (roomId: string) => boolean, take: (roomId: string, payload: object) => void } }} options
+ *   `onPick` gets ALL_ROOMS or a room id; `drop` lets a chip take chest slots dragged onto it
+ */
+export function createGameContext({ onPick, drop }) {
   const element = el('div', 'ac-game-context')
   const row = el('div', 'ac-game-context-row')
   const switcher = el('div', 'ac-game-rooms')
@@ -152,7 +189,7 @@ export function createGameContext({ onPick }) {
 
   function drawChips(shown) {
     const nodes = shown.map((chip) => {
-      if (!chips.has(chip.value)) chips.set(chip.value, createChip(onPick))
+      if (!chips.has(chip.value)) chips.set(chip.value, createChip(onPick, chip.value === ALL_ROOMS ? null : drop))
       const view = chips.get(chip.value)
       view.set(chip)
       return view.node

@@ -169,6 +169,12 @@ function marketActions(content) {
   }
 }
 
+/** The name of an item's entry, plain or legendary. */
+function itemNameOf(content, entryId) {
+  const plain = content.items?.items?.find((entry) => entry.id === entryId)
+  return plain?.name ?? legendaryIndexOf(content)?.byId.get(entryId)?.name ?? entryId
+}
+
 /**
  * Creates the engine for a set of content.
  *
@@ -210,12 +216,15 @@ export function createEngine({ content }) {
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
-    sendItem: (save, sending) => sendItem(save, sending).save,
-    sendItemWithSalvage: sendItem,
+    // An item a character holds is taken from it, and the slot re-picked under the legendary rules.
+    sendItem: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)).save,
+    sendItemWithSalvage: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)),
     sendItemProblem,
     sendRelic,
     sendRelicProblem,
     ...marketActions(content),
+    /** The name of an item's entry, plain or legendary, as the view gives it; the id when unknown. */
+    itemName: (entryId) => itemNameOf(content, entryId),
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }

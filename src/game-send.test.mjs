@@ -33,7 +33,7 @@ const tool = (id, extra = {}) => ({
  * A game with banana and pancake in the main world, llama in another world, and a room left behind
  * (fuzzy-anvil) in the main world. Banana has a spare tool, a legendary weapon and two relics.
  */
-async function setup({ pancakeChest = [] } = {}) {
+async function setup({ pancakeChest = [], banana = {}, sessionId = null } = {}) {
   let clock = 1_000 * MINUTE
   const save = migrate(emptySave())
   save.worlds.main = {
@@ -42,7 +42,8 @@ async function setup({ pancakeChest = [] } = {}) {
       [BANANA]: {
         ...emptyProject(),
         chest: [tool('brass-multitool', { level: 2 }), legendaryItemFor(index.byId.get('labyrinth-cleaver'), 10)],
-        legendary: { relics: ['tidecall-conch', 'rimeheart'], active: 'tidecall-conch', relicPity: 0, bossPity: 0 }
+        legendary: { relics: ['tidecall-conch', 'rimeheart'], active: 'tidecall-conch', relicPity: 0, bossPity: 0 },
+        ...banana
       },
       [PANCAKE]: { ...emptyProject(), chest: pancakeChest },
       [GONE]: { ...emptyProject(), chest: [] }
@@ -71,6 +72,11 @@ async function setup({ pancakeChest = [] } = {}) {
     log: () => {},
     onChange: () => {}
   })
+  // A character's session must be running, or the first round retires it.
+  if (sessionId) {
+    store.status({ workspaceId: 'w-banana', paneKey: 'pane-1', state: 'working', sessionId })
+    history.sessions = [{ sessionId, title: null, workspaceId: 'w-banana', totalTokens: 0, createdAt: 0, running: true }]
+  }
   await game.round()
   return { game, storage, tick: (ms) => (clock += ms) }
 }
@@ -79,15 +85,15 @@ const chestIds = (game, roomId) => game.getView().rooms[roomId].chest.map((item)
 
 test('a free item sent to another room of the world leaves one chest for the other', async () => {
   const { game } = await setup()
-  const answer = await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemId: 'brass-multitool' })
-  assert.deepEqual(answer, { changed: true, salvaged: 0, sentSalvaged: false })
+  const answer = await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['brass-multitool'] })
+  assert.deepEqual(answer, { changed: true, sent: 1, salvaged: 0, sentSalvaged: 0, repicks: [] })
   assert.ok(!chestIds(game, BANANA).includes('brass-multitool'))
   assert.deepEqual(chestIds(game, PANCAKE), ['brass-multitool'])
 })
 
 test('what was sent is saved, and the save still passes the check an imported file must pass', async () => {
   const { game, storage } = await setup()
-  await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemId: 'labyrinth-cleaver' })
+  await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['labyrinth-cleaver'] })
   await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'rimeheart' })
   await game.flush()
   const stored = storage.get(GAME_STORAGE_KEY).save
@@ -110,14 +116,14 @@ test('the active relic is refused with its reason', async () => {
 
 test('a legendary item the target owns already is refused with its reason', async () => {
   const { game } = await setup({ pancakeChest: [legendaryItemFor(index.byId.get('labyrinth-cleaver'), 3)] })
-  await assert.rejects(game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemId: 'labyrinth-cleaver' }),
+  await assert.rejects(game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['labyrinth-cleaver'] }),
     /already owns this legendary item/)
   assert.ok(chestIds(game, BANANA).includes('labyrinth-cleaver'))
 })
 
 test('a room of another world, a room left behind, the same room or a made-up one is refused', async () => {
   const { game } = await setup()
-  const send = (toRoomId) => game.sendItem({ roomId: BANANA, toRoomId, itemId: 'brass-multitool' })
+  const send = (toRoomId) => game.sendItem({ roomId: BANANA, toRoomId, itemIds: ['brass-multitool'] })
   await assert.rejects(send(LLAMA), /same world/)
   await assert.rejects(send(GONE), /not a room on screen/)
   await assert.rejects(send(BANANA), /same world/)
@@ -126,7 +132,27 @@ test('a room of another world, a room left behind, the same room or a made-up on
 
 test('an item that is not in the chest is refused, and nothing is stored for it', async () => {
   const { game } = await setup()
-  await assert.rejects(game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemId: 'made-up' }), /unknown item/)
+  await assert.rejects(game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['made-up'] }), /unknown item/)
   await assert.rejects(game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'made-up' }), /does not own/)
   assert.deepEqual(chestIds(game, PANCAKE), [])
+})
+
+test('a held item goes only when confirmed, and the answer names what its holder took instead', async () => {
+  const holder = {
+    sessionId: 's1', class: 'physical', level: 3, xp: 0, attributes: {}, levelActivityXp: {}, trade: 'mining',
+    tokens: 10, bornAt: 0, lastSeenAt: 0, skillXp: {}, gatherCarry: 0, title: null, state: 'idle',
+    equipment: { weapon: null, outfit: null, tool: 'brass-multitool' }
+  }
+  const { game } = await setup({
+    banana: {
+      chest: [tool('brass-multitool', { level: 2, heldBy: 's1' }), tool('trusty-pocketknife')],
+      characters: { s1: holder }
+    },
+    sessionId: 's1'
+  })
+  const sending = { roomId: BANANA, toRoomId: PANCAKE, itemIds: ['brass-multitool'] }
+  await assert.rejects(game.sendItem(sending), /confirm to take it/)
+  const answer = await game.sendItem({ ...sending, confirmHeld: true })
+  assert.deepEqual(answer.repicks, [{ sessionId: 's1', slot: 'tool', itemName: 'Trusty Pocketknife' }])
+  assert.deepEqual(chestIds(game, PANCAKE), ['brass-multitool'])
 })

@@ -197,25 +197,40 @@ export function createGameActions(dependencies) {
     },
 
     /**
-     * Sends a free item of a room's chest to another room on screen that plays in the same world.
-     * Answers how many items the target's copies cap salvaged, and whether the one sent was among
-     * them. A sending the rules refuse says why.
+     * Sends items of a room's chest to another room on screen that plays in the same world. An item
+     * a character holds goes only with `confirmHeld`, and that character's slot takes the best free
+     * item at once. Answers how many items went, how many copies the target's cap salvaged (and how
+     * many of them were sent ones), and what each holder took instead. A sending the rules refuse
+     * says why.
      *
-     * @param {{ roomId: string, toRoomId: string, itemId: string }} input
+     * @param {{ roomId: string, toRoomId: string, itemIds: string[], confirmHeld?: boolean }} input
      */
-    async sendItem({ roomId, toRoomId, itemId }) {
-      let salvaged = []
+    async sendItem({ roomId, toRoomId, itemIds, confirmHeld = false }) {
+      let result = null
       const answer = change((save) => {
         const sending = requireSending(save, roomId, toRoomId)
-        if (typeof itemId !== 'string' || !findItem(joinedProject(save, roomId).chest, itemId)) throw refuse('unknown item', itemId)
-        const problem = engine.sendItemProblem(save, { ...sending, itemId })
+        const chest = joinedProject(save, roomId).chest
+        if (!Array.isArray(itemIds)) throw refuse('not a list of items', itemIds)
+        for (const itemId of itemIds) {
+          if (typeof itemId !== 'string' || !findItem(chest, itemId)) throw refuse('unknown item', itemId)
+        }
+        const full = { ...sending, itemIds, confirmHeld: confirmHeld === true }
+        const problem = engine.sendItemProblem(save, full)
         if (problem) throw new Error(problem)
-        const sent = engine.sendItemWithSalvage(save, { ...sending, itemId })
-        salvaged = sent.salvaged
-        return sent.save
+        result = engine.sendItemWithSalvage(save, full)
+        return result.save
       })
-      const sentItem = salvaged.find((item) => item.id === itemId) ?? null
-      return { ...answer, salvaged: salvaged.length, sentSalvaged: sentItem !== null }
+      const repicks = (result?.repicks ?? []).map(({ sessionId, slot, itemId }) => {
+        const item = itemId ? findItem(joinedProject(data().save, roomId).chest, itemId) : null
+        return { sessionId, slot, itemName: item ? engine.itemName(item.entryId ?? item.id) : null }
+      })
+      return {
+        ...answer,
+        sent: answer.changed ? itemIds.length : 0,
+        salvaged: result?.salvaged.length ?? 0,
+        sentSalvaged: result?.sentSalvaged.length ?? 0,
+        repicks
+      }
     },
 
     /**

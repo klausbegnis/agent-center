@@ -504,7 +504,7 @@ export const ARSENAL = {
   guests: (count) => `${plural(count, 'guest')}: they help fight but keep nothing.`,
   chestSlots: 'Chest slots',
   noItems: 'The chest is empty. Monsters drop items as the party wins fights.',
-  pickItem: 'Choose a slot to see its item and upgrade it.',
+  pickItem: 'Choose a slot to see its item, upgrade it or send it to another room.',
   canUpgrade: 'can upgrade now',
   chestLegend: 'T tier · +N level · ● held · ▲ can upgrade now',
   now: 'Now',

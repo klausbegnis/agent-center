@@ -63,7 +63,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips and the world's coins and materials over the seven tabs, then the chest's item slots with a legendary sword in a gold frame, a free cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips and the world's coins and materials over the seven tabs, then the chest's item slots under a Move items button with a legendary sword in a gold frame, a free cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -144,8 +144,10 @@ room that Party and Chest show (and the world of the others), and on Rooms it ca
 alone. Each chip shows the room's characters, a dot while its party fights and a triangle when
 an upgrade is ready; the arrow keys move along the row, and `[` and `]` pick the room before or
 after from anywhere in the game. A long row scrolls sideways, and from eight rooms a **More…**
-list reaches any of them. In the Chest tab, an item nobody holds, or a relic that is not active,
-can be sent to another room of the same world. On the Party tab each character shows its agent's
+list reaches any of them. In the Chest tab, any item can be sent to another room of the same
+world: from its detail (**Send to**), several at once with **Move items**, or by dragging its slot
+onto a room's chip; taking one from a character asks first, and that character picks the next
+best. A relic that is not active can be sent from the Relics card. On the Party tab each character shows its agent's
 sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
 panel the tabs show their icons only. The cog in the panel's header opens the game's own
 settings: auto-spend, **New scene after each monster** (off by default; see "The party can

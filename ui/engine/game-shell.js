@@ -61,7 +61,19 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   viewOnly.title = VIEW_ONLY_NOTE
   viewOnly.setAttribute('aria-label', `${VIEW_ONLY_MARKER}: ${VIEW_ONLY_NOTE}`)
   bar.append(tabs.element, estimated, viewOnly)
-  const context = createGameContext({ onPick: (value) => pickRoom(value) })
+  const context = createGameContext({
+    onPick: (value) => pickRoom(value),
+    // A chest slot dragged onto the chip of another room of its world is sent there.
+    drop: {
+      accepts: (roomId) => {
+        const from = tab === 'chest' ? views.chestDrop.draggingFrom() : null
+        const rooms = state?.game?.rooms ?? {}
+        return Boolean(from) && from !== roomId && rooms[roomId]?.joined === true &&
+          rooms[roomId]?.worldId === rooms[from]?.worldId
+      },
+      take: (roomId, payload) => views.chestDrop.dropOn(payload, roomId)
+    }
+  })
   // The picker and the strip sit above the tabs and keep their size on every tab.
   const top = el('div', 'ac-game-top')
   top.append(context.element, bar)

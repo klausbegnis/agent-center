@@ -118,7 +118,7 @@ otherwise.
   | `/api/game/export-save` | answers the whole save file (see "The save file" below) |
   | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |
   | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
-  | `/api/game/send-item` | sends a free item of a room's chest to another room of the same world (a copy past that chest's limit is salvaged) |
+  | `/api/game/send-item` | sends items of a room's chest to another room of the same world, one a character holds only when confirmed (a copy past that chest's limit is salvaged) |
   | `/api/game/send-relic` | sends a relic that is not active to another room of the same world |
   | `/api/game/sell` | sells a world's materials to a market city for coins |
   | `/api/game/trade` | turns a world's materials into another material in a market city |

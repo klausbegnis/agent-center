@@ -34,13 +34,21 @@ All notable changes to this project are recorded here. The format follows
   standing idle, so a card is easy to match with its figure. A click on it opens the Rooms tab
   with that agent selected and its card open. An agent not on screen (its room hidden) shows an
   empty frame that says why.
-- Game mode: send an item or a relic to another room of the same world. In the Chest tab, a free
-  item's detail has **Send to [room]**: it leaves this chest and arrives in that one, whose copies
+- Game mode: send an item or a relic to another room of the same world. In the Chest tab, every
+  item's detail has **Send to [room]**, always shown, and disabled with the reason when it cannot
+  be used (no other room plays in the world yet, the page only watches, every other room owns that
+  legendary item). An item a character holds can go too: the page asks once ("Search filters will
+  take the next best weapon"), and that slot goes back to Auto and takes the best free item at once,
+  which the message names. **Move items** on the chest's lid picks several slots (click or Space,
+  Escape to leave) and sends them together; a slot can also be dragged onto a room's chip. The
+  chest's hint says sending exists. The item leaves this chest and arrives in that one, whose copies
   limit works as when a chest left behind is moved (the lowest copy past it is salvaged into the
   world's materials, and the message says so). Legendary equipment is never salvaged or doubled:
-  a room that owns it already is refused. The Relics card sends any relic but the active one. New
+  a room that owns it already is refused. The Relics card sends any relic but the active one, and
+  its row is always shown, with the reason when it cannot be used. New
   local-only routes `/api/game/send-item` and `/api/game/send-relic` (panel requests
-  `game.sendItem`, `game.sendRelic`); a page opened from another machine does not offer them.
+  `game.sendItem`, `game.sendRelic`; `send-item` takes `itemIds` and `confirmHeld`); a page opened
+  from another machine does not offer them and says so.
   `npm run simulate` now also plays a player who funnels every spare piece into one room: it buys
   nothing, so sending stays free.
 - Game mode: a **Bestiary** tab, the seventh. Each world counts the creatures it kills: every

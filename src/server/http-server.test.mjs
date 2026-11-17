@@ -49,7 +49,7 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
     },
     gameSendItem: async (...input) => {
       calls.push(['sendItem', ...input])
-      return { changed: true, salvaged: 1, sentSalvaged: false }
+      return { changed: true, sent: 1, salvaged: 1, sentSalvaged: 0, repicks: [] }
     },
     gameSendRelic: async (...input) => {
       calls.push(['sendRelic', ...input])
@@ -206,9 +206,15 @@ test('the sending routes reach the controller with their fields and answer what 
   const from = 'local:/work/rumble-banana'
   const to = 'local:/work/sneaky-pancake'
   const item = await post('/api/game/send-item', { roomId: from, toRoomId: to, itemId: 'whittled-cudgel-2' })
-  assert.deepEqual(JSON.parse(item.text), { changed: true, salvaged: 1, sentSalvaged: false })
+  assert.deepEqual(JSON.parse(item.text), { changed: true, sent: 1, salvaged: 1, sentSalvaged: 0, repicks: [] })
+  const many = { roomId: from, toRoomId: to, itemIds: ['a', 'b'], confirmHeld: true }
+  assert.equal((await post('/api/game/send-item', many)).status, 200)
   assert.equal((await post('/api/game/send-relic', { roomId: from, toRoomId: to, relicId: 'rimeheart' })).status, 200)
-  assert.deepEqual(calls, [['sendItem', from, to, 'whittled-cudgel-2'], ['sendRelic', from, to, 'rimeheart']])
+  assert.deepEqual(calls, [
+    ['sendItem', from, to, ['whittled-cudgel-2'], false],
+    ['sendItem', from, to, ['a', 'b'], true],
+    ['sendRelic', from, to, 'rimeheart']
+  ])
 })
 
 test('the market routes reach the controller with their fields', async (t) => {
