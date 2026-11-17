@@ -11,32 +11,36 @@ export const RELIC_KINDS = Object.freeze(['relic', 'boss-relic'])
 
 /**
  * The effect types: where each may act (`party` for an active relic, `holder` for equipment, on
- * the character holding it or, for a party quantity, on its party while it fights) and the
- * qualifiers it takes. Every type's amount is capped by LEGENDARY_EFFECT_CAPS.
+ * the character holding it or, for a party quantity, on its party while it fights, `world` for the
+ * bestiary, on every party of its world) and the qualifiers it takes. Every type's amount is
+ * capped by LEGENDARY_EFFECT_CAPS.
  */
 export const EFFECT_TYPES = Object.freeze({
   attackSpeed: { scopes: ['party', 'holder'], qualifiers: [] },
-  damage: { scopes: ['party', 'holder'], qualifiers: ['damageType', 'ranks'] },
+  damage: { scopes: ['party', 'holder', 'world'], qualifiers: ['damageType', 'ranks'] },
   critChance: { scopes: ['holder'], qualifiers: [] },
-  critDamage: { scopes: ['party'], qualifiers: [] },
-  staminaDrain: { scopes: ['party', 'holder'], qualifiers: [] },
-  staminaPool: { scopes: ['party'], qualifiers: [] },
+  critDamage: { scopes: ['party', 'world'], qualifiers: [] },
+  staminaDrain: { scopes: ['party', 'holder', 'world'], qualifiers: [] },
+  staminaPool: { scopes: ['party', 'world'], qualifiers: [] },
   outfitStamina: { scopes: ['holder'], qualifiers: [] },
-  restTime: { scopes: ['party'], qualifiers: [] },
-  staminaPerKill: { scopes: ['party'], qualifiers: [] },
+  restTime: { scopes: ['party', 'world'], qualifiers: [] },
+  staminaPerKill: { scopes: ['party', 'world'], qualifiers: [] },
   healing: { scopes: ['holder'], qualifiers: [] },
   supportAura: { scopes: ['holder'], qualifiers: [] },
-  affixWeakening: { scopes: ['party'], qualifiers: [] },
-  thorns: { scopes: ['party'], qualifiers: [] },
-  runeCircle: { scopes: ['party'], qualifiers: [] },
-  itemDrop: { scopes: ['party'], qualifiers: [] },
-  killMaterials: { scopes: ['party'], qualifiers: ['materials'] },
+  affixWeakening: { scopes: ['party', 'world'], qualifiers: [] },
+  thorns: { scopes: ['party', 'world'], qualifiers: [] },
+  runeCircle: { scopes: ['party', 'world'], qualifiers: [] },
+  itemDrop: { scopes: ['party', 'world'], qualifiers: [] },
+  killMaterials: { scopes: ['party', 'world'], qualifiers: ['materials'] },
   gatherYield: { scopes: ['party', 'holder'], qualifiers: ['materials'] },
-  gatherHours: { scopes: ['party'], qualifiers: [] },
-  gatherXp: { scopes: ['party'], qualifiers: [] },
-  characterXp: { scopes: ['party'], qualifiers: [] },
+  gatherHours: { scopes: ['party', 'world'], qualifiers: [] },
+  gatherXp: { scopes: ['party', 'world'], qualifiers: [] },
+  characterXp: { scopes: ['party', 'world'], qualifiers: [] },
   skillXp: { scopes: ['holder'], qualifiers: ['skill'] },
-  upgradeCost: { scopes: ['party'], qualifiers: [] }
+  upgradeCost: { scopes: ['party', 'world'], qualifiers: [] },
+  // The bestiary's: damage against monsters of the races listed, and legendary pity that grows faster.
+  raceDamage: { scopes: ['world'], qualifiers: ['races'] },
+  legendaryPity: { scopes: ['world'], qualifiers: [] }
 })
 
 const ENTRY_KEYS = [
@@ -64,7 +68,7 @@ const isDistinctList = (value, allowed) => Array.isArray(value) && value.length 
 export const scopeOfKind = (kind) => (kind === 'equipment' ? 'holder' : 'party')
 
 /** Problems of an effect's qualifiers: only the type's own, each well formed. */
-function checkQualifiers(name, effect, type) {
+function checkQualifiers(name, effect, type, raceIds) {
   const problems = []
   const known = ['effect', 'scope', 'amount', ...type.qualifiers]
   for (const key of Object.keys(effect).filter((key) => !known.includes(key))) {
@@ -82,30 +86,43 @@ function checkQualifiers(name, effect, type) {
   if (type.qualifiers.includes('skill') && !WORK_SKILLS.includes(effect.skill)) {
     problems.push(`${name}: "effect.skill" must be one of: ${WORK_SKILLS.join(', ')}`)
   }
+  if (effect.races !== undefined && !isDistinctList(effect.races, raceIds ?? effect.races)) {
+    problems.push(`${name}: "effect.races" must list distinct races of game/races.json`)
+  }
   return problems
 }
 
 /**
- * Problems of an entry's effect: a known type, the scope its kind acts in, an amount above 0 and
- * at most the type's cap, and only the type's qualifiers.
+ * Problems of an effect: a known type that may act in `scope`, an amount above 0 and at most the
+ * type's cap, and only the type's qualifiers. Shared by legendary loot and the bestiary.
+ *
+ * @param {string} name how the problems name the effect's owner
+ * @param {unknown} effect
+ * @param {string} scope the scope the owner's effects must have
+ * @param {{ raceIds?: string[] }} [known] the race ids a `races` qualifier may name
+ * @returns {string[]}
  */
-function checkEffect(name, entry) {
-  const { effect } = entry
+export function effectProblems(name, effect, scope, { raceIds } = {}) {
   if (!isObject(effect)) return [`${name}: "effect" must be an object`]
   const type = EFFECT_TYPES[effect.effect]
   if (!Object.hasOwn(EFFECT_TYPES, effect.effect ?? '')) {
     return [`${name}: "effect.effect" must be one of: ${Object.keys(EFFECT_TYPES).join(', ')}`]
   }
   const problems = []
-  const scope = scopeOfKind(entry.kind)
-  if (effect.scope !== scope) problems.push(`${name}: a ${entry.kind}'s effect has the scope "${scope}"`)
+  if (effect.scope !== scope) problems.push(`${name}: its effect has the scope "${scope}"`)
   if (!type.scopes.includes(effect.scope)) problems.push(`${name}: ${effect.effect} cannot act on the ${effect.scope}`)
   const cap = LEGENDARY_EFFECT_CAPS[effect.effect]
   const amount = effect.amount
   if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0 || amount > cap) {
     problems.push(`${name}: "effect.amount" must be above 0 and at most ${cap}`)
   }
-  return [...problems, ...checkQualifiers(name, effect, type)]
+  return [...problems, ...checkQualifiers(name, effect, type, raceIds)]
+}
+
+/** Problems of an entry's effect: its kind's scope (a relic acts on the party, equipment on its holder). */
+function checkEffect(name, entry) {
+  const problems = effectProblems(name, entry.effect, scopeOfKind(entry.kind))
+  return problems.map((problem) => problem.replace(': its effect has the scope', `: a ${entry.kind}'s effect has the scope`))
 }
 
 /** Problems of what an equipment entry is: slot, damage type, who it is made for, its recipe. */

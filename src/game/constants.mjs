@@ -386,7 +386,11 @@ export const LEGENDARY_EFFECT_CAPS = {
   gatherXp: 0.1,
   characterXp: 0.05,
   skillXp: 0.1,
-  upgradeCost: 0.1
+  upgradeCost: 0.1,
+  // The bestiary's own types (docs/GAME.md, "Bestiary"): damage against the races a world has
+  // mastered, and how much faster bosses' legendary pity grows.
+  raceDamage: 0.1,
+  legendaryPity: 0.5
 }
 /**
  * A free legendary item that fits a new character (made for its class, or for a tool its trade) is
