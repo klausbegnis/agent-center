@@ -59,7 +59,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
       if (tab === 'party') party.update({ state, game, roomId, room, world })
       if (tab === 'chest') {
         chest.update({ state, game, roomId, room, world })
-        relics.update({ game, roomId })
+        relics.update({ game, roomId, state })
         const shown = state.rooms.find((entry) => entry.id === roomId)
         orphans.update({ roomId, roomName: shown ? roomTitle(shown) : roomId, world })
       }

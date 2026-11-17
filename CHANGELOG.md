@@ -29,6 +29,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: send an item or a relic to another room of the same world. In the Chest tab, a free
+  item's detail has **Send to [room]**: it leaves this chest and arrives in that one, whose copies
+  limit works as when a chest left behind is moved (the lowest copy past it is salvaged into the
+  world's materials, and the message says so). Legendary equipment is never salvaged or doubled:
+  a room that owns it already is refused. The Relics card sends any relic but the active one. New
+  local-only routes `/api/game/send-item` and `/api/game/send-relic` (panel requests
+  `game.sendItem`, `game.sendRelic`); a page opened from another machine does not offer them.
+  `npm run simulate` now also plays a player who funnels every spare piece into one room: it buys
+  nothing, so sending stays free.
 - Game mode: a **Bestiary** tab, the seventh. Each world counts the creatures it kills: every
   race by rank, every named boss beaten (and how often as legendary), the rooms' own themed
   monsters as "others", and the day of each first kill. A race or boss never killed shows as a

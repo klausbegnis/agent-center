@@ -92,6 +92,20 @@ export function createGameActions(dependencies) {
     return project
   }
 
+  /**
+   * Two rooms that play, the target on screen, in one world: what a sending goes between.
+   * Anything else is refused.
+   */
+  function requireSending(save, roomId, toRoomId) {
+    joinedProject(save, roomId)
+    joinedProject(save, toRoomId)
+    if (!roomIds().includes(toRoomId)) throw refuse('not a room on screen', toRoomId)
+    if (roomId === toRoomId || worldIdOf(save, roomId) !== worldIdOf(save, toRoomId)) {
+      throw refuse('not another room of the same world', toRoomId)
+    }
+    return { fromProjectId: roomId, toProjectId: toRoomId }
+  }
+
   return {
     /** @param {{ worldId: string, skillId: string }} input */
     async prestigeSkill({ worldId, skillId }) {
@@ -179,6 +193,43 @@ export function createGameActions(dependencies) {
           worldIdOf(save, toRoomId) === sourceWorldId && Object.hasOwn(save.worlds[sourceWorldId].projects, toRoomId)
         if (!plays) throw refuse('not a room on screen in the same world', toRoomId)
         return engine.moveProjectItems(save, { fromProjectId: fromRoomId, toProjectId: toRoomId, now: now() })
+      })
+    },
+
+    /**
+     * Sends a free item of a room's chest to another room on screen that plays in the same world.
+     * Answers how many items the target's copies cap salvaged, and whether the one sent was among
+     * them. A sending the rules refuse says why.
+     *
+     * @param {{ roomId: string, toRoomId: string, itemId: string }} input
+     */
+    async sendItem({ roomId, toRoomId, itemId }) {
+      let salvaged = []
+      const answer = change((save) => {
+        const sending = requireSending(save, roomId, toRoomId)
+        if (typeof itemId !== 'string' || !findItem(joinedProject(save, roomId).chest, itemId)) throw refuse('unknown item', itemId)
+        const problem = engine.sendItemProblem(save, { ...sending, itemId })
+        if (problem) throw new Error(problem)
+        const sent = engine.sendItemWithSalvage(save, { ...sending, itemId })
+        salvaged = sent.salvaged
+        return sent.save
+      })
+      const sentItem = salvaged.find((item) => item.id === itemId) ?? null
+      return { ...answer, salvaged: salvaged.length, sentSalvaged: sentItem !== null }
+    },
+
+    /**
+     * Sends a relic a room owns, not its active one, to another room on screen of the same world.
+     *
+     * @param {{ roomId: string, toRoomId: string, relicId: string }} input
+     */
+    async sendRelic({ roomId, toRoomId, relicId }) {
+      return change((save) => {
+        const sending = requireSending(save, roomId, toRoomId)
+        if (typeof relicId !== 'string') throw refuse('unknown relic', relicId)
+        const problem = engine.sendRelicProblem(save, { ...sending, relicId })
+        if (problem) throw new Error(problem)
+        return engine.sendRelic(save, { ...sending, relicId })
       })
     },
 

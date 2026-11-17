@@ -71,7 +71,9 @@ function recordingGame() {
     buyStallOffer: record('buyOffer'),
     setEquipment: record('equip'),
     bestGear: record('bestGear'),
-    setActiveRelic: record('activeRelic')
+    setActiveRelic: record('activeRelic'),
+    sendItem: record('sendItem'),
+    sendRelic: record('sendRelic')
   }
   return { game, calls }
 }
@@ -108,6 +110,22 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
   await assert.rejects(controller.gameImportSave([]), /invalid save file/)
   assert.equal(calls.length, 0)
+})
+
+test('sending an item or a relic reaches the game with its fields; a missing id is refused first', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  const from = 'local:/work/rumble-banana'
+  const to = 'local:/work/sneaky-pancake'
+  await controller.gameSendItem(from, to, 'whittled-cudgel')
+  await controller.gameSendRelic(from, to, 'rimeheart')
+  await assert.rejects(controller.gameSendItem(from, null, 'whittled-cudgel'), /invalid room/)
+  await assert.rejects(controller.gameSendRelic(from, to, 7), /invalid relic/)
+  assert.deepEqual(calls, [
+    ['sendItem', { roomId: from, toRoomId: to, itemId: 'whittled-cudgel' }],
+    ['sendRelic', { roomId: from, toRoomId: to, relicId: 'rimeheart' }]
+  ])
+  assert.equal(changes(), 2)
 })
 
 test('trade choices reach the game with their fields, null meaning no choice', async () => {

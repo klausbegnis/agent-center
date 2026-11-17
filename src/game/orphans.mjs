@@ -12,8 +12,28 @@ import { addMaterials } from './worlds.mjs'
 const entryOf = (item) => item.entryId ?? item.id
 const bestFirst = (first, second) => (isBetter(first, second) ? -1 : isBetter(second, first) ? 1 : 0)
 
-/** The world that holds both projects, or null. */
-function sharedWorldId(save, fromProjectId, toProjectId) {
+/**
+ * The world's materials with salvaged items added, each as a drop past the cap would give: what
+ * one upgrade of a fresh copy costs at the world's level.
+ *
+ * @param {{ materials: object, skills: object }} world
+ * @param {object[]} salvaged
+ */
+export function salvageInto(world, salvaged) {
+  const level = worldLevel(world.skills)
+  let materials = world.materials
+  for (const item of salvaged) materials = addMaterials(materials, upgradeCost({ ...item, level: 0 }, { worldLevel: level }))
+  return materials
+}
+
+/**
+ * The world that holds both projects, or null.
+ *
+ * @param {object} save
+ * @param {string} fromProjectId
+ * @param {string} toProjectId
+ */
+export function sharedWorldId(save, fromProjectId, toProjectId) {
   return Object.keys(save.worlds).sort().find((worldId) => {
     const { projects } = save.worlds[worldId]
     return Object.hasOwn(projects, fromProjectId) && Object.hasOwn(projects, toProjectId)
@@ -34,9 +54,14 @@ function retireEveryone(project, now) {
 /**
  * The target's chest with the incoming items added, at most COPIES_PER_ITEM copies of an entry:
  * the items held in the target always stay, the best of the rest fill the copies left, and the
- * lowest past that are salvaged. Entries that receive nothing are left as they are.
+ * lowest past that are salvaged. Entries that receive nothing are left as they are. Sending an
+ * item to another room (transfer.mjs) follows the same rule.
+ *
+ * @param {object[]} target the target's chest
+ * @param {object[]} incoming plain items, never legendary ones
+ * @returns {{ chest: object[], salvaged: object[] }}
  */
-function mergeChests(target, incoming) {
+export function mergeChests(target, incoming) {
   const byEntry = new Map()
   for (const item of incoming) byEntry.set(entryOf(item), [...(byEntry.get(entryOf(item)) ?? []), item])
   const salvaged = []
@@ -91,9 +116,7 @@ export function moveProjectItems(save, { fromProjectId, toProjectId, now }) {
   )
   const { chest } = loot
   const salvaged = [...merged.salvaged, ...loot.salvaged]
-  const level = worldLevel(world.skills)
-  let materials = world.materials
-  for (const item of salvaged) materials = addMaterials(materials, upgradeCost({ ...item, level: 0 }, { worldLevel: level }))
+  const materials = salvageInto(world, salvaged)
   const retiredCount = target.retiredCount + source.retirees.length + source.retiredCount
   const projects = { ...world.projects, [toProjectId]: withLegendary({ ...target, chest, retiredCount }, loot.legendary) }
   delete projects[fromProjectId]

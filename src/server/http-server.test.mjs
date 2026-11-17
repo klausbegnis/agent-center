@@ -47,6 +47,14 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['bestGear', roomId])
       return { changed: true, slotsChanged: 2 }
     },
+    gameSendItem: async (...input) => {
+      calls.push(['sendItem', ...input])
+      return { changed: true, salvaged: 1, sentSalvaged: false }
+    },
+    gameSendRelic: async (...input) => {
+      calls.push(['sendRelic', ...input])
+      return { changed: true }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -192,6 +200,17 @@ test('the equipment routes pass their fields on, a missing item as null for an e
   assert.deepEqual(calls, [['equip', room, 's1', 'weapon', 'auto'], ['equip', room, 's1', 'tool', null], ['bestGear', room]])
 })
 
+test('the sending routes reach the controller with their fields and answer what was salvaged', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  const from = 'local:/work/rumble-banana'
+  const to = 'local:/work/sneaky-pancake'
+  const item = await post('/api/game/send-item', { roomId: from, toRoomId: to, itemId: 'whittled-cudgel-2' })
+  assert.deepEqual(JSON.parse(item.text), { changed: true, salvaged: 1, sentSalvaged: false })
+  assert.equal((await post('/api/game/send-relic', { roomId: from, toRoomId: to, relicId: 'rimeheart' })).status, 200)
+  assert.deepEqual(calls, [['sendItem', from, to, 'whittled-cudgel-2'], ['sendRelic', from, to, 'rimeheart']])
+})
+
 test('the market routes reach the controller with their fields', async (t) => {
   const { server, calls } = await setup(t)
   const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
@@ -226,7 +245,7 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
 
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic']
+  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic']
 
 const gameState = {
   rooms: [],

@@ -9,6 +9,7 @@ import { effectiveLevel, worldLevel } from '../src/game/progression.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from '../src/game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
+import { funnelGear } from './funnel-policy.mjs'
 import { visitMarket } from './market-policy.mjs'
 import {
   fixed,
@@ -247,6 +248,12 @@ function playWorkday(run, day) {
   run.save = spent.save
   run.period.purchases += spent.purchases.length
   if (run.trades) tradeAtMarket(run)
+  if (run.funnel) {
+    const funnelled = funnelGear(run.engine, run.save)
+    run.save = funnelled.save
+    run.funnelled.items += funnelled.items
+    run.funnelled.relics += funnelled.relics
+  }
   prestigeAll(run, day)
 }
 
@@ -333,13 +340,16 @@ function closePeriod(run, day) {
 
 /**
  * @param {object} scenario
- * @param {{ trades?: boolean, withEngine?: object }} [policy] `trades` adds a visit to the market
- *   every working day; `withEngine` plays on another engine than the full one
+ * @param {{ trades?: boolean, funnel?: boolean, withEngine?: object }} [policy] `trades` adds a visit
+ *   to the market every working day; `funnel` sends every spare piece of gear into one room every
+ *   working day; `withEngine` plays on another engine than the full one
  */
-function simulate(scenario, { trades = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, withEngine = engine } = {}) {
   const run = {
     scenario,
     trades,
+    funnel,
+    funnelled: { items: 0, relics: 0 },
     engine: withEngine,
     market: { trades: 0, gear: 0, earned: 0, relics: 0 },
     save: emptySave(),
@@ -433,6 +443,30 @@ function printMarketComparison(plainRuns, tradingRuns) {
   }
 }
 
+/**
+ * The scenarios with more than one room, played as usual and with all spare gear funnelled into the
+ * first room: whether moving gear between rooms makes any room fight far above its world.
+ */
+function printFunnelComparison(plainRuns, funnelRuns) {
+  console.log('\n## Sending gear: as usual against every spare item and relic sent to the first room daily\n')
+  const rows = []
+  plainRuns.forEach((plain, index) => {
+    const funnel = funnelRuns[index]
+    for (const day of [30, 90, 180, 365]) {
+      const without = plain.rows.find((row) => row.day === day)
+      const sent = funnel.rows.find((row) => row.day === day)
+      rows.push([plain.scenario.id, day, without.level, sent.level, without.waves.join('/'), sent.waves.join('/'),
+        without.medianTicks ?? '-', sent.medianTicks ?? '-', fixed(without.killsPerHour), fixed(sent.killsPerHour),
+        fixed(without.gear), fixed(sent.gear), fixed(without.purchasesPerDay), fixed(sent.purchasesPerDay)])
+    }
+  })
+  printTable(['scenario', 'day', 'world', 'funnel', 'waves', 'funnel', 'ticks', 'funnel', 'kills/h', 'funnel', 'gear',
+    'funnel', 'buys/day', 'funnel'], rows)
+  for (const run of funnelRuns) {
+    console.log(`${run.scenario.id}: ${run.funnelled.items} items and ${run.funnelled.relics} relics sent in a year.`)
+  }
+}
+
 /** What each scenario's bestiary reached at day 30, 90 and 365, and what it adds to kills per hour. */
 function printBestiary(runs, plainRuns) {
   console.log('\n## Bestiary: races met, mastery, bosses, bonus; kills per hour without and with it\n')
@@ -484,6 +518,8 @@ const legendary = {
 }
 printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => bestiaryChecks(runs, plainRuns, bestRelics))
 printMarketComparison(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true })))
+const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
+printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +

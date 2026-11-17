@@ -18,6 +18,7 @@ import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWo
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
+import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
@@ -208,6 +209,12 @@ export function createEngine({ content }) {
       bosses: content.bosses
     }),
     moveProjectItems,
+    // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
+    sendItem: (save, sending) => sendItem(save, sending).save,
+    sendItemWithSalvage: sendItem,
+    sendItemProblem,
+    sendRelic,
+    sendRelicProblem,
     ...marketActions(content),
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)

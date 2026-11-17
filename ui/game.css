@@ -742,6 +742,11 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 
 /* The chosen item's details, under the chest or beside it when wide. */
 .ac-game-item-detail { font-size: 12px; }
+/* Sending an item or a relic to another room of the world: a word, the pickers and Send. */
+.ac-game-send { margin-top: 8px; }
+.ac-game-send .ac-game-send-picker { flex: 1 1 120px; min-width: 0; max-width: 100%; }
+.ac-game-send-status { margin: 6px 0 0; font-size: 11px; color: var(--ac-game-good, #7bd88f); }
+.ac-game-send-status:empty { display: none; }
 /* Chests left behind: one row per room no longer on screen, its facts beside its move button. */
 .ac-game-orphans-card[hidden] { display: none; }
 .ac-game-orphans-card { margin-top: 10px; font-size: 12px; }
