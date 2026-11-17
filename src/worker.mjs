@@ -35,10 +35,17 @@ const STATUS_BAR_ITEM = 'summary'
  * minutes, and reading the history is more work for Orca than listing terminals.
  */
 const GAME_ROUND_MS = 30_000
+/**
+ * Right after a reload Orca refuses the plugin's storage for a moment. The game then says it is
+ * opening the save; it is tried again this often, this many times, instead of a whole round later.
+ */
+const SAVE_RETRY_MS = 2_000
+const SAVE_RETRIES = 30
 
 let server = null
 let snapshotTimer = null
 let gameTimer = null
+let saveRetryTimer = null
 let game = null
 let cancelPublish = () => {}
 /** Set when the plugin is unloaded, so an activation still under way stops starting things. */
@@ -189,7 +196,14 @@ export default async function activate(orca) {
   await refresh()
   if (disposed) return
   publish()
-  game.round()
+  /** Plays the first round, and while the save cannot be read yet tries again soon. */
+  const openGame = async (triesLeft) => {
+    await game.round()
+    if (disposed || triesLeft <= 0 || game.getView().status !== 'loading-save') return
+    saveRetryTimer = setTimeout(() => openGame(triesLeft - 1), SAVE_RETRY_MS)
+    saveRetryTimer.unref?.()
+  }
+  openGame(SAVE_RETRIES)
 }
 
 async function closeServer() {
@@ -204,6 +218,8 @@ export async function deactivate() {
   if (snapshotTimer) clearInterval(snapshotTimer)
   snapshotTimer = null
   if (gameTimer) clearInterval(gameTimer)
+  if (saveRetryTimer) clearTimeout(saveRetryTimer)
+  saveRetryTimer = null
   gameTimer = null
   await game?.flush()
   game = null
