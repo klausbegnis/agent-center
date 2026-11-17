@@ -125,6 +125,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- Subagents that Orca's snapshot lists on their agent (`subagents`, in newer Orca releases) now
+  show as familiars in the room, and their agent counts as delegating for game mode, even when no
+  tool hook arrives. A subagent a hook already shows, or one also listed as a child entry, is not
+  shown twice.
 - Game mode on the estimate: the five work skills now grow in sensible proportions. Before, a
   round's tokens all went to the one activity the agent showed at that moment, so agents whose
   tools the plugin cannot see (sessions Orca stopped tracking after a restart, agents on paired

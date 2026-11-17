@@ -37,6 +37,29 @@ function asArgument(value) {
 /** Text from Orca, or null: a field of another type must not reach code that expects text. */
 const textOrNull = (value) => (typeof value === 'string' && value !== '' ? value : null)
 
+/** Subagent ids come from Orca; anything longer is not one. */
+const SUBAGENT_ID_LIMIT = 200
+
+/**
+ * The subagents a newer Orca lists on their agent (`subagents`, with `subagentObservation`), with
+ * only the fields the room needs. Older ones list none; they give subagents as entries with a
+ * `parentPaneKey` instead.
+ *
+ * @returns {{ id: string, state: string | null, startedAt: number | null, description: string | null }[]}
+ */
+export function subagentsOf(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .filter((sub) => sub && typeof sub === 'object' && (typeof sub.id === 'string' || Number.isFinite(sub.id)))
+    .map((sub) => ({
+      id: String(sub.id).slice(0, SUBAGENT_ID_LIMIT),
+      state: textOrNull(sub.state),
+      startedAt: Number.isFinite(sub.startedAt) ? sub.startedAt : null,
+      // Shown as the familiar's name only, cleaned and cut by the store.
+      description: textOrNull(sub.description)
+    }))
+}
+
 function run(cli, args, timeout) {
   return new Promise((resolve, reject) => {
     execFile(cli, args, { timeout, maxBuffer: 32 * 1024 * 1024 }, (error, stdout) => {
@@ -128,6 +151,7 @@ export async function readHost(cli, environment = null) {
       agents: (row.agents ?? []).map((agent) => ({
         paneKey: agent.paneKey,
         parentPaneKey: agent.parentPaneKey ?? null,
+        subagents: subagentsOf(agent.subagents),
         state: agent.state,
         agentType: agent.agentType ?? null,
         // Not documented for `worktree ps`; kept when present so the game can link the session.

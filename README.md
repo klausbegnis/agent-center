@@ -331,8 +331,10 @@ Contributions are welcome.
 
 ## Known limits
 
-- Per-tool activity and subagents come from Orca's tool hooks, which do not cover agents on SSH
-  or WSL hosts today. Those characters only show the overall state.
+- Per-tool activity comes from Orca's tool hooks, which do not cover agents on SSH or WSL hosts
+  today. Those characters only show the overall state. Subagents come from the hooks too, and
+  from Orca's snapshot where it lists them (`subagents` on their agent in newer Orca releases,
+  or child entries in older ones), which also covers paired machines.
 - With active subagents Orca does not say whose tool a call is. The plugin gives it to the most
   recent subagent, which is an approximation.
 - The mapped tool names are Claude Code's and a few of Codex's. An unknown tool shows as

@@ -280,6 +280,30 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     if (state !== 'working') entry.activity = 'think'
   }
 
+  /** Whether a subagent entry came from a snapshot, not from a tool hook. */
+  const isSnapshotSub = (key) => key.startsWith('pane:') || key.startsWith('snap:')
+
+  /**
+   * The subagents a snapshot lists on their agent (`subagents`), as familiars of it. A listed
+   * subagent that a tool hook already shows is not added again: one whose id is the hook's call
+   * id, or, failing that, as many of the earliest listed as there are hook subagents.
+   */
+  function syncListedSubagents(entry, listed) {
+    const working = (listed ?? []).filter((sub) => sub.state !== 'done')
+      .sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0))
+    const fromHooks = [...entry.subs.keys()].filter((key) => !isSnapshotSub(key))
+    const unmatchedHooks = fromHooks.filter((key) => !working.some((sub) => sub.id === key)).length
+    const unmatched = working.filter((sub) => !entry.subs.has(sub.id))
+    for (const sub of unmatched.slice(unmatchedHooks)) {
+      entry.subs.set(`snap:${sub.id}`, {
+        id: `${entry.id}/sub:${sub.id}`,
+        name: displayText(sub.description, SUBAGENT_NAME_LIMIT) ?? 'subagent',
+        activity: 'think',
+        since: sub.startedAt ?? now()
+      })
+    }
+  }
+
   function lastSub(entry) {
     let last = null
     for (const sub of entry.subs.values()) last = sub
@@ -326,7 +350,7 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
     } else {
       // No call id: end the oldest subagent that came from a hook.
       for (const key of entry.subs.keys()) {
-        if (!key.startsWith('pane:')) {
+        if (!isSnapshotSub(key)) {
           entry.subs.delete(key)
           break
         }
@@ -343,6 +367,8 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
   function sync(hostId, rows) {
     const seen = new Set()
     const children = []
+    /** Agents whose snapshot lists their subagents: their `parentPaneKey` entries say it again. */
+    const listing = new Set()
     for (const row of rows ?? []) {
       for (const agent of row.agents ?? []) {
         if (agent.parentPaneKey) {
@@ -380,13 +406,15 @@ export function createAgentStore({ now = Date.now, sleepMs = 30 * 60_000 } = {})
         }
         if (state === 'done') entry.subs.clear()
         // Subagents seen by ps are rebuilt on every snapshot; the ones from hooks stay.
-        for (const key of [...entry.subs.keys()]) if (key.startsWith('pane:')) entry.subs.delete(key)
+        for (const key of [...entry.subs.keys()]) if (isSnapshotSub(key)) entry.subs.delete(key)
+        if (state !== 'done') syncListedSubagents(entry, agent.subagents)
+        if (agent.subagents?.length) listing.add(entry.id)
       }
     }
     for (const child of children) {
       const parent = agents.get(child.parentPaneKey)
       const state = mostUrgentState(child.state, child.mainAgent?.state)
-      if (!parent || state === 'done') continue
+      if (!parent || state === 'done' || listing.has(parent.id)) continue
       parent.subs.set(`pane:${child.paneKey}`, {
         id: child.paneKey,
         name:
