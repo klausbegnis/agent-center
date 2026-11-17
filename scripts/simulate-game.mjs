@@ -8,6 +8,8 @@ import { chanceOf, hashOf } from '../src/game/hash.mjs'
 import { effectiveGearLevel, referenceGearLevel } from '../src/game/items.mjs'
 import { effectiveLevel, worldLevel } from '../src/game/progression.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from '../src/game/skills.mjs'
+import { settlementIndexOf } from '../src/game/settlement-content.mjs'
+import { stageIndexOf, totalLevels } from '../src/game/settlement.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
 import { funnelGear } from './funnel-policy.mjs'
@@ -33,7 +35,8 @@ const content = {
   bosses: readJson('../game/bosses.json'),
   cities: readJson('../game/cities.json'),
   legendary: readJson('../game/legendary.json'),
-  bestiary: readJson('../game/bestiary.json')
+  bestiary: readJson('../game/bestiary.json'),
+  settlement: readJson('../game/settlement.json')
 }
 const engine = createEngine({ content })
 /**
@@ -273,7 +276,8 @@ function playWorkday(run, day) {
 /** The market policy's visit: what it bought counts as purchases, like autoSpend's. */
 function tradeAtMarket(run) {
   const before = upgradeLevels(run.save)
-  run.save = visitMarket(run.engine, run.save, { cities: content.cities.cities, items: content.items, legendary: content.legendary }, run.market)
+  const visited = { cities: content.cities.cities, items: content.items, legendary: content.legendary, settlement: content.settlement }
+  run.save = visitMarket(run.engine, run.save, visited, run.market)
   run.period.purchases += upgradeLevels(run.save) - before
 }
 
@@ -301,6 +305,15 @@ function trackLegendary(run, day) {
     if (counts.relics > 0 && firsts.relic === null) firsts.relic = day + 1
     if (counts.bossItems > 0 && firsts.bossItem === null) firsts.bossItem = day + 1
   }
+}
+
+/** The day each stage of the settlement was first reached. */
+function trackStages(run, day) {
+  const index = settlementIndexOf(content)
+  const world = run.save.worlds.main
+  if (!index || !world) return
+  const stage = stageIndexOf(index, totalLevels(world.upgrades))
+  for (let at = 1; at <= stage; at++) run.stageDays[at] ??= day + 1
 }
 
 /** Days at which the most used work skill reached the milestones. */
@@ -385,6 +398,7 @@ function simulate(scenario, { trades = false, funnel = false, withEngine = engin
     totalFightHours: 0,
     legendaryFirsts: {},
     firstPrestige: null,
+    stageDays: {},
     daysWithoutKill: 0,
     rows: [],
     allKills: [],
@@ -396,6 +410,7 @@ function simulate(scenario, { trades = false, funnel = false, withEngine = engin
     trackMilestones(run, day)
     trackLegendary(run, day)
     trackLastPowered(run, day)
+    trackStages(run, day)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -423,7 +438,7 @@ function printScenario(run) {
   )
   console.log('')
   printTable(
-    ['day', 'materials', 'buys/day', 'camp/bench/rune', 'gear', 'ref gear', 'gathered', 'world', 'gear %',
+    ['day', 'materials', 'buys/day', 'buildings', 'gear', 'ref gear', 'gathered', 'world', 'gear %',
       'char %'],
     run.rows.map((row) => [
       row.day, compact(row.materials), fixed(row.purchasesPerDay), row.groups.join('/'), fixed(row.gear),
@@ -466,7 +481,8 @@ function printMarketComparison(plainRuns, tradingRuns) {
   for (const run of tradingRuns) {
     console.log(`${run.scenario.id}: ${run.market.trades} trades, ${run.market.gear} stall pieces, ` +
       `${run.market.relics} stall relics, ` +
-      `${compact(run.market.earned)} coins from sales in a year. Legendary items owned per room: ${legendaryPace(run)}.`)
+      `${compact(run.market.earned)} coins from sales in a year, ${run.market.coinLevels ?? 0} building levels paid half in ` +
+      `coins (${compact(run.market.coinsOnBuildings ?? 0)} coins). Legendary items owned per room: ${legendaryPace(run)}.`)
   }
 }
 
@@ -549,6 +565,38 @@ function bestiaryChecks(runs, plainRuns, bestRelics) {
   return [...yearly, ...maxed]
 }
 
+/** The day each scenario reached each stage of the settlement, without and with the market. */
+function printSettlement(runs, tradingRuns) {
+  const stages = content.settlement.stages
+  console.log('\n## Settlement: the day each stage is first reached (calendar days), without and with the market\n')
+  const rows = []
+  runs.forEach((run, at) => {
+    for (const [policy, each] of [['plain', run], ['market', tradingRuns[at]]]) {
+      const world = each.save.worlds.main
+      rows.push([run.scenario.id, policy, ...stages.slice(1).map((_, stage) => each.stageDays[stage + 1] ?? '-'),
+        totalLevels(world.upgrades), GROUP_UPGRADE_IDS.map((id) => world.upgrades[id] ?? 0).join('/')])
+    }
+  })
+  printTable(['scenario', 'policy', ...stages.slice(1).map((stage) => stage.name.toLowerCase()), 'levels at 365', 'buildings'],
+    rows)
+  console.log(`Buildings: ${GROUP_UPGRADE_IDS.join('/')} at day 365. Thresholds: ` +
+    `${stages.map((stage) => `${stage.name} ${stage.from}`).join(', ')} building levels.`)
+}
+
+/** The settlement's pace targets, from the scenarios that never trade. */
+function settlementChecks(runs) {
+  const byId = Object.fromEntries(runs.map((run) => [run.scenario.id, run]))
+  const day = (id, stage) => byId[id].stageDays[content.settlement.stages.findIndex((entry) => entry.id === stage)]
+  const shown = (value) => (value ? `day ${value}` : `after day ${DAYS}`)
+  return [
+    ['light: the Outpost in the first week', day('light', 'outpost') <= 7, shown(day('light', 'outpost'))],
+    ['light: the Hamlet in the first month', day('light', 'hamlet') <= 31, shown(day('light', 'hamlet'))],
+    ['medium: the Village by about month two', day('medium', 'village') <= 75, shown(day('medium', 'village'))],
+    ['medium: the Town by about month six', day('medium', 'town') <= 200, shown(day('medium', 'town'))],
+    ['heavy: the Citadel after a year or more', !(day('heavy', 'citadel') < 330), shown(day('heavy', 'citadel'))]
+  ]
+}
+
 const started = Date.now()
 const runs = SCENARIOS.map((scenario) => simulate(scenario))
 for (const run of runs) printScenario(run)
@@ -562,8 +610,11 @@ const legendary = {
     return gain
   }
 }
-printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => bestiaryChecks(runs, plainRuns, bestRelics))
-printMarketComparison(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true })))
+printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary,
+  () => [...bestiaryChecks(runs, plainRuns, bestRelics), ...settlementChecks(runs)])
+const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: true }))
+printMarketComparison(runs, tradingRuns)
+printSettlement(runs, tradingRuns)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 const seconds = fixed((Date.now() - started) / 1000)

@@ -3,7 +3,6 @@
 // project ready for the next stretch of time: a party that works has a monster to face.
 import { backfillSave } from './bestiary-backfill.mjs'
 import { bestiaryIndexOf } from './bestiary-content.mjs'
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
@@ -18,6 +17,7 @@ import { retireeBonus } from './retirement.mjs'
 import { inScene, scenesOf } from './scenes.mjs'
 import { materialOfSkill } from './skills.mjs'
 import { effectiveTrade } from './trades.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 import { addMaterials, withCharacter, withProjectIn, worldIdOf } from './worlds.mjs'
 
 const MS_PER_TICK = TICK_SECONDS * 1000

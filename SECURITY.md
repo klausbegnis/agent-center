@@ -104,7 +104,7 @@ otherwise.
   |---|---|
   | `/api/game/prestige` | prestiges a skill (cannot be undone) |
   | `/api/game/upgrade-item` | spends materials on an item |
-  | `/api/game/buy-upgrade` | spends materials on a group upgrade |
+  | `/api/game/buy-upgrade` | spends materials, and coins when asked, on a building of the world's settlement |
   | `/api/game/assign-room` | moves a room to another world, a new one, or out of the game |
   | `/api/game/reset-world` | starts a world over (cannot be undone) |
   | `/api/game/rebalance-skills` | shares a world's work-skill experience again by the work mix, keeping its world level (cannot be undone) |

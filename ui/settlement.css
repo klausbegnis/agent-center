@@ -1,0 +1,170 @@
+/* The settlement: the Camp tab's stage picture, progress, bonus and building cards, the badge above
+   the tabs, and the settlement's news over the rooms. Pixel art is scaled up pixel for pixel. */
+
+/* The hero: the stage's picture across the card, its name and number on the lower left. */
+.ac-settlement { gap: 10px; }
+.ac-settlement[hidden], .ac-settlement-buildings[hidden] { display: none; }
+.ac-settlement-hero {
+  position: relative;
+  margin: -10px -12px 0;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  line-height: 0;
+}
+.ac-settlement-hero-frame { display: grid; aspect-ratio: 224 / 112; }
+.ac-settlement-hero-image {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 224 / 112;
+  image-rendering: pixelated;
+}
+/* A new stage fades in over the old one (none under reduced motion: the engine swaps at once). */
+.ac-settlement-hero-arriving { animation: ac-settlement-arrive 1.6s ease-in-out 1 both; }
+@keyframes ac-settlement-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ac-settlement-hero-caption {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #f4f1e8;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #12151b, -1px 1px 0 #12151b, 1px -1px 0 #12151b, -1px -1px 0 #12151b;
+}
+.ac-settlement-hero-name {
+  font-size: clamp(16px, 6cqw, 22px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ac-settlement-hero-stage { font-size: 12px; font-weight: 700; }
+.ac-settlement-hero-stars { font-size: 12px; font-weight: 800; color: var(--ac-game-gold, #f2c14e); }
+.ac-settlement-hero-stars[hidden] { display: none; }
+
+/* The way to the next stage. */
+.ac-settlement-progress { display: flex; flex-direction: column; gap: 4px; }
+.ac-settlement-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--orca-muted, #2a2f3a);
+}
+.ac-settlement-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ac-game-good, #6fe0d2), var(--ac-game-gold, #f2c14e));
+}
+.ac-settlement-progress-text { margin: 0; font-size: 12px; font-weight: 600; }
+.ac-settlement-bonus-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-settlement-bonus-list { margin: 0; padding-left: 16px; font-size: 12px; }
+
+/* The buildings: a card each, as many columns as fit. */
+.ac-settlement-buildings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+}
+.ac-settlement-building { font-size: 12px; }
+.ac-settlement-building:focus-visible { outline: 2px solid var(--orca-ring, #6fa8ff); outline-offset: 2px; }
+.ac-settlement-building-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ac-settlement-building-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-settlement-building-facts { display: flex; flex-wrap: wrap; gap: 0 8px; margin: 0; }
+.ac-settlement-tier-name { font-weight: 700; color: var(--ac-game-gold, #f2c14e); }
+.ac-settlement-next-tier { margin: 0; font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+/* The sprite at twice its size in a fixed box, so cards line up whatever the tier's height. */
+.ac-settlement-building-art {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 104px;
+  height: 100px;
+}
+.ac-settlement-sprite { width: auto; height: auto; zoom: 2; image-rendering: pixelated; }
+.ac-settlement-sprite-unbuilt { opacity: 0.35; filter: grayscale(0.6); }
+/* The next tier, when near: small and faded at the corner. */
+.ac-settlement-sprite-teaser {
+  position: absolute;
+  right: -6px;
+  top: 0;
+  zoom: 1;
+  opacity: 0.45;
+}
+.ac-settlement-building-locked .ac-settlement-sprite { opacity: 0.35; filter: grayscale(1); }
+.ac-settlement-locked {
+  margin: 0;
+  font-weight: 700;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+/* The price with coins: its words on a line of their own, so three entries keep their width. */
+.ac-game-tab-section .ac-settlement-coins { grid-template-columns: minmax(0, 1fr) auto; }
+.ac-settlement-coins .ac-game-cost { grid-column: 1 / -1; cursor: help; }
+
+/* The badge above the tabs: the stage's picture, small, and its name. */
+.ac-settlement-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px 2px 2px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.ac-settlement-badge[hidden] { display: none; }
+.ac-settlement-badge:focus-visible { outline: 2px solid var(--orca-ring, #6fa8ff); outline-offset: 1px; }
+.ac-settlement-badge-art { width: 28px; height: 14px; border-radius: 999px 0 0 999px; image-rendering: pixelated; }
+@container (max-width: 340px) {
+  .ac-settlement-badge-name { display: none; }
+  .ac-settlement-badge { padding-right: 2px; }
+  .ac-settlement-badge-art { border-radius: 999px; }
+}
+
+/* The settlement's news over a room: a new tier with its sprite, and a new stage, bigger, with the
+   stage's picture, celebrated as long as a legendary drop. */
+.ac-game-tone-settlement,
+.ac-game-tone-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 800;
+  color: var(--ac-game-gold, #f2c14e);
+  border: 1px solid color-mix(in srgb, var(--ac-game-gold, #f2c14e) 60%, transparent);
+}
+.ac-game-tone-settlement { animation-name: ac-settlement-news; }
+.ac-game-tone-stage {
+  flex-direction: column;
+  font-size: clamp(11px, 3.4cqw, 16px);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ac-game-gold, #f2c14e) 55%, transparent);
+  animation: ac-legendary-found 5.2s ease-out 1 both;
+}
+.ac-settlement-pop-art { height: 2em; width: auto; image-rendering: pixelated; }
+.ac-settlement-pop-stage { width: clamp(96px, 40cqw, 224px); height: auto; image-rendering: pixelated; border-radius: 4px; }
+@keyframes ac-settlement-news {
+  0% { opacity: 0; transform: scale(0.8); }
+  10% { opacity: 1; transform: scale(1.06); }
+  16%, 82% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-settlement-hero-arriving,
+  .ac-game-tone-settlement,
+  .ac-game-tone-stage { animation: none !important; }
+}

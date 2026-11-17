@@ -15,6 +15,7 @@ import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
 import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
 import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -278,13 +279,16 @@ function relicDaysAhead() {
  * The demo's game: a game mode over an in-memory storage and the made-up history.
  *
  * @param {{ engine: object, store: object, preferences: object, onChange: () => void, frozen: boolean,
- *   estimated?: boolean, travel?: boolean, listThemeIds?: () => string[] }} options `estimated`
- *   plays without a session history, on the estimate; `travel` turns on "new scene after each
- *   monster" over the themes `listThemeIds` lists
+ *   estimated?: boolean, travel?: boolean, listThemeIds?: () => string[],
+ *   settlementLevels?: Record<string, number> | null }} options `estimated` plays without a session
+ *   history, on the estimate; `travel` turns on "new scene after each monster" over the themes
+ *   `listThemeIds` lists; `settlementLevels` gives the world those building levels (the frozen demo
+ *   has a Village otherwise)
  * @returns {Promise<ReturnType<typeof createGameMode>>}
  */
 export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
+  const { settlementLevels = null } = options
   let { store } = options
   const startedAt = Date.now()
   let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
@@ -350,9 +354,11 @@ export async function createDemoGame(options) {
       await game.round()
     }
     await showDemoBestiary(game, frozenClock)
+    await showDemoSettlement(game, settlementLevels ?? DEMO_VILLAGE)
     return game
   }
   await game.round()
+  if (settlementLevels) await showDemoSettlement(game, settlementLevels)
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

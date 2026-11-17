@@ -1,7 +1,8 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
-// game/items.json must be valid once it exists. The rules are in src/game/content.mjs,
-// content-races.mjs, content-cities.mjs, legendary-content.mjs and bestiary-content.mjs.
+// game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
+// be there. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
+// legendary-content.mjs, bestiary-content.mjs and settlement-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateBestiary } from '../src/game/bestiary-content.mjs'
@@ -9,6 +10,8 @@ import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
 import { validateBosses, validateRaces } from '../src/game/content-races.mjs'
 import { validateLegendary } from '../src/game/legendary-content.mjs'
+import { validateSettlement } from '../src/game/settlement-content.mjs'
+import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 
 /**
  * Reports every problem of the game's content files.
@@ -33,6 +36,25 @@ export function checkGameContent({ root, report, readJson }) {
   if (items !== null) for (const problem of validateItems(items)) report(itemsFile, problem)
   checkLegendary({ root, report, readJson, items })
   checkBestiary({ root, report, readJson })
+  checkSettlement({ root, report, readJson })
+}
+
+/** game/settlement.json: its buildings against the group upgrades, and that every picture it names is there. */
+function checkSettlement({ root, report, readJson }) {
+  const settlementFile = path.join(root, 'game', 'settlement.json')
+  if (!fs.existsSync(settlementFile)) return report(settlementFile, 'is missing; the Camp tab needs it for the settlement')
+  const settlement = readJson(settlementFile)
+  if (settlement === null) return
+  const problems = validateSettlement(settlement, { upgradeIds: GROUP_UPGRADE_IDS })
+  for (const problem of problems) report(settlementFile, problem)
+  if (problems.length) return
+  const pictures = [
+    ...settlement.stages.map((stage) => stage.art),
+    ...settlement.buildings.flatMap((building) => building.tiers.map((tier) => tier.art))
+  ]
+  for (const art of pictures) {
+    if (!fs.existsSync(path.join(root, art))) report(settlementFile, `the picture ${art} is missing`)
+  }
 }
 
 /** game/bestiary.json, its races checked against game/races.json and its track against the bosses. */

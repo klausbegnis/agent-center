@@ -93,6 +93,14 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   trade costs a fee and a big sale lowers the price until it recovers, so trading never makes
   money out of nothing. Coins buy gear at a city's stall, new every day. Nothing is traded
   unless you do it.
+- **A settlement that grows.** The Camp tab is your world's settlement. Its five buildings are
+  the party's group upgrades: the Hearth (stamina after each kill), the Workshop (cheaper item
+  upgrades), the Sanctum (weaker monsters), and, as the settlement grows, the Storehouse (a lower
+  market fee) and the Defences (lighter monster strikes). Each grows through three tiers with its
+  own picture, and every building level counts towards the next of seven stages, from a Camp by
+  the river to a Citadel, each with a new picture and a small bonus for the whole world. From a
+  building's second tier half its price can be paid in coins; materials alone always do too.
+  Past the Citadel, renovation stars keep counting. A small badge above the tabs shows the stage.
 - **Sessions retire.** Close a terminal and its character retires into the room's hall, leaves
   its gear in the chest for the next one and adds a small bonus to the room's gathering for
   good.
@@ -111,6 +119,8 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   fifth a small perk, and past level 25 a race earns titles. A hunter rank counts every point,
   and beating more different bosses levels a boss hunter track. It is a small bonus too: a whole
   bestiary adds under a tenth to a party.
+
+![The Camp tab as a settlement: the pixel-art Village with "31 of 60 building levels to become a Town" and its bonus, then the Hearth's card at its second tier, Cooking hearth, with what it does now and next and its price in materials and, half in coins](docs/screenshots/game-settlement.png)
 
 ![The Bestiary tab: the hunter rank and boss hunter bars, then cards of slimes with the title Slime-scourer II, goblins, orcs and skeletons, each with its level, points to the next level, damage bonus and next step](docs/screenshots/game-bestiary.png)
 
@@ -152,7 +162,7 @@ onto a room's chip; taking one from a character asks first, and that character p
 best. A relic that is not active can be sent from the Relics card. On the Party tab each character shows its agent's
 sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
 panel the tabs show their icons only. The cog in the panel's header opens the game's own
-settings: auto-spend, **New scene after each monster** (off by default; see "The party can
+settings: auto-spend (it never spends coins), **New scene after each monster** (off by default; see "The party can
 travel" above), worlds and the save file.
 
 **Game mode: keep conversation titles** keeps a finished session's title on its retired

@@ -127,12 +127,20 @@ export function createGameActions(dependencies) {
       })
     },
 
-    /** @param {{ worldId: string, upgradeId: string }} input */
-    async buyGroupUpgrade({ worldId, upgradeId }) {
+    /**
+     * Builds the next level of a building of the world's settlement, in materials alone or, with
+     * `useCoins`, partly in coins. A building not open yet, or coins asked of one that takes none
+     * yet, is refused with the reason.
+     *
+     * @param {{ worldId: string, upgradeId: string, useCoins?: boolean }} input
+     */
+    async buyGroupUpgrade({ worldId, upgradeId, useCoins = false }) {
       return change((save) => {
         requireWorld(save, worldId)
         if (!GROUP_UPGRADE_IDS.includes(upgradeId)) throw refuse('unknown upgrade', upgradeId)
-        return engine.buyGroupUpgrade(save, { worldId, upgradeId })
+        const problem = engine.buildingProblem(save, { worldId, upgradeId, useCoins })
+        if (problem) throw refuse(problem, upgradeId)
+        return engine.buyGroupUpgrade(save, { worldId, upgradeId, useCoins })
       })
     },
 

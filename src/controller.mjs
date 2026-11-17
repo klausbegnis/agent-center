@@ -13,7 +13,8 @@
  *   the workspace and, when the agent is named and its terminal is known, shows that terminal
  * @property {(worldId: string, skillId: string) => Promise<GameResult>} gamePrestige
  * @property {(roomId: string, itemId: string) => Promise<GameResult>} gameUpgradeItem
- * @property {(worldId: string, upgradeId: string) => Promise<GameResult>} gameBuyUpgrade
+ * @property {(worldId: string, upgradeId: string, useCoins?: boolean) => Promise<GameResult>} gameBuyUpgrade
+ *   builds the next level of a building of the settlement, paying part in coins with `useCoins`
  * @property {(roomId: string, worldId: string | null) => Promise<GameResult>} gameAssignRoom puts a
  *   room in a world, or out of the game with null
  * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
@@ -164,8 +165,11 @@ export function createController({
       game.prestigeSkill({ worldId: requireText(worldId, 'world'), skillId: requireText(skillId, 'skill') })),
     gameUpgradeItem: (roomId, itemId) => playAction(() =>
       game.upgradeItem({ roomId: requireText(roomId, 'room'), itemId: requireText(itemId, 'item') })),
-    gameBuyUpgrade: (worldId, upgradeId) => playAction(() =>
-      game.buyGroupUpgrade({ worldId: requireText(worldId, 'world'), upgradeId: requireText(upgradeId, 'upgrade') })),
+    gameBuyUpgrade: (worldId, upgradeId, useCoins = false) => playAction(() => game.buyGroupUpgrade({
+      worldId: requireText(worldId, 'world'),
+      upgradeId: requireText(upgradeId, 'upgrade'),
+      useCoins: requireBoolean(useCoins, 'coins choice')
+    })),
     gameAssignRoom: (roomId, worldId) => playAction(() => game.assignRoom({
       roomId: requireText(roomId, 'room'),
       worldId: worldId === null ? null : requireText(worldId, 'world')

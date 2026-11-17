@@ -414,7 +414,10 @@ export const ATTRIBUTE_LABEL = {
   luck: 'Luck'
 }
 const DAMAGE_LABEL = { physical: 'physical', magical: 'magical' }
-export const UPGRADE_LABEL = { campfire: 'Campfire', workbench: 'Workbench', runeCircle: 'Rune circle' }
+/** The group upgrades by the settlement's names for them (game/settlement.json). */
+export const UPGRADE_LABEL = {
+  campfire: 'Hearth', workbench: 'Workshop', runeCircle: 'Sanctum', storehouse: 'Storehouse', defences: 'Defences'
+}
 
 /**
  * "120 Bars, 40 Logs".
@@ -457,25 +460,6 @@ export function holderText(name) {
 /** "Whittled Cudgel, Tier 1 · Lv 0", or "nothing" for an empty slot. */
 export function equipmentText(item) {
   return item ? `${item.name}, Tier ${item.tier} · ${levelShort(item.level)}` : 'nothing'
-}
-
-/** What a group upgrade does now, from its effect in the view state. */
-export function upgradeEffectText(upgrade, formatShare) {
-  const effect = upgrade.effect ?? {}
-  if (upgrade.id === 'campfire') {
-    return upgrade.level
-      ? `Restores ${formatShare(effect.staminaAfterKill)} of missing stamina after each kill`
-      : 'Once built, restores stamina after each kill'
-  }
-  if (upgrade.id === 'workbench') {
-    return upgrade.level ? `Item upgrades cost ${formatShare(effect.upgradeCostFactor)} of their price`
-      : 'Once built, makes item upgrades cheaper'
-  }
-  if (upgrade.id === 'runeCircle') {
-    return upgrade.level ? `Monsters arrive with ${formatShare(effect.monsterHealthCut)} less health`
-      : 'Once built, takes health off every new monster'
-  }
-  return ''
 }
 
 /** "Retirees add +10% to gathering (20 retired in all)". */

@@ -2,7 +2,6 @@
 // and gathering, closed sessions retire, and materials buy upgrades. Never mutates, no I/O, no
 // clock and no randomness: the same save and the same calls always give the same result.
 import { advanceWithEvents, prepareFights } from './advance.mjs'
-import { worldEffectsOf } from './bestiary-effects.mjs'
 import { findItem } from './chest.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
@@ -14,21 +13,26 @@ import { canPrestige, prestige as prestigeSkill, worldLevel } from './progressio
 import { forgetTitles } from './retirement.mjs'
 import { cleanSave } from './save-check.mjs'
 import { applyTokens, closeSession } from './sessions.mjs'
-import { GROUP_UPGRADE_IDS, applyPurchase, groupLevel, groupUpgradeCost, spendWorld } from './spending.mjs'
+import { buildingProblem, buyGroupUpgrade } from './buildings.mjs'
+import { settlementIndexOf } from './settlement-content.mjs'
+import { settlementNews } from './settlement.mjs'
+import { applyPurchase, groupLevel, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
+import { worldEffectsOf } from './world-effects.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
 /**
  * @typedef {{ monsters: { monsters: object[] }, items: { items: object[] },
  *   races?: { palettes: object, races: object[] }, bosses?: { bosses: object[] },
- *   cities?: { cities: object[] } }} Content the parsed game/monsters.json, game/items.json,
- *   game/races.json, game/bosses.json and game/cities.json; without races every monster is a
- *   hand-made entry, without cities the market has none
+ *   cities?: { cities: object[] }, settlement?: object }} Content the parsed game/monsters.json,
+ *   game/items.json, game/races.json, game/bosses.json, game/cities.json and game/settlement.json;
+ *   without races every monster is a hand-made entry, without cities the market has none, without a
+ *   settlement there are no stages and only the buildings every world always had
  */
 
 /**
@@ -62,21 +66,6 @@ function upgradeItem(save, { projectId, itemId }, content) {
   const relicDiscount = upgradeDiscountOf(world.projects[projectId], legendaryIndexOf(content), worldEffectsOf(world, content))
   const cost = upgradeCost(item, { workbenchLevel, worldLevel: worldLevel(world.skills), relicDiscount })
   const next = applyPurchase(world, { kind: item.slot, projectId, itemId, cost })
-  return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
-}
-
-/**
- * Buys the next level of a group upgrade for a world. Unchanged when it cannot pay.
- *
- * @param {object} save
- * @param {{ worldId: string, upgradeId: string }} which one of GROUP_UPGRADE_IDS
- * @returns {object}
- */
-function buyGroupUpgrade(save, { worldId, upgradeId }) {
-  const world = save.worlds[worldId]
-  if (!world || !GROUP_UPGRADE_IDS.includes(upgradeId)) return save
-  const cost = groupUpgradeCost(upgradeId, groupLevel(world.upgrades, upgradeId), worldLevel(world.skills))
-  const next = applyPurchase(world, { kind: 'group', upgradeId, cost })
   return next === world ? save : { ...save, worlds: { ...save.worlds, [worldId]: next } }
 }
 
@@ -130,7 +119,8 @@ function autoSpendWithPurchases(save, content) {
   const worlds = {}
   for (const worldId of Object.keys(save.worlds).sort()) {
     const world = save.worlds[worldId]
-    const spent = spendWorld(world, legendaryIndexOf(content), worldEffectsOf(world, content))
+    const settlement = settlementIndexOf(content)
+    const spent = spendWorld(world, legendaryIndexOf(content), worldEffectsOf(world, content), settlement)
     worlds[worldId] = spent.world
     purchases.push(...spent.purchases.map((purchase) => ({ ...purchase, worldId })))
   }
@@ -196,7 +186,11 @@ export function createEngine({ content }) {
     closeSession,
     prestige,
     upgradeItem: (save, which) => upgradeItem(save, which, content),
-    buyGroupUpgrade,
+    buyGroupUpgrade: (save, which) => buyGroupUpgrade(save, which, settlementIndexOf(content)),
+    /** Why a building's next level cannot be bought as asked now, or null (buildings.mjs). */
+    buildingProblem: (save, which) => buildingProblem(save, which, settlementIndexOf(content)),
+    /** The tiers and stages a change reached, for the bridge to celebrate (settlement.mjs). */
+    settlementNews: (before, after) => settlementNews(before, after, settlementIndexOf(content)),
     setActiveRelic,
     setKeepTitles,
     setCharacterTrade,
@@ -212,7 +206,8 @@ export function createEngine({ content }) {
       cityIds: (content.cities?.cities ?? []).map((city) => city.id),
       legendary: content.legendary,
       bestiary: content.bestiary,
-      bosses: content.bosses
+      bosses: content.bosses,
+      settlement: content.settlement
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.

@@ -13,6 +13,8 @@
 //   TRAVEL=1      with GAME, turn on "new scene after each monster": every room without a theme
 //                 of its own (all of them with `random` or a theme id) moves on to another
 //                 theme each time its monster dies
+//   SETTLEMENT=n  with GAME, the world's settlement at stage n (1 Camp to 7 Citadel); the frozen
+//                 game shows a Village otherwise
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -22,6 +24,7 @@
 // boss) is served on the next port at /monsters.html; see scripts/monster-sheet.mjs.
 //
 // Every project, host and conversation name here is made up.
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createController } from '../src/controller.mjs'
@@ -32,9 +35,12 @@ import { RANDOM_THEME } from '../src/preferences.mjs'
 import { startServer } from '../src/server/http-server.mjs'
 import { listThemes, TEMPLATE_THEME } from '../src/themes.mjs'
 import { createDemoGame } from './demo-game.mjs'
+import { levelsForStage } from './demo-settlement.mjs'
 import { startMonsterSheet } from './monster-sheet.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+/** The parsed game/settlement.json, for SETTLEMENT=n. */
+const settlementContent = () => JSON.parse(readFileSync(path.join(ROOT, 'game', 'settlement.json'), 'utf8'))
 const store = createAgentStore()
 const requestedTheme = process.argv[2]
 let theme = requestedTheme ?? 'pixel-dark'
@@ -182,7 +188,9 @@ const game = engine
     frozen: Boolean(process.env.FREEZE),
     estimated: process.env.GAME === 'estimated',
     travel: Boolean(process.env.TRAVEL),
-    listThemeIds: () => demoThemes().map((listed) => listed.id)
+    listThemeIds: () => demoThemes().map((listed) => listed.id),
+    // SETTLEMENT=n shows the settlement at stage n (1 to 7), to review its picture.
+    settlementLevels: process.env.SETTLEMENT ? levelsForStage(Number(process.env.SETTLEMENT), settlementContent()) : null
   })
   : createUnavailableGame('off')
 controller = createController({

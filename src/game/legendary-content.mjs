@@ -40,7 +40,9 @@ export const EFFECT_TYPES = Object.freeze({
   upgradeCost: { scopes: ['party', 'world'], qualifiers: [] },
   // The bestiary's: damage against monsters of the races listed, and legendary pity that grows faster.
   raceDamage: { scopes: ['world'], qualifiers: ['races'] },
-  legendaryPity: { scopes: ['world'], qualifiers: [] }
+  legendaryPity: { scopes: ['world'], qualifiers: [] },
+  // The settlement's Storehouse: the market's fee lowered by the amount.
+  marketFee: { scopes: ['world'], qualifiers: [] }
 })
 
 const ENTRY_KEYS = [

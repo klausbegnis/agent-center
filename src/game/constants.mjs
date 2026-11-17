@@ -265,19 +265,42 @@ export const RUNE_CIRCLE_HALF = 10
 /**
  * The group upgrades of a world and the two materials each costs. Like items they are priced
  * against the world: level L costs GROUP_COST_BASE * REWARD_GROWTH ** worldLevel *
- * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded.
+ * GROUP_COST_GROWTH ** (L - GROUP_LEVELS_PER_WORLD_LEVEL * worldLevel) of each, rounded. Each is a
+ * building of the world's settlement (game/settlement.json): the campfire is the Hearth, the
+ * workbench the Workshop and the rune circle the Sanctum. `settlementOnly` marks one that exists
+ * only where the content has a settlement, opened by its stage.
  */
 export const GROUP_UPGRADES = {
   campfire: { recipe: ['fish', 'crops'] },
   workbench: { recipe: ['ore', 'gears'] },
-  runeCircle: { recipe: ['runes', 'crystals'] }
+  runeCircle: { recipe: ['runes', 'crystals'] },
+  // The Storehouse only pays off for a world that trades, so autoSpend buys it after the others.
+  storehouse: { recipe: ['logs', 'seals'], settlementOnly: true, spendWeight: 0.75 },
+  defences: { recipe: ['bars', 'hides'], settlementOnly: true }
 }
+/**
+ * The Storehouse lowers the market's fee and the Defences the stamina monsters drain, by MAX * L /
+ * (L + HALF) like the campfire: ever closer to MAX, never past it. Both are effects of the world
+ * (marketFee and staminaDrain) summed with the other sources under LEGENDARY_EFFECT_CAPS.
+ */
+export const STOREHOUSE_FEE_MAX = 0.04
+export const STOREHOUSE_FEE_HALF = 10
+export const DEFENCES_DRAIN_MAX = 0.03
+export const DEFENCES_DRAIN_HALF = 10
+/**
+ * From the tier game/settlement.json names (`coinsFromTier`), a building's level may also be paid
+ * partly in coins: this share of each material is replaced by its base value in coins. Coins never
+ * have to be spent: the price in materials alone stays, so a world that never trades is never
+ * stuck, and autoSpend never spends coins.
+ */
+export const SETTLEMENT_COIN_SHARE = 0.5
 export const GROUP_COST_BASE = 400
 export const GROUP_COST_GROWTH = 2
 export const GROUP_LEVELS_PER_WORLD_LEVEL = 0.1
 /**
  * autoSpend buys the affordable purchase with the lowest cost divided by its weight, so a weapon
- * in use is upgraded before a group upgrade, an outfit or a tool of the same price.
+ * in use is upgraded before a group upgrade, an outfit or a tool of the same price. A group
+ * upgrade with a `spendWeight` of its own (GROUP_UPGRADES) uses that instead of `group`.
  */
 export const SPEND_WEIGHTS = { weapon: 3, group: 1.5, outfit: 1, tool: 1 }
 /** autoSpend stops after this many purchases in one call. */
@@ -373,7 +396,9 @@ export const LEGENDARY_EFFECT_CAPS = {
   damage: 0.15,
   critChance: 0.05,
   critDamage: 0.3,
-  staminaDrain: 0.1,
+  // 0.1 was the strongest relic, the equipment and the bestiary together; the Defences add up to
+  // DEFENCES_DRAIN_MAX on top (docs/GAME.md, "Settlement").
+  staminaDrain: 0.13,
   staminaPool: 0.1,
   outfitStamina: 0.1,
   restTime: 20,
@@ -394,8 +419,13 @@ export const LEGENDARY_EFFECT_CAPS = {
   // The bestiary's own types (docs/GAME.md, "Bestiary"): damage against the races a world has
   // mastered, and how much faster bosses' legendary pity grows.
   raceDamage: 0.1,
-  legendaryPity: 0.5
+  legendaryPity: 0.5,
+  // The Storehouse's (docs/GAME.md, "Settlement"): what the market's fee is lowered by. Whatever
+  // the fee, a sale pays less than base value and a purchase costs more, so it stays a loss.
+  marketFee: STOREHOUSE_FEE_MAX
 }
+/** The lowest the market's fee goes, with a Storehouse far up. */
+export const MARKET_FEE_FLOOR = MARKET_FEE - LEGENDARY_EFFECT_CAPS.marketFee
 /**
  * A free legendary item that fits a new character (made for its class, or for a tool its trade) is
  * taken over the slot's best plain item unless that one is more than this many upgrade levels

@@ -14,6 +14,7 @@ import { createPartyView } from './party-view.js'
 import { createRelicsCard } from './relics-view.js'
 import { portraitOf } from './portraits.js'
 import { roomThemeIds } from './room-themes.js'
+import { campCosts } from './settlement-model.js'
 import { createSkillsView } from './skills-view.js'
 
 /**
@@ -52,7 +53,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
   const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })
-  const camp = createCampView({ actions })
+  const camp = createCampView({ actions, base })
   /** A tab's views in one block that spans the panel and lays itself out by its own width. */
   const block = (...elements) => {
     const node = el('div', 'ac-game-tab-section')
@@ -90,7 +91,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
         orphans.update({ roomId, roomName: shown ? roomTitle(shown) : roomId, world })
       }
       if (tab === 'camp') camp.update({ game, world })
-      const onScreen = { chosenItem: chest.chosenItem(), upgrades: world.upgrades }
+      const onScreen = { chosenItem: chest.chosenItem(), campCosts: campCosts(world) }
       return shortMaterials(costsOnScreen(tab, onScreen), world.materials)
     }
   }

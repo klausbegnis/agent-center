@@ -113,18 +113,13 @@ export function shortMaterials(costs, materials) {
 }
 
 /**
- * The game's numbers the UI needs to say what the next level of something gives. The view state
- * gives what an upgrade does now, not at the next level; these mirror src/game/constants.mjs,
- * and a test fails when the two drift apart.
+ * The game's numbers the UI needs to say what the next level of an item gives. The view state
+ * gives what an item does now, not at the next level; these mirror src/game/constants.mjs, and a
+ * test fails when the two drift apart. A building's next level comes in the view state.
  */
 export const GAME_NUMBERS = {
   gearGrowth: 1.1,
-  tierLevels: 2,
-  campfireMax: 0.6,
-  campfireHalf: 5,
-  runeCircleMax: 0.2,
-  runeCircleHalf: 10,
-  workbenchDiscountPerLevel: 0.05
+  tierLevels: 2
 }
 
 /**
@@ -142,38 +137,15 @@ export function itemFactors(item) {
   return { now, next: now * GAME_NUMBERS.gearGrowth }
 }
 
-/** A share that approaches its ceiling without reaching it: MAX * L / (L + HALF). */
-const approaching = (max, half, level) => (level > 0 ? (max * level) / (level + half) : 0)
-
-/**
- * A group upgrade's effect at a level, in the shape the view state gives it.
- *
- * @param {string} upgradeId campfire, workbench or runeCircle
- * @param {number} level
- */
-export function groupEffectAt(upgradeId, level) {
-  const numbers = GAME_NUMBERS
-  if (upgradeId === 'campfire') {
-    return { staminaAfterKill: approaching(numbers.campfireMax, numbers.campfireHalf, level) }
-  }
-  if (upgradeId === 'runeCircle') {
-    return { monsterHealthCut: approaching(numbers.runeCircleMax, numbers.runeCircleHalf, level) }
-  }
-  if (upgradeId === 'workbench') {
-    return { upgradeCostFactor: 1 / (1 + numbers.workbenchDiscountPerLevel * level) }
-  }
-  return {}
-}
-
 /**
  * The costs whose missing materials the strip marks for a tab: the chosen item's on Chest, every
- * group upgrade's on Camp, none elsewhere.
+ * open building's on Camp, none elsewhere.
  *
  * @param {string} tab
- * @param {{ chosenItem: object | null, upgrades: object[] }} onScreen
+ * @param {{ chosenItem: object | null, campCosts: Record<string, number>[] }} onScreen
  */
-export function costsOnScreen(tab, { chosenItem, upgrades }) {
+export function costsOnScreen(tab, { chosenItem, campCosts }) {
   if (tab === 'chest') return chosenItem ? [chosenItem.upgradeCost] : []
-  if (tab === 'camp') return (upgrades ?? []).map((upgrade) => upgrade.cost)
+  if (tab === 'camp') return campCosts ?? []
   return []
 }

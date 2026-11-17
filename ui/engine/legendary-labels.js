@@ -87,7 +87,8 @@ const EFFECT_TEXT = {
   },
   legendaryPity: {
     world: (effect) => `+${percent(effect.amount)} to the extra legendary chance each boss without a drop adds`
-  }
+  },
+  marketFee: { world: (effect) => `The market's fee is ${percent(effect.amount)} lower` }
 }
 /**
  * The party effects the bestiary gives a whole world (scope `world`) read as a relic's do: they act

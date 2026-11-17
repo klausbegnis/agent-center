@@ -109,11 +109,23 @@ test('game actions with values of the wrong kind are refused before they reach t
   await assert.rejects(controller.gameUpgradeItem('room', { id: 1 }), /invalid item/)
   await assert.rejects(controller.gameSetAutoSpend('yes'), /invalid auto-spend/)
   await assert.rejects(controller.gameSetTravel(1), /invalid travel/)
+  await assert.rejects(controller.gameBuyUpgrade('main', 'campfire', 'yes'), /invalid coins choice/)
   await assert.rejects(controller.gameResetWorld('x'.repeat(600)), /invalid world/)
   await assert.rejects(controller.gameRebalanceSkills(null), /invalid world/)
   await assert.rejects(controller.gameImportSave('{"format":"agent-center-game"}'), /invalid save file/)
   await assert.rejects(controller.gameImportSave([]), /invalid save file/)
   assert.equal(calls.length, 0)
+})
+
+test('building a level reaches the game in materials alone unless coins are asked for', async () => {
+  const { game, calls } = recordingGame()
+  const { controller } = setup({ game })
+  await controller.gameBuyUpgrade('main', 'campfire')
+  await controller.gameBuyUpgrade('main', 'storehouse', true)
+  assert.deepEqual(calls, [
+    ['buy', { worldId: 'main', upgradeId: 'campfire', useCoins: false }],
+    ['buy', { worldId: 'main', upgradeId: 'storehouse', useCoins: true }]
+  ])
 })
 
 test('sending an item or a relic reaches the game with its fields; a missing id is refused first', async () => {

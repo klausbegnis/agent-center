@@ -1,6 +1,6 @@
 // What sits above the game's tabs on every tab: the room switcher (a row of chips, one per room
-// that plays) with the room's world and level, and one strip with the world's coins and
-// materials. It keeps the same size on every tab, so the tab bar under it never moves: the row
+// that plays) with the world's settlement badge and the room's world and level, and one strip with
+// the world's coins and materials. It keeps the same size on every tab, so the tab bar under it never moves: the row
 // of chips never wraps, it scrolls sideways. On the tabs that show a whole world the switcher is
 // dimmed and says so. It draws what the shell gives it and reports the room picked.
 import { el, setOptions } from './dom.js'
@@ -8,6 +8,7 @@ import { CONTEXT } from './context-labels.js'
 import { WORLD_TABS } from './game-model.js'
 import { ARSENAL, levelShort } from './labels.js'
 import { createMaterialStrip } from './material-strip.js'
+import { createSettlementBadge } from './settlement-badge.js'
 import { ITEM_DRAG_TYPE } from './send-model.js'
 import { ALL_ROOMS, MANY_ROOMS, SCROLL_PAGE_SHARE, chipAfterKey, roomChips, rowOverflow, scrollToShow } from './room-chips.js'
 
@@ -102,10 +103,12 @@ function arrowButton(text, label, onClick) {
 
 /**
  * @param {{ onPick: (roomId: string) => void,
- *   drop?: { accepts: (roomId: string) => boolean, take: (roomId: string, payload: object) => void } }} options
- *   `onPick` gets ALL_ROOMS or a room id; `drop` lets a chip take chest slots dragged onto it
+ *   drop?: { accepts: (roomId: string) => boolean, take: (roomId: string, payload: object) => void },
+ *   onOpenSettlement?: () => void, base?: string }} options
+ *   `onPick` gets ALL_ROOMS or a room id; `drop` lets a chip take chest slots dragged onto it;
+ *   `onOpenSettlement` opens the Camp tab from the settlement badge, whose picture loads from `base`
  */
-export function createGameContext({ onPick, drop }) {
+export function createGameContext({ onPick, drop, onOpenSettlement, base = '' }) {
   const element = el('div', 'ac-game-context')
   const row = el('div', 'ac-game-context-row')
   const switcher = el('div', 'ac-game-rooms')
@@ -136,7 +139,8 @@ export function createGameContext({ onPick, drop }) {
   worldWord.setAttribute('aria-hidden', 'true')
   worldText.setAttribute('aria-hidden', 'true')
   worldTag.append(worldWord, worldText)
-  row.append(switcher, worldTag)
+  const badge = createSettlementBadge({ onOpen: onOpenSettlement, base })
+  row.append(switcher, badge.element, worldTag)
   const strip = createMaterialStrip()
   const empty = el('p', 'ac-game-card-line ac-game-context-empty', ARSENAL.noRooms)
   element.append(row, strip.element, empty)
@@ -239,6 +243,7 @@ export function createGameContext({ onPick, drop }) {
       worldTag.title = worldLabel
       worldWord.textContent = `${CONTEXT.world} `
       worldText.textContent = `${world.id} · ${levelShort(world.level)}`
+      badge.update(world)
       strip.update(world, short)
       showArrows()
       const pickedKey = `${isRoomsTab}|${pickedValue}`
