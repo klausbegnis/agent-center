@@ -69,7 +69,7 @@ export function hitShares(world, project) {
 }
 
 /** A save whose world has every work skill at `level`, with a party of four in `fuzzy-anvil`. */
-function trainedParty(engine, level) {
+export function trainedParty(engine, level) {
   let save = emptySave()
   const levels = Array.from({ length: Math.min(level, SKILL_CAP) - 1 }, (_, index) => index + 1)
   const xp = sumOf(levels.map(xpToNext))
@@ -235,20 +235,32 @@ function compositionChecks(engine) {
   return results
 }
 
+/** Legendary loot stays a bonus: the full set and the best relic add at most about 15%. */
+function legendaryChecks(legendary) {
+  if (!legendary) return []
+  return [10, 60, 150].map((level) => {
+    const { base, best, gain } = legendary.measure(level)
+    return [`level ${level}: a full legendary set adds at most about 15%`, gain <= 0.15,
+      `+${percent(gain)} kills (${base} to ${best.kills}, with ${best.relicId ?? 'no relic'})`]
+  })
+}
+
 /**
  * Prints the balance check: every target with PASS or FAIL and what was measured.
  *
  * @param {object[]} runs the simulated scenarios
- * @param {object} engine
+ * @param {object} engine an engine without legendary loot, for the fixed parties
  * @param {(scenario: object) => number} perHourOf tokens a session spends per hour of work
+ * @param {{ measure: (level: number) => object }} [legendary] what legendary loot adds at a level
  */
-export function printBalanceCheck(runs, engine, perHourOf) {
+export function printBalanceCheck(runs, engine, perHourOf, legendary) {
   const byId = Object.fromEntries(runs.map((run) => [run.scenario.id, run]))
   const results = [
     ...progressionChecks(byId),
     ...powerChecks(runs, perHourOf),
     ...runs.flatMap(scenarioChecks),
-    ...compositionChecks(engine)
+    ...compositionChecks(engine),
+    ...legendaryChecks(legendary)
   ]
   console.log('\n## Balance check\n')
   const rows = results.map(([name, passed, detail]) => [passed ? 'PASS' : 'FAIL', name, detail])

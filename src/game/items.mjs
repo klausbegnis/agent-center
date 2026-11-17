@@ -72,14 +72,15 @@ export function createItem(entry) {
  * The materials one upgrade of the item costs: the same amount of each of its two recipe
  * materials, `UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel * UPGRADE_COST_GROWTH **
  * (effectiveGearLevel - referenceGearLevel(worldLevel))`, divided by `1 +
- * WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel`, rounded, at least 1.
+ * WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel` and times `1 - relicDiscount` (a room's relic),
+ * rounded, at least 1.
  *
  * @param {{ tier: number, level: number, recipe: string[] }} item
- * @param {{ workbenchLevel?: number, worldLevel?: number }} [options]
+ * @param {{ workbenchLevel?: number, worldLevel?: number, relicDiscount?: number }} [options]
  * @returns {Record<string, number>}
  */
-export function upgradeCost(item, { workbenchLevel = 0, worldLevel = 0 } = {}) {
-  const discount = 1 / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
+export function upgradeCost(item, { workbenchLevel = 0, worldLevel = 0, relicDiscount = 0 } = {}) {
+  const discount = (1 - relicDiscount) / (1 + WORKBENCH_DISCOUNT_PER_LEVEL * workbenchLevel)
   const ahead = effectiveGearLevel(item) - referenceGearLevel(worldLevel)
   const full = UPGRADE_COST_BASE * REWARD_GROWTH ** worldLevel * UPGRADE_COST_GROWTH ** ahead
   const amount = Math.max(1, Math.round(full * discount))

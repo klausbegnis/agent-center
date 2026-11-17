@@ -6,8 +6,13 @@ import { effectiveGearLevel } from './items.mjs'
 const CLASS_DAMAGE_TYPE = { magical: 'magical' }
 const DEFAULT_DAMAGE_TYPE = 'physical'
 
-/** @param {string} characterClass */
-function damageTypeOf(characterClass) {
+/**
+ * The weapon damage type a class can use: the one rule every pick follows (equipFromChest, the
+ * choices of equip.mjs and legendary-equip.mjs).
+ *
+ * @param {string} characterClass
+ */
+export function weaponTypeOf(characterClass) {
   return CLASS_DAMAGE_TYPE[characterClass] ?? DEFAULT_DAMAGE_TYPE
 }
 
@@ -64,7 +69,7 @@ export function bestFreeItem(chest, { slot, damageType }) {
  */
 export function equipFromChest(chest, { sessionId, class: characterClass }) {
   const picks = {
-    weapon: bestFreeItem(chest, { slot: 'weapon', damageType: damageTypeOf(characterClass) }),
+    weapon: bestFreeItem(chest, { slot: 'weapon', damageType: weaponTypeOf(characterClass) }),
     outfit: bestFreeItem(chest, { slot: 'outfit' }),
     tool: bestFreeItem(chest, { slot: 'tool' })
   }

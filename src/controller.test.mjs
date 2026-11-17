@@ -70,7 +70,8 @@ function recordingGame() {
     tradeMaterial: record('trade'),
     buyStallOffer: record('buyOffer'),
     setEquipment: record('equip'),
-    bestGear: record('bestGear')
+    bestGear: record('bestGear'),
+    setActiveRelic: record('activeRelic')
   }
   return { game, calls }
 }
@@ -191,4 +192,18 @@ test('equipment actions reach the game with their fields; the item is text, null
   await assert.rejects(controller.gameSetEquipment('room', 's1', 'weapon', 3), /invalid item/)
   await assert.rejects(controller.gameBestGear(null), /invalid room/)
   assert.equal(calls.length, 3)
+})
+
+test('choosing the active relic reaches the game with the room and the relic, or null', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  await assert.rejects(controller.gameSetActiveRelic('local:/work/rumble-banana', 7), /invalid relic/)
+  await assert.rejects(controller.gameSetActiveRelic(undefined, 'rimeheart'), /invalid room/)
+  await controller.gameSetActiveRelic('local:/work/rumble-banana', 'rimeheart')
+  await controller.gameSetActiveRelic('local:/work/rumble-banana', null)
+  assert.deepEqual(calls, [
+    ['activeRelic', { roomId: 'local:/work/rumble-banana', relicId: 'rimeheart' }],
+    ['activeRelic', { roomId: 'local:/work/rumble-banana', relicId: null }]
+  ])
+  assert.equal(changes(), 2)
 })

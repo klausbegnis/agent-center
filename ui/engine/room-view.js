@@ -78,7 +78,7 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   /** @type {Map<string, HTMLElement>} "+N" markers by the id of the agent they belong to */
   const markers = new Map()
   const emoteSchedule = emotePace ? createEmoteSchedule(theme, emotePace) : null
-  const game = createRoomGame({ scene, theme, roomId: room.id, mirrored: variant.flip })
+  const game = createRoomGame({ scene, theme, roomId: room.id, mirrored: variant.flip, base: transport.base })
   /** The characters last told to the emote schedule, to tell it again when a fight starts or ends. */
   let lastCast = []
 

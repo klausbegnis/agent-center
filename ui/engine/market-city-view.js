@@ -9,6 +9,7 @@ import { gameIcon, iconLabel } from './icon-view.js'
 import { itemSlot } from './item-slot-view.js'
 import { materialLabel } from './labels.js'
 import { amountControl } from './market-amount.js'
+import { stallRelicRow } from './stall-relic-view.js'
 import {
   MARKET,
   TREND_NOTE,
@@ -182,12 +183,13 @@ function offerRow({ world, city, offer, roomId, actions }) {
 }
 
 /**
- * The Stall card: the day's pieces, and the room a bought one goes to.
+ * The Stall card: the day's pieces, now and then a relic, and the room a bought one goes to.
  *
  * @param {{ world: object, city: object, rooms: [string, string][], roomId: string | null,
- *   onRoom: (roomId: string) => void, actions: object }} options `rooms` are the choices of room
+ *   onRoom: (roomId: string) => void, actions: object, game?: object, base?: string }} options
+ *   `rooms` are the choices of room; `game` and `base` draw a relic on offer
  */
-export function stallCard({ world, city, rooms, roomId, onRoom, actions }) {
+export function stallCard({ world, city, rooms, roomId, onRoom, actions, game, base = '' }) {
   const children = [el('p', 'ac-game-card-line', MARKET.stallNote)]
   if (actions.buyStallOffer && rooms.length > 1) {
     const picker = select('ac-select', MARKET.goesTo)
@@ -202,6 +204,8 @@ export function stallCard({ world, city, rooms, roomId, onRoom, actions }) {
   }
   const list = el('div', 'ac-game-list')
   list.append(...(city.stall ?? []).map((offer) => offerRow({ world, city, offer, roomId, actions })))
+  const relic = stallRelicRow({ game, world, city, roomId, actions, base })
+  if (relic) list.append(relic)
   children.push(list)
   return section(MARKET.stall, children, 'ac-market-stall')
 }

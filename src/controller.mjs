@@ -17,6 +17,8 @@
  * @property {(roomId: string, worldId: string | null) => Promise<GameResult>} gameAssignRoom puts a
  *   room in a world, or out of the game with null
  * @property {(worldId: string) => Promise<GameResult>} gameResetWorld
+ * @property {(roomId: string, relicId: string | null) => Promise<GameResult>} gameSetActiveRelic makes
+ *   one of a room's relics the active one, or none with null
  * @property {(autoSpend: boolean) => Promise<GameResult>} gameSetAutoSpend
  * @property {(travel: boolean) => Promise<GameResult>} gameSetTravel turns "new scene after each
  *   monster" on or off
@@ -152,6 +154,10 @@ export function createController({
       worldId: worldId === null ? null : requireText(worldId, 'world')
     })),
     gameResetWorld: (worldId) => playAction(() => game.resetWorld({ worldId: requireText(worldId, 'world') })),
+    gameSetActiveRelic: (roomId, relicId) => playAction(() => game.setActiveRelic({
+      roomId: requireText(roomId, 'room'),
+      relicId: relicId === null ? null : requireText(relicId, 'relic')
+    })),
     gameSetAutoSpend: (autoSpend) => playAction(() => game.setAutoSpend(requireBoolean(autoSpend, 'auto-spend'))),
     gameSetTravel: (travel) => playAction(() => game.setTravel(requireBoolean(travel, 'travel'))),
     gameSetCharacterTrade: (roomId, sessionId, trade) => playAction(() => game.setCharacterTrade({

@@ -41,7 +41,7 @@ function attributeList(character, name) {
 }
 
 /** A character's card, kept while the character stays, so its trade picker is never rebuilt. */
-function createCharacterCard({ roomId, sessionId, name, actions, openSlot }) {
+function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base }) {
   const node = el('article', 'ac-game-hero')
   const top = el('div', 'ac-game-hero-head')
   const who = el('div', 'ac-game-hero-who')
@@ -60,7 +60,7 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot }) {
   const progress = meter('ac-game-hero-progress', ARSENAL.levelProgress(name))
   const details = el('div', 'ac-game-hero-details')
   const attributes = el('div', 'ac-game-hero-attributes')
-  const equip = createEquipSlots({ roomId: () => roomId, sessionId, name, actions, open: openSlot })
+  const equip = createEquipSlots({ roomId: () => roomId, sessionId, name, actions, open: openSlot, base })
   details.append(attributes, equip.element)
   node.append(top, progress.element, details)
   let drawnDetails = null
@@ -131,7 +131,7 @@ function createBestGearRow(actions, getRoomId) {
 }
 
 /** The Characters card: the room's picker, its note, then a card per character. */
-function createCharactersCard(actions) {
+function createCharactersCard(actions, base = '') {
   let roomId = null
   const cards = new Map()
   /** The one equipment picker open in the tab, as "sessionId|slot", or null. */
@@ -178,7 +178,7 @@ function createCharactersCard(actions) {
         const sessionId = member.character.sessionId
         if (!cards.has(sessionId)) {
           const name = member.agent.name
-          cards.set(sessionId, createCharacterCard({ roomId, sessionId, name, actions, openSlot }))
+          cards.set(sessionId, createCharacterCard({ roomId, sessionId, name, actions, openSlot, base }))
         }
         const card = cards.get(sessionId)
         card.update(member, { roomChoice, canChoose, canEquip, state, room })
@@ -227,13 +227,14 @@ function retireesCard(room) {
 }
 
 /**
- * @param {{ actions: Record<string, (...args: unknown[]) => Promise<boolean>> }} options
+ * @param {{ actions: Record<string, (...args: unknown[]) => Promise<boolean>>, base?: string }} options
+ *   `base` is where the surface loads legendary pictures from
  * @returns {{ element: HTMLElement,
  *   update: (next: { state: object, roomId: string, room: object }) => void }}
  */
-export function createPartyView({ actions }) {
+export function createPartyView({ actions, base = '' }) {
   const element = el('div', 'ac-game-party-section')
-  const characters = createCharactersCard(actions)
+  const characters = createCharactersCard(actions, base)
   const retirees = el('div', 'ac-game-party-retirees')
   element.append(characters.element, retirees)
   let drawn = null

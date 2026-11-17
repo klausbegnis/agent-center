@@ -6,6 +6,7 @@ import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
 import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
+import { legendaryOf } from './game/legendary.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
@@ -138,6 +139,21 @@ export function createGameActions(dependencies) {
       })
     },
 
+    /**
+     * Makes one of a room's relics the active one, or none with null. Only a relic the room owns.
+     *
+     * @param {{ roomId: string, relicId: string | null }} input
+     */
+    async setActiveRelic({ roomId, relicId }) {
+      return change((save) => {
+        const worldId = typeof roomId === 'string' ? worldIdOf(save, roomId) : null
+        const project = worldId === null ? null : save.worlds[worldId]?.projects[roomId]
+        if (!project) throw refuse('unknown room', roomId)
+        if (relicId !== null && !legendaryOf(project).relics.includes(relicId)) throw refuse('not a relic the room owns', relicId)
+        return engine.setActiveRelic(save, { projectId: roomId, relicId })
+      })
+    },
+
     /** Starts a world over. Its rooms stay in it and begin again. @param {{ worldId: string }} input */
     async resetWorld({ worldId }) {
       return change((save) => {
@@ -267,7 +283,8 @@ export function createGameActions(dependencies) {
       return change((save) => {
         requireWorld(save, worldId)
         requireCity(cityId)
-        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex >= STALL_OFFERS) throw refuse('unknown offer', offerIndex)
+        // The gear's offers, then the relic's at STALL_OFFERS (stall-relic.mjs).
+        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex > STALL_OFFERS) throw refuse('unknown offer', offerIndex)
         if (typeof entryId !== 'string') throw refuse('unknown offer', entryId)
         requireRoomOf(save, worldId, roomId)
         return engine.buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId: roomId })

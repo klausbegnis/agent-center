@@ -136,7 +136,7 @@ export function createMarketView({ panel, actions, base }) {
       sellCard({ world, city, chosen, open: openSell, actions }),
       tradeCard({ world, city, form: trade, actions }),
       stallCard({ world, city, rooms: rooms.map((room) => [room.id, roomTitle(room)]), roomId, onRoom,
-        actions })
+        actions, game: state.game, base })
     ]
   }
 

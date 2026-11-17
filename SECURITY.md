@@ -107,6 +107,7 @@ otherwise.
   | `/api/game/buy-upgrade` | spends materials on a group upgrade |
   | `/api/game/assign-room` | moves a room to another world, a new one, or out of the game |
   | `/api/game/reset-world` | starts a world over (cannot be undone) |
+  | `/api/game/active-relic` | makes one of a room's relics the active one, or none |
   | `/api/game/auto-spend` | turns auto-spend on or off |
   | `/api/game/travel` | turns "new scene after each monster" on or off |
   | `/api/game/character-trade` | sets what one character gathers while idle |
@@ -119,7 +120,7 @@ otherwise.
   | `/api/game/move-orphan-items` | moves a room left behind's chest and retirees into another room |
   | `/api/game/sell` | sells a world's materials to a market city for coins |
   | `/api/game/trade` | turns a world's materials into another material in a market city |
-  | `/api/game/buy-offer` | spends a world's coins on a piece of a city's stall, into a room's chest |
+  | `/api/game/buy-offer` | spends a world's coins on a piece of a city's stall, into a room's chest, or on its relic, into a room's relics |
 
   Any program or user account on this machine can still use them, like the other settings.
 

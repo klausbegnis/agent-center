@@ -9,6 +9,7 @@ export const GAME_ACTION_METHODS = [
   'buyGroupUpgrade',
   'moveRoomToWorld',
   'resetWorld',
+  'setActiveRelic',
   'setAutoSpend',
   'setTravel',
   'setCharacterTrade',

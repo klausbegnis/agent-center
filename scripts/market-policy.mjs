@@ -1,12 +1,16 @@
 // The simulator's second policy: a player who visits the market once a working day. It trades
 // surplus materials for the ones the next purchase lacks, buys stall gear that beats what a room
-// has, and sells what is still left over for coins. Uses only what the Market tab offers.
+// has, sells what is still left over for coins, and buys a stall's relic whenever it can. Uses
+// only what the Market tab offers.
 import { effectiveGearLevel, upgradeCost } from '../src/game/items.mjs'
+import { legendaryIndexOf } from '../src/game/legendary-effects.mjs'
+import { legendaryOf } from '../src/game/legendary.mjs'
 import { isCityOpen, marketDay, pricePoint, tradeUnits } from '../src/game/market.mjs'
 import { unitBuyPrice, unitSellPrice } from '../src/game/market-prices.mjs'
 import { SPEND_WEIGHTS } from '../src/game/constants.mjs'
 import { worldLevel } from '../src/game/progression.mjs'
 import { isChestFullOf, soldOffers, stallOffers } from '../src/game/stall.mjs'
+import { RELIC_OFFER_INDEX, stallRelicOffer } from '../src/game/stall-relic.mjs'
 import { GROUP_UPGRADE_IDS, groupLevel, groupUpgradeCost, itemsInUse } from '../src/game/spending.mjs'
 import { MATERIALS } from '../src/game/skills.mjs'
 
@@ -104,6 +108,28 @@ function buyGear(engine, save, cities, items, counts) {
   return next
 }
 
+/** Buys a stall's relic whenever the coins cover it, for the first room that lacks it. */
+function buyRelics(engine, save, { cities, legendary }, counts) {
+  const index = legendaryIndexOf({ legendary })
+  let next = save
+  for (const city of openCities(next.worlds.main, cities)) {
+    const world = next.worlds.main
+    const day = marketDay(world.market)
+    if (soldOffers(world.market, city.id).includes(RELIC_OFFER_INDEX)) continue
+    for (const projectId of Object.keys(world.projects).sort()) {
+      const where = { worldId: 'main', cityId: city.id, day, level: worldLevel(world.skills) }
+      const offer = stallRelicOffer(index, { ...where, ownedIds: legendaryOf(world.projects[projectId]).relics })
+      if (!offer || world.coins < offer.price) continue
+      const purchase = { worldId: 'main', cityId: city.id, offerIndex: RELIC_OFFER_INDEX, entryId: offer.entry.id, projectId }
+      const bought = engine.buyStallOffer(next, purchase)
+      if (bought !== next) counts.relics = (counts.relics ?? 0) + 1
+      next = bought
+      break
+    }
+  }
+  return next
+}
+
 /** Sells what is still surplus, each where it pays best, before the price falls too far. */
 function sellSurplus(engine, save, cities, counts) {
   let next = save
@@ -132,14 +158,15 @@ function sellSurplus(engine, save, cities, counts) {
  *
  * @param {ReturnType<typeof import('../src/game/engine.mjs').createEngine>} engine
  * @param {object} save
- * @param {{ cities: object[], items: { items: object[] } }} content
- * @param {{ trades: number, gear: number, earned: number }} counts added to
+ * @param {{ cities: object[], items: { items: object[] }, legendary?: object }} content
+ * @param {{ trades: number, gear: number, earned: number, relics?: number }} counts added to
  * @returns {object} the save after the visit and the autoSpend that follows
  */
-export function visitMarket(engine, save, { cities, items }, counts) {
+export function visitMarket(engine, save, { cities, items, legendary }, counts) {
   if (!save.worlds.main) return save
   let next = fillShortages(engine, save, cities, counts)
   next = buyGear(engine, next, cities, items, counts)
   next = sellSurplus(engine, next, cities, counts)
+  next = buyRelics(engine, next, { cities, legendary }, counts)
   return engine.autoSpend(next)
 }

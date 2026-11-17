@@ -24,15 +24,15 @@ export function gatherRate({
 
 /**
  * The hours of `from..to` (milliseconds) during which gathering still runs: it stops
- * `GATHER_STOPS_AFTER_HOURS` after the world last received tokens, and never ran in a world that
- * never did.
+ * `GATHER_STOPS_AFTER_HOURS` (plus `extraHours`, from a relic) after the world last received
+ * tokens, and never ran in a world that never did.
  *
- * @param {{ from: number, to: number, lastTokenAt: number | null }} interval
+ * @param {{ from: number, to: number, lastTokenAt: number | null, extraHours?: number }} interval
  * @returns {number}
  */
-export function activeHours({ from, to, lastTokenAt }) {
+export function activeHours({ from, to, lastTokenAt, extraHours = 0 }) {
   if (lastTokenAt === null || lastTokenAt === undefined) return 0
-  const stopsAt = lastTokenAt + GATHER_STOPS_AFTER_HOURS * MS_PER_HOUR
+  const stopsAt = lastTokenAt + (GATHER_STOPS_AFTER_HOURS + extraHours) * MS_PER_HOUR
   return Math.max(0, Math.min(to, stopsAt) - from) / MS_PER_HOUR
 }
 

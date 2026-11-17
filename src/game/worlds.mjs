@@ -1,6 +1,7 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
+import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
 
@@ -186,6 +187,7 @@ export function addMaterials(materials, more) {
 }
 
 const isPlainObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
+const legendaryField = (legendary) => (legendary ? { legendary } : {})
 const isNumber = (value) => typeof value === 'number' && Number.isFinite(value)
 const isWorldIdOrNull = (value) => value === null || typeof value === 'string'
 const objectOr = (value, fallback) => (isPlainObject(value) ? value : fallback)
@@ -196,9 +198,11 @@ function keepEntries(value, isValid) {
 }
 
 function normalizeProject(value) {
-  const project = { ...emptyProject(), ...value }
+  const { legendary, ...project } = { ...emptyProject(), ...value }
   return {
     ...project,
+    // Kept only when the room has legendary loot or pity; a save from before it has none.
+    ...legendaryField(normalizeLegendary(legendary)),
     wave: isNumber(project.wave) ? project.wave : FIRST_WAVE,
     waveKills: isNumber(project.waveKills) ? project.waveKills : 0,
     // Saves from before the kill count start it at 0.

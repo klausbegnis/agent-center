@@ -1,0 +1,6 @@
+# What relics.py writes next to itself. The pictures the plugin uses are in ui/art/legendary/.
+x1/
+png/
+sheet-*.png
+items.json
+__pycache__/

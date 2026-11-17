@@ -1,5 +1,6 @@
 // The game part of the view state: why the game is off, or the worlds, rooms and characters a
 // UI draws, reshaped from the engine's view and kept small enough for a panel post. Pure.
+import { describeLegendaryDrop, legendaryMarks, legendaryShown } from './game-legendary-view.mjs'
 import { gameStateOf } from './game-sessions.mjs'
 
 /** Items of a room's chest sent to the UI: the ones in use, then the strongest free ones. */
@@ -89,7 +90,8 @@ const compactItem = (item) => item && {
   power: item.power,
   heldBy: item.heldBy ?? null,
   upgradeCost: item.upgradeCost,
-  affordable: item.affordable
+  affordable: item.affordable,
+  ...legendaryMarks(item)
 }
 
 /** The items in use, then the strongest free ones, up to CHEST_ITEMS_SHOWN. */
@@ -133,13 +135,16 @@ function roomView(project, worldId, readings, keepTitles, sceneTheme) {
     chestSize: project.chest.length,
     retirees: shownRetirees(project.retirees, keepTitles),
     retiredCount: project.retirees.length + project.retiredCount,
-    bonus: project.retireeBonus
+    bonus: project.retireeBonus,
+    relics: project.relics ?? { owned: [], active: null }
   }
 }
 
 function characterView(member, link, state) {
   const equipment = Object.fromEntries(Object.entries(member.equipment)
-    .map(([slot, item]) => [slot, item ? { id: item.id, name: item.name, tier: item.tier, level: item.level } : null]))
+    .map(([slot, item]) => [slot, item
+      ? { id: item.id, name: item.name, tier: item.tier, level: item.level, ...legendaryMarks(item) }
+      : null]))
   return {
     sessionId: member.sessionId,
     link: link.how,
@@ -235,9 +240,10 @@ function describePurchase(event, index, recent, { projects, worlds }) {
  * name and level. A kill's monster name is not known here: the bridge's kill events do not
  * carry it.
  */
-function describeEvents(recent, { projects, worlds, itemEntries }) {
+function describeEvents(recent, { projects, worlds, itemEntries, legendary }) {
   return recent.map((event, index) => {
     if (event.type === 'kill') return { ...event, level: event.wave }
+    if (event.type === 'legendary') return describeLegendaryDrop(event, legendary)
     if (event.type === 'drop') {
       const entry = itemEntries[event.item]
       return entry ? { ...event, name: entry.name, tier: entry.tier } : event
@@ -314,8 +320,12 @@ export function buildGameView(input) {
     orphans: orphansOf(worldProjects, roomIds)
   }))
   const tickSeconds = engineView.tickSeconds ?? null
-  const described = describeEvents(recent, { projects, worlds, itemEntries: engineView.itemEntries ?? {} })
+  const described = describeEvents(recent, {
+    projects, worlds, itemEntries: engineView.itemEntries ?? {}, legendary: engineView.legendary
+  })
+  const legendary = legendaryShown(engineView.legendary, { rooms, characters, recent: described, worlds })
   return {
-    status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug
+    status, tokenSource, autoSpend, travel, keepTitles, tickSeconds, worlds, rooms, characters, recent: described, debug,
+    ...(legendary ? { legendary } : {})
   }
 }

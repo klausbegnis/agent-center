@@ -11,8 +11,10 @@
 // paired machines are characters like the others.
 import { createGameMode } from '../src/game-mode.mjs'
 import { createGameSave } from '../src/game-save.mjs'
+import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
-import { SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
+import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -41,12 +43,40 @@ const MINUTE_MS = 60_000
 const LEFT_BEHIND = 'local:/work/fuzzy-anvil'
 /** Coins the demo's world starts with: enough for one piece of a stall, not for all of them. */
 const MARKET_COINS = 70_000
+/**
+ * The room that shows legendary loot from the start: three relics with Rimeheart active, and a
+ * legendary weapon in its chest that its Fighter takes, so the Arsenal, the item detail, the agent
+ * card and the room's band all have something to show.
+ */
+const LEGENDARY_ROOM = 'local:/work/rumble-banana'
+/**
+ * The room that meets its first boss soon after the live demo starts: its first boss always
+ * leaves a relic, so the celebration plays without waiting for a legendary boss. Its weapons are
+ * upgraded enough that a party of a fresh world beats that boss in a few minutes.
+ */
+const FIRST_BOSS_ROOM = 'local:/work/sneaky-pancake'
+const FIRST_BOSS_WEAPON_LEVEL = 14
+
+/** A room's starter chest, as a new room gets it, with the extra items given, weapons at `level`. */
+function starterChest(item, extra, level = 0) {
+  const physical = { damageType: 'physical' }
+  return [
+    item('whittled-cudgel', 'weapon', 1, ['logs', 'bars'], level, physical),
+    { ...item('whittled-cudgel', 'weapon', 1, ['logs', 'bars'], level, physical), id: 'whittled-cudgel-2' },
+    { ...item('whittled-cudgel', 'weapon', 1, ['logs', 'bars'], level, physical), id: 'whittled-cudgel-3' },
+    item('ashwood-wand', 'weapon', 1, ['logs', 'crystals'], level, { damageType: 'magical' }),
+    item('padded-jerkin', 'outfit', 1, ['hides', 'crops'], 0),
+    item('trusty-pocketknife', 'tool', 1, ['ore', 'logs'], 0),
+    ...extra
+  ]
+}
 
 /**
- * The stored game the demo starts from: empty but for the room left behind, with "new scene after
- * each monster" on when asked, so even the first monsters fit their rooms' scenes.
+ * The stored game the demo starts from: empty but for the room left behind, the room with
+ * legendary loot and, in the live demo, a room about to meet its first boss, with "new scene
+ * after each monster" on when asked, so even the first monsters fit their rooms' scenes.
  */
-function startingSave(travel) {
+function startingSave(travel, frozen) {
   const item = (id, slot, tier, recipe, level, extra = {}) =>
     ({ id, entryId: id, slot, ...extra, tier, recipe, level, heldBy: null })
   const save = emptySave()
@@ -66,7 +96,20 @@ function startingSave(travel) {
           item('trusty-pocketknife', 'tool', 1, ['ore', 'logs'], 3)
         ],
         retiredCount: 7
-      }
+      },
+      [LEGENDARY_ROOM]: {
+        ...emptyProject(),
+        chest: starterChest(item, [
+          item('oathbreaker', 'weapon', 1, ['bars', 'seals'], 1, { damageType: 'physical', legendary: true })
+        ]),
+        legendary: {
+          relics: ['tidecall-conch', 'rimeheart', 'cogheart-of-the-ninth-shaft'],
+          active: 'rimeheart',
+          relicPity: 0,
+          bossPity: 0
+        }
+      },
+      ...(frozen ? {} : { [FIRST_BOSS_ROOM]: { ...emptyProject({ wave: 10 }), chest: starterChest(item, [], FIRST_BOSS_WEAPON_LEVEL) } })
     }
   }
   return { version: 1, save, bridge: { travel } }
@@ -151,6 +194,17 @@ function createHistory(store) {
   }
 }
 
+/** The frozen demo's day: days after its usual one until Goldmill's stall has a relic on offer. */
+const RELIC_CITY = 'goldmill'
+
+/** How many days the frozen demo starts later, so the day it shows has a relic on Goldmill's stall. */
+function relicDaysAhead() {
+  const lastDay = Math.floor((EPOCH + FROZEN_ROUNDS * ROUND_MS * SPEED) / MARKET_DAY_MS)
+  let ahead = 0
+  while (!hasRelicOnDay({ worldId: DEFAULT_WORLD, cityId: RELIC_CITY, day: lastDay + ahead })) ahead += 1
+  return ahead
+}
+
 /**
  * The demo's game: a game mode over an in-memory storage and the made-up history.
  *
@@ -164,9 +218,9 @@ export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
   let { store } = options
   const startedAt = Date.now()
-  let frozenClock = EPOCH
+  let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
   const now = () => (frozen ? frozenClock : EPOCH + (Date.now() - startedAt) * SPEED)
-  const values = new Map([['game', startingSave(travel)]])
+  const values = new Map([['game', startingSave(travel, frozen)]])
   const settings = { gameMode: true, gameKeepTitles: true }
   // The frozen scene never changes, so an agent that waits or is blocked in it would have kept
   // its room's party on hold for the whole made-up day. Until the last rounds those agents

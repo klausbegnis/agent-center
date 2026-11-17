@@ -354,3 +354,75 @@ export const STALL_OFFERS = 3
  * upgrading by hand, and worth it with surplus to sell.
  */
 export const STALL_MARKUP = 1.5
+// Legendary loot (docs/GAME.md, "Legendary loot"): relics, boss-owned relics and legendary
+// equipment. Their buffs are data in game/legendary.json; these numbers bound and drop them.
+
+/**
+ * The most each effect type can add up to for one target, whatever its sources: the active relic
+ * and the legendary equipment held. Effects of different sources add, then this caps the sum, so
+ * a future item cannot stack a quantity past what the design allows. Today's content never
+ * reaches a cap; every buff is modest so the world's skills stay the main source of power.
+ * `restTime` is in seconds and `gatherHours` in hours; every other amount is a share.
+ */
+export const LEGENDARY_EFFECT_CAPS = {
+  attackSpeed: 0.08,
+  damage: 0.12,
+  critChance: 0.05,
+  critDamage: 0.3,
+  staminaDrain: 0.1,
+  staminaPool: 0.1,
+  outfitStamina: 0.1,
+  restTime: 20,
+  staminaPerKill: 0.05,
+  healing: 0.1,
+  supportAura: 0.2,
+  affixWeakening: 0.25,
+  thorns: 0.1,
+  runeCircle: 0.15,
+  itemDrop: 0.2,
+  killMaterials: 0.1,
+  gatherYield: 0.15,
+  gatherHours: 2,
+  gatherXp: 0.1,
+  characterXp: 0.05,
+  skillXp: 0.1,
+  upgradeCost: 0.1
+}
+/**
+ * A free legendary item that fits a new character (made for its class, or for a tool its trade) is
+ * taken over the slot's best plain item unless that one is more than this many upgrade levels
+ * ahead. A legendary item's buff is worth about that much, and its upgrades then keep it level.
+ */
+export const LEGENDARY_PICK_MARGIN = 2
+/**
+ * A pool relic (one a city sells) drops from a boss wave's boss with this chance by its rank, plus
+ * RELIC_PITY_STEP for every such kill since the room's last pool relic. A legendary boss is the
+ * main source; a plain boss gives one now and then. A room that owns no relic at all gets one
+ * from its first boss for certain, so even a light user, who meets a boss every few weeks, sees
+ * a relic within about two weeks.
+ */
+export const RELIC_CHANCE = { boss: 0.08, legendary: 0.5 }
+export const RELIC_PITY_STEP = 0.08
+/**
+ * A named boss's own relic or legendary equipment drops with this chance by rank, plus
+ * BOSS_ITEM_PITY_STEP for every kill of a boss whose item the room lacks that gave nothing. A
+ * room's first boss-owned item is certain: the first such boss it beats gives it. A boss comes
+ * back to a room only after the whole roster (550 waves), so pity counts kills of any boss with
+ * an item, not of the same one.
+ */
+export const BOSS_ITEM_CHANCE = { boss: 0.05, legendary: 0.15 }
+export const BOSS_ITEM_PITY_STEP = 0.05
+/** Pity counters stop here; the chance is certain long before. Bounds what an imported save may hold. */
+export const LEGENDARY_PITY_MAX = 1000
+/**
+ * A city's stall also offers one of that city's relics (game/legendary.json) on a game day with
+ * this chance, by hash of world, city and day: now and then, so a relic on offer is an event.
+ * Which relic depends on the room it would go to: one of the city's two that room lacks.
+ */
+export const STALL_RELIC_CHANCE = 0.25
+/**
+ * A stall relic costs STALL_RELIC_PRICE_BASE * REWARD_GROWTH ** worldLevel coins, rounded: it
+ * grows like kill rewards, so it stays steep at every level. Set with the simulator's trading
+ * player so that a medium user affords one every few weeks and a light user a few a year.
+ */
+export const STALL_RELIC_PRICE_BASE = 3000

@@ -115,7 +115,7 @@ test('market actions naming something that does not exist are refused', async ()
     /unknown material/)
   const [offer] = cityOf(game, 'goldmill').stall
   const purchase = { worldId: 'main', cityId: 'goldmill', offerIndex: offer.index, entryId: offer.entryId, roomId: BANANA }
-  await assert.rejects(game.buyStallOffer({ ...purchase, offerIndex: 3 }), /unknown offer/)
+  await assert.rejects(game.buyStallOffer({ ...purchase, offerIndex: 4 }), /unknown offer/)
   await assert.rejects(game.buyStallOffer({ ...purchase, roomId: 'local:/made-up' }), /unknown room/)
   await game.assignRoom({ roomId: BANANA, worldId: 'side-projects' })
   await assert.rejects(game.buyStallOffer(purchase), /not a room that plays in this world/)

@@ -50,6 +50,8 @@ const EMOTE_TICK_MS = 250
  * @property {(roomId: string, worldId: string | null) => Promise<unknown>} [moveRoomToWorld] null
  *   takes the room out of the game; a new kebab-case id makes a new world
  * @property {(worldId: string) => Promise<unknown>} [resetWorld]
+ * @property {(roomId: string, relicId: string | null) => Promise<unknown>} [setActiveRelic] null
+ *   puts the room's relics away
  * @property {(on: boolean) => Promise<unknown>} [setAutoSpend]
  * @property {(on: boolean) => Promise<unknown>} [setTravel] "new scene after each monster"
  * @property {(on: boolean) => Promise<unknown>} [setKeepTitles]

@@ -7,6 +7,7 @@ import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECO
 import { playFight, partyOf, spawnMonster } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
+import { gatherBonuses, heldEffects, legendaryIndexOf, relicEffects } from './legendary-effects.mjs'
 import { recoverMarket } from './market.mjs'
 import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel } from './progression.mjs'
 import { retireeBonus } from './retirement.mjs'
@@ -26,8 +27,11 @@ const PAUSING_STATES = new Set(['waiting', 'blocked'])
  *   through, one per kill (see scenes.mjs); its `themeId` then follows its kill count instead
  */
 
-/** An idle character gathers its trade (see trades.mjs) for the hours gathering still runs. */
-function gatherFor(world, project, character, hours) {
+/**
+ * An idle character gathers its trade (see trades.mjs) for the hours gathering still runs, with what
+ * its room's relic and its own legendary tool add (`bonuses`).
+ */
+function gatherFor(world, project, character, hours, bonuses) {
   const trade = effectiveTrade(character, project)
   const tradeSkill = world.skills[trade] ?? emptySkill()
   const tool = character.equipment?.tool ? findItem(project.chest, character.equipment.tool) : null
@@ -39,25 +43,32 @@ function gatherFor(world, project, character, hours) {
     seasoning: seasoning(character.level),
     retireeBonus: retireeBonus(project)
   })
-  const { units, carry } = gather({ ratePerHour, hours, carry: character.gatherCarry ?? 0 })
+  const { units, carry } = gather({ ratePerHour: ratePerHour * bonuses.yieldFactor, hours, carry: character.gatherCarry ?? 0 })
   const gathered = { [materialOfSkill(trade)]: units }
   const materials = units > 0 ? addMaterials(world.materials, gathered) : world.materials
-  const skills = { ...world.skills, [trade]: grantSkillXp(tradeSkill, hours * GATHER_XP_PER_HOUR) }
+  const xp = hours * GATHER_XP_PER_HOUR * bonuses.xpFactor
+  const skills = { ...world.skills, [trade]: grantSkillXp(tradeSkill, xp) }
   return { world: { ...world, materials, skills }, character: { ...character, gatherCarry: carry }, units }
 }
 
 /** Records each reported session's state and lets the idle ones gather. */
-function settleCharacters(world, projectId, readings, { from, to }) {
+function settleCharacters(world, projectId, readings, { from, to, content }) {
   let current = world
-  const hours = activeHours({ from, to, lastTokenAt: world.lastTokenAt })
+  const index = legendaryIndexOf(content)
+  const relic = relicEffects(world.projects[projectId], index)
+  const extraHours = gatherBonuses(relic, [], null).extraHours
+  const hours = activeHours({ from, to, lastTokenAt: world.lastTokenAt, extraHours })
   const sorted = [...readings].sort((a, b) => a.sessionId.localeCompare(b.sessionId, 'en'))
   for (const reading of sorted) {
     const project = current.projects[projectId]
     let character = project.characters[reading.sessionId]
     if (!character || reading.guest) continue
     character = { ...character, state: reading.state }
-    if (reading.state === 'idle' && hours > 0 && effectiveTrade(character, project)) {
-      const gathered = gatherFor(current, project, character, hours)
+    const trade = effectiveTrade(character, project)
+    if (reading.state === 'idle' && hours > 0 && trade) {
+      const held = heldEffects(project, character, index)
+      const bonuses = gatherBonuses(relic, held, materialOfSkill(trade))
+      const gathered = gatherFor(current, project, character, hours, bonuses)
       current = gathered.world
       character = gathered.character
     }
@@ -87,7 +98,7 @@ function workingMembers(world, project, readings, now) {
 
 /** Moves one project forward over an interval: states, gathering, then the fight. */
 function advanceProject(world, { worldId, projectId, readings, from, to, content, referencePartyHit }) {
-  let current = settleCharacters(world, projectId, readings, { from, to })
+  let current = settleCharacters(world, projectId, readings, { from, to, content })
   let project = current.projects[projectId]
   const themed = readings.find((reading) => reading.themeId)
   if (themed) project = { ...project, themeId: themed.themeId }
@@ -108,7 +119,7 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
     project: { ...project, fightMs },
     world: current,
     worldLevel: worldLevel(current.skills),
-    party: partyOf(members, current, project),
+    party: partyOf(members, current, project, content),
     ticks,
     content,
     referencePartyHit,

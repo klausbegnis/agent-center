@@ -63,7 +63,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the six tabs, then the chest's item slots](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room picker and the world's coins and materials over the six tabs, then the chest's item slots with a legendary sword in a gold frame, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -99,6 +99,11 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Worlds keep things apart.** Progress belongs to a world, a group of rooms you choose. Put
   work and side projects in different worlds, or leave a room out of the game altogether.
 - **No level cap.** At level 99 a skill can be prestiged for a star and started again, stronger.
+- **Legendary loot.** Bosses leave relics that help a room's whole party (one is active at a
+  time; pick it on the Chest tab), and some named bosses guard a relic or a legendary weapon,
+  outfit or tool of their own, with a buff for the character that holds it. A room's first boss
+  always leaves a relic, and a city's stall sells one of its two relics now and then, for coins.
+  They are a bonus on top: a full set adds well under a fifth to a party.
 
 ### The bestiary
 

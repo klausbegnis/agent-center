@@ -8,16 +8,19 @@ import { formatFactor } from './game-format.js'
 import { holderName } from './game-model.js'
 import { emptyChestSlot, itemSlot } from './item-slot-view.js'
 import { ARSENAL, holderText, itemEffectText, itemSlotLabel, slotText, tierLevel } from './labels.js'
+import { LEGENDARY_ITEM, madeForText, sourceText } from './legendary-labels.js'
+import { legendaryDetails } from './legendary-model.js'
 import { purchase } from './price-view.js'
 
 /**
  * @param {{
  *   actions: Record<string, (...args: unknown[]) => Promise<boolean>>,
- *   onChosenChange: () => void
+ *   onChosenChange: () => void,
+ *   base?: string
  * }} options `onChosenChange` is called when another item is chosen, so the materials can show
- *   what its price is short of
+ *   what its price is short of; `base` is where the surface loads legendary pictures from
  */
-export function createChestView({ actions, onChosenChange }) {
+export function createChestView({ actions, onChosenChange, base }) {
   const element = el('div', 'ac-game-chest-section')
   const chest = el('section', 'ac-game-chest')
   const lid = el('h2', 'ac-game-chest-lid')
@@ -90,7 +93,8 @@ export function createChestView({ actions, onChosenChange }) {
       label: itemSlotLabel(item, holder, canUpgrade),
       isHeld: Boolean(item.heldBy),
       canUpgrade,
-      isButton: true
+      isButton: true,
+      base
     })
     node.dataset.itemId = item.id
     node.dataset.key = `slot:${item.id}`
@@ -102,7 +106,7 @@ export function createChestView({ actions, onChosenChange }) {
     const { room, state, roomId } = current
     const items = chestOrder(room.chest)
     const holders = items.map((item) => holderName(item, state, roomId))
-    const signature = JSON.stringify([roomId, items, holders, room.chestSize])
+    const signature = JSON.stringify([roomId, items, holders, room.chestSize, base])
     if (signature === gridDrawn) return
     gridDrawn = signature
     lid.textContent = ARSENAL.chest(items.length, room.chestSize ?? items.length)
@@ -115,7 +119,7 @@ export function createChestView({ actions, onChosenChange }) {
     markChosen()
   }
 
-  function detailFacts(item, holder) {
+  function detailFacts(item, holder, legendary) {
     const factors = itemFactors(item)
     const facts = el('dl', 'ac-game-item-facts')
     const rows = [
@@ -123,6 +127,11 @@ export function createChestView({ actions, onChosenChange }) {
       [ARSENAL.nextLevel, itemEffectText(item.slot, formatFactor(factors.next))],
       [ARSENAL.heldBy, holderText(holder)]
     ]
+    // A legendary item also says what its buff does, who it is made for and where it came from.
+    if (legendary) {
+      rows.unshift([LEGENDARY_ITEM.buff, legendary.text])
+      rows.push([LEGENDARY_ITEM.madeFor, madeForText(legendary)], [LEGENDARY_ITEM.source, sourceText(legendary)])
+    }
     for (const [term, value] of rows) {
       const pair = el('div', 'ac-game-item-fact')
       pair.append(el('dt', '', term), el('dd', '', value))
@@ -135,7 +144,8 @@ export function createChestView({ actions, onChosenChange }) {
     const { state, roomId, world } = current
     const item = chosenItem()
     const holder = item ? holderName(item, state, roomId) : null
-    const signature = JSON.stringify([roomId, item, holder, item ? world.materials : null])
+    const legendary = legendaryDetails(current.game, item)
+    const signature = JSON.stringify([roomId, item, holder, item ? world.materials : null, legendary])
     if (signature === detailDrawn) return
     detailDrawn = signature
     if (!item) {
@@ -145,21 +155,23 @@ export function createChestView({ actions, onChosenChange }) {
     const head = el('div', 'ac-game-item-head')
     const what = el('div', 'ac-game-item-what')
     what.append(
-      el('h3', 'ac-game-item-name', item.name),
+      el('h3', `ac-game-item-name${legendary ? ' ac-legendary-name' : ''}`, item.name),
       el('span', 'ac-muted', `${slotText(item)} · ${tierLevel(item)}`)
     )
+    if (legendary) what.append(el('p', 'ac-legendary-flavour', legendary.flavour))
     const picture = itemSlot({
       item,
       slot: item.slot,
       damageType: item.damageType,
       label: itemSlotLabel(item, holder, false),
-      isHeld: Boolean(item.heldBy)
+      isHeld: Boolean(item.heldBy),
+      base
     })
     picture.setAttribute('aria-hidden', 'true')
     head.append(picture, what)
     replaceKeepingFocus(detail, [
       head,
-      detailFacts(item, holder),
+      detailFacts(item, holder, legendary),
       purchase({
         cost: item.upgradeCost,
         affordable: item.affordable,

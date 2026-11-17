@@ -14,6 +14,7 @@ import {
   SPEND_WEIGHTS
 } from './constants.mjs'
 import { canAfford, payFor, upgradeCost } from './items.mjs'
+import { upgradeDiscountOf } from './legendary-effects.mjs'
 import { worldLevel } from './progression.mjs'
 
 /** The group upgrade ids, in the order they are shown and tried. */
@@ -71,13 +72,14 @@ export function itemsInUse(project) {
 }
 
 /** Every purchase a world could make now, affordable or not, in a stable order. */
-function purchasesOf(world) {
+function purchasesOf(world, index) {
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
   const level = worldLevel(world.skills)
   const purchases = []
   for (const projectId of Object.keys(world.projects).sort()) {
+    const relicDiscount = upgradeDiscountOf(world.projects[projectId], index)
     for (const item of itemsInUse(world.projects[projectId])) {
-      const cost = upgradeCost(item, { workbenchLevel, worldLevel: level })
+      const cost = upgradeCost(item, { workbenchLevel, worldLevel: level, relicDiscount })
       purchases.push({ kind: item.slot, projectId, itemId: item.id, cost })
     }
   }
@@ -95,11 +97,13 @@ const scoreOf = (purchase) =>
  * The best purchase the world can afford now: the lowest cost per SPEND_WEIGHTS of its kind.
  *
  * @param {object} world
+ * @param {import('./legendary-content.mjs').LegendaryIndex | null} [index] for relics that make
+ *   a room's upgrades cheaper
  * @returns {object | null} `{ kind, cost, projectId?, itemId?, upgradeId? }`
  */
-export function bestAffordablePurchase(world) {
+export function bestAffordablePurchase(world, index = null) {
   let best = null
-  for (const purchase of purchasesOf(world)) {
+  for (const purchase of purchasesOf(world, index)) {
     if (!canAfford(world.materials, purchase.cost)) continue
     if (!best || scoreOf(purchase) < scoreOf(best)) best = purchase
   }
@@ -130,13 +134,14 @@ export function applyPurchase(world, purchase) {
  * Buys the best affordable purchase again and again, up to SPEND_MAX_PURCHASES.
  *
  * @param {object} world
+ * @param {import('./legendary-content.mjs').LegendaryIndex | null} [index]
  * @returns {{ world: object, purchases: object[] }}
  */
-export function spendWorld(world) {
+export function spendWorld(world, index = null) {
   let current = world
   const purchases = []
   while (purchases.length < SPEND_MAX_PURCHASES) {
-    const purchase = bestAffordablePurchase(current)
+    const purchase = bestAffordablePurchase(current, index)
     if (!purchase) break
     current = applyPurchase(current, purchase)
     purchases.push(purchase)

@@ -11,6 +11,8 @@ import {
   MONSTER_RANKS,
   STALL_OFFERS
 } from './constants.mjs'
+import { checkRoomLegendary } from './legendary-check.mjs'
+import { legendaryIndexOf } from './legendary-effects.mjs'
 import { emptyMarket } from './market.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
@@ -111,12 +113,15 @@ function item(value, path) {
   if (slot === 'weapon') checked.damageType = oneOf(source.damageType, DAMAGE_TYPES, `${path}.damageType`)
   const recipe = list(source.recipe, `${path}.recipe`)
   if (recipe.length === 0) fail(`${path}.recipe`, 'is empty')
+  if (source.legendary !== undefined && source.legendary !== true) fail(`${path}.legendary`, 'is not true')
   return {
     ...checked,
     tier: whole(source.tier, `${path}.tier`, { min: 1, max: ITEM_MAX_TIER }),
     recipe: recipe.map((materialId, index) => oneOf(materialId, MATERIALS, `${path}.recipe.${index}`)),
     level: whole(source.level, `${path}.level`),
-    heldBy: textOrNull(source.heldBy, `${path}.heldBy`)
+    heldBy: textOrNull(source.heldBy, `${path}.heldBy`),
+    // Legendary equipment; legendary-check.mjs checks it against the content.
+    ...(source.legendary === true ? { legendary: true } : {})
   }
 }
 
@@ -271,12 +276,15 @@ function checkHolders(chest, characters, path) {
   }
 }
 
-function project(value, path) {
+function project(value, path, legendaryIndex) {
   const source = record(value, path)
   const characters = entries(source.characters, `${path}.characters`, { key: text, entry: character })
   const chest = list(source.chest, `${path}.chest`).map((owned, index) => item(owned, `${path}.chest.${index}`))
   checkHolders(chest, characters, path)
+  const loot = checkRoomLegendary(source.legendary, chest, legendaryIndex)
+  if (!loot.ok) fail(`${path}.${loot.problem[0]}`, loot.problem[1])
   return {
+    ...(loot.legendary ? { legendary: loot.legendary } : {}),
     wave: whole(source.wave, `${path}.wave`, { min: 1 }),
     waveKills: whole(source.waveKills, `${path}.waveKills`),
     kills: whole(source.kills ?? 0, `${path}.kills`),
@@ -295,11 +303,11 @@ function project(value, path) {
   }
 }
 
-/** The day's offers bought in a city: each offer once, by its index. */
+/** The day's offers bought in a city: each offer once, by its index (the relic's is STALL_OFFERS). */
 function soldToday(value, path) {
   const source = record(value, path)
   const offers = list(source.offers, `${path}.offers`)
-    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS - 1 }))
+    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS }))
   if (new Set(offers).size !== offers.length) fail(`${path}.offers`, 'names an offer twice')
   return { day: whole(source.day, `${path}.day`), offers }
 }
@@ -322,7 +330,7 @@ function market(value, path, cityIds) {
   }
 }
 
-function world(value, path, cityIds) {
+function world(value, path, cityIds, legendaryIndex) {
   const source = record(value, path)
   return {
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
@@ -331,7 +339,10 @@ function world(value, path, cityIds) {
       key: (id, at) => oneOf(id, GROUP_UPGRADE_IDS, at),
       entry: (level, at) => whole(level, at)
     }),
-    projects: entries(source.projects, `${path}.projects`, { key: text, entry: project }),
+    projects: entries(source.projects, `${path}.projects`, {
+      key: text,
+      entry: (item, at) => project(item, at, legendaryIndex)
+    }),
     lastTokenAt: numberOrNull(source.lastTokenAt, `${path}.lastTokenAt`),
     // A save from before the market has neither coins nor market.
     coins: whole(source.coins ?? 0, `${path}.coins`, { max: MARKET_MAX_COINS }),
@@ -344,14 +355,20 @@ function world(value, path, cityIds) {
  * that is not what the engine writes. Run it after `migrate`, which brings an older version up.
  *
  * @param {unknown} value
- * @param {{ cityIds?: string[] }} [content] the ids of the market's cities, which a market may name
+ * @param {{ cityIds?: string[], legendary?: object }} [content] the ids of the market's cities, which
+ *   a market may name, and the parsed game/legendary.json: legendary loot must be loot it has, and
+ *   without it a save that holds any is refused
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [] } = {}) {
+export function cleanSave(value, { cityIds = [], legendary } = {}) {
+  const legendaryIndex = legendaryIndexOf({ legendary })
   try {
     const source = record(value, 'the save')
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
-    const worlds = entries(source.worlds, 'worlds', { key: text, entry: (item, at) => world(item, at, cityIds) })
+    const worlds = entries(source.worlds, 'worlds', {
+      key: text,
+      entry: (item, at) => world(item, at, cityIds, legendaryIndex)
+    })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.
     const layoutProblem = worldLayoutProblem(worlds, projectWorld)
