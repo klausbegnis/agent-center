@@ -1,15 +1,16 @@
 // What a room's legendary loot does: the active relic's effect on the whole party, and each piece
 // of legendary equipment's effect on the living character holding it (or, for a party quantity,
 // on its party while it fights). Turns the effects into the numbers the fight, gathering, tokens
-// and prices use. Effects of different sources add; each type's sum is capped by
-// LEGENDARY_EFFECT_CAPS. Pure.
+// and prices use. The world's bestiary (bestiary-effects.mjs) is one more source: its effects act
+// like the relic's, on every party of the world. Effects of different sources add; each type's
+// sum is capped by LEGENDARY_EFFECT_CAPS. Pure.
 import { findItem } from './chest.mjs'
 import { LEGENDARY_EFFECT_CAPS, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { indexLegendary } from './legendary-content.mjs'
 
 /** @typedef {import('./legendary-content.mjs').LegendaryIndex} LegendaryIndex */
 /** @typedef {{ effect: string, scope: string, amount: number, damageType?: string, ranks?: string[],
- *   materials?: string[], skill?: string }} Effect */
+ *   materials?: string[], skill?: string, races?: string[] }} Effect */
 
 const indexes = new WeakMap()
 
@@ -89,13 +90,18 @@ const coversMaterial = (material) => (effect) => !effect.materials || effect.mat
 const damageApplies = (damageType, rank) => (effect) =>
   (!effect.damageType || effect.damageType === damageType) && (!effect.ranks || effect.ranks.includes(rank))
 
+/** A race damage effect counts against a monster of one of the races it names. */
+const raceApplies = (race) => (effect) => Boolean(race) && (effect.races ?? []).includes(race)
+
 /**
- * What a fighting member's own legendary effects and the relic's do to its hit.
+ * What a fighting member's own legendary effects and the party's (the relic's and the world's
+ * bestiary's) do to its hit.
  *
- * @param {Effect[]} relic the relic's effects
+ * @param {Effect[]} relic the party's effects: the active relic's and the world's bestiary's
  * @param {Effect[]} held the member's equipment's effects
  * @returns {{ critChance: number, critDamage: number, auraFactor: number, healingFactor: number,
- *   outfitFactor: number, hitFactor: (damageType: string, rank: string | null) => number }}
+ *   outfitFactor: number, hitFactor: (damageType: string, rank: string | null, race?: string | null) => number }}
+ *   `hitFactor` against a monster of a rank and a race; damage and race damage add
  */
 export function memberBonuses(relic, held) {
   const both = [...relic, ...held]
@@ -106,24 +112,15 @@ export function memberBonuses(relic, held) {
     auraFactor: 1 + totalOf(held, 'supportAura'),
     healingFactor: 1 + totalOf(held, 'healing'),
     outfitFactor: 1 + totalOf(held, 'outfitStamina'),
-    hitFactor: (damageType, rank) => speed * (1 + totalOf(both, 'damage', damageApplies(damageType, rank)))
+    hitFactor: (damageType, rank, race = null) => speed *
+      (1 + totalOf(both, 'damage', damageApplies(damageType, rank)) + totalOf(relic, 'raceDamage', raceApplies(race)))
   }
 }
 
 /**
- * The ranks some relic damage effect is limited to, which a party's hits must be worked out for
- * separately. Empty for most relics.
- *
- * @param {Effect[]} relic
- * @returns {string[]}
- */
-export function rankedDamageRanks(relic) {
-  return [...new Set(relic.filter((effect) => effect.effect === 'damage' && effect.ranks).flatMap((effect) => effect.ranks))]
-}
-
-/**
  * @typedef {{ drainFactor: number, poolFactor: number, restTicks: number, staminaPerKill: number,
- *   affixWeakening: number, thorns: number, itemDrop: number, killMaterials: Effect[] }} PartyBonuses
+ *   affixWeakening: number, thorns: number, itemDrop: number, killMaterials: Effect[],
+ *   legendaryPity: number }} PartyBonuses
  */
 
 /**
@@ -146,7 +143,8 @@ export function partyBonuses(relic, heldByMember) {
     affixWeakening: totalOf(relic, 'affixWeakening'),
     thorns: totalOf(relic, 'thorns'),
     itemDrop: totalOf(relic, 'itemDrop'),
-    killMaterials: relic.filter((effect) => effect.effect === 'killMaterials')
+    killMaterials: relic.filter((effect) => effect.effect === 'killMaterials'),
+    legendaryPity: totalOf(relic, 'legendaryPity')
   }
 }
 
@@ -197,19 +195,23 @@ export function tokenBonuses(relic, held, skillId) {
 }
 
 /**
- * The share item upgrades in the room cost less, from its relic.
+ * The share item upgrades in the room cost less, from its relic and its world's other effects.
  *
  * @param {object} project
  * @param {LegendaryIndex | null} index
+ * @param {Effect[]} [worldEffects] the world's bestiary's
  * @returns {number} from 0
  */
-export const upgradeDiscountOf = (project, index) => totalOf(relicEffects(project, index), 'upgradeCost')
+export const upgradeDiscountOf = (project, index, worldEffects = []) =>
+  totalOf([...relicEffects(project, index), ...worldEffects], 'upgradeCost')
 
 /**
- * The factor on the rune circle's health cut, from the room's relic.
+ * The factor on the rune circle's health cut, from the room's relic and its world's other effects.
  *
  * @param {object} project
  * @param {LegendaryIndex | null} index
+ * @param {Effect[]} [worldEffects] the world's bestiary's
  * @returns {number} from 1
  */
-export const runeCircleFactorOf = (project, index) => 1 + totalOf(relicEffects(project, index), 'runeCircle')
+export const runeCircleFactorOf = (project, index, worldEffects = []) =>
+  1 + totalOf([...relicEffects(project, index), ...worldEffects], 'runeCircle')

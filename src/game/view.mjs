@@ -1,5 +1,6 @@
 // A plain summary of the save that a UI can draw without knowing any game rule: levels and
 // progress, materials, upgrades with their next cost, and each project's fight and party.
+import { worldEffectsOf } from './bestiary-effects.mjs'
 import { seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS, WORKBENCH_DISCOUNT_PER_LEVEL } from './constants.mjs'
@@ -103,12 +104,12 @@ function monsterView(monster) {
   }
 }
 
-function projectView(projectId, project, world, names, index) {
+function projectView(projectId, project, world, names, index, content) {
   const prices = {
     workbenchLevel: groupLevel(world.upgrades, 'workbench'),
     level: worldLevel(world.skills),
     materials: world.materials,
-    relicDiscount: upgradeDiscountOf(project, index)
+    relicDiscount: upgradeDiscountOf(project, index, worldEffectsOf(world, content))
   }
   return {
     id: projectId,
@@ -145,7 +146,7 @@ function worldView(worldId, world, names, content, index) {
       return { id: upgradeId, level, cost, affordable, effect: groupEffect(upgradeId, level) }
     }),
     projects: Object.keys(world.projects).sort()
-      .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index)),
+      .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content)),
     coins: world.coins ?? 0,
     market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary })
   }

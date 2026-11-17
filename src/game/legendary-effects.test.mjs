@@ -207,9 +207,10 @@ test('a party with legendary loot hits harder, holds longer and knows its ranked
   const crowned = { chest, legendary: { relics: ['crown-of-the-ossuary'], active: 'crown-of-the-ossuary' } }
   const loaded = partyOf(members, world, crowned, content)
   assert.ok(loaded.hits.physical > plain.hits.physical)
-  assert.deepEqual(loaded.rankedHits.ranks, ['boss', 'legendary'])
-  assert.ok(loaded.rankedHits.hits.physical > loaded.hits.physical)
-  assert.equal(plain.rankedHits, null)
+  const boss = { rank: 'boss', kind: 'boss' }
+  assert.ok(loaded.hitsAgainst(boss).physical > loaded.hits.physical)
+  assert.equal(loaded.hitsAgainst({ rank: 'elite' }).physical, loaded.hits.physical)
+  assert.equal(plain.hitsAgainst(boss).physical, plain.hits.physical)
 })
 
 test('a censer makes its holder heal more and a hauberk makes its wearer\'s outfit count more', () => {

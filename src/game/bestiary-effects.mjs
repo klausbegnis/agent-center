@@ -1,0 +1,74 @@
+// What a world's bestiary gives: for each race, damage against it per mastery level and its own
+// small perk at the levels game/bestiary.json names; for the boss hunter, the effects of each
+// level reached. All of them are effects of the closed set legendary loot uses (scope `world`),
+// which act on every party of the world beside the room's active relic and are summed with it
+// and with legendary equipment under LEGENDARY_EFFECT_CAPS (legendary-effects.mjs). Pure.
+import { bestiaryIndexOf } from './bestiary-content.mjs'
+import { hunterLevelOf, masteryOf } from './bestiary.mjs'
+
+/** @typedef {import('./legendary-effects.mjs').Effect} Effect */
+
+/** An effect given `times` times: one effect with the amount multiplied. */
+const times = (effect, count) => ({ ...effect, amount: effect.amount * count })
+
+/**
+ * What a race's mastery level gives: damage against that race for every level, and its perk once
+ * for every perk level reached. None at level 0.
+ *
+ * @param {import('./bestiary-content.mjs').BestiaryIndex} index
+ * @param {string} raceId
+ * @param {number} level
+ * @returns {Effect[]}
+ */
+export function raceMasteryEffects(index, raceId, level) {
+  const race = index.races.get(raceId)
+  if (!race || level <= 0) return []
+  const effects = [{ ...times(index.perLevel, level), races: [raceId] }]
+  const perks = index.perkLevels.filter((perkLevel) => perkLevel <= level).length
+  if (perks > 0) effects.push(times(race.perk, perks))
+  return effects
+}
+
+/**
+ * What the boss hunter's level gives: the effects of every level up to it.
+ *
+ * @param {import('./bestiary-content.mjs').BestiaryIndex} index
+ * @param {number} level
+ * @returns {Effect[]}
+ */
+export const hunterEffects = (index, level) => index.hunter.levels.slice(0, level).flat().map((effect) => ({ ...effect }))
+
+/**
+ * Every effect a world's bestiary gives now, uncapped (the caps apply where they are summed).
+ *
+ * @param {object | null | undefined} bestiary the world's counters
+ * @param {import('./bestiary-content.mjs').BestiaryIndex | null} index
+ * @returns {Effect[]}
+ */
+export function bestiaryEffects(bestiary, index) {
+  if (!index || !bestiary) return []
+  const races = index.raceIds.flatMap((raceId) => raceMasteryEffects(index, raceId, masteryOf(bestiary, raceId, index)))
+  return [...races, ...hunterEffects(index, hunterLevelOf(bestiary, index))]
+}
+
+/** The effects worked out for a bestiary, by its counters (a new object after every kill) and index. */
+const worked = new WeakMap()
+
+/**
+ * The effects a world's bestiary gives every party of the world, worked out once per state of its
+ * counters. None without a bestiary in the content or before the world's first kill.
+ *
+ * @param {{ bestiary?: object } | null | undefined} world
+ * @param {object} [content] the game content
+ * @returns {Effect[]}
+ */
+export function worldEffectsOf(world, content) {
+  const index = bestiaryIndexOf(content)
+  const bestiary = world?.bestiary
+  if (!index || !bestiary) return []
+  const known = worked.get(bestiary)
+  if (known?.index === index) return known.effects
+  const effects = bestiaryEffects(bestiary, index)
+  worked.set(bestiary, { index, effects })
+  return effects
+}

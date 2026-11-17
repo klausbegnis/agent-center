@@ -72,12 +72,12 @@ export function itemsInUse(project) {
 }
 
 /** Every purchase a world could make now, affordable or not, in a stable order. */
-function purchasesOf(world, index) {
+function purchasesOf(world, index, worldEffects) {
   const workbenchLevel = groupLevel(world.upgrades, 'workbench')
   const level = worldLevel(world.skills)
   const purchases = []
   for (const projectId of Object.keys(world.projects).sort()) {
-    const relicDiscount = upgradeDiscountOf(world.projects[projectId], index)
+    const relicDiscount = upgradeDiscountOf(world.projects[projectId], index, worldEffects)
     for (const item of itemsInUse(world.projects[projectId])) {
       const cost = upgradeCost(item, { workbenchLevel, worldLevel: level, relicDiscount })
       purchases.push({ kind: item.slot, projectId, itemId: item.id, cost })
@@ -99,11 +99,13 @@ const scoreOf = (purchase) =>
  * @param {object} world
  * @param {import('./legendary-content.mjs').LegendaryIndex | null} [index] for relics that make
  *   a room's upgrades cheaper
+ * @param {import('./legendary-effects.mjs').Effect[]} [worldEffects] the world's bestiary's, which
+ *   can make them cheaper too
  * @returns {object | null} `{ kind, cost, projectId?, itemId?, upgradeId? }`
  */
-export function bestAffordablePurchase(world, index = null) {
+export function bestAffordablePurchase(world, index = null, worldEffects = []) {
   let best = null
-  for (const purchase of purchasesOf(world, index)) {
+  for (const purchase of purchasesOf(world, index, worldEffects)) {
     if (!canAfford(world.materials, purchase.cost)) continue
     if (!best || scoreOf(purchase) < scoreOf(best)) best = purchase
   }
@@ -135,13 +137,14 @@ export function applyPurchase(world, purchase) {
  *
  * @param {object} world
  * @param {import('./legendary-content.mjs').LegendaryIndex | null} [index]
+ * @param {import('./legendary-effects.mjs').Effect[]} [worldEffects] the world's bestiary's
  * @returns {{ world: object, purchases: object[] }}
  */
-export function spendWorld(world, index = null) {
+export function spendWorld(world, index = null, worldEffects = []) {
   let current = world
   const purchases = []
   while (purchases.length < SPEND_MAX_PURCHASES) {
-    const purchase = bestAffordablePurchase(current, index)
+    const purchase = bestAffordablePurchase(current, index, worldEffects)
     if (!purchase) break
     current = applyPurchase(current, purchase)
     purchases.push(purchase)

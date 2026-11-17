@@ -41,11 +41,11 @@ const ownsBossItem = (project, index) =>
   legendaryOf(project).relics.some((id) => index.byId.get(id)?.kind === 'boss-relic') || legendaryItems(project).length > 0
 
 /** The pool relic roll: a relic the room lacks, or a step of pity. */
-function rollPoolRelic(project, { rank, seed, index }) {
+function rollPoolRelic(project, { rank, seed, index, pityFactor }) {
   const legendary = legendaryOf(project)
   const missing = index.poolRelicIds.filter((id) => !ownsLegendary(project, id))
   if (missing.length === 0) return { project, drop: null }
-  const chance = legendary.relics.length === 0 ? 1 : RELIC_CHANCE[rank] + RELIC_PITY_STEP * legendary.relicPity
+  const chance = legendary.relics.length === 0 ? 1 : RELIC_CHANCE[rank] + RELIC_PITY_STEP * pityFactor * legendary.relicPity
   if (chanceOf(`${seed}|relic`) >= chance) {
     return { project: withLegendary(project, { ...legendary, relicPity: bumpPity(legendary.relicPity) }), drop: null }
   }
@@ -55,11 +55,11 @@ function rollPoolRelic(project, { rank, seed, index }) {
 }
 
 /** The named boss's own item roll: its relic or equipment when the room lacks it, or pity. */
-function rollBossItem(project, { rank, seed, index, bossId, level }) {
+function rollBossItem(project, { rank, seed, index, bossId, level, pityFactor }) {
   const entry = index.byBoss.get(bossId)
   if (!entry || ownsLegendary(project, entry.id)) return { project, drop: null }
   const legendary = legendaryOf(project)
-  const chance = ownsBossItem(project, index) ? BOSS_ITEM_CHANCE[rank] + BOSS_ITEM_PITY_STEP * legendary.bossPity : 1
+  const chance = ownsBossItem(project, index) ? BOSS_ITEM_CHANCE[rank] + BOSS_ITEM_PITY_STEP * pityFactor * legendary.bossPity : 1
   if (chanceOf(`${seed}|boss-item`) >= chance) {
     return { project: withLegendary(project, { ...legendary, bossPity: bumpPity(legendary.bossPity) }), drop: null }
   }
@@ -76,14 +76,15 @@ function rollBossItem(project, { rank, seed, index, bossId, level }) {
  * rank plus pity; certain while the room owns no boss-owned item). A relic gained first is active.
  *
  * @param {object} project the project after the kill's loot
- * @param {{ monster: object, seed: string, index: import('./legendary-content.mjs').LegendaryIndex | null }} kill
- *   `seed` is the kill's, the one its item drop uses
+ * @param {{ monster: object, seed: string, index: import('./legendary-content.mjs').LegendaryIndex | null,
+ *   pityFactor?: number }} kill `seed` is the kill's, the one its item drop uses; `pityFactor` what
+ *   each step of pity is worth, from 1 (the bestiary's boss hunter makes it more)
  * @returns {{ project: object, drops: LegendaryDrop[] }} the same project when nothing changed
  */
-export function rollLegendaryDrops(project, { monster, seed, index }) {
+export function rollLegendaryDrops(project, { monster, seed, index, pityFactor = 1 }) {
   const rank = rankOf(monster)
   if (!index || monster.kind !== 'boss' || !Object.hasOwn(RELIC_CHANCE, rank)) return { project, drops: [] }
-  const relic = rollPoolRelic(project, { rank, seed, index })
-  const bossItem = rollBossItem(relic.project, { rank, seed, index, bossId: monster.id, level: monster.level })
+  const relic = rollPoolRelic(project, { rank, seed, index, pityFactor })
+  const bossItem = rollBossItem(relic.project, { rank, seed, index, bossId: monster.id, level: monster.level, pityFactor })
   return { project: bossItem.project, drops: [relic.drop, bossItem.drop].filter(Boolean) }
 }

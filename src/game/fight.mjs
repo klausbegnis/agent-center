@@ -1,6 +1,7 @@
 // A project's fight over some ticks of working time: the party its working members make, the
 // monster it meets, kills, rests, rewards and drops. Pure; works on copies and returns them.
 import { bestiaryIndexOf } from './bestiary-content.mjs'
+import { worldEffectsOf } from './bestiary-effects.mjs'
 import { noteKill } from './bestiary.mjs'
 import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
@@ -13,7 +14,6 @@ import {
   legendaryIndexOf,
   memberBonuses,
   partyBonuses,
-  rankedDamageRanks,
   relicEffects,
   runeCircleFactorOf,
   withKillMaterials
@@ -31,22 +31,40 @@ const REST_TICKS = Math.ceil(REST_SECONDS / TICK_SECONDS)
  *   is a newcomer character that is not in the save
  * @typedef {{ hits: { physical: number, magical: number }, luck: number, outfitFactor: number,
  *   defenders: number[], supporters: number[], size: number,
- *   rankedHits: { ranks: string[], hits: { physical: number, magical: number } } | null,
- *   legendary: import('./legendary-effects.mjs').PartyBonuses }} Party `rankedHits` are the hits
- *   against the ranks a relic's damage is limited to; `legendary` the loot's party bonuses
+ *   hitsAgainst: (monster: object) => { physical: number, magical: number },
+ *   legendary: import('./legendary-effects.mjs').PartyBonuses }} Party `hits` are against a monster
+ *   no effect singles out; `hitsAgainst` against a given monster, whose rank or race a relic, a
+ *   piece of equipment or the bestiary may single out; `legendary` the party bonuses of the
+ *   relic, the equipment and the bestiary
  */
 
-/** The party's hits by damage type against a monster of `rank` (null: any rank no relic names). */
-function hitsAgainstRank(hitters, rank) {
-  const scaled = hitters.map((hitter) => ({ ...hitter, amount: hitter.amount * hitter.bonuses.hitFactor(hitter.type, rank) }))
+/** The party's hits by damage type against a monster of `rank` and `race` (null: any). */
+function hitsAgainstMonster(hitters, rank, race) {
+  const scaled = hitters.map((hitter) => ({ ...hitter, amount: hitter.amount * hitter.bonuses.hitFactor(hitter.type, rank, race) }))
   const { physical, magical } = partyHits(scaled)
   return { physical, magical }
 }
 
 /**
+ * The party's hits against each rank and race met, worked out once for each: a fight meets few.
+ *
+ * @returns {(monster: object) => { physical: number, magical: number }}
+ */
+function hitsByMonster(hitters) {
+  const known = new Map()
+  return (monster) => {
+    const rank = rankOf(monster)
+    const race = typeof monster?.race === 'string' ? monster.race : null
+    const key = `${rank}|${race ?? ''}`
+    if (!known.has(key)) known.set(key, hitsAgainstMonster(hitters, rank, race))
+    return known.get(key)
+  }
+}
+
+/**
  * What a working party brings to every tick, whatever the monster: its hits by damage type, its
  * luck, its outfits, the resilience of its defenders and medicine of its supporters, and what its
- * room's active relic and its members' legendary equipment add.
+ * room's active relic, its members' legendary equipment and its world's bestiary add.
  *
  * @param {Member[]} members
  * @param {{ skills: object }} world
@@ -58,7 +76,8 @@ export function partyOf(members, world, project, content) {
   const itemOf = (id) => (id ? findItem(project.chest, id) : null)
   const speed = engineeringSpeed(world.skills)
   const index = legendaryIndexOf(content)
-  const relic = relicEffects(project, index)
+  // The world's bestiary acts on the party as the relic does, and adds to it under the same caps.
+  const relic = [...relicEffects(project, index), ...worldEffectsOf(world, content)]
   const held = members.map(({ character }) => heldEffects(project, character, index))
   const bonuses = held.map((own) => memberBonuses(relic, own))
   const hitters = members.map(({ character, tokensPerMinute }, at) => {
@@ -67,7 +86,6 @@ export function partyOf(members, world, project, content) {
     const options = { character, skills: world.skills, weaponFactor, tokensPerMinute, speed, critBonus, critDamageBonus }
     return { class: character.class, ...characterHit(options), auraFactor, bonuses: bonuses[at] }
   })
-  const ranks = rankedDamageRanks(relic)
   const ofClass = (className, attribute) => members
     .map(({ character }, at) => ({ character, at }))
     .filter(({ character }) => character.class === className)
@@ -76,8 +94,8 @@ export function partyOf(members, world, project, content) {
   const outfits = members.map(({ character }, at) =>
     itemFactor(itemOf(character.equipment?.outfit)) * bonuses[at].outfitFactor)
   return {
-    hits: hitsAgainstRank(hitters, null),
-    rankedHits: ranks.length ? { ranks, hits: hitsAgainstRank(hitters, ranks[0]) } : null,
+    hits: hitsAgainstMonster(hitters, null, null),
+    hitsAgainst: hitsByMonster(hitters),
     luck: members.reduce((sum, { character }) => sum + (character.attributes.luck ?? 0), 0),
     outfitFactor: outfits.reduce((sum, factor) => sum + factor, 0) / Math.max(1, outfits.length),
     defenders: ofClass('defense', 'resilience'),
@@ -87,10 +105,8 @@ export function partyOf(members, world, project, content) {
   }
 }
 
-/** The party's hits against a monster: the ranked ones when a relic's damage names its rank. */
-function hitsAgainst(party, monster) {
-  return party.rankedHits?.ranks.includes(rankOf(monster)) ? party.rankedHits.hits : party.hits
-}
+/** The party's hits against a monster: its own when the party knows them, its plain ones otherwise. */
+const hitsAgainst = (party, monster) => party.hitsAgainst?.(monster) ?? party.hits
 
 /**
  * The party against a monster of a level: defence and healing as ratios of the reference
@@ -134,7 +150,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     referencePartyHit,
     partySize
   })
-  const runeCut = runeCircleShare(groupLevel(world.upgrades, 'runeCircle')) * runeCircleFactorOf(project, legendaryIndexOf(content))
+  const runeFactor = runeCircleFactorOf(project, legendaryIndexOf(content), worldEffectsOf(world, content))
+  const runeCut = runeCircleShare(groupLevel(world.upgrades, 'runeCircle')) * runeFactor
   const hp = monster.maxHp * (1 - runeCut)
   return { ...monster, hp }
 }
@@ -143,8 +160,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
  * A boss kill's legendary drops, put in the fight's working copy of the project: relics and pity
  * in its `legendary`, equipment in its chest. Returns what dropped.
  */
-function settleLegendaryDrops(state, { monster, seed, content }) {
-  const found = rollLegendaryDrops(state, { monster, seed, index: legendaryIndexOf(content) })
+function settleLegendaryDrops(state, { monster, seed, content, pityFactor }) {
+  const found = rollLegendaryDrops(state, { monster, seed, index: legendaryIndexOf(content), pityFactor })
   if (found.project === state) return []
   state.chest = found.project.chest
   if (found.project.legendary) state.legendary = found.project.legendary
@@ -173,7 +190,8 @@ function settleKill(state, context) {
     salvage = dropped.salvage
     state.materials = addMaterials(state.materials, salvage)
   }
-  const legendary = settleLegendaryDrops(state, { monster, seed, content })
+  const pityFactor = 1 + (loot?.legendaryPity ?? 0)
+  const legendary = settleLegendaryDrops(state, { monster, seed, content, pityFactor })
   const noted = noteKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content) })
   context.tally.bestiary = noted.bestiary
   events.push({
