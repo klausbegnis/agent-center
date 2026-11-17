@@ -1,10 +1,13 @@
-// The bestiary as a UI draws it. Once for the content: each race's name and a fixed portrait (a
-// generated look of that race from a seed of its own, so a card never changes), each boss's name,
-// epithet, look and legendary item. Per world: what it has discovered and killed, each race's
-// mastery with its thresholds and bonuses now and next, each boss beaten, the boss hunter's track
-// and the bonuses of the whole bestiary. Bonuses are effects, which the UI words. Pure.
+// The bestiary as a UI draws it. Once for the content: each race's name, title and a fixed
+// portrait (a generated look of that race from a seed of its own, so a card never changes), each
+// boss's name, epithet, look and legendary item, and the points of each rank. Per world: what it
+// has discovered and killed, each race's points, mastery level (and prestige past the powered
+// levels) with the points around it and its bonuses now and next, each boss beaten, the hunter
+// rank, the boss hunter's track and the bonuses of the whole bestiary. Bonuses are effects, which
+// the UI words. Pure.
 import { bestiaryIndexOf } from './bestiary-content.mjs'
-import { bestiaryEffects, hunterEffects, raceMasteryEffects } from './bestiary-effects.mjs'
+import { bestiaryEffects, hunterEffects, raceMasteryEffects, rankEffects } from './bestiary-effects.mjs'
+import { ladderPlace } from './bestiary-ladder.mjs'
 import {
   BOSS_BEATEN,
   BOSS_FIRST_DAY,
@@ -13,7 +16,9 @@ import {
   distinctBossesOf,
   eliteKillsOf,
   killsOf,
-  levelFor
+  levelFor,
+  pointsOf,
+  totalPointsOf
 } from './bestiary.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { legendaryItems, legendaryOf } from './legendary.mjs'
@@ -39,7 +44,7 @@ const contentViews = new WeakMap()
 
 /**
  * What the content's bestiary shows, the same for every world: races with name and portrait, bosses
- * with name, epithet, race, look and their legendary item, and the thresholds. Null without one.
+ * with name, epithet, race, look and their legendary item, and the points and levels. Null without one.
  * Built once per content.
  *
  * @param {object} content the game content
@@ -59,7 +64,7 @@ function buildContentView(content) {
     races: index.raceIds.map((raceId) => ({
       id: raceId,
       name: index.races.get(raceId).name,
-      thresholds: [...index.races.get(raceId).thresholds],
+      title: index.races.get(raceId).title,
       look: portraitOf(content.races, raceById.get(raceId))
     })),
     bosses: (content.bosses?.bosses ?? []).map((boss) => ({
@@ -70,7 +75,9 @@ function buildContentView(content) {
       look: bossLook(content, boss.id),
       item: legendary?.byBoss.get(boss.id)?.id ?? null
     })),
-    perkLevels: [...index.perkLevels],
+    points: { ...index.points },
+    levels: index.levels,
+    perkEvery: index.perkEvery,
     hunterThresholds: [...index.hunter.thresholds]
   }
 }
@@ -94,22 +101,31 @@ function trackOf(count, thresholds) {
 }
 
 function raceView(index, raceId, counter) {
-  const kills = killsOf(counter)
-  const track = trackOf(kills, index.races.get(raceId).thresholds)
+  const points = pointsOf(counter, index)
+  const { level, from, to } = ladderPlace(index.races.get(raceId).ladder, points)
+  const track = { level, maxLevel: index.levels, prestige: Math.max(0, level - index.levels), from, to }
   // An unknown race shows only that it is unknown: what it would give stays a surprise.
-  if (!counter) return { id: raceId, discovered: false, kills: 0, ...track }
-  const next = track.to === null ? null : raceMasteryEffects(index, raceId, track.level + 1)
+  if (!counter) return { id: raceId, discovered: false, kills: 0, points: 0, ...track }
   return {
     id: raceId,
     discovered: true,
-    kills,
+    kills: killsOf(counter),
+    points,
     ranks: counter.slice(0, RACE_FIRST_DAY),
     eliteKills: eliteKillsOf(counter),
     firstDay: counter[RACE_FIRST_DAY],
     ...track,
-    now: raceMasteryEffects(index, raceId, track.level),
-    next
+    now: raceMasteryEffects(index, raceId, level),
+    // Past the powered levels the next one gives nothing more: only its prestige rank.
+    next: level < index.levels ? raceMasteryEffects(index, raceId, level + 1) : []
   }
+}
+
+/** The world's hunter rank: the points of the whole bestiary on the rank ladder, and its bonus. */
+function rankView(index, bestiary) {
+  const points = totalPointsOf(bestiary, index)
+  const { level, from, to } = ladderPlace(index.rank.ladder, points)
+  return { rank: level, points, from, to, now: rankEffects(index, level), next: rankEffects(index, level + 1) }
 }
 
 /** The legendary ids any room of the world has found: relics owned and legendary items in chests. */
@@ -167,6 +183,7 @@ export function worldBestiaryView(world, content) {
     raceCount: races.length,
     beaten: bosses.filter((boss) => boss.discovered).length,
     bossCount: bosses.length,
+    rank: rankView(index, bestiary),
     hunter: hunterView(index, bestiary),
     bonuses: mergedEffects(bestiaryEffects(world.bestiary, index)),
     races,

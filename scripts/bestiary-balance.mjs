@@ -29,14 +29,14 @@ export function bestiaryProgress(world, content) {
     bosses: distinctBossesOf(bestiary, index),
     hunter: hunterLevelOf(bestiary, index),
     meanRaceDamage: raceDamage / index.raceIds.length,
-    perks: index.raceIds.filter((raceId, at) => levels[at] >= index.perkLevels[0]).length
+    perks: index.raceIds.filter((raceId, at) => levels[at] >= index.perkEvery).length
   }
 }
 
 /** Every race at the top threshold and every boss of the roster beaten once. */
 function maxedBestiary(index) {
   const races = Object.fromEntries(index.raceIds.map((raceId) =>
-    [raceId, [index.races.get(raceId).thresholds.at(-1), 0, 0, 0, 0, 0, 0]]))
+    [raceId, [1e9, 0, 0, 0, 0, 0, 0]]))
   const bosses = Object.fromEntries(index.bossIdList.map((bossId) => [bossId, [1, 0, 0]]))
   return { races, bosses }
 }

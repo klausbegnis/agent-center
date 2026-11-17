@@ -1,8 +1,10 @@
 // The bestiary's counters, kept per world: how many monsters of each race the world has killed, by
 // rank, how many times it beat each named boss of the roster (and how many of those as
-// legendary), the hand-made monsters under "others", and the day of each first kill. Mastery
-// levels and the boss hunter's level follow from them and from the thresholds of
-// game/bestiary.json. Pure; the save keeps the counters as short lists of numbers.
+// legendary), the hand-made monsters under "others", and the day of each first kill. A kill is
+// worth points by its rank; a race's mastery level, the world's hunter rank and the boss hunter's
+// level follow from them and from the ladders of game/bestiary.json. Pure; the save keeps the
+// counters as short lists of numbers.
+import { ladderLevel } from './bestiary-ladder.mjs'
 import { MARKET_DAY_MS } from './constants.mjs'
 import { rankOf } from './monsters.mjs'
 
@@ -22,8 +24,9 @@ const ELITE_RANKS = new Set(['elite', 'champion', 'boss', 'legendary'])
 /**
  * @typedef {{ races: Record<string, number[]>, bosses: Record<string, number[]>,
  *   others?: number[] }} Bestiary a world's counters, as the save keeps them
- * @typedef {{ kind: 'race' | 'boss' | 'hunter', id?: string, discovered?: true, level?: number }} News
- *   what a kill made new: a first kill of a race or a boss, a mastery level, a hunter level
+ * @typedef {{ kind: 'race' | 'boss' | 'hunter' | 'rank', id?: string, discovered?: true,
+ *   level?: number }} News what a kill made new: a first kill of a race or a boss, a mastery level,
+ *   a boss hunter level, a hunter rank
  */
 
 /**
@@ -63,7 +66,16 @@ export const eliteKillsOf = (counter) =>
 export const levelFor = (count, thresholds) => thresholds.filter((threshold) => count >= threshold).length
 
 /**
- * A race's mastery level in a world.
+ * The points a race's (or the others') list is worth: each kill its rank's points.
+ *
+ * @param {number[] | undefined} counter
+ * @param {import('./bestiary-content.mjs').BestiaryIndex} index
+ */
+export const pointsOf = (counter, index) =>
+  (counter ? BESTIARY_RANKS.reduce((sum, rank, at) => sum + counter[at] * index.points[rank], 0) : 0)
+
+/**
+ * A race's mastery level in a world: past the last powered level it goes on as prestige.
  *
  * @param {Bestiary | undefined} bestiary
  * @param {string} raceId
@@ -71,8 +83,26 @@ export const levelFor = (count, thresholds) => thresholds.filter((threshold) => 
  */
 export function masteryOf(bestiary, raceId, index) {
   const race = index.races.get(raceId)
-  return race ? levelFor(killsOf(bestiary?.races[raceId]), race.thresholds) : 0
+  return race ? ladderLevel(race.ladder, pointsOf(bestiary?.races[raceId], index)) : 0
 }
+
+/**
+ * Every point of a world's bestiary: its races' and its others'.
+ *
+ * @param {Bestiary | undefined} bestiary
+ * @param {import('./bestiary-content.mjs').BestiaryIndex} index
+ */
+export const totalPointsOf = (bestiary, index) =>
+  Object.entries(bestiary?.races ?? {}).filter(([raceId]) => index.races.has(raceId))
+    .reduce((sum, [, counter]) => sum + pointsOf(counter, index), 0) + pointsOf(bestiary?.others, index)
+
+/**
+ * The world's hunter rank: the level its bestiary's points reach on the rank ladder. No end.
+ *
+ * @param {Bestiary | undefined} bestiary
+ * @param {import('./bestiary-content.mjs').BestiaryIndex} index
+ */
+export const hunterRankOf = (bestiary, index) => ladderLevel(index.rank.ladder, totalPointsOf(bestiary, index))
 
 /**
  * How many bosses of the roster the world has beaten at least once: the boss hunter's count.
@@ -141,6 +171,7 @@ export function noteKill(bestiary, monster, { day, index }) {
   if (!index) return { bestiary: bestiary ?? null, news: [] }
   const rank = rankOf(monster)
   let next = bestiary ?? emptyBestiary()
+  const rankBefore = hunterRankOf(next, index)
   const news = []
   if (typeof monster.race === 'string' && index.races.has(monster.race)) {
     const noted = noteRace(next, monster.race, { rank, day, index })
@@ -154,6 +185,8 @@ export function noteKill(bestiary, monster, { day, index }) {
     next = noted.bestiary
     news.push(...noted.news)
   }
+  const rankAfter = hunterRankOf(next, index)
+  if (rankAfter > rankBefore) news.push({ kind: 'rank', level: rankAfter })
   return { bestiary: next, news }
 }
 
@@ -179,6 +212,7 @@ export function normalizeBestiary(value) {
   if (!isPlainObject(value)) return null
   const bestiary = { races: kept(value.races, isRaceCounter), bosses: kept(value.bosses, isBossCounter) }
   if (isRaceCounter(value.others)) bestiary.others = [...value.others]
-  const isEmpty = Object.keys(bestiary.races).length === 0 && Object.keys(bestiary.bosses).length === 0 && !bestiary.others
+  const isEmpty = Object.keys(bestiary.races).length === 0 && Object.keys(bestiary.bosses).length === 0 &&
+    !bestiary.others
   return isEmpty ? null : bestiary
 }

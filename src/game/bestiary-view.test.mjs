@@ -42,25 +42,30 @@ test('content without a bestiary shows none', () => {
 test('a world that never killed has every race and boss undiscovered and no bonus', () => {
   const view = worldBestiaryView(world(), content)
   assert.deepEqual([view.discovered, view.raceCount, view.beaten, view.bossCount], [0, 20, 0, 55])
-  assert.deepEqual(view.races[0], { id: 'goblin', discovered: false, kills: 0, level: 0, maxLevel: 5, from: 0, to: 10 })
+  assert.deepEqual(view.races[0],
+    { id: 'goblin', discovered: false, kills: 0, points: 0, level: 0, maxLevel: 25, prestige: 0, from: 0, to: 2 })
   assert.deepEqual(view.bonuses, [])
   assert.equal(view.others, null)
-  assert.deepEqual([view.hunter.level, view.hunter.count, view.hunter.to], [0, 0, 5])
+  assert.deepEqual([view.hunter.level, view.hunter.count, view.hunter.to], [0, 0, 1])
+  assert.deepEqual([view.rank.rank, view.rank.points, view.rank.to], [0, 0, 20])
+  assert.equal(view.rank.next[0].effect, 'killMaterials')
 })
 
-test('a race shows its kills by rank, its level, the thresholds around it and its bonuses now and next', () => {
-  const view = worldBestiaryView(world({ races: { goblin: [200, 5, 4, 1, 1, 0, 20_400] }, bosses: {} }), content)
+test('a race shows its kills by rank, its points, its level, the points around it and its bonuses', () => {
+  const view = worldBestiaryView(world({ races: { goblin: [60, 5, 4, 1, 0, 0, 20_400] }, bosses: {} }), content)
   const goblin = view.races.find((race) => race.id === 'goblin')
-  assert.deepEqual([goblin.kills, goblin.eliteKills, goblin.firstDay, goblin.level, goblin.from, goblin.to], [211, 6, 20_400, 3, 200, 800])
-  assert.deepEqual(goblin.ranks, [200, 5, 4, 1, 1, 0])
+  assert.deepEqual([goblin.kills, goblin.points, goblin.eliteKills, goblin.firstDay], [70, 60 + 10 + 20 + 10, 5, 20_400])
+  assert.deepEqual([goblin.level, goblin.from, goblin.to, goblin.prestige], [10, 90, 119, 0])
+  assert.deepEqual(goblin.ranks, [60, 5, 4, 1, 0, 0])
   assert.deepEqual(goblin.now.map((effect) => effect.effect), ['raceDamage', 'itemDrop'])
-  assert.deepEqual(goblin.next.map((effect) => [effect.effect, effect.amount]), [['raceDamage', 0.04], ['itemDrop', 0.02]])
+  assert.deepEqual(goblin.next.map((effect) => effect.effect), ['raceDamage', 'itemDrop'])
+  assert.ok(Math.abs(goblin.next[0].amount - 0.022) < 1e-12)
 })
 
-test('a race at its top level has no next threshold or bonus', () => {
-  const view = worldBestiaryView(world({ races: { slime: [3000, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
+test('past its last powered level a race goes on in prestige, with nothing more to give', () => {
+  const view = worldBestiaryView(world({ races: { slime: [8000, 0, 0, 0, 0, 0, 1] }, bosses: {} }), content)
   const slime = view.races.find((race) => race.id === 'slime')
-  assert.deepEqual([slime.level, slime.to, slime.next], [5, null, null])
+  assert.deepEqual([slime.level, slime.prestige, slime.from, slime.to, slime.next], [26, 1, 7217, 9456, []])
 })
 
 test('a boss shows its wins, and whether a room of the world found its item', () => {
@@ -76,9 +81,10 @@ test('the hunter counts distinct bosses and the world\'s bonuses add up by kind'
   const bosses = Object.fromEntries(content.bosses.bosses.slice(0, 15).map((boss) => [boss.id, [2, 0, 1]]))
   const races = { orc: [40, 0, 0, 0, 0, 0, 1], goblin: [10, 0, 0, 0, 0, 0, 1] }
   const view = worldBestiaryView(world({ races, bosses, others: [3, 0, 0, 0, 0, 0, 5] }), content)
-  assert.deepEqual([view.hunter.count, view.hunter.level, view.hunter.from, view.hunter.to], [15, 2, 15, 30])
+  assert.deepEqual([view.hunter.count, view.hunter.level, view.hunter.from, view.hunter.to], [15, 3, 15, 30])
+  assert.deepEqual([view.rank.points, view.rank.rank], [53, 2])
   assert.deepEqual(view.bonuses.map((effect) => effect.effect).sort(),
-    ['damage', 'legendaryPity', 'raceDamage', 'raceDamage'])
+    ['damage', 'damage', 'killMaterials', 'legendaryPity', 'raceDamage', 'raceDamage'])
   assert.deepEqual(view.others, { kills: 3, firstDay: 5 })
 })
 

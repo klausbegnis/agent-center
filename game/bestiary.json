@@ -1,38 +1,37 @@
 {
-  "mastery": {
-    "thresholds": [10, 50, 200, 800, 3000],
-    "perLevel": { "effect": "raceDamage", "scope": "world", "amount": 0.01 },
-    "perkLevels": [3, 5]
-  },
+  "points": {"normal": 1, "veteran": 2, "elite": 5, "champion": 10, "boss": 25, "legendary": 60},
+  "mastery": {"levels": 25, "firstCost": 2, "growth": 1.31, "perLevel": {"effect": "raceDamage", "scope": "world", "amount": 0.002}, "perkEvery": 5},
   "races": [
-    { "id": "goblin", "name": "Goblins", "perk": { "effect": "itemDrop", "scope": "world", "amount": 0.02 } },
-    { "id": "orc", "name": "Orcs", "perk": { "effect": "damage", "scope": "world", "amount": 0.005, "damageType": "physical" } },
-    { "id": "troll", "name": "Trolls", "perk": { "effect": "affixWeakening", "scope": "world", "amount": 0.005 } },
-    { "id": "ogre", "name": "Ogres", "perk": { "effect": "staminaPool", "scope": "world", "amount": 0.01 } },
-    { "id": "human", "name": "Humans", "perk": { "effect": "characterXp", "scope": "world", "amount": 0.005 } },
-    { "id": "skeleton", "name": "Skeletons", "scale": 1.5, "perk": { "effect": "staminaDrain", "scope": "world", "amount": 0.005 } },
-    { "id": "zombie", "name": "Zombies", "scale": 1.5, "perk": { "effect": "gatherHours", "scope": "world", "amount": 0.1 } },
-    { "id": "vampire", "name": "Vampires", "scale": 1.5, "perk": { "effect": "staminaPerKill", "scope": "world", "amount": 0.005 } },
-    { "id": "werewolf", "name": "Werewolves", "perk": { "effect": "critDamage", "scope": "world", "amount": 0.02 } },
-    { "id": "demon", "name": "Demons", "perk": { "effect": "damage", "scope": "world", "amount": 0.01, "ranks": ["elite", "champion"] } },
-    { "id": "lizardfolk", "name": "Lizardfolk", "perk": { "effect": "gatherXp", "scope": "world", "amount": 0.01 } },
-    { "id": "minotaur", "name": "Minotaurs", "perk": { "effect": "upgradeCost", "scope": "world", "amount": 0.01 } },
-    { "id": "dragon", "name": "Dragons", "perk": { "effect": "damage", "scope": "world", "amount": 0.005, "damageType": "magical" } },
-    { "id": "spider", "name": "Spiders", "perk": { "effect": "affixWeakening", "scope": "world", "amount": 0.02 } },
-    { "id": "insect", "name": "Insects", "perk": { "effect": "gatherHours", "scope": "world", "amount": 0.1 } },
-    { "id": "slime", "name": "Slimes", "perk": { "effect": "killMaterials", "scope": "world", "amount": 0.01 } },
-    { "id": "elemental", "name": "Elementals", "perk": { "effect": "gatherXp", "scope": "world", "amount": 0.01 } },
-    { "id": "golem", "name": "Golems", "perk": { "effect": "thorns", "scope": "world", "amount": 0.005 } },
-    { "id": "ghost", "name": "Ghosts", "scale": 1.5, "perk": { "effect": "runeCircle", "scope": "world", "amount": 0.01 } },
-    { "id": "treant", "name": "Treants", "perk": { "effect": "upgradeCost", "scope": "world", "amount": 0.01 } }
+    {"id": "goblin", "name": "Goblins", "title": "Goblin-bane", "perk": {"effect": "itemDrop", "scope": "world", "amount": 0.008}},
+    {"id": "orc", "name": "Orcs", "title": "Orc-bane", "perk": {"effect": "damage", "scope": "world", "amount": 0.002, "damageType": "physical"}},
+    {"id": "troll", "name": "Trolls", "title": "Troll-bane", "perk": {"effect": "affixWeakening", "scope": "world", "amount": 0.002}},
+    {"id": "ogre", "name": "Ogres", "title": "Ogre-bane", "perk": {"effect": "staminaPool", "scope": "world", "amount": 0.004}},
+    {"id": "human", "name": "Humans", "title": "Duellist", "perk": {"effect": "characterXp", "scope": "world", "amount": 0.002}},
+    {"id": "skeleton", "name": "Skeletons", "title": "Bonebreaker", "scale": 1.5, "perk": {"effect": "staminaDrain", "scope": "world", "amount": 0.002}},
+    {"id": "zombie", "name": "Zombies", "title": "Gravewarden", "scale": 1.5, "perk": {"effect": "gatherHours", "scope": "world", "amount": 0.04}},
+    {"id": "vampire", "name": "Vampires", "title": "Stake-bearer", "scale": 1.5, "perk": {"effect": "staminaPerKill", "scope": "world", "amount": 0.002}},
+    {"id": "werewolf", "name": "Werewolves", "title": "Silverblade", "perk": {"effect": "critDamage", "scope": "world", "amount": 0.008}},
+    {"id": "demon", "name": "Demons", "title": "Demon-bane", "perk": {"effect": "damage", "scope": "world", "amount": 0.004, "ranks": ["elite", "champion"]}},
+    {"id": "lizardfolk", "name": "Lizardfolk", "title": "Scale-bane", "perk": {"effect": "gatherXp", "scope": "world", "amount": 0.004}},
+    {"id": "minotaur", "name": "Minotaurs", "title": "Maze-runner", "perk": {"effect": "upgradeCost", "scope": "world", "amount": 0.004}},
+    {"id": "dragon", "name": "Dragons", "title": "Dragon-slayer", "perk": {"effect": "damage", "scope": "world", "amount": 0.002, "damageType": "magical"}},
+    {"id": "spider", "name": "Spiders", "title": "Web-cutter", "perk": {"effect": "affixWeakening", "scope": "world", "amount": 0.008}},
+    {"id": "insect", "name": "Insects", "title": "Swatter", "perk": {"effect": "gatherHours", "scope": "world", "amount": 0.04}},
+    {"id": "slime", "name": "Slimes", "title": "Slime-scourer", "perk": {"effect": "killMaterials", "scope": "world", "amount": 0.004}},
+    {"id": "elemental", "name": "Elementals", "title": "Storm-tamer", "perk": {"effect": "gatherXp", "scope": "world", "amount": 0.004}},
+    {"id": "golem", "name": "Golems", "title": "Stone-breaker", "perk": {"effect": "thorns", "scope": "world", "amount": 0.002}},
+    {"id": "ghost", "name": "Ghosts", "title": "Ghost-binder", "scale": 1.5, "perk": {"effect": "runeCircle", "scope": "world", "amount": 0.004}},
+    {"id": "treant", "name": "Treants", "title": "Woodsman", "perk": {"effect": "upgradeCost", "scope": "world", "amount": 0.004}}
   ],
+  "rank": {"firstCost": 20, "growth": 1.25, "half": 20, "effect": {"effect": "killMaterials", "scope": "world", "amount": 0.02}},
   "hunter": {
-    "thresholds": [5, 15, 30, 55],
+    "thresholds": [1, 5, 15, 30, 55],
     "levels": [
-      [{ "effect": "damage", "scope": "world", "amount": 0.01, "ranks": ["boss", "legendary"] }],
-      [{ "effect": "legendaryPity", "scope": "world", "amount": 0.25 }],
-      [{ "effect": "damage", "scope": "world", "amount": 0.01, "ranks": ["boss", "legendary"] }],
-      [{ "effect": "legendaryPity", "scope": "world", "amount": 0.25 }]
+      [{"effect": "damage", "scope": "world", "amount": 0.005, "ranks": ["boss", "legendary"]}],
+      [{"effect": "legendaryPity", "scope": "world", "amount": 0.15}],
+      [{"effect": "damage", "scope": "world", "amount": 0.005, "ranks": ["boss", "legendary"]}],
+      [{"effect": "legendaryPity", "scope": "world", "amount": 0.15}],
+      [{"effect": "damage", "scope": "world", "amount": 0.005, "ranks": ["boss", "legendary"]}, {"effect": "legendaryPity", "scope": "world", "amount": 0.2}]
     ]
   }
 }
