@@ -23,7 +23,8 @@ const ELITE_RANKS = new Set(['elite', 'champion', 'boss', 'legendary'])
 
 /**
  * @typedef {{ races: Record<string, number[]>, bosses: Record<string, number[]>,
- *   others?: number[] }} Bestiary a world's counters, as the save keeps them
+ *   others?: number[], filled?: number }} Bestiary a world's counters, as the save keeps them;
+ *   `filled` the kills given to it once from the rooms' counts (bestiary-backfill.mjs)
  * @typedef {{ kind: 'race' | 'boss' | 'hunter' | 'rank', id?: string, discovered?: true,
  *   level?: number }} News what a kill made new: a first kill of a race or a boss, a mastery level,
  *   a boss hunter level, a hunter rank
@@ -212,7 +213,9 @@ export function normalizeBestiary(value) {
   if (!isPlainObject(value)) return null
   const bestiary = { races: kept(value.races, isRaceCounter), bosses: kept(value.bosses, isBossCounter) }
   if (isRaceCounter(value.others)) bestiary.others = [...value.others]
+  // The mark of the one back-fill: kept even on an empty bestiary, so it never runs again.
+  if (Number.isSafeInteger(value.filled) && value.filled >= 0) bestiary.filled = value.filled
   const isEmpty = Object.keys(bestiary.races).length === 0 && Object.keys(bestiary.bosses).length === 0 &&
-    !bestiary.others
+    !bestiary.others && bestiary.filled === undefined
   return isEmpty ? null : bestiary
 }

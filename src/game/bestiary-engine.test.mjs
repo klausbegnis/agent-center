@@ -122,7 +122,7 @@ test('the save check refuses counters the engine would not write', () => {
   assert.match(engine.cleanSave(empty).problem, /counts no kill/)
   const legendary = withBestiary((bestiary) => { bestiary.bosses.skrix = [1, 2, 400] })
   assert.match(engine.cleanSave(legendary).problem, /bestiary.bosses.skrix.1 is more than its wins/)
-  const nothing = withBestiary((bestiary) => { bestiary.races = {}; delete bestiary.others })
+  const nothing = withBestiary((bestiary) => { bestiary.races = {}; delete bestiary.others; delete bestiary.filled })
   assert.match(engine.cleanSave(nothing).problem, /counts nothing/)
 })
 

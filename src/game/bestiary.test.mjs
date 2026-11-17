@@ -139,14 +139,17 @@ test('the game day changes at midnight UTC', () => {
   assert.equal(gameDayOf(Date.UTC(2026, 0, 6)), gameDayOf(Date.UTC(2026, 0, 5)) + 1)
 })
 
-test('migrating keeps counters the engine writes and drops the others', () => {
+test('migrating keeps counters the engine writes and the back-fill mark, and drops the others', () => {
   const stored = {
     races: { goblin: [3, 0, 1, 0, 0, 0, 20_000], slime: [0, 0, 0, 0, 0, 0, 20_000], orc: [1, 2] },
     bosses: { skrix: [2, 1, 20_001], gorrath: [1, 2, 20_002], morvash: [0, 0, 1] },
-    others: 'many'
+    others: 'many',
+    filled: 12
   }
   assert.deepEqual(normalizeBestiary(stored),
-    { races: { goblin: [3, 0, 1, 0, 0, 0, 20_000] }, bosses: { skrix: [2, 1, 20_001] } })
+    { races: { goblin: [3, 0, 1, 0, 0, 0, 20_000] }, bosses: { skrix: [2, 1, 20_001] }, filled: 12 })
   assert.equal(normalizeBestiary(undefined), null)
   assert.equal(normalizeBestiary({ races: {}, bosses: {} }), null)
+  assert.deepEqual(normalizeBestiary({ races: {}, bosses: {}, filled: 0 }), { races: {}, bosses: {}, filled: 0 })
+  assert.equal(normalizeBestiary({ races: {}, bosses: {}, filled: -1 }), null)
 })
