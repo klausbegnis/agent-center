@@ -6,7 +6,7 @@ import { bestiaryIndexOf } from './bestiary-content.mjs'
 import { gameDayOf } from './bestiary.mjs'
 import { createCharacter, seasoning } from './characters.mjs'
 import { findItem } from './chest.mjs'
-import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
+import { GATHER_XP_PER_HOUR, GEAR_GROWTH, MARKET_MAX_COINS, MAX_FIGHT_TICKS_PER_ADVANCE, TICK_SECONDS } from './constants.mjs'
 import { playFight, partyOf, spawnMonster } from './fight.mjs'
 import { activeHours, gather, gatherRate } from './gathering.mjs'
 import { playRun } from './instance-fight.mjs'
@@ -145,9 +145,10 @@ function advanceProject(world, { worldId, projectId, readings, from, to, content
   return { world: withProjectIn(current, projectId, fought), events: [...(inside?.events ?? []), ...fight.events] }
 }
 
-/** The world with what a run paid: materials, its bestiary's counts and its instance progress. */
+/** The world with what a run paid: materials, coins, its bestiary's counts and its instance progress. */
 function withRunPaid(world, ran) {
-  const paid = { ...world, materials: addMaterials(world.materials, ran.materials) }
+  const coins = Math.min(MARKET_MAX_COINS, (world.coins ?? 0) + ran.coins)
+  const paid = { ...world, coins, materials: addMaterials(world.materials, ran.materials) }
   if (ran.bestiary) paid.bestiary = ran.bestiary
   if (ran.instances) paid.instances = ran.instances
   return paid

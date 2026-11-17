@@ -209,7 +209,8 @@ export function createEngine({ content }) {
       legendary: content.legendary,
       bestiary: content.bestiary,
       bosses: content.bosses,
-      settlement: content.settlement
+      settlement: content.settlement,
+      instances: content.instances
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.

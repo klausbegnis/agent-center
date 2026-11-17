@@ -118,7 +118,7 @@ function settleCheck(state, context) {
     characters: Object.values(state.characters), skills: context.world.skills, worldLevel: context.worldLevel
   })
   const difficulty = INSTANCE_CHECK_DIFFICULTY * (1 + INSTANCE_CHECK_TIER_STEP * (run.tier - 1)) * bonuses.checkFactor
-  const roll = CHECK_ROLL_LOW + CHECK_ROLL_SPAN * chanceOf(`${seedOf(context, run)}|check|${run.tries}`)
+  const roll = CHECK_ROLL_LOW + CHECK_ROLL_SPAN * chanceOf(`check-${run.tries}|${seedOf(context, run)}|check`)
   const passed = score >= difficulty * roll
   tell(context, run, { kind: 'check', passed, check: room.check })
   if (passed) {
@@ -298,16 +298,17 @@ function runTick(state, context) {
  *
  * @param {object} options as playFight's (fight.mjs), with `autoPlay`: the first boon is taken at once
  * @returns {{ project: object, materials: Record<string, number>, events: object[], bestiary: object | null,
- *   instances: object | undefined, ticksLeft: number }} `instances` the world's progress after it
+ *   instances: object | undefined, coins: number, ticksLeft: number }} `instances` the world's progress
+ *   after it, `coins` what it paid the world
  */
 export function playRun(options) {
   const { worldId, projectId, project, world, worldLevel, party, ticks, content, referencePartyHit } = options
   const index = instanceIndexOf(content)
   // A run of an instance this content does not have (content changed under a save) just ends.
   if (!index?.byId.has(project.run.instance)) {
-    return { project: leaveInstance(project, { cleared: true }), materials: {}, events: [], bestiary: null, instances: undefined, ticksLeft: ticks }
+    return { project: leaveInstance(project, { cleared: true }), materials: {}, coins: 0, events: [], bestiary: null, instances: undefined, ticksLeft: ticks }
   }
-  const tally = { bestiary: world.bestiary ?? null, instances: world.instances }
+  const tally = { bestiary: world.bestiary ?? null, instances: world.instances, coins: 0 }
   const cache = new Map()
   const against = (level) => {
     if (!cache.has(level)) cache.set(level, partyAgainst(party, level))
@@ -327,6 +328,9 @@ export function playRun(options) {
   // What needs no time is settled too, so the room shows its monster or its vault at once.
   while (state.run && settleInstant(state, context));
   const { materials, ...next } = state
-  return { project: next, materials, events: context.events, bestiary: tally.bestiary, instances: tally.instances, ticksLeft: ticks - used }
+  return {
+    project: next, materials, coins: tally.coins, events: context.events, bestiary: tally.bestiary, instances: tally.instances,
+    ticksLeft: ticks - used
+  }
 }
 
