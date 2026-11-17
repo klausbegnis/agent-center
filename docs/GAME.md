@@ -34,7 +34,7 @@ milliseconds the caller passes.
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
-| `sendItem(save, { fromProjectId, toProjectId, itemId })` | Sends a free item of a project's chest to another project of the same world (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged }` with the copies the target's cap salvaged. The same save when refused; `sendItemProblem(save, sending)` says why, or null. |
+| `sendItem(save, { fromProjectId, toProjectId, itemId \| itemIds, confirmHeld? })` | Sends items of a project's chest to another project of the same world, one a character holds only with `confirmHeld` (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged, sentSalvaged, repicks }`: the copies the target's cap salvaged, which of them were sent ones, and what each holder took instead. The same save when refused; `sendItemProblem(save, sending)` says why, or null. `itemName(entryId)` names an item's entry. |
 | `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
@@ -346,16 +346,23 @@ comes back from retirement, and when a person asks for it. A person can also cho
 ### Sending to another room
 
 Gear is per room on purpose: a room's chest serves its own characters. A person can still move
-what a room does not use to another room of the same world (`transfer.mjs`), from the Chest tab:
+any item to another room of the same world (`transfer.mjs`), from the Chest tab: one at a time
+from an item's detail, several at once with **Move items**, or by dragging a slot onto a room's
+chip above the tabs.
 
-- **An item** nobody holds (a free item is never pinned: a pin names a slot of a character, which
-  holds its item) leaves the chest and arrives free in the other room's, numbered as its copies
-  are. The target keeps at most `COPIES_PER_ITEM` copies of an entry, exactly as when a chest left
+- **An item** leaves the chest and arrives free in the other room's, numbered as its copies
+  are. Up to `MAX_ITEMS_SENT` (60) go in one sending, in the order given; one id twice is refused.
+- **An item a character holds** goes only when the person confirmed it (`confirmHeld`), so gear is
+  never taken from a working character by accident. It is taken first: that slot goes back to
+  Auto (its pin, if any, is dropped) and takes at once the best free item the character may hold
+  there, by the same rule as every automatic pick (`autoPick` in `equip.mjs`: the class's damage
+  type, a legendary item only for who it is made for), or nothing. The answer lists what each
+  holder took (`repicks`). The target keeps at most `COPIES_PER_ITEM` copies of an entry, exactly as when a chest left
   behind is moved (`mergeChests` in `orphans.mjs`): items held there always stay, the best of the
   rest stay, and the lowest is salvaged into the world's materials as a drop past the cap would be.
-  That may be the item sent; the answer says which.
+  That may be an item sent; the answer says which.
 - **Legendary equipment** is never salvaged and never doubled: one the target already owns is
-  refused.
+  refused, and so are two copies of one entry in a single sending.
 - **A relic** the room owns, other than its active one, moves to the target's relics, after its
   own; a target with no relic makes it active, as a first drop does. One the target owns is
   refused, and so is the active relic: make another one active first. Pity counters stay with
@@ -1086,7 +1093,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
-| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemId }`: two rooms that play in the same world, the target on screen, and a free item of the first's chest; answers `{ changed, salvaged, sentSalvaged }`, how many copies past the target's cap were salvaged and whether the item sent was one of them. A sending the rules refuse says why. |
+| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemIds, confirmHeld }` (or a single `itemId`): two rooms that play in the same world, the target on screen, items of the first's chest, and `confirmHeld` true when a character holds one of them; answers `{ changed, sent, salvaged, sentSalvaged, repicks }`: how many items went, how many copies past the target's cap were salvaged and how many of those were sent ones, and `{ sessionId, slot, itemName }` for each holder's new pick (`itemName` null for nothing). A sending the rules refuse says why. |
 | `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |

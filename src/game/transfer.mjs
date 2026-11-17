@@ -1,17 +1,30 @@
-// Sending what a room owns to another room of the same world: a free item of its chest, or a
-// relic that is not its active one. Gear is per room on purpose; sending it is free, and only
-// moves where the power sits. Pure.
+// Sending what a room owns to another room of the same world: any item of its chest, or a relic
+// that is not its active one. An item a character holds is first taken from it, and that slot goes
+// back to the automatic pick. Gear is per room on purpose; sending it is free, and only moves
+// where the power sits. Pure.
 import { addToChest, findItem } from './chest.mjs'
+import { autoPick } from './equip.mjs'
 import { legendaryOf, ownsLegendary, withLegendary, withRelic } from './legendary.mjs'
 import { mergeChests, salvageInto, sharedWorldId } from './orphans.mjs'
+import { withCharacter } from './worlds.mjs'
+
+/** @typedef {import('./legendary-content.mjs').LegendaryIndex | null} LegendaryIndex */
+
+/** The most items one sending may carry: far more than a chest shows, far less than a body holds. */
+export const MAX_ITEMS_SENT = 60
 
 /** Why a sending is refused, in words a person can act on. */
 export const TRANSFER_REFUSALS = Object.freeze({
   sameRoom: 'it is already in that room',
   otherWorld: 'the two rooms do not play in the same world',
   noItem: 'that item is not in this chest',
-  held: 'a character holds that item; give it something else first',
+  noItems: 'no item was chosen',
+  tooMany: `at most ${MAX_ITEMS_SENT} items go at once`,
+  twice: 'the same item was chosen twice',
+  heldUnconfirmed: 'a character holds that item: confirm to take it from them and send it',
+  holderGone: 'that item is held by nobody here',
   legendaryOwned: 'that room already owns this legendary item',
+  legendaryTwice: 'two copies of one legendary item cannot go to one room',
   noRelic: 'this room does not own that relic',
   activeRelic: 'the active relic stays; make another one active first',
   relicOwned: 'that room already owns this relic'
@@ -26,52 +39,126 @@ function twoRooms(save, fromProjectId, toProjectId) {
   return { worldId, world, source: world.projects[fromProjectId], target: world.projects[toProjectId] }
 }
 
-/**
- * Why an item cannot be sent, or null when it can.
- *
- * @param {object} save
- * @param {{ fromProjectId: string, toProjectId: string, itemId: string }} sending
- * @returns {string | null}
- */
-export function sendItemProblem(save, { fromProjectId, toProjectId, itemId }) {
-  const rooms = twoRooms(save, fromProjectId, toProjectId)
-  if (rooms.problem) return rooms.problem
-  const item = findItem(rooms.source.chest, itemId)
+/** The ids of a sending: `itemIds`, or the single `itemId`. */
+const idsOf = ({ itemIds, itemId }) => (Array.isArray(itemIds) ? itemIds : itemId === undefined ? [] : [itemId])
+
+/** Why one item of the source cannot go to the target, or null. */
+function itemProblem(source, target, item, confirmHeld) {
   if (!item) return TRANSFER_REFUSALS.noItem
-  // A free item is never pinned: a pin names a slot of a living character, which holds the item.
-  if (item.heldBy !== null) return TRANSFER_REFUSALS.held
-  if (item.legendary && ownsLegendary(rooms.target, item.entryId)) return TRANSFER_REFUSALS.legendaryOwned
+  if (item.heldBy !== null) {
+    if (!Object.hasOwn(source.characters, item.heldBy)) return TRANSFER_REFUSALS.holderGone
+    if (confirmHeld !== true) return TRANSFER_REFUSALS.heldUnconfirmed
+  }
+  if (item.legendary && ownsLegendary(target, item.entryId)) return TRANSFER_REFUSALS.legendaryOwned
   return null
 }
 
 /**
- * Sends a free item of a project's chest to another project of the same world. It arrives free,
- * numbered as the target's copies are, and the target's chest keeps at most COPIES_PER_ITEM copies
- * of its entry, as when a chest left behind is moved (`mergeChests`): items held there always
- * stay, the best of the rest stay, and the lowest is salvaged into the world's materials, which
- * may be the item sent. A legendary item is never salvaged: one the target already owns is refused.
+ * Why items cannot be sent, or null when they can. An item a character holds needs
+ * `confirmHeld: true`, so it is never taken from a character by accident.
  *
  * @param {object} save
- * @param {{ fromProjectId: string, toProjectId: string, itemId: string }} sending
- * @returns {{ save: object, salvaged: object[] }} the same save, and nothing salvaged, when refused
+ * @param {{ fromProjectId: string, toProjectId: string, itemId?: string, itemIds?: string[],
+ *   confirmHeld?: boolean }} sending one item (`itemId`) or several (`itemIds`)
+ * @returns {string | null}
  */
-export function sendItem(save, sending) {
-  if (sendItemProblem(save, sending) !== null) return { save, salvaged: [] }
-  const { fromProjectId, toProjectId, itemId } = sending
-  const { worldId, world, source, target } = twoRooms(save, fromProjectId, toProjectId)
-  const item = findItem(source.chest, itemId)
-  const entryId = item.entryId ?? item.id
-  const merged = item.legendary
-    ? { chest: addToChest(target.chest, { ...item, id: entryId, entryId, heldBy: null }), salvaged: [] }
-    : mergeChests(target.chest, [item])
-  const projects = {
-    ...world.projects,
-    [fromProjectId]: { ...source, chest: source.chest.filter((owned) => owned.id !== itemId) },
-    [toProjectId]: { ...target, chest: merged.chest }
+export function sendItemProblem(save, sending) {
+  const rooms = twoRooms(save, sending.fromProjectId, sending.toProjectId)
+  if (rooms.problem) return rooms.problem
+  const ids = idsOf(sending)
+  if (ids.length === 0) return TRANSFER_REFUSALS.noItems
+  if (ids.length > MAX_ITEMS_SENT) return TRANSFER_REFUSALS.tooMany
+  if (new Set(ids).size !== ids.length) return TRANSFER_REFUSALS.twice
+  const legendaryEntries = new Set()
+  for (const itemId of ids) {
+    const item = findItem(rooms.source.chest, itemId)
+    const problem = itemProblem(rooms.source, rooms.target, item, sending.confirmHeld)
+    if (problem) return problem
+    if (item.legendary) {
+      if (legendaryEntries.has(item.entryId)) return TRANSFER_REFUSALS.legendaryTwice
+      legendaryEntries.add(item.entryId)
+    }
   }
-  const materials = salvageInto(world, merged.salvaged)
+  return null
+}
+
+/**
+ * The source without an item. When a character held it, that slot is handed back to the automatic
+ * pick at once (unpinned), which takes the best free item the character may hold there, legendary
+ * rules included, or nothing.
+ *
+ * @returns {{ project: object, repick: { sessionId: string, slot: string, itemId: string | null } | null }}
+ */
+function takeOut(project, item, index) {
+  const chest = project.chest.filter((owned) => owned.id !== item.id)
+  if (item.heldBy === null) return { project: { ...project, chest }, repick: null }
+  const holder = project.characters[item.heldBy]
+  const pinned = { ...holder.pinned }
+  delete pinned[item.slot]
+  const emptied = { ...holder, equipment: { ...holder.equipment, [item.slot]: null }, pinned }
+  if (Object.keys(pinned).length === 0) delete emptied.pinned
+  const without = { ...project, chest }
+  const picked = autoPick(chest, emptied, [item.slot], { index, project: without })
+  const next = withCharacter({ ...without, chest: picked.chest }, picked.character)
+  const itemId = picked.character.equipment[item.slot] ?? null
+  return { project: next, repick: { sessionId: holder.sessionId, slot: item.slot, itemId } }
+}
+
+/** The target's chest with one item added, what its copies cap salvaged, and whether that was it. */
+function putIn(chest, item) {
+  const entryId = item.entryId ?? item.id
+  if (item.legendary) {
+    return { chest: addToChest(chest, { ...item, id: entryId, entryId, heldBy: null }), salvaged: [], wasSalvaged: false }
+  }
+  const arriving = { ...item, heldBy: null }
+  const merged = mergeChests(chest, [arriving])
+  return { ...merged, wasSalvaged: merged.salvaged.includes(arriving) }
+}
+
+/**
+ * @typedef {{ save: object, salvaged: object[], sentSalvaged: string[],
+ *   repicks: { sessionId: string, slot: string, itemId: string | null }[] }} SendResult
+ *   `salvaged` every item the target's copies cap salvaged, `sentSalvaged` the ids of the sent
+ *   items among them, `repicks` what each character that held a sent item took instead
+ */
+
+/**
+ * Sends items of a project's chest to another project of the same world, in the order given. Each
+ * arrives free, numbered as the target's copies are, and the target keeps at most
+ * COPIES_PER_ITEM copies of an entry, as when a chest left behind is moved (`mergeChests`): items
+ * held there always stay, the best of the rest stay, and the lowest is salvaged into the world's
+ * materials, which may be an item sent. A legendary item is never salvaged: one the target owns
+ * already is refused. An item a character holds is taken from it first (see `takeOut`).
+ *
+ * @param {object} save
+ * @param {{ fromProjectId: string, toProjectId: string, itemId?: string, itemIds?: string[],
+ *   confirmHeld?: boolean }} sending
+ * @param {LegendaryIndex} [index] the legendary content, for what a character may take instead
+ * @returns {SendResult} the same save, and nothing else, when refused
+ */
+export function sendItem(save, sending, index = null) {
+  if (sendItemProblem(save, sending) !== null) return { save, salvaged: [], sentSalvaged: [], repicks: [] }
+  const { fromProjectId, toProjectId } = sending
+  const { worldId, world, source, target } = twoRooms(save, fromProjectId, toProjectId)
+  let from = source
+  let chest = target.chest
+  const salvaged = []
+  const sentSalvaged = []
+  const repicks = []
+  for (const itemId of idsOf(sending)) {
+    const item = findItem(from.chest, itemId)
+    const taken = takeOut(from, item, index)
+    from = taken.project
+    if (taken.repick) repicks.push(taken.repick)
+    const merged = putIn(chest, item)
+    chest = merged.chest
+    salvaged.push(...merged.salvaged)
+    if (merged.wasSalvaged) sentSalvaged.push(itemId)
+  }
+  const projects = { ...world.projects, [fromProjectId]: from, [toProjectId]: { ...target, chest } }
+  const materials = salvageInto(world, salvaged)
   const next = { ...save, worlds: { ...save.worlds, [worldId]: { ...world, materials, projects } } }
-  return { save: next, salvaged: merged.salvaged }
+  return { save: next, salvaged, sentSalvaged, repicks }
 }
 
 /**

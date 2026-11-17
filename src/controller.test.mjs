@@ -117,12 +117,14 @@ test('sending an item or a relic reaches the game with its fields; a missing id 
   const { controller, changes } = setup({ game })
   const from = 'local:/work/rumble-banana'
   const to = 'local:/work/sneaky-pancake'
-  await controller.gameSendItem(from, to, 'whittled-cudgel')
+  await controller.gameSendItem(from, to, ['whittled-cudgel'], true)
+  await assert.rejects(controller.gameSendItem(from, to, 'whittled-cudgel', false), /invalid item/)
+  await assert.rejects(controller.gameSendItem(from, to, ['whittled-cudgel'], 'yes'), /invalid confirmation/)
   await controller.gameSendRelic(from, to, 'rimeheart')
-  await assert.rejects(controller.gameSendItem(from, null, 'whittled-cudgel'), /invalid room/)
+  await assert.rejects(controller.gameSendItem(from, null, ['whittled-cudgel']), /invalid room/)
   await assert.rejects(controller.gameSendRelic(from, to, 7), /invalid relic/)
   assert.deepEqual(calls, [
-    ['sendItem', { roomId: from, toRoomId: to, itemId: 'whittled-cudgel' }],
+    ['sendItem', { roomId: from, toRoomId: to, itemIds: ['whittled-cudgel'], confirmHeld: true }],
     ['sendRelic', { roomId: from, toRoomId: to, relicId: 'rimeheart' }]
   ])
   assert.equal(changes(), 2)
