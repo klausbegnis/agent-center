@@ -6,6 +6,17 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Changed
+
+- Game mode's tabs are now Rooms, Party, Chest, Camp, Skills and Market: the Arsenal tab and
+  its Items, Party and Camp row are gone, Items is called Chest. Above the tabs, on every tab,
+  are the room picker with its world and level and one strip with the world's coins and
+  materials, which no longer move when another tab opens. The picker chooses the room of Party
+  and Chest and the world of Camp, Skills and Market; on Rooms it can show one room only, or all
+  of them (the default). Each tab has a small pixel icon; in a narrow panel only the icons show,
+  with the name as the tooltip. A saved Arsenal tab and links with `?tab=arsenal` (and
+  `section=items|party|camp`) open the tab they became.
+
 ### Added
 
 - Game mode's **Market** tab: each world has coins and five cities (Goldmill, Deepforge,
@@ -24,7 +35,7 @@ All notable changes to this project are recorded here. The format follows
   browser from Orca's panel and tab (Orca may ask once before opening the site), in a new tab
   from the external view. The title, the counters and the header's icon buttons now always keep
   one row, with the other controls wrapping below it.
-- Choose what idle characters gather. The Arsenal's Party section has a trade picker on each
+- Choose what idle characters gather. The Party tab has a trade picker on each
   character and one for the whole room ("Everyone here gathers"); a character's own choice wins
   over the room's, and the room's over Auto, the trade the game picks, which stays the default.
   The choices are kept in the save and in save files, a session that comes back from retirement

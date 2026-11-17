@@ -111,9 +111,11 @@ catches them walking in. Chrome keeps running because the page holds a live conn
 with Ctrl+C. The other shots use `--window-size=500,1180` with `?view=list`, and
 `--window-size=900,640` with `?view=list&only=rumble`, `only=cosmic` and `only=turbo`.
 
-`game-market.png` is `GAME=1 FREEZE=1` on Guild Hall with `?tab=market`, taken at
-`--window-size=500,1400` (at a shorter window headless Chrome may leave the city banners
-unpainted) and cut to its top 1800 pixels, the size of the other game tabs.
+The game tabs `game-rooms.png`, `game-chest.png`, `game-skills.png` and `game-market.png` are
+`GAME=1 FREEZE=1` on Guild Hall with `?view=list&tab=rooms` (`chest`, `skills`, `market`) at a
+500 × 900 window and scale 2. Look at each before committing it: `--screenshot` can fire before
+the city banners are painted, and then the Market shot shows empty cards. Taking the picture
+through Chrome's DevTools protocol once every image has loaded avoids that.
 
 ## Retaking the listing images
 

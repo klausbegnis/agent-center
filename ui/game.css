@@ -22,8 +22,53 @@
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid var(--orca-border, #2a2f3a);
+  container: ac-game-bar / inline-size;
 }
-.ac-game-bar[hidden] { display: none; }
+.ac-game-bar[hidden],
+.ac-game-top[hidden] { display: none; }
+/* Above the tabs on every tab: the room picker and the world's coins and materials. It is the
+   same on every tab, so the tabs never move. On a tab with a panel it stays in view while the
+   panel scrolls, the root's padding taken back so nothing shows above it. */
+.ac-game-top {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  /* The same box on every tab, sticky or not, so the tabs sit at the same place on all of them. */
+  margin: -12px -12px 0;
+  padding: 12px 12px 0;
+  background: var(--orca-background, #171a21);
+}
+/* A tab's panel is at least as tall as the window, so a tab opened while the page is scrolled can
+   keep the tabs stuck where they were instead of the page jumping back. */
+.ac-root[data-game-tab]:not([data-game-tab='rooms']) .ac-game-panel { min-height: 100vh; }
+.ac-root[data-game-tab]:not([data-game-tab='rooms']) .ac-game-top {
+  position: sticky;
+  top: -12px;
+  z-index: 6;
+}
+.ac-game-context {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  container: ac-game-context / inline-size;
+}
+.ac-game-context[hidden],
+.ac-game-context-row[hidden],
+.ac-game-context-empty[hidden] { display: none; }
+.ac-game-context-empty { margin: 0; }
+.ac-game-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.ac-game-context-row .ac-game-field { flex: 1 1 180px; min-width: 0; max-width: 420px; }
+/* On the tabs that show a whole world the picker only picks the world: it steps back. */
+.ac-game-context-secondary .ac-game-field { opacity: 0.6; }
+.ac-game-context-secondary .ac-game-field:focus-within,
+.ac-game-context-secondary .ac-game-field:hover { opacity: 1; }
 .ac-game-tabs {
   display: flex;
   gap: 2px;
@@ -31,8 +76,11 @@
   min-width: 0;
 }
 .ac-game-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   min-height: 30px;
-  padding: 0 12px;
+  padding: 0 9px;
   border: 0;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -44,6 +92,14 @@
   cursor: pointer;
 }
 .ac-game-tab:hover { color: var(--orca-foreground, #e8eaf0); }
+.ac-game-tab-icon { width: 12px; height: 12px; flex: none; }
+/* Too narrow for six names and the marker: icons only; the name stays the accessible name and
+   the tooltip. The open tab keeps its underline, so it never rests on colour alone. */
+@container ac-game-bar (max-width: 520px) {
+  .ac-game-tab-label { display: none; }
+  .ac-game-tab { padding: 0 10px; }
+  .ac-game-tab-icon { width: 15px; height: 15px; }
+}
 /* The open tab is underlined and bold, not only coloured. */
 .ac-game-tab[aria-selected='true'] {
   border-bottom-color: var(--orca-ring, #6fe0d2);
@@ -71,16 +127,10 @@
 .ac-game-notice:empty { display: none; }
 
 /* Which part shows: the rooms on the Rooms tab, a panel on the others. */
-.ac-root[data-game-tab='arsenal'] .ac-rooms,
-.ac-root[data-game-tab='skills'] .ac-rooms,
-.ac-root[data-game-tab='market'] .ac-rooms,
-.ac-root[data-game-tab='arsenal'] .ac-shelf,
-.ac-root[data-game-tab='skills'] .ac-shelf,
-.ac-root[data-game-tab='market'] .ac-shelf { display: none; }
+.ac-root[data-game-tab]:not([data-game-tab='rooms']) .ac-rooms,
+.ac-root[data-game-tab]:not([data-game-tab='rooms']) .ac-shelf { display: none; }
 /* Gallery fits the rooms without scrolling; a panel scrolls like List. */
-.ac-root.ac-gallery[data-game-tab='arsenal'],
-.ac-root.ac-gallery[data-game-tab='skills'],
-.ac-root.ac-gallery[data-game-tab='market'] { overflow: auto; }
+.ac-root.ac-gallery[data-game-tab]:not([data-game-tab='rooms']) { overflow: auto; }
 .ac-game-panel[hidden] { display: none !important; }
 /* A panel is the containing block of what is positioned inside it (the visually hidden labels):
    otherwise those hang off the page itself, below the fold, and the page grows a second scroll
@@ -117,12 +167,12 @@
 }
 
 /* Mini: the rooms only, whatever tab was open. */
-.ac-mini .ac-game-bar,
+.ac-mini .ac-game-top,
 .ac-mini .ac-game-notice,
 .ac-mini .ac-game-panel { display: none !important; }
 .ac-mini.ac-root[data-game-tab] .ac-rooms { display: grid; }
 /* Collapsed tray: only the header strip. */
-.ac-collapsed .ac-game-bar,
+.ac-collapsed .ac-game-top,
 .ac-collapsed .ac-game-notice,
 .ac-collapsed .ac-game-panel { display: none !important; }
 
@@ -435,35 +485,6 @@
 .ac-game-star { width: 11px; height: 11px; }
 .ac-game-stars-count { margin-left: 2px; font-size: 11px; font-weight: 700; }
 
-/* Arsenal: a head that stays in view (room, world, materials strip, section tabs) over the open
-   section. The head spans the panel and covers what scrolls under it. */
-.ac-game-arsenal-head[hidden],
-.ac-game-arsenal-section[hidden],
-.ac-game-arsenal-empty[hidden] { display: none; }
-.ac-game-arsenal-head {
-  grid-column: 1 / -1;
-  position: sticky;
-  /* The root's padding: the head sticks to the very top edge, so nothing shows above it. */
-  top: -12px;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  margin: 0 -12px;
-  padding: 6px 12px 0;
-  background: var(--orca-background, #171a21);
-  container: ac-arsenal-head / inline-size;
-}
-.ac-game-arsenal-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
-}
-.ac-game-arsenal-row .ac-game-field { flex: 1 1 180px; min-width: 0; max-width: 420px; }
-.ac-game-arsenal-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
-
 /* The materials strip: icon and amount per tile, six to a row at 380 px, one row when wide. */
 .ac-game-strip {
   display: grid;
@@ -489,9 +510,9 @@
 .ac-game-strip-shown { display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
 .ac-game-strip-icon { width: 13px; height: 13px; }
 .ac-game-strip-tile .ac-game-amount { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-/* All eleven in one row once they fit, never wider than a tile needs. */
-@container ac-arsenal-head (min-width: 620px) {
-  .ac-game-strip { grid-template-columns: repeat(11, minmax(0, 96px)); }
+/* The coins and the eleven materials in one row once they fit, never wider than a tile needs. */
+@container ac-game-context (min-width: 640px) {
+  .ac-game-strip { grid-template-columns: repeat(12, minmax(0, 96px)); }
 }
 /* Names are written out while the strip has the focus; otherwise the tooltip carries them. */
 .ac-game-strip-name {
@@ -508,40 +529,8 @@
 .ac-game-strip-short .ac-game-amount { color: var(--ac-game-warn); }
 .ac-game-strip-mark { margin-left: auto; font-weight: 800; color: var(--ac-game-warn); }
 
-/* Section tabs: a smaller segmented row under the game's tabs. The open one is filled and
-   framed, not only coloured. */
-.ac-game-subtabs {
-  display: flex;
-  gap: 4px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--orca-border, #2a2f3a);
-}
-.ac-game-subtab {
-  flex: 1 1 0;
-  max-width: 160px;
-  min-width: 0;
-  min-height: 26px;
-  padding: 0 8px;
-  border: 1px solid var(--orca-border, #2a2f3a);
-  border-radius: 6px;
-  background: none;
-  color: var(--orca-muted-foreground, #9aa3b2);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ac-game-subtab:hover { color: var(--orca-foreground, #e8eaf0); }
-.ac-game-subtab[aria-selected='true'] {
-  border-color: var(--orca-ring, #6fe0d2);
-  background: var(--orca-secondary, #262b35);
-  color: var(--orca-foreground, #e8eaf0);
-  box-shadow: inset 0 -2px 0 var(--orca-ring, #6fe0d2);
-}
-.ac-game-subtab:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
-
-/* Sections span the panel and lay themselves out by their own width. */
-.ac-game-arsenal-section { grid-column: 1 / -1; min-width: 0; container-type: inline-size; }
+/* Party, Chest and Camp span the panel and lay themselves out by their own width. */
+.ac-game-tab-section { grid-column: 1 / -1; min-width: 0; container-type: inline-size; }
 .ac-game-chest-section,
 .ac-game-party-section,
 .ac-game-camp-section { display: grid; gap: 10px; align-items: start; min-width: 0; }
@@ -701,14 +690,14 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-game-item-fact dt { color: var(--orca-muted-foreground, #9aa3b2); }
 .ac-game-item-fact dd { margin: 0; }
 .ac-game-camp-upgrade { font-size: 12px; }
-/* A price in the Arsenal: its label, the materials stacked as they need, the button at the right. */
-.ac-game-arsenal-section .ac-game-buy {
+/* A price on Chest or Camp: its label, the materials stacked as they need, the button at the right. */
+.ac-game-tab-section .ac-game-buy {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px 10px;
 }
-.ac-game-arsenal-section .ac-game-buy-button { margin: 0; }
+.ac-game-tab-section .ac-game-buy-button { margin: 0; }
 
 /* Party: characters as small cards, then the retirees. */
 .ac-game-heroes {
@@ -1393,18 +1382,11 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   .ac-detail-trade { display: none; }
 }
 
-/* Market: the coins on top, then a card per city with its banner, or the city opened with its
-   Sell, Trade and Stall cards. Banners are 192 x 72 pixel art, scaled up without smoothing. */
-.ac-market-head { grid-column: 1 / -1; }
-.ac-market-head[hidden],
+/* Market: a card per city with its banner, or the city opened with its Sell, Trade and Stall
+   cards; the coins are in the strip above the tabs. Banners are 192 x 72 pixel art, scaled up
+   without smoothing. */
 .ac-market-view-only[hidden] { display: none; }
-.ac-market-coins {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .ac-market-coin { width: 14px; height: 14px; flex: none; }
-.ac-market-coins-value { font-size: 15px; }
 .ac-market-intro { grid-column: 1 / -1; }
 .ac-market-city { gap: 6px; }
 .ac-market-banner {
@@ -1571,3 +1553,5 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-market-offer-facts { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .ac-market-offer-name { font-size: 12px; }
 .ac-market-offer-price { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.ac-game-context-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
+.ac-market-no-world[hidden] { display: none; }

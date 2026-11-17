@@ -1,14 +1,14 @@
-// The Market tab: the world's coins, then either the list of its cities (a banner each, with
-// what it sells cheap and pays well for, or the level it opens at) or the city opened, with its
+// The Market tab of the world of the room picked above the tabs (the coins are in the strip
+// there): the list of its cities (a banner each, with what it sells cheap and pays well for, or
+// the level it opens at) or the city opened, with its
 // Sell, Trade and Stall cards. The open city, the amounts chosen and the stall's room are kept
 // across redraws, and a redraw puts the keyboard back on the control that had it.
-import { button, el, select, setOptions } from './dom.js'
+import { button, el } from './dom.js'
 import { replaceKeepingFocus, section } from './game-controls.js'
 import { joinedRooms, worldById } from './game-model.js'
-import { gameIcon } from './icon-view.js'
 import { roomTitle } from './labels.js'
 import { cityTrades, sellCard, stallCard } from './market-city-view.js'
-import { MARKET, formatCoins } from './market-labels.js'
+import { MARKET } from './market-labels.js'
 import { stallRoomId } from './market-model.js'
 import { tradeCard } from './market-trade-view.js'
 
@@ -31,15 +31,16 @@ function banner(city, base) {
  *   panel: HTMLElement,
  *   actions: Record<string, (...args: unknown[]) => Promise<boolean>>,
  *   base: string,
- *   prefs?: { get: (key: string) => unknown, set: (key: string, value: string) => unknown }
  * }} options `base` is where the plugin's files are reached, as the themes are
  */
-export function createMarketView({ panel, actions, base, prefs }) {
+export function createMarketView({ panel, actions, base }) {
   let state = null
   let drawn = null
   let wantedWorldId = null
   let openCityId = null
   let wantedRoomId = null
+  /** The room picked above the tabs when last drawn: picking another one moves the stall's too. */
+  let pickedRoomId = null
   /** The amount chosen on each Sell row, by its key; the open row; the Trade form's choices. */
   const chosen = new Map()
   /** After a deal: redraw from the amount reset to nothing, the keyboard on that slider. */
@@ -69,27 +70,10 @@ export function createMarketView({ panel, actions, base, prefs }) {
     return banners.get(city.id)
   }
 
-  const head = el('section', 'ac-game-card ac-market-head')
-  const worldField = el('label', 'ac-game-field')
-  const worldSelect = select('ac-select', MARKET.world)
-  worldSelect.removeAttribute('aria-label')
-  worldSelect.addEventListener('change', () => {
-    wantedWorldId = worldSelect.value
-    openCityId = null
-    draw()
-  })
-  worldField.append(el('span', 'ac-game-field-label', MARKET.world), worldSelect)
-  const coins = el('div', 'ac-market-coins')
-  head.append(worldField, coins, el('p', 'ac-game-card-line', MARKET.coinsNote))
   const viewOnly = el('p', 'ac-game-card-line ac-market-view-only', MARKET.viewOnly)
-  head.append(viewOnly)
   const body = el('div', 'ac-game-panel-body')
-  const noWorld = el('p', 'ac-game-card-line ac-game-arsenal-empty', MARKET.noWorld)
-  panel.append(head, noWorld, body)
-
-  Promise.resolve(prefs?.get('arsenalRoom')).then((saved) => {
-    if (typeof saved === 'string' && saved && wantedRoomId === null) wantedRoomId = saved
-  }).catch(() => {})
+  const noWorld = el('p', 'ac-game-card-line ac-market-no-world', MARKET.noWorld)
+  panel.append(noWorld, body)
 
   function open(cityId) {
     openCityId = cityId
@@ -158,12 +142,7 @@ export function createMarketView({ panel, actions, base, prefs }) {
 
   function draw() {
     if (!state) return
-    const worlds = state.game.worlds ?? []
-    setOptions(worldSelect, worlds.map((world) => [world.id, world.id]))
-    worldField.hidden = worlds.length < 2
-    const world = worldById(state.game, wantedWorldId) ?? worlds[0] ?? null
-    if (world) worldSelect.value = world.id
-    head.hidden = !world?.market
+    const world = worldById(state.game, wantedWorldId) ?? state.game.worlds?.[0] ?? null
     noWorld.hidden = Boolean(world?.market)
     viewOnly.hidden = Boolean(actions.sellMaterial) || state.game.viewOnly !== true
     const rooms = joinedRooms(state).map((room) => [room.id, state.game.rooms[room.id]?.worldId])
@@ -175,22 +154,28 @@ export function createMarketView({ panel, actions, base, prefs }) {
       body.replaceChildren()
       return
     }
-    coins.replaceChildren(gameIcon('coin', 'ac-market-coin'),
-      el('span', 'ac-game-summary-label', MARKET.coins),
-      el('strong', 'ac-game-amount ac-market-coins-value', formatCoins(world.coins)))
     const city = world.market.cities.find((entry) => entry.id === openCityId && entry.open)
     if (!city) openCityId = null
     const cards = city
       ? cityPage(world, city)
-      : [section(MARKET.cities, [el('p', 'ac-game-card-line', MARKET.citiesNote)], 'ac-market-intro'),
+      : [section(MARKET.cities, [el('p', 'ac-game-card-line', MARKET.citiesNote), viewOnly],
+        'ac-market-intro'),
           ...world.market.cities.map(cityCard)]
     replaceKeepingFocus(body, cards)
   }
 
   return {
-    /** @param {object} next the view state, with the game running */
-    update(next) {
+    /**
+     * @param {object} next the view state, with the game running
+     * @param {{ worldId: string | null, roomId: string | null }} picked the room picked above the
+     *   tabs: the market is its world's, and a stall's piece goes into it unless another is chosen
+     */
+    update(next, { worldId, roomId }) {
       state = next
+      if (worldId !== wantedWorldId) openCityId = null
+      wantedWorldId = worldId
+      if (roomId !== pickedRoomId) wantedRoomId = roomId
+      pickedRoomId = roomId
       draw()
     }
   }

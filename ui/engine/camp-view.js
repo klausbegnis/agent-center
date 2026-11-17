@@ -1,4 +1,4 @@
-// The Arsenal's Camp section: the three group upgrades of the room's world, each with what its
+// The Camp tab: the three group upgrades of the room's world, each with what its
 // level does now and at the next level, its price and the Build button, then the auto-spend switch.
 import { groupEffectAt } from './arsenal-model.js'
 import { el } from './dom.js'

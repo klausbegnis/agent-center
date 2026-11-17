@@ -4,12 +4,10 @@ import { formatAmount } from './game-format.js'
 import { materialLabel, skillLabel, slotText } from './labels.js'
 
 export const MARKET = {
-  world: 'World',
-  coins: 'Coins',
-  coinsNote: 'Coins come from selling materials in a city, and buy gear at its stall.',
   cities: 'Cities',
   citiesNote: 'Each city sells what it produces cheap and pays well for what it wants. Every trade ' +
-    'costs a fee, and a big sale lowers the price there until it recovers.',
+    'costs a fee, and a big sale lowers the price there until it recovers. Coins, shown with the ' +
+    'materials above, come from selling and buy gear at a city\'s stall.',
   visit: (name) => `Visit ${name}`,
   back: 'All cities',
   locked: (level) => `Opens at World Lv ${level}`,

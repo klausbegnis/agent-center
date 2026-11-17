@@ -9,6 +9,7 @@ import { el } from './dom.js'
 import { paceFor } from './emotes.js'
 import { gameEffects } from './game-effects.js'
 import { createGameFeed } from './game-events.js'
+import { filteredRooms } from './game-model.js'
 import { createGameShell } from './game-shell.js'
 import { createHeader, VIEWS } from './header.js'
 import { themeLoadFailure } from './labels.js'
@@ -103,9 +104,15 @@ export async function mountStage(root, transport, options = {}) {
     }
   })
   const shelf = createShelf(transport)
-  const game = createGameShell({ root, roomsElement, transport, onTabChange: () => layout() })
+  const game = createGameShell({
+    root,
+    roomsElement,
+    transport,
+    onTabChange: () => layout(),
+    onRoomsChange: () => render()
+  })
   header.addTitleTool(game.settingsButton)
-  root.append(header.element, game.bar, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
+  root.append(header.element, game.top, game.notice, sprites, roomsElement, ...game.panels, shelf.element)
 
   // Emotes, the game's blows and fading scenes rest while nobody can see them and for people who
   // asked for less motion. The page is looked up each time because the mini view moves the root
@@ -172,7 +179,9 @@ export async function mountStage(root, transport, options = {}) {
 
     header.update(state)
     game.update(state)
-    roomList.render(visibleRooms, state, { selectedAgentId, pinnedRoomId, now: Date.now() })
+    // The room picker above the game's tabs can narrow the Rooms tab to one room.
+    const shownRooms = filteredRooms(visibleRooms, game.roomFilter())
+    roomList.render(shownRooms, state, { selectedAgentId, pinnedRoomId, now: Date.now() })
     showEmptyMessage(visibleRooms.length, hiddenRooms.length)
     shelf.update(hiddenRooms)
     showSelectedAgent()

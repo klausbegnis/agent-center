@@ -113,7 +113,23 @@ export function themeLoadFailure(state) {
 // The game. Its wording is kept here with the rest; the game's own facts come from the view state.
 
 /** The game's tabs. */
-export const GAME_TAB_LABEL = { rooms: 'Rooms', arsenal: 'Arsenal', skills: 'Skills', market: 'Market' }
+export const GAME_TAB_LABEL = {
+  rooms: 'Rooms',
+  party: 'Party',
+  chest: 'Chest',
+  camp: 'Camp',
+  skills: 'Skills',
+  market: 'Market'
+}
+/** The icon beside each tab's name, from game-icons.js. */
+export const GAME_TAB_ICON = {
+  rooms: 'tab-rooms',
+  party: 'tab-party',
+  chest: 'tab-chest',
+  camp: 'campfire',
+  skills: 'star',
+  market: 'coin'
+}
 export const GAME_TABS_NAME = 'Game views'
 
 /** The small marker by the tabs, and what it means, when token totals are not reported. */
@@ -474,8 +490,7 @@ export const ARSENAL = {
   autoSpendHint: 'Buys the cheapest useful upgrade whenever the world can pay for it.',
   spending: 'Spending',
   world: (worldId, level) => `World ${worldId} · ${levelShort(level)}`,
-  materials: (worldId, level) => `Materials · world ${worldId}, level ${level}`,
-  sections: 'Arsenal sections',
+  materials: (worldId, level) => `Coins and materials · world ${worldId}, level ${level}`,
   characters: 'Characters',
   noCharacters: 'Nobody is in this room right now. A character joins when an agent works here.',
   levelProgress: (name) => `Progress of ${name} to the next level`,
@@ -520,7 +535,6 @@ export const ARSENAL = {
 }
 
 /** The Arsenal's sections, as their tabs name them. */
-export const ARSENAL_SECTION_LABEL = { items: 'Items', party: 'Party', camp: 'Camp' }
 
 /** "T3", a tier as the corner of a slot shows it. */
 export const tierShort = (tier) => `T${tier}`

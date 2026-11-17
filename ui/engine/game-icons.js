@@ -185,6 +185,22 @@ export const ICONS = {
     rows: ['...aaaa...', '.aa....aa.', '.a......a.', 'a...bb...a', 'a..b..b..a', 'a..b..b..a', 'a...bb...a',
       '.a......a.', '.aa....aa.', '...aaaa...']
   },
+  // The game's tabs that have no icon of their own elsewhere: a room's door, a party, a chest.
+  'tab-rooms': {
+    colors: { a: '#C9A26B', b: '#6B4A2B' },
+    rows: ['....aa....', '...aaaa...', '..aaaaaa..', '.aaaaaaaa.', 'aaaaaaaaaa', '.a......a.', '.a.bbbb.a.',
+      '.a.bbbb.a.', '.a.bbbb.a.', '.aaaaaaaa.']
+  },
+  'tab-party': {
+    colors: { a: '#8FD3C8', b: '#E8C07A' },
+    rows: ['..b....a..', '.bbb..aaa.', '.bbb..aaa.', '..b....a..', '.bbb..aaa.', 'bbbbbaaaaa', 'bbbbbaaaaa',
+      '.bbb..aaa.', '.b.b..a.a.', '.b.b..a.a.']
+  },
+  'tab-chest': {
+    colors: { a: '#B9773A', b: '#F2C14E' },
+    rows: ['..........', '.aaaaaaaa.', 'aaaaaaaaaa', 'aaaaaaaaaa', 'bbbbbbbbbb', 'aaaabbaaaa', 'aaaabbaaaa',
+      'aaaaaaaaaa', 'aaaaaaaaaa', '..........']
+  },
   // A coin of the market, with its stamped mark.
   coin: {
     colors: { a: '#F2C14E', b: '#A8741A' },

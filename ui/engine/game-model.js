@@ -4,8 +4,16 @@ import { clampShare } from './game-format.js'
 import { monsterRank } from './monster-rank.js'
 
 /** The game's tabs, in the order they are shown. */
-export const GAME_TABS = /** @type {const} */ (['rooms', 'arsenal', 'skills', 'market'])
+export const GAME_TABS = /** @type {const} */ (['rooms', 'party', 'chest', 'camp', 'skills', 'market'])
 const DEFAULT_TAB = 'rooms'
+/** The tabs that show one room; the others show its whole world (or, Rooms, every room). */
+export const ROOM_TABS = Object.freeze(['party', 'chest'])
+export const WORLD_TABS = Object.freeze(['camp', 'skills', 'market'])
+/**
+ * The Arsenal's sections before they became tabs, by the section a saved preference or a link
+ * names (`?tab=arsenal&section=party`). The Arsenal opened on its items when no section was named.
+ */
+const ARSENAL_SECTION_TABS = Object.freeze({ items: 'chest', party: 'party', camp: 'camp' })
 
 /**
  * How the game shows: not at all (`off`), in full (`running`), or as tabs that explain why it
@@ -21,9 +29,42 @@ export function gameModeOf(game) {
   return 'unavailable'
 }
 
-/** A saved or asked-for tab when it is one of GAME_TABS, otherwise the rooms. */
-export function tabOrDefault(value) {
+/**
+ * A saved or asked-for tab when it is one of GAME_TABS, otherwise the rooms. The Arsenal, which
+ * held Chest, Party and Camp, maps to the tab of its section, so old preferences and links work.
+ *
+ * @param {unknown} value
+ * @param {unknown} [section] the Arsenal section saved or asked for with it
+ */
+export function tabOrDefault(value, section) {
+  if (value === 'arsenal') {
+    return Object.hasOwn(ARSENAL_SECTION_TABS, section) ? ARSENAL_SECTION_TABS[section] : 'chest'
+  }
   return GAME_TABS.includes(value) ? value : DEFAULT_TAB
+}
+
+/**
+ * The room the Rooms tab is narrowed to: one that has joined the game, or null for all rooms.
+ *
+ * @param {{ rooms: { id: string }[], game: object }} state
+ * @param {string | null} wanted
+ */
+export function roomFilterOf(state, wanted) {
+  return wanted && joinedRooms(state).some((room) => room.id === wanted) ? wanted : null
+}
+
+/**
+ * The rooms the Rooms tab draws: every visible room, or only the one it is narrowed to.
+ *
+ * @template {{ id: string }} Room
+ * @param {Room[]} rooms
+ * @param {string | null} filterId
+ * @returns {Room[]}
+ */
+export function filteredRooms(rooms, filterId) {
+  if (!filterId) return rooms
+  const only = rooms.filter((room) => room.id === filterId)
+  return only.length ? only : rooms
 }
 
 /** The tab a key press moves to in the tab list, or null for a key the tabs ignore. */

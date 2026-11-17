@@ -1,35 +1,8 @@
-// What the Arsenal tab shows, worked out from the view state: its sections, the order of the
+// What the Party, Chest and Camp tabs show, worked out from the view state: the order of the
 // chest's slots, which materials a price on screen is short of, and what an upgrade changes.
 // Never touches the DOM.
 import { hash } from './hash.js'
 import { missingMaterials } from './game-format.js'
-
-/** The Arsenal's sections, in the order their tabs are shown. */
-export const ARSENAL_SECTIONS = /** @type {const} */ (['items', 'party', 'camp'])
-const DEFAULT_SECTION = 'items'
-
-/** A saved or asked-for section when it is one of ARSENAL_SECTIONS, otherwise the items. */
-export function sectionOrDefault(value) {
-  return ARSENAL_SECTIONS.includes(value) ? value : DEFAULT_SECTION
-}
-
-/**
- * The option a key press moves to in a row of tabs, or null for a key the row ignores. Arrows
- * wrap around; Home and End go to the ends.
- *
- * @param {readonly string[]} options
- * @param {string} current
- * @param {string} key a KeyboardEvent key
- */
-export function optionAfterKey(options, current, key) {
-  const index = options.indexOf(current)
-  if (index < 0) return null
-  if (key === 'ArrowRight') return options[(index + 1) % options.length]
-  if (key === 'ArrowLeft') return options[(index - 1 + options.length) % options.length]
-  if (key === 'Home') return options[0]
-  if (key === 'End') return options[options.length - 1]
-  return null
-}
 
 /** The chest's slots are ordered by kind: weapons, then outfits, then tools. */
 const SLOT_ORDER = ['weapon', 'outfit', 'tool']
@@ -193,14 +166,14 @@ export function groupEffectAt(upgradeId, level) {
 }
 
 /**
- * The costs whose missing materials the strip marks for a section: the chosen item's in Items,
- * every group upgrade's in Camp, none in Party, which has nothing to buy.
+ * The costs whose missing materials the strip marks for a tab: the chosen item's on Chest, every
+ * group upgrade's on Camp, none elsewhere.
  *
- * @param {string} sectionId
+ * @param {string} tab
  * @param {{ chosenItem: object | null, upgrades: object[] }} onScreen
  */
-export function costsOnScreen(sectionId, { chosenItem, upgrades }) {
-  if (sectionId === 'items') return chosenItem ? [chosenItem.upgradeCost] : []
-  if (sectionId === 'camp') return (upgrades ?? []).map((upgrade) => upgrade.cost)
+export function costsOnScreen(tab, { chosenItem, upgrades }) {
+  if (tab === 'chest') return chosenItem ? [chosenItem.upgradeCost] : []
+  if (tab === 'camp') return (upgrades ?? []).map((upgrade) => upgrade.cost)
   return []
 }

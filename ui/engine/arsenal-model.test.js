@@ -17,29 +17,12 @@ import {
   groupEffectAt,
   itemFactors,
   itemHueTurn,
-  optionAfterKey,
-  sectionOrDefault,
   shortMaterials,
   slotAfterKey,
   tierStep
 } from './arsenal-model.js'
 
 const item = (id, slot, tier, level, heldBy = null) => ({ id, slot, tier, level, heldBy })
-
-test('an unknown or missing section opens the items', () => {
-  assert.equal(sectionOrDefault('camp'), 'camp')
-  assert.equal(sectionOrDefault('chest'), 'items')
-  assert.equal(sectionOrDefault(null), 'items')
-})
-
-test('arrow keys move between section tabs and wrap at the ends', () => {
-  const sections = ['items', 'party', 'camp']
-  assert.equal(optionAfterKey(sections, 'items', 'ArrowRight'), 'party')
-  assert.equal(optionAfterKey(sections, 'items', 'ArrowLeft'), 'camp')
-  assert.equal(optionAfterKey(sections, 'party', 'End'), 'camp')
-  assert.equal(optionAfterKey(sections, 'camp', 'Home'), 'items')
-  assert.equal(optionAfterKey(sections, 'items', 'Enter'), null)
-})
 
 test('the chest shows weapons, then outfits, then tools', () => {
   const chest = [item('kit', 'tool', 1, 0), item('coat', 'outfit', 1, 0), item('axe', 'weapon', 1, 0)]
@@ -107,8 +90,8 @@ test('a price that can be paid marks nothing', () => {
 test('the strip marks the chosen item in Items, every group upgrade in Camp, nothing in Party', () => {
   const upgrades = [{ cost: { fish: 1 } }, { cost: { ore: 2 } }]
   const onScreen = { chosenItem: { upgradeCost: { bars: 5 } }, upgrades }
-  assert.deepEqual(costsOnScreen('items', onScreen), [{ bars: 5 }])
-  assert.deepEqual(costsOnScreen('items', { ...onScreen, chosenItem: null }), [])
+  assert.deepEqual(costsOnScreen('chest', onScreen), [{ bars: 5 }])
+  assert.deepEqual(costsOnScreen('chest', { ...onScreen, chosenItem: null }), [])
   assert.deepEqual(costsOnScreen('camp', onScreen), [{ fish: 1 }, { ore: 2 }])
   assert.deepEqual(costsOnScreen('party', onScreen), [])
 })

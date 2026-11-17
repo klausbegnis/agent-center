@@ -1,14 +1,22 @@
-// The game's frame around the rooms: the tabs, the Arsenal, Skills and Market panels and a line for
+// The game's frame around the rooms: above the tabs, the room picker and the world's coins and
+// materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
-import { createArsenalView } from './arsenal-view.js'
 import { button, el, svgIcon } from './dom.js'
 import { createGameActions } from './game-actions.js'
+import { ALL_ROOMS, createGameContext } from './game-context.js'
 import { card } from './game-controls.js'
-import { gameModeOf, isEstimated, tabOrDefault } from './game-model.js'
+import {
+  GAME_TABS,
+  chosenRoomId,
+  gameModeOf,
+  isEstimated,
+  roomFilterOf,
+  tabOrDefault,
+  worldById
+} from './game-model.js'
+import { createGamePanels } from './game-panels.js'
 import { createGameTabs, panelId, tabId } from './game-tabs.js'
-import { createSkillsView } from './skills-view.js'
 import { ESTIMATED_MARKER, ESTIMATED_NOTE, gameUnavailable } from './labels.js'
-import { createMarketView } from './market-view.js'
 import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
@@ -21,15 +29,21 @@ const NOTICE_MS = 6000
  *   root: HTMLElement,
  *   roomsElement: HTMLElement,
  *   transport: object,
- *   onTabChange: () => void
- * }} options `onTabChange` is called after the open tab changed, so the rooms can be laid out
+ *   onTabChange: () => void,
+ *   onRoomsChange: () => void
+ * }} options `onTabChange` is called after the open tab changed, so the rooms can be laid out;
+ *   `onRoomsChange` after the Rooms tab was narrowed to one room or opened to all again
  */
-export function createGameShell({ root, roomsElement, transport, onTabChange }) {
+export function createGameShell({ root, roomsElement, transport, onTabChange, onRoomsChange }) {
   let tab = 'rooms'
   let mode = 'off'
   let state = null
   let noticeUntil = 0
   let isSettingsOpen = false
+  /** The room Party and Chest show, and whose world the other tabs show; null for the first. */
+  let wantedRoomId = null
+  /** The one room the Rooms tab shows, or null for all of them (the default). */
+  let filterId = null
 
   const bar = el('div', 'ac-game-bar')
   const tabs = createGameTabs({ onSelect: (next) => select(next) })
@@ -41,6 +55,10 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   viewOnly.title = VIEW_ONLY_NOTE
   viewOnly.setAttribute('aria-label', `${VIEW_ONLY_MARKER}: ${VIEW_ONLY_NOTE}`)
   bar.append(tabs.element, estimated, viewOnly)
+  const context = createGameContext({ onPick: (value) => pickRoom(value) })
+  // The picker and the strip sit above the tabs and keep their size on every tab.
+  const top = el('div', 'ac-game-top')
+  top.append(context.element, bar)
 
   const notice = el('p', 'ac-game-notice')
   notice.setAttribute('role', 'status')
@@ -49,7 +67,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const panels = {}
   const contents = {}
   const unavailableCards = {}
-  for (const name of ['arsenal', 'skills', 'market']) {
+  for (const name of GAME_TABS.filter((name) => name !== 'rooms')) {
     const panel = el('section', `ac-game-panel ac-game-panel-${name}`)
     panel.id = panelId(name)
     panel.setAttribute('role', 'tabpanel')
@@ -71,10 +89,23 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
   const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
 
   /** What draws each panel while the game runs. */
-  const views = {
-    arsenal: createArsenalView({ panel: contents.arsenal, actions, prefs: transport.prefs }),
-    skills: createSkillsView({ panel: contents.skills, actions }),
-    market: createMarketView({ panel: contents.market, actions, base: transport.base ?? '', prefs: transport.prefs })
+  const base = transport.base ?? ''
+  const views = createGamePanels({ contents, actions, base, onChosenItem: () => drawPanel() })
+
+  /**
+   * A room picked above the tabs. On Rooms it narrows the rooms shown (ALL_ROOMS opens them all
+   * again), and a room picked there is also the one the other tabs show.
+   */
+  function pickRoom(value) {
+    if (tab === 'rooms') {
+      filterId = value === ALL_ROOMS ? null : value
+      onRoomsChange()
+    }
+    if (value !== ALL_ROOMS) {
+      wantedRoomId = value
+      transport.prefs?.set('room', value)
+    }
+    show()
   }
 
   function showNotice(message, action) {
@@ -92,26 +123,56 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     else if (returnFocus) settingsButton.focus()
   }
 
+  /**
+   * How far the page scrolls before the strip above the tabs sticks to the top: where it starts,
+   * right under the header, in the page's own coordinates.
+   */
+  function stickPoint() {
+    const above = top.previousElementSibling
+    if (!above) return 0
+    // Measured from the header, which never sticks: the strip's own place moves while it is stuck.
+    const spacing = (element, property) => parseFloat(getComputedStyle(element)[property]) || 0
+    const gap = spacing(root, 'rowGap') + spacing(top, 'marginTop')
+    return above.getBoundingClientRect().bottom - root.getBoundingClientRect().top + root.scrollTop + gap
+  }
+
   function select(next) {
     isSettingsOpen = false
+    const wasRooms = tab === 'rooms'
+    // Scrolled far enough that the tabs stick to the top: the next tab opens at its own top, with
+    // the tabs where they are. Otherwise nothing above the tabs moves.
+    const stuckAt = root.scrollTop >= stickPoint() ? stickPoint() : null
     tab = tabOrDefault(next)
     transport.prefs?.set('tab', tab)
     show()
     onTabChange()
+    if (stuckAt !== null) root.scrollTop = stuckAt
+    // Rooms narrowed to one room show it only on their own tab.
+    if (filterId && wasRooms !== (tab === 'rooms')) onRoomsChange()
   }
 
-  /** Draws the open panel; the hidden one is drawn when it is opened. */
+  /** Draws the open panel, the hidden ones when they are opened, and the strip above the tabs. */
   function drawPanel() {
-    if (!panels[tab] || !state) return
+    if (!state) return
     const isRunning = mode === 'running'
-    contents[tab].hidden = !isRunning
-    unavailableCards[tab].hidden = isRunning
-    if (isRunning) {
-      views[tab]?.update(state)
+    context.element.hidden = !isRunning
+    if (!isRunning) {
+      if (!panels[tab]) return
+      contents[tab].hidden = true
+      unavailableCards[tab].hidden = false
+      const { title, lines } = gameUnavailable(state.game?.status)
+      unavailableCards[tab].replaceChildren(card(title, lines))
       return
     }
-    const { title, lines } = gameUnavailable(state.game?.status)
-    unavailableCards[tab].replaceChildren(card(title, lines))
+    const roomId = chosenRoomId(state, wantedRoomId)
+    const room = roomId ? state.game.rooms[roomId] : null
+    const world = room ? worldById(state.game, room.worldId) : null
+    if (panels[tab]) {
+      contents[tab].hidden = false
+      unavailableCards[tab].hidden = true
+    }
+    const short = panels[tab] ? views.draw({ state, tab, roomId, room, world }) : new Map()
+    context.update({ state, tab, roomId, filterId: roomFilterOf(state, filterId), world, short })
   }
 
   function show() {
@@ -126,7 +187,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     } else {
       delete root.dataset.gameSettings
     }
-    bar.hidden = !isShown
+    top.hidden = !isShown
     estimated.hidden = !(mode === 'running' && isEstimated(state?.game))
     viewOnly.hidden = !(isShown && state?.game?.viewOnly === true)
     if (isShown) root.dataset.gameTab = tab
@@ -145,21 +206,30 @@ export function createGameShell({ root, roomsElement, transport, onTabChange }) 
     drawPanel()
   }
 
-  bar.hidden = true
+  top.hidden = true
   settingsButton.hidden = true
   for (const panel of Object.values(panels)) panel.hidden = true
 
   return {
-    /** The tab bar goes above the rooms; the panels and the message line below it. */
-    bar,
+    /** The picker, the strip and the tab bar go above the rooms; the panels and messages below. */
+    top,
     notice,
     panels: [...Object.values(panels), settings.element],
     settingsButton,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {
-      const saved = await Promise.resolve(transport.prefs?.get('tab')).catch(() => null)
-      tab = tabOrDefault(saved)
+      const read = (key) => Promise.resolve(transport.prefs?.get(key)).catch(() => null)
+      const [saved, section, room, arsenalRoom] =
+        await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom')])
+      // Saved before the Arsenal became Party, Chest and Camp: its section names the tab.
+      tab = tabOrDefault(saved, section)
+      const savedRoom = [room, arsenalRoom].find((value) => typeof value === 'string' && value)
+      if (savedRoom && wantedRoomId === null) wantedRoomId = savedRoom
+    },
+    /** The one room the Rooms tab is narrowed to, or null to show every room. */
+    roomFilter() {
+      return mode === 'running' && tab === 'rooms' && state ? roomFilterOf(state, filterId) : null
     },
     update(next) {
       state = next

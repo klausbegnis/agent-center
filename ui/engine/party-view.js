@@ -1,4 +1,4 @@
-// The Arsenal's Party section: what the room's idle characters gather, the characters as cards
+// The Party tab: what the room's idle characters gather, the characters as cards
 // with class, level, progress, trade picker, the seven attributes and the three equipment slots
 // drawn like the chest's, then the retirees and the bonus they leave the project.
 import { el } from './dom.js'

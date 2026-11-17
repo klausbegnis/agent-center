@@ -1,7 +1,11 @@
-// The game's tab list: Rooms, Arsenal, Skills. Real tabs, reachable with the arrow keys.
+// The game's tab list: Rooms, Party, Chest, Camp, Skills, Market. Real tabs, reachable with the
+// arrow keys. Each has a pixel icon beside its name; when the bar is too narrow for the names
+// (a container query in game.css), only the icons show and the name stays the accessible name
+// and the tooltip.
 import { el } from './dom.js'
 import { GAME_TABS, tabAfterKey } from './game-model.js'
-import { GAME_TAB_LABEL, GAME_TABS_NAME } from './labels.js'
+import { gameIcon } from './icon-view.js'
+import { GAME_TAB_ICON, GAME_TAB_LABEL, GAME_TABS_NAME } from './labels.js'
 
 /** The id of a tab and of the panel it controls, so each can name the other. */
 export const tabId = (tab) => `ac-game-tab-${tab}`
@@ -15,8 +19,12 @@ export function createGameTabs({ onSelect }) {
 
   const buttons = new Map()
   for (const tab of GAME_TABS) {
-    const node = el('button', 'ac-game-tab', GAME_TAB_LABEL[tab])
+    const node = el('button', 'ac-game-tab')
     node.type = 'button'
+    const label = el('span', 'ac-game-tab-label', GAME_TAB_LABEL[tab])
+    node.append(gameIcon(GAME_TAB_ICON[tab], 'ac-game-tab-icon'), label)
+    node.setAttribute('aria-label', GAME_TAB_LABEL[tab])
+    node.title = GAME_TAB_LABEL[tab]
     node.id = tabId(tab)
     node.setAttribute('role', 'tab')
     node.setAttribute('aria-controls', panelId(tab))
