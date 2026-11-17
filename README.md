@@ -82,7 +82,10 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   each character (Auto); on the Party tab you can set what everyone in a room
   gathers, or what one character gathers, which wins over the room's choice.
 - **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
-  a new character takes the best free item of each slot by itself. Materials upgrade items and
+  a new character takes the best free item of each slot by itself. On the Party tab, click a
+  character's slot to choose another item from the chest (or swap with whoever holds it); a
+  slot chosen by hand stays as chosen until you set it back to Auto, and **Best gear for
+  everyone here** re-picks every other slot. Materials upgrade items and
   buy upgrades for the whole party, by hand or with auto-spend.
 - **A market with five cities.** Materials that pile up can be sold for coins or traded for
   ones you lack, in cities that open as the world grows: Goldmill, Deepforge, Brinehaven,

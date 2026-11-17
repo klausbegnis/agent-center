@@ -19,6 +19,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Choose what a character holds. On the Party tab each of a character's three slots opens, in
+  place, the room's chest items that fit it, best first, with what each changes and whether it
+  is free or a swap with the character holding it (refused, with the reason, when that one
+  could not use what it gets back). A slot chosen by hand, item or nothing, keeps that choice
+  until it is set back to Auto; **Best gear for everyone here** re-picks every other slot and
+  says how many changed. The choices are kept in the save and in save files; older saves load
+  with none. New game routes `/api/game/equip` and `/api/game/best-gear` (panel requests
+  `game.equip` and `game.bestGear`) answer this computer only; a page that only watches shows
+  the slots without the picker.
 - Game mode's **Market** tab: each world has coins and five cities (Goldmill, Deepforge,
   Brinehaven, Tallwood, Runespire) that open as the world level grows. Sell materials for
   coins, trade one material for another a city produces, and buy gear at a city's stall, one

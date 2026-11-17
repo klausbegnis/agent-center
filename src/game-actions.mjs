@@ -4,6 +4,7 @@
 import { emptyBridge } from './game-save.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
+import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
 import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
@@ -179,6 +180,44 @@ export function createGameActions(dependencies) {
         requireTrade(trade)
         return engine.setCharacterTrade(save, { projectId: roomId, sessionId, trade })
       })
+    },
+
+    /**
+     * Sets what a living character of a room holds in a slot: an item of the room's chest, null
+     * for nothing, or 'auto' for the automatic pick. A choice the rules refuse says why.
+     *
+     * @param {{ roomId: string, sessionId: string, slot: string, itemId: string | null }} input
+     */
+    async setEquipment({ roomId, sessionId, slot, itemId }) {
+      return change((save) => {
+        const project = joinedProject(save, roomId)
+        if (typeof sessionId !== 'string' || !Object.hasOwn(project.characters, sessionId)) {
+          throw refuse('unknown character', sessionId)
+        }
+        if (!EQUIPMENT_SLOTS.includes(slot)) throw refuse('unknown slot', slot)
+        if (itemId !== null && typeof itemId !== 'string') throw refuse('unknown item', itemId)
+        const problem = engine.equipProblem(project, { sessionId, slot, itemId })
+        if (problem) throw new Error(problem)
+        return engine.equipItem(save, { projectId: roomId, sessionId, slot, itemId })
+      })
+    },
+
+    /**
+     * Re-runs the automatic pick for every slot of a room nobody pinned, and answers how many
+     * slots changed.
+     *
+     * @param {{ roomId: string }} input
+     */
+    async bestGear({ roomId }) {
+      let before = null
+      let after = null
+      const answer = change((save) => {
+        before = joinedProject(save, roomId)
+        const next = engine.bestGearForRoom(save, { projectId: roomId })
+        after = next.worlds[worldIdOf(next, roomId)].projects[roomId]
+        return next
+      })
+      return { ...answer, slotsChanged: changedSlots(before, after).length }
     },
 
     /** @param {{ worldId: string, cityId: string, materialId: string, amount: number }} input */

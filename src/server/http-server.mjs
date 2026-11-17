@@ -137,6 +137,9 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/travel': (input) => controller.gameSetTravel(input.on),
     '/api/game/character-trade': (input) =>
       controller.gameSetCharacterTrade(input.roomId, input.sessionId, input.trade ?? null),
+    '/api/game/equip': (input) =>
+      controller.gameSetEquipment(input.roomId, input.sessionId, input.slot, input.itemId ?? null),
+    '/api/game/best-gear': (input) => controller.gameBestGear(input.roomId),
     '/api/game/room-trade': (input) => controller.gameSetRoomTrade(input.roomId, input.trade ?? null),
     '/api/game/keep-titles': (input) => controller.gameSetKeepTitles(input.on),
     '/api/game/export-save': () => controller.gameExportSave(),

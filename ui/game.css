@@ -1555,3 +1555,46 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
 .ac-market-offer-price { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 .ac-game-context-world { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); white-space: nowrap; }
 .ac-market-no-world[hidden] { display: none; }
+
+/* Party: a character's equipment picker opens in place under its slots. */
+.ac-game-equip { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ac-game-equip-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--orca-ring, #6fe0d2);
+  border-radius: 6px;
+  background: var(--orca-background, #171a21);
+}
+.ac-game-equip-picker[hidden] { display: none; }
+.ac-game-equip-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; }
+.ac-game-equip-options { display: flex; flex-direction: column; gap: 3px; max-height: 260px; overflow-y: auto; }
+.ac-game-equip-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.ac-game-equip-option:hover:not(:disabled) { background: var(--orca-secondary, #262b35); }
+.ac-game-equip-option:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+/* The item worn now, or the choice in force, is framed and ticked, not only coloured. */
+.ac-game-equip-option[aria-pressed='true'] { border-color: var(--orca-ring, #6fe0d2); }
+.ac-game-equip-option[aria-pressed='true'] .ac-game-equip-option-name::after { content: ' ✓'; }
+.ac-game-equip-option:disabled { opacity: 0.55; cursor: not-allowed; }
+.ac-game-equip-option-text { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-equip-option-name { font-weight: 600; }
+.ac-game-equip-option-hint { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
+/* A slot chosen by hand carries a small pin mark as well as its frame. */
+.ac-game-slotbox-pinned { outline: 1px dashed var(--ac-game-gold); outline-offset: 1px; }
+.ac-game-best-gear[hidden] { display: none; }
+.ac-game-best-gear .ac-game-card-line:empty { display: none; }

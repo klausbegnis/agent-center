@@ -28,6 +28,9 @@ const transport = {
   setCharacterTrade: (roomId, sessionId, trade) =>
     orca.plugin.request('game.characterTrade', { roomId, sessionId, trade }),
   setRoomTrade: (roomId, trade) => orca.plugin.request('game.roomTrade', { roomId, trade }),
+  setEquipment: (roomId, sessionId, slot, itemId) =>
+    orca.plugin.request('game.equip', { roomId, sessionId, slot, itemId }),
+  bestGear: (roomId) => orca.plugin.request('game.bestGear', { roomId }),
   setKeepTitles: (on) => orca.plugin.request('game.keepTitles', { on }),
   exportSave: () => orca.plugin.request('game.exportSave'),
   importSave: (file) => orca.plugin.request('game.importSave', { file }),

@@ -111,6 +111,8 @@ otherwise.
   | `/api/game/travel` | turns "new scene after each monster" on or off |
   | `/api/game/character-trade` | sets what one character gathers while idle |
   | `/api/game/room-trade` | sets what a room's characters gather while idle |
+  | `/api/game/equip` | sets what one character holds in a slot (swapping with another one if needed) |
+  | `/api/game/best-gear` | re-picks the best free gear for every slot of a room nobody chose by hand |
   | `/api/game/keep-titles` | turns keeping conversation titles on or off |
   | `/api/game/export-save` | answers the whole save file (see "The save file" below) |
   | `/api/game/import-save` | replaces the whole game with a file (cannot be undone) |

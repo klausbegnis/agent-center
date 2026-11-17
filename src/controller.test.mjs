@@ -68,7 +68,9 @@ function recordingGame() {
     moveOrphanItems: record('moveOrphan'),
     sellMaterial: record('sell'),
     tradeMaterial: record('trade'),
-    buyStallOffer: record('buyOffer')
+    buyStallOffer: record('buyOffer'),
+    setEquipment: record('equip'),
+    bestGear: record('bestGear')
   }
   return { game, calls }
 }
@@ -171,5 +173,22 @@ test('market actions reach the game with their fields, and amounts must be whole
   await assert.rejects(controller.gameTradeMaterial('main', 'deepforge', 'crops', null, 5), /invalid material/)
   await assert.rejects(controller.gameBuyStallOffer('main', 'goldmill', '0', 'x', 'room'), /invalid offer/)
   await assert.rejects(controller.gameBuyStallOffer('main', 7, 0, 'x', 'room'), /invalid city/)
+  assert.equal(calls.length, 3)
+})
+
+test('equipment actions reach the game with their fields; the item is text, null or auto', async () => {
+  const { game, calls } = recordingGame()
+  const { controller } = setup({ game })
+  await controller.gameSetEquipment('local:/work/rumble-banana', 's1', 'weapon', null)
+  await controller.gameSetEquipment('local:/work/rumble-banana', 's1', 'weapon', 'auto')
+  await controller.gameBestGear('local:/work/rumble-banana')
+  assert.deepEqual(calls, [
+    ['equip', { roomId: 'local:/work/rumble-banana', sessionId: 's1', slot: 'weapon', itemId: null }],
+    ['equip', { roomId: 'local:/work/rumble-banana', sessionId: 's1', slot: 'weapon', itemId: 'auto' }],
+    ['bestGear', { roomId: 'local:/work/rumble-banana' }]
+  ])
+  await assert.rejects(controller.gameSetEquipment('room', 's1', 7, null), /invalid slot/)
+  await assert.rejects(controller.gameSetEquipment('room', 's1', 'weapon', 3), /invalid item/)
+  await assert.rejects(controller.gameBestGear(null), /invalid room/)
   assert.equal(calls.length, 3)
 })

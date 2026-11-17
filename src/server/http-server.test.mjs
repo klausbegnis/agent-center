@@ -39,6 +39,14 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['roomTrade', roomId, trade])
       return { changed: true }
     },
+    gameSetEquipment: async (...input) => {
+      calls.push(['equip', ...input])
+      return { changed: true }
+    },
+    gameBestGear: async (roomId) => {
+      calls.push(['bestGear', roomId])
+      return { changed: true, slotsChanged: 2 }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -173,6 +181,17 @@ test('the trade routes pass their fields on, a missing trade as null for Auto', 
   assert.deepEqual(calls, [['characterTrade', room, 's1', 'fishing'], ['roomTrade', room, null]])
 })
 
+test('the equipment routes pass their fields on, a missing item as null for an empty slot', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  const room = 'local:/work/rumble-banana'
+  assert.equal((await post('/api/game/equip', { roomId: room, sessionId: 's1', slot: 'weapon', itemId: 'auto' })).status, 200)
+  assert.equal((await post('/api/game/equip', { roomId: room, sessionId: 's1', slot: 'tool' })).status, 200)
+  const best = await post('/api/game/best-gear', { roomId: room })
+  assert.deepEqual(JSON.parse(best.text), { changed: true, slotsChanged: 2 })
+  assert.deepEqual(calls, [['equip', room, 's1', 'weapon', 'auto'], ['equip', room, 's1', 'tool', null], ['bestGear', room]])
+})
+
 test('the market routes reach the controller with their fields', async (t) => {
   const { server, calls } = await setup(t)
   const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
@@ -207,7 +226,7 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
 
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-  'sell', 'trade', 'buy-offer']
+  'sell', 'trade', 'buy-offer', 'equip', 'best-gear']
 
 const gameState = {
   rooms: [],

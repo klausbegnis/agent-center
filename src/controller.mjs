@@ -29,6 +29,11 @@
  * @property {(file: object) => Promise<GameResult>} gameImportSave replaces the whole game
  * @property {(fromRoomId: string, toRoomId: string) => Promise<GameResult>} gameMoveOrphanItems
  *   moves a room left behind's chest and retirees into a room on screen
+ * @property {(roomId: string, sessionId: string, slot: string, itemId: string | null) =>
+ *   Promise<GameResult>} gameSetEquipment sets what a character holds in a slot; itemId 'auto'
+ *   hands the slot back to the automatic pick, null empties it
+ * @property {(roomId: string) => Promise<GameResult & { slotsChanged: number }>} gameBestGear
+ *   re-runs the automatic pick for every slot of a room nobody pinned
  * @property {(worldId: string, cityId: string, materialId: string, amount: number) =>
  *   Promise<GameResult>} gameSellMaterial sells materials to a city for coins
  * @property {(worldId: string, cityId: string, fromId: string, toId: string, amount: number) =>
@@ -154,6 +159,13 @@ export function createController({
       sessionId: requireText(sessionId, 'session'),
       trade: trade === null ? null : requireText(trade, 'trade')
     })),
+    gameSetEquipment: (roomId, sessionId, slot, itemId) => playAction(() => game.setEquipment({
+      roomId: requireText(roomId, 'room'),
+      sessionId: requireText(sessionId, 'session'),
+      slot: requireText(slot, 'slot'),
+      itemId: itemId === null ? null : requireText(itemId, 'item')
+    })),
+    gameBestGear: (roomId) => playAction(() => game.bestGear({ roomId: requireText(roomId, 'room') })),
     gameSetRoomTrade: (roomId, trade) => playAction(() => game.setRoomTrade({
       roomId: requireText(roomId, 'room'),
       trade: trade === null ? null : requireText(trade, 'trade')

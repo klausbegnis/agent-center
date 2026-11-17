@@ -152,6 +152,7 @@ function characterView(member, link, state) {
     trade: member.trade,
     tradeChoice: member.tradeChoice ?? null,
     autoTrade: member.autoTrade ?? null,
+    pinned: member.pinned ?? {},
     state
   }
 }
