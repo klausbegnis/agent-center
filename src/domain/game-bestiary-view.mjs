@@ -2,17 +2,21 @@
 // legendary items the bestiary's boss cards hint at. Pure.
 
 /**
- * A bestiary event with what a UI says of it: the race's name, or the boss's name and epithet.
+ * A bestiary event with what a UI says of it: the race's name (and, for a level past the powered
+ * ones, its title and prestige rank), or the boss's name and epithet.
  *
- * @param {{ kind: string, id?: string }} event
- * @param {{ races: { id: string, name: string }[], bosses: { id: string, name: string, epithet: string }[] }
- *   | null | undefined} bestiary the content's bestiary, as the engine's view gives it
+ * @param {{ kind: string, id?: string, level?: number }} event
+ * @param {{ races: { id: string, name: string, title?: string }[], levels?: number,
+ *   bosses: { id: string, name: string, epithet: string }[] } | null | undefined} bestiary the
+ *   content's bestiary, as the engine's view gives it
  * @returns {object}
  */
 export function describeBestiaryEvent(event, bestiary) {
   if (event.kind === 'race') {
     const race = bestiary?.races.find((entry) => entry.id === event.id)
-    return race ? { ...event, name: race.name } : event
+    if (!race) return event
+    const prestige = event.level && bestiary.levels ? event.level - bestiary.levels : 0
+    return prestige > 0 ? { ...event, name: race.name, title: race.title, prestige } : { ...event, name: race.name }
   }
   if (event.kind === 'boss') {
     const boss = bestiary?.bosses.find((entry) => entry.id === event.id)

@@ -4,7 +4,7 @@
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
-import { BESTIARY_EVENT } from './bestiary-labels.js'
+import { BESTIARY_EVENT, prestigeTitle } from './bestiary-labels.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
@@ -108,11 +108,13 @@ function lineEffects(events, game) {
   return effects
 }
 
-/** What a bestiary event says over the room: a first kill, a mastery level or a boss hunter level. */
+/** What a bestiary event says over the room: a first kill, a level, a title, a hunter rank or level. */
 function bestiaryText(event) {
   const name = event.name ?? nameFromId(event.id ?? '')
   if (event.kind === 'hunter') return BESTIARY_EVENT.hunter(event.level)
+  if (event.kind === 'rank') return BESTIARY_EVENT.rank(event.level)
   if (event.discovered) return event.kind === 'boss' ? BESTIARY_EVENT.boss(name) : BESTIARY_EVENT.race(name)
+  if (event.prestige > 0 && event.title) return BESTIARY_EVENT.prestige(name, prestigeTitle(event.title, event.prestige))
   return event.level ? BESTIARY_EVENT.mastery(name, event.level) : ''
 }
 

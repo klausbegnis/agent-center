@@ -1,11 +1,12 @@
-// The Bestiary tab: a header with the world's totals, the boss hunter's track and the bestiary's
-// bonuses; a switch between Creatures and Bosses; and a grid of cards. A race's card shows its
-// portrait (a dark silhouette until its first kill), name, kills, mastery pips, progress and its
-// bonus now and next, and opens in place to its details. A boss's card shows its fixed look, its
+// The Bestiary tab: a header with the world's totals, its hunter rank, the boss hunter's track and
+// the bestiary's bonuses; a switch between Creatures and Bosses (and, for creatures, their order);
+// and a grid of cards. A race's card shows its portrait (a dark silhouette until its first kill),
+// name, level and prestige title, points to the next level with a bar, and its bonus now and next,
+// and opens in place to its details. A boss's card shows its fixed look, its
 // name once beaten, its wins and the hint of its legendary item. Every card and its drawing is
 // made once and only updated, so 75 monsters cost nothing after the first draw.
 import { BESTIARY } from './bestiary-labels.js'
-import { bestiaryModel } from './bestiary-model.js'
+import { CREATURE_SORTS, bestiaryModel } from './bestiary-model.js'
 import { el } from './dom.js'
 import { meter, replaceKeepingFocus } from './game-controls.js'
 import { worldById } from './game-model.js'
@@ -13,6 +14,8 @@ import { legendaryPicture } from './legendary-art.js'
 import { drawMonsterArt } from './monster-view.js'
 
 const SHOWS = ['creatures', 'bosses']
+/** Prestige ranks a card's border tells apart; higher ones look like the last. */
+const PRESTIGE_BORDERS = 3
 
 /** A monster's portrait, drawn once. */
 function portrait(look) {
@@ -40,16 +43,19 @@ function createRaceCard(model, onToggle) {
   toggle.setAttribute('aria-controls', detailsId)
   toggle.addEventListener('click', () => onToggle(model.key))
   const name = el('strong', 'ac-bestiary-name')
+  const level = el('span', 'ac-bestiary-level')
+  const heading = el('span', 'ac-bestiary-heading')
+  heading.append(name, level)
+  const title = el('span', 'ac-bestiary-title')
   const kills = el('span', 'ac-bestiary-kills')
-  const pips = el('span', 'ac-bestiary-pips')
-  pips.setAttribute('aria-hidden', 'true')
   const bar = el('span', 'ac-bestiary-bar')
   bar.setAttribute('aria-hidden', 'true')
   const fill = el('span', 'ac-bestiary-bar-fill')
   bar.append(fill)
   const bonus = el('span', 'ac-bestiary-bonus')
+  const next = el('span', 'ac-bestiary-next')
   const words = el('span', 'ac-bestiary-words')
-  words.append(name, kills, pips, bar, bonus)
+  words.append(heading, title, kills, bar, bonus, next)
   toggle.append(portrait(model.look), words)
   const details = el('div', 'ac-bestiary-details')
   details.id = detailsId
@@ -64,15 +70,16 @@ function createRaceCard(model, onToggle) {
     const ranks = el('dl', 'ac-bestiary-ranks')
     for (const rank of card.details.ranks) {
       const item = el('div', 'ac-bestiary-rank')
+      item.title = rank.title
       item.append(el('dt', '', rank.name), el('dd', '', rank.count.toLocaleString('en')))
       ranks.append(item)
     }
-    const next = card.details.next
+    const coming = card.details.next
     details.replaceChildren(
       el('h4', 'ac-bestiary-subtitle', BESTIARY.rankBreakdown), ranks,
-      el('p', 'ac-game-card-line', [card.details.eliteText, card.details.firstKill].filter(Boolean).join(' · ')),
+      el('p', 'ac-game-card-line', [card.killsText, card.details.eliteText, card.details.firstKill].filter(Boolean).join(' · ')),
       ...lineList(BESTIARY.now, card.details.now.length ? card.details.now : [BESTIARY.nothingYet]),
-      ...(next ? lineList(next.at, next.lines) : [el('p', 'ac-game-card-line', BESTIARY.masteryTop)])
+      ...lineList(coming.at, coming.lines)
     )
   }
 
@@ -84,14 +91,18 @@ function createRaceCard(model, onToggle) {
       if (signature === drawn) return
       drawn = signature
       element.dataset.discovered = String(card.discovered)
+      // A border that deepens with prestige: a mark, never the only sign (the title says it too).
+      element.dataset.prestige = String(Math.min(card.prestige, PRESTIGE_BORDERS))
       element.classList.toggle('ac-bestiary-open', isOpen)
       toggle.setAttribute('aria-expanded', String(isOpen))
       toggle.setAttribute('aria-label', card.label)
       name.textContent = card.name
+      level.textContent = card.levelText
+      title.textContent = card.title
       kills.textContent = card.discovered ? card.progressText : card.killsText
-      pips.replaceChildren(...card.pips.map((on) => el('i', on ? 'ac-bestiary-pip ac-bestiary-pip-on' : 'ac-bestiary-pip')))
       fill.style.width = `${card.share * 100}%`
-      bonus.textContent = card.bonusText
+      bonus.textContent = card.nowText
+      next.textContent = card.nextText
       details.hidden = !isOpen
       if (isOpen) drawDetails(card)
     }
@@ -141,6 +152,7 @@ function createBossCard(model, base) {
  */
 export function createBestiaryView({ panel, base }) {
   let show = 'creatures'
+  let sort = 'points'
   let openKey = null
   let state = null
   let worldId = null
@@ -166,8 +178,16 @@ export function createBestiaryView({ panel, base }) {
   const hunterLines = el('div', 'ac-bestiary-hunter-lines')
   hunter.append(hunterHead, hunterMeter.element, hunterLines)
   hunter.title = BESTIARY.hunterNote
+  const rank = el('div', 'ac-bestiary-hunter ac-bestiary-rank-track')
+  const rankValue = el('span', 'ac-bestiary-hunter-level')
+  const rankHead = el('div', 'ac-bestiary-hunter-head')
+  rankHead.append(el('strong', '', BESTIARY.rank), rankValue)
+  const rankMeter = meter('ac-bestiary-hunter-meter', BESTIARY.rank)
+  const rankLines = el('div', 'ac-bestiary-hunter-lines')
+  rank.append(rankHead, rankMeter.element, rankLines)
+  rank.title = BESTIARY.rankNote
   const bonuses = el('div', 'ac-bestiary-bonuses')
-  head.append(title, el('p', 'ac-game-card-line', BESTIARY.intro), totals, hunter, bonuses)
+  head.append(title, el('p', 'ac-game-card-line', BESTIARY.intro), totals, rank, hunter, bonuses)
 
   const switcher = el('div', 'ac-bestiary-switch')
   switcher.setAttribute('role', 'group')
@@ -183,12 +203,30 @@ export function createBestiaryView({ panel, base }) {
     switcher.append(node)
     return node
   })
+  // The creatures' order: by points (the default) or the closest to a new level first.
+  const sorter = el('div', 'ac-bestiary-switch ac-bestiary-sort')
+  sorter.setAttribute('role', 'group')
+  sorter.setAttribute('aria-label', BESTIARY.sort)
+  sorter.append(el('span', 'ac-bestiary-sort-label', BESTIARY.sort))
+  const sortButtons = CREATURE_SORTS.map((name) => {
+    const node = el('button', 'ac-button ac-bestiary-switch-button', name === 'next' ? BESTIARY.sortNext : BESTIARY.sortPoints)
+    node.type = 'button'
+    node.dataset.key = `sort:${name}`
+    node.addEventListener('click', () => {
+      sort = name
+      draw()
+    })
+    sorter.append(node)
+    return node
+  })
+  const controls = el('div', 'ac-bestiary-controls')
+  controls.append(switcher, sorter)
   const creatureGrid = el('div', 'ac-bestiary-grid ac-bestiary-creatures')
   const bossGrid = el('ul', 'ac-bestiary-grid ac-bestiary-bosses')
   const others = el('p', 'ac-game-card-line ac-bestiary-others')
   const empty = el('p', 'ac-game-card-line', BESTIARY.noWorld)
   const body = el('section', 'ac-game-card ac-bestiary-body')
-  body.append(switcher, creatureGrid, bossGrid, others)
+  body.append(controls, creatureGrid, bossGrid, others)
   panel.append(head, body, empty)
 
   function toggleCard(key) {
@@ -225,9 +263,21 @@ export function createBestiaryView({ panel, base }) {
     place(bossGrid, 'bosses', cards, model.bosses.map((card) => card.id))
   }
 
+  function drawRank(model) {
+    rank.hidden = !model.rank
+    if (!model.rank) return
+    rankValue.textContent = model.rank.rankText
+    rankMeter.set(model.rank.share, model.rank.progressText)
+    rankLines.replaceChildren(
+      ...model.rank.now.map((line) => el('p', 'ac-bestiary-bonus-line', line)),
+      ...(model.rank.next.length ? [el('p', 'ac-game-card-line', `${BESTIARY.rankNext}${model.rank.next.join('; ')}`)] : [])
+    )
+  }
+
   function drawHead(model) {
     racesValue.textContent = model.racesText
     bossesValue.textContent = model.bossesText
+    drawRank(model)
     hunterLevel.textContent = model.hunter.levelText
     hunterMeter.set(model.hunter.share, model.hunter.progressText)
     const next = model.hunter.next
@@ -243,13 +293,15 @@ export function createBestiaryView({ panel, base }) {
   function draw() {
     if (!state) return
     const world = worldById(state.game, worldId) ?? state.game.worlds?.[0] ?? null
-    const model = bestiaryModel(state.game, world)
+    const model = bestiaryModel(state.game, world, { sort })
     head.hidden = !model
     body.hidden = !model
     empty.hidden = Boolean(model)
     if (!model) return
     drawHead(model)
     switchButtons.forEach((node, at) => node.setAttribute('aria-pressed', String(SHOWS[at] === show)))
+    sortButtons.forEach((node, at) => node.setAttribute('aria-pressed', String(CREATURE_SORTS[at] === sort)))
+    sorter.hidden = show !== 'creatures'
     creatureGrid.hidden = show !== 'creatures'
     bossGrid.hidden = show !== 'bosses'
     others.hidden = show !== 'creatures' || !model.others
