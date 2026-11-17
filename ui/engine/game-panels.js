@@ -1,8 +1,9 @@
 // The game's tabs other than Rooms, as panels: Party, Chest (with the room's relics and the chests
-// rooms left behind), Camp, Skills and Market. Each draws the room or the world picked above the
+// rooms left behind), Camp, Skills, Market and Bestiary. Each draws the room or the world picked above the
 // tabs; only the open one is drawn, the others when they are opened. Says which materials the
 // prices on screen lack, for the strip above the tabs.
 import { costsOnScreen, shortMaterials } from './arsenal-model.js'
+import { createBestiaryView } from './bestiary-view.js'
 import { createCampView } from './camp-view.js'
 import { createChestView } from './chest-view.js'
 import { el } from './dom.js'
@@ -39,6 +40,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
   contents.camp.append(block(camp.element))
   const skills = createSkillsView({ panel: contents.skills, actions })
   const market = createMarketView({ panel: contents.market, actions, base })
+  const bestiary = createBestiaryView({ panel: contents.bestiary, base })
 
   return {
     /**
@@ -52,6 +54,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem }) {
       const game = state.game
       if (tab === 'skills') skills.update(state, world?.id ?? null)
       if (tab === 'market') market.update(state, { worldId: world?.id ?? null, roomId })
+      if (tab === 'bestiary') bestiary.update(state, world?.id ?? null)
       if (!room || !world) return new Map()
       if (tab === 'party') party.update({ state, game, roomId, room, world })
       if (tab === 'chest') {

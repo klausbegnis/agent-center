@@ -4,6 +4,7 @@
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
+import { BESTIARY_EVENT } from './bestiary-labels.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
@@ -15,7 +16,8 @@ export const MAX_ROOM_LINES = 3
  * @property {'monster' | 'agent' | 'room'} target where it plays
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
- * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary'} tone
+ * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary' |
+ *   'bestiary'} tone
  * @property {string} [artId] a legendary entry whose picture plays with the line
  */
 
@@ -98,9 +100,20 @@ function lineEffects(events, game) {
       // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
       const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))
       effects.push({ roomId: event.roomId, target: 'room', text, tone: 'legendary', artId: event.item })
+    } else if (event.type === 'bestiary' && room) {
+      const text = bestiaryText(event)
+      if (text) effects.push({ roomId: event.roomId, target: 'room', text, tone: 'bestiary' })
     }
   }
   return effects
+}
+
+/** What a bestiary event says over the room: a first kill, a mastery level or a boss hunter level. */
+function bestiaryText(event) {
+  const name = event.name ?? nameFromId(event.id ?? '')
+  if (event.kind === 'hunter') return BESTIARY_EVENT.hunter(event.level)
+  if (event.discovered) return event.kind === 'boss' ? BESTIARY_EVENT.boss(name) : BESTIARY_EVENT.race(name)
+  return event.level ? BESTIARY_EVENT.mastery(name, event.level) : ''
 }
 
 /** A new character: who arrived, in which room, and what it took from the chest. */

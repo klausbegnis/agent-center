@@ -1,0 +1,190 @@
+/* Game mode's Bestiary tab and the bestiary's news over a room. Colours come from Orca's theme
+   (--orca-*) and the game's own (--ac-game-*), with dark defaults. */
+
+.ac-bestiary-head .ac-game-summary { gap: 2px 18px; }
+.ac-bestiary-hunter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.ac-bestiary-hunter-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ac-bestiary-hunter-level { color: var(--orca-muted-foreground, #9aa3b2); font-variant-numeric: tabular-nums; }
+.ac-bestiary-hunter-meter { color: var(--ac-game-gold, #f2c14e); }
+.ac-bestiary-hunter-meter .ac-game-meter-fill { background: var(--ac-game-gold, #f2c14e); }
+.ac-bestiary-hunter-meter .ac-game-meter-text { color: var(--orca-foreground, #e8eaf0); font-size: 11px; }
+.ac-bestiary-hunter-lines { display: flex; flex-direction: column; gap: 2px; }
+.ac-bestiary-bonus-line { margin: 0; color: var(--ac-game-good, #6fe0d2); }
+.ac-bestiary-subtitle {
+  margin: 4px 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-bestiary-lines { margin: 0; padding-left: 1.1em; font-size: 12px; }
+.ac-bestiary-lines li + li { margin-top: 1px; }
+
+/* Creatures or bosses: a pair of buttons, the one shown pressed and underlined, not only coloured. */
+.ac-bestiary-switch { display: flex; gap: 6px; }
+.ac-bestiary-switch-button[aria-pressed='true'] {
+  border-color: var(--orca-ring, #6fe0d2);
+  box-shadow: inset 0 -2px 0 var(--orca-ring, #6fe0d2);
+  font-weight: 700;
+}
+.ac-bestiary-others { margin-top: 2px; }
+
+/* The grid: two cards a row in the sidebar, more as the panel widens. An open card takes its whole
+   row, where it stands; the others keep their order. */
+.ac-bestiary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-bestiary-grid[hidden] { display: none; }
+.ac-bestiary-bosses { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+
+.ac-bestiary-card {
+  min-width: 0;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--orca-foreground, #e8eaf0) 3%, transparent);
+}
+.ac-bestiary-card.ac-bestiary-open { grid-column: 1 / -1; border-color: var(--orca-ring, #6fe0d2); }
+.ac-bestiary-toggle {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ac-bestiary-toggle:hover { background: color-mix(in srgb, var(--orca-foreground, #e8eaf0) 6%, transparent); }
+.ac-bestiary-toggle:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: -2px; }
+.ac-bestiary-art { display: block; width: 48px; aspect-ratio: 1; }
+.ac-bestiary-art .ac-monster-art { filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.5)); }
+/* Unknown: the same drawing as a dark silhouette, so the shape teases what is to come. */
+.ac-bestiary-card[data-discovered='false'] .ac-bestiary-art .ac-monster-art,
+.ac-bestiary-boss[data-discovered='false'] .ac-bestiary-art .ac-monster-art {
+  filter: brightness(0) invert(0.4);
+  opacity: 0.55;
+}
+.ac-bestiary-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 11px; }
+.ac-bestiary-name {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ac-bestiary-kills,
+.ac-bestiary-progress,
+.ac-bestiary-epithet { color: var(--orca-muted-foreground, #9aa3b2); font-variant-numeric: tabular-nums; }
+.ac-bestiary-progress:empty,
+.ac-bestiary-bonus:empty { display: none; }
+.ac-bestiary-bonus { color: var(--ac-game-good, #6fe0d2); font-variant-numeric: tabular-nums; }
+.ac-bestiary-pips { display: flex; gap: 3px; }
+.ac-bestiary-pip {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ac-game-gold, #f2c14e);
+  transform: rotate(45deg);
+}
+.ac-bestiary-pip-on { background: var(--ac-game-gold, #f2c14e); }
+.ac-bestiary-card[data-discovered='false'] .ac-bestiary-pip { border-color: var(--orca-border, #3a4150); }
+.ac-bestiary-bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--ac-game-track, rgb(232 234 240 / 0.14));
+}
+.ac-bestiary-bar-fill { display: block; height: 100%; background: var(--ac-game-gold, #f2c14e); }
+.ac-bestiary-details { padding: 0 10px 10px; font-size: 12px; }
+.ac-bestiary-details[hidden] { display: none; }
+.ac-bestiary-ranks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 2px 10px;
+  margin: 0 0 4px;
+}
+.ac-bestiary-rank { display: flex; justify-content: space-between; gap: 6px; }
+.ac-bestiary-rank dt { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-bestiary-rank dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* A boss: its look over its name, its wins, a gold star when beaten as legendary, and in the
+   corner the hint of its legendary item: the picture once found, a "?" until then. */
+.ac-bestiary-boss {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 6px 8px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  text-align: center;
+}
+.ac-bestiary-boss .ac-bestiary-art { width: 56px; }
+.ac-bestiary-boss .ac-bestiary-words { align-items: center; width: 100%; }
+.ac-bestiary-boss .ac-bestiary-name { max-width: 100%; }
+.ac-bestiary-epithet { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+.ac-bestiary-epithet:empty,
+.ac-bestiary-wins:empty { display: none; }
+.ac-bestiary-legendary-mark {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  color: var(--ac-game-gold, #f2c14e);
+  font-size: 13px;
+  line-height: 1;
+}
+.ac-bestiary-legendary-mark[hidden],
+.ac-bestiary-item[hidden] { display: none; }
+.ac-bestiary-boss:has(.ac-bestiary-legendary-mark:not([hidden])) { border-color: color-mix(in srgb, var(--ac-game-gold, #f2c14e) 60%, transparent); }
+.ac-bestiary-item {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 3px;
+}
+.ac-bestiary-item[data-found='true'] { border-style: solid; border-color: color-mix(in srgb, var(--ac-game-gold, #f2c14e) 60%, transparent); }
+.ac-bestiary-item-art { width: 16px; height: 16px; image-rendering: pixelated; }
+.ac-bestiary-item-unknown { font-size: 11px; font-weight: 700; color: var(--orca-muted-foreground, #9aa3b2); }
+
+/* The bestiary's news over a room: a first kill or a mastery level, in the legendary drop's style
+   but smaller and shorter. */
+.ac-game-tone-bestiary {
+  color: var(--ac-game-good, #6fe0d2);
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--ac-game-good, #6fe0d2) 60%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--ac-game-good, #6fe0d2) 40%, transparent);
+  animation-name: ac-bestiary-news;
+}
+@keyframes ac-bestiary-news {
+  0% { opacity: 0; transform: scale(0.8); }
+  10% { opacity: 1; transform: scale(1.06); }
+  16%, 82% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-game-tone-bestiary { animation: none !important; }
+}

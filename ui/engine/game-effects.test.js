@@ -91,3 +91,17 @@ test('a legendary drop is celebrated in gold with its picture', () => {
   const [effect] = gameEffects({ ...none, events: [event] }, state())
   assert.deepEqual(effect, { roomId: 'room', target: 'room', text: 'Legendary! Rimeheart', tone: 'legendary', artId: 'rimeheart' })
 })
+
+test('a bestiary discovery, mastery level and boss hunter level are celebrated over the room', () => {
+  const events = [
+    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', discovered: true, name: 'Orcs' },
+    { type: 'bestiary', roomId: 'room', kind: 'race', id: 'orc', level: 2, name: 'Orcs' },
+    { type: 'bestiary', roomId: 'room', kind: 'hunter', level: 1 }
+  ]
+  const effects = gameEffects({ ...none, events }, state())
+  assert.deepEqual(effects.map((effect) => [effect.text, effect.tone]), [
+    ['New in the bestiary: Orcs', 'bestiary'],
+    ['Orcs: mastery 2!', 'bestiary'],
+    ['Boss hunter 1!', 'bestiary']
+  ])
+})

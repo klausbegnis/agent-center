@@ -196,6 +196,12 @@ export const ICONS = {
     rows: ['..b....a..', '.bbb..aaa.', '.bbb..aaa.', '..b....a..', '.bbb..aaa.', 'bbbbbaaaaa', 'bbbbbaaaaa',
       '.bbb..aaa.', '.b.b..a.a.', '.b.b..a.a.']
   },
+  // An open book with a claw's three marks across its page: the bestiary.
+  'tab-bestiary': {
+    colors: { a: '#E8DCC0', b: '#C0392B' },
+    rows: ['..........', '.aaa..aaa.', 'aaaaaaaaba', 'aaaaaaabab', 'aaaaaababa', 'aaaaaaabab', 'aaaaaaaaba',
+      'aaaaaaaaaa', '.aaa..aaa.', '..........']
+  },
   'tab-chest': {
     colors: { a: '#B9773A', b: '#F2C14E' },
     rows: ['..........', '.aaaaaaaa.', 'aaaaaaaaaa', 'aaaaaaaaaa', 'bbbbbbbbbb', 'aaaabbaaaa', 'aaaabbaaaa',
