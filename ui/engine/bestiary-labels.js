@@ -34,6 +34,7 @@ export const BESTIARY = {
   unknownDetails: 'Not met yet. The first kill of one shows what it is and starts its mastery.',
   kills: (count) => plural(count, 'kill', 'kills'),
   masteryTop: 'Mastered',
+  mastered: (kills) => `${kills} · mastered`,
   toNext: (kills, next) => `${kills.toLocaleString('en')} / ${next.toLocaleString('en')} kills`,
   /** A card's bonus line: damage against the race now and at the next level. */
   cardBonus: (now, next) => {

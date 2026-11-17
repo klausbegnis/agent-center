@@ -98,3 +98,14 @@ test('the others are a line of their own, and a world without a bestiary has no 
   assert.equal(bestiaryModel({}, world), null)
   assert.equal(bestiaryModel(game, { id: 'main' }), null)
 })
+
+test('a race at its top level reads as mastered, with no next threshold', () => {
+  const top = { id: 'goblin', discovered: true, kills: 3077, ranks: [3077, 0, 0, 0, 0, 0], eliteKills: 0, firstDay: 1,
+    level: 3, maxLevel: 3, from: 150, to: null, now: [raceDamage(0.03, 'goblin')], next: null }
+  const mastered = { ...world, bestiary: { ...world.bestiary, races: [top] } }
+  const goblin = bestiaryModel(game, mastered).creatures.find((card) => card.id === 'goblin')
+  assert.equal(goblin.progressText, '3,077 kills · mastered')
+  assert.equal(goblin.share, 1)
+  assert.equal(goblin.bonusText, '+3% damage')
+  assert.equal(goblin.details.next, null)
+})

@@ -20,7 +20,8 @@ function raceCard(content, entry, raceNames) {
   const level = entry?.level ?? 0
   const max = entry?.maxLevel ?? content.thresholds.length
   const kills = entry?.kills ?? 0
-  const to = entry?.to ?? content.thresholds[0] ?? null
+  // At the top level `to` is null: no next threshold. An unknown race starts towards the first.
+  const to = entry ? entry.to : content.thresholds[0] ?? null
   const base = {
     id: content.id,
     key: `race:${content.id}`,
@@ -43,7 +44,7 @@ function raceCard(content, entry, raceNames) {
     name: content.name,
     kills,
     killsText: BESTIARY.kills(kills),
-    progressText: to === null ? BESTIARY.masteryTop : BESTIARY.toNext(kills, to),
+    progressText: to === null ? BESTIARY.mastered(BESTIARY.kills(kills)) : BESTIARY.toNext(kills, to),
     bonusText: BESTIARY.cardBonus(damageNow > 0 ? percent(damageNow) : null, next ? percent(sumOf(next, 'raceDamage')) : null),
     label: BESTIARY.cardLabel(content.name, BESTIARY.kills(kills), level, max),
     details: {
