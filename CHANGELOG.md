@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+## 0.4.0 - 2026-11-18
+
 ### Added
 
 - Game mode: daily quests. Each local day every world gets three quests (easy, medium, hard),

@@ -3,8 +3,8 @@
   "manifestVersion": 2,
   "id": "agent-center",
   "name": "Agent Center: Tavern & Auto-Battler",
-  "version": "0.3.0",
-  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: levels and loot, a settlement that grows, markets, a bestiary and boss dungeons.",
+  "version": "0.4.0",
+  "description": "A tavern per project where your agents are characters acting out their work. Just watch them, or turn on the idle auto-battler: levels and loot, a settlement and cities that grow, traits, achievements, daily quests, a bestiary and boss dungeons.",
   "license": "MIT",
   "author": {
     "name": "klausbegnis",
