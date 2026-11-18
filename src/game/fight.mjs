@@ -200,9 +200,9 @@ function settleKill(state, context) {
   const pityFactor = 1 + (loot?.legendaryPity ?? 0)
   const legendary = settleLegendaryDrops(state, { monster, seed, content, pityFactor })
   const scroll = settleScrollDrop(state, { monster, seed, scrollFind: party.traits?.scrollFind ?? 0 }, traitIndexOf(content))
-  // A race week counts its race twice (weekly.mjs).
+  // A race week counts its race once more half the time (weekly.mjs).
   const featuredRace = featuredRaceOf(world, content)
-  const noted = noteWeeklyKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content), featuredRace })
+  const noted = noteWeeklyKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content), featuredRace, seed })
   context.tally.bestiary = noted.bestiary
   events.push({
     type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster), race: monster.race ?? null,

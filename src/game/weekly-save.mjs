@@ -11,7 +11,9 @@ const isPlainObject = (value) => value !== null && typeof value === 'object' && 
 const isWhole = (value) => Number.isInteger(value) && value >= 0 && value <= WEEKLY_PROGRESS_MAX
 
 /** The fields of a weekly record, in the order the engine writes them. */
-const KEYS = ['week', 'event', 'progress', 'done', 'seenAt']
+const KEYS = ['week', 'event', 'progress', 'done', 'seenAt', 'goals']
+/** The most weeks' goals a world's count may hold: centuries of weeks. */
+const GOALS_MAX = 100_000
 
 /** The first problem with a weekly record's shape, as [field, problem], or null; content aside. */
 function shapeProblem(value) {
@@ -26,10 +28,17 @@ function shapeProblem(value) {
   if (typeof value.seenAt !== 'number' || value.seenAt < week.startsAt || value.seenAt >= week.endsAt) {
     return ['weekly.seenAt', 'is not a time in its week']
   }
+  const goals = value.goals ?? 0
+  if (!Number.isInteger(goals) || goals < (value.done ? 1 : 0) || goals > GOALS_MAX) {
+    return ['weekly.goals', 'is not a whole count of goals reached, one at least once this week\'s is']
+  }
   return null
 }
 
-const copyOf = (value) => ({ week: value.week, event: value.event, progress: value.progress, done: value.done, seenAt: value.seenAt })
+const copyOf = (value) => ({
+  week: value.week, event: value.event, progress: value.progress, done: value.done, seenAt: value.seenAt,
+  ...(value.goals ? { goals: value.goals } : {})
+})
 
 /**
  * What `migrate` keeps of a world's weekly record: a copy when it is well formed, otherwise none

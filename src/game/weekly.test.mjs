@@ -10,13 +10,16 @@ import { generateMonster } from './races.mjs'
 import { weekOf, WEEK_MS } from './weekly-calendar.mjs'
 import { eventIndexOf, pinEvent } from './weekly-content.mjs'
 import {
-  FEATURED_BESTIARY_COUNT,
+  FEATURED_BESTIARY_EXTRA,
   featuredRaceOf,
   noteWeeklyKill,
   noteWeeklyProgress,
   weeklyEffectsOf,
+  weeklyHighlights,
   withWeek
 } from './weekly.mjs'
+import { METRICS } from './achievement-metrics.mjs'
+import { chronicleActions } from './chronicle.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { emptySave } from './worlds.mjs'
 
@@ -106,14 +109,22 @@ test('a race week brings its race about twice as often', () => {
   assert.ok(ratio > 1.7 && ratio < 2.3, `${ratio}`)
 })
 
-test('a race week counts each kill of its race twice in the bestiary, and other kills once', () => {
+test('a race week counts a kill of its race once more about half the time, by the kill, and other kills once', () => {
   const index = indexBestiary(base.bestiary, base.bosses)
   const wolf = { id: 'werewolf', race: 'werewolf', rank: 'normal', kind: 'common' }
   const goblin = { id: 'goblin', race: 'goblin', rank: 'normal', kind: 'common' }
-  const counted = noteWeeklyKill(null, wolf, { day: 1, index, featuredRace: 'werewolf' }).bestiary
-  assert.equal(killsOf(counted.races.werewolf), FEATURED_BESTIARY_COUNT)
-  const other = noteWeeklyKill(counted, goblin, { day: 1, index, featuredRace: 'werewolf' }).bestiary
-  assert.equal(killsOf(other.races.goblin), 1)
+  let wolves = null
+  let goblins = null
+  const KILLS = 1000
+  for (let kill = 0; kill < KILLS; kill++) {
+    wolves = noteWeeklyKill(wolves, wolf, { day: 1, index, featuredRace: 'werewolf', seed: `k${kill}` }).bestiary
+    goblins = noteWeeklyKill(goblins, goblin, { day: 1, index, featuredRace: 'werewolf', seed: `k${kill}` }).bestiary
+  }
+  const extra = killsOf(wolves.races.werewolf) / KILLS - 1
+  assert.ok(Math.abs(extra - FEATURED_BESTIARY_EXTRA) < 0.06, `${extra}`)
+  assert.equal(killsOf(goblins.races.goblin), KILLS)
+  const once = (seed) => killsOf(noteWeeklyKill(null, wolf, { day: 1, index, featuredRace: 'werewolf', seed }).bestiary.races.werewolf)
+  assert.equal(once('same'), once('same'))
   const world = { weekly: { week: weekKey, event: 'howling-moon', progress: 0, done: false, seenAt: WEDNESDAY } }
   assert.equal(featuredRaceOf(world, content), 'werewolf')
   assert.equal(featuredRaceOf({ ...world, weekly: { ...world.weekly, event: 'clear-skies' } }, content), null)
@@ -161,4 +172,25 @@ test('a goal counts only what it names: its race, bosses, or elites and champion
   assert.equal(noteWeeklyProgress(banners, [kill({ rank: 'elite' })], content).worlds.main.weekly.done, true)
   const elsewhere = noteWeeklyProgress(crowns, [kill({ rank: 'boss', projectId: 'local:/work/turbo-waffle' })], content)
   assert.equal(elsewhere, crowns, 'a kill in a room of another world')
+})
+
+test('each goal reached counts for good, for the achievements, and is a highlight of the journal once', () => {
+  const start = nearlyDone('gold-in-the-streams')
+  const reached = noteWeeklyProgress(start, [kill()], content)
+  assert.equal(reached.worlds.main.weekly.goals, 1)
+  assert.equal(METRICS.weeklyGoals.measure(reached, {}), 1)
+  assert.deepEqual(weeklyHighlights(start, reached, 5), [{ at: 5, kind: 'weekly', ref: 'gold-in-the-streams' }])
+  assert.deepEqual(weeklyHighlights(reached, reached, 6), [])
+  const nextWeek = withWeek(reached, WEDNESDAY + WEEK_MS, content)
+  assert.equal(nextWeek.worlds.main.weekly.goals, 1, 'kept into the next week')
+  assert.equal(METRICS.weeklyGoals.measure(party(), {}), 0)
+})
+
+test('the day\'s journal keeps a week\'s goal reached as a highlight with the event\'s name', () => {
+  const start = nearlyDone('gold-in-the-streams')
+  const reached = noteWeeklyProgress(start, [kill()], content)
+  const { chronicle, chronicleView } = chronicleActions(content)
+  const kept = chronicle(reached, { before: start, events: [kill()], at: WEDNESDAY, day: 20_000 }).save
+  assert.deepEqual(kept.journal.highlights.map(({ kind, ref }) => [kind, ref]), [['weekly', 'gold-in-the-streams']])
+  assert.equal(chronicleView(kept, { day: 20_000 }).journal.highlights[0].name, 'Gold in the Streams')
 })

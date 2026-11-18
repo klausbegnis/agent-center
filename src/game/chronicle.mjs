@@ -8,6 +8,7 @@ import { journalView, markJournalSeen, recordJournal } from './journal.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
 import { traitIndexOf } from './trait-content.mjs'
+import { eventIndexOf } from './weekly-content.mjs'
 
 /** The name of what a highlight is about, from the content; null when it is not there. */
 function highlightNamer(content) {
@@ -25,6 +26,7 @@ function highlightNamer(content) {
       case 'stage': return stages.get(ref) ?? null
       case 'instance': return instances.get(ref) ?? null
       case 'scroll': return traitIndexOf(content)?.byId.get(ref)?.name ?? null
+      case 'weekly': return eventIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'building': return buildings.get(ref)?.tiers?.[(value ?? 1) - 1]?.name ?? buildings.get(ref)?.name ?? null
       default: return null
     }

@@ -2,9 +2,10 @@
 // has and how far the week's goal has come. At every advance the week is checked against the time
 // the caller passes, so a new week switches the event with no reload; the event's effects join the
 // world's other effects under the same caps, a race week brings its race twice as often and counts
-// its kills twice in the bestiary, and the goal pays its reward once a week. Pure.
+// its kills half again in the bestiary, and the goal pays its reward once a week. Pure.
 import { noteKill } from './bestiary.mjs'
 import { rewardFor } from './combat.mjs'
+import { chanceOf } from './hash.mjs'
 import { worldLevel } from './progression.mjs'
 import { eventIdOfWeek, weekOf } from './weekly-calendar.mjs'
 import { eventIndexOf } from './weekly-content.mjs'
@@ -12,14 +13,18 @@ import { addMaterials } from './worlds.mjs'
 
 /** @typedef {import('./legendary-effects.mjs').Effect} Effect */
 /**
- * @typedef {{ week: string, event: string, progress: number, done: boolean, seenAt: number }} Weekly
+ * @typedef {{ week: string, event: string, progress: number, done: boolean, seenAt: number, goals?: number }} Weekly
  *   what a world keeps of the week: its ISO key, its event's id, the goal's progress, whether its
- *   reward was paid, and the last time an advance looked (so the time left is told on the game's
- *   own clock, the demo's included)
+ *   reward was paid, the last time an advance looked (so the time left is told on the game's own
+ *   clock, the demo's included), and how many weeks' goals the world ever reached (for achievements)
  */
 
-/** A race week counts each kill of its race this many times in the bestiary. */
-export const FEATURED_BESTIARY_COUNT = 2
+/**
+ * A race week counts a kill of its race once more in the bestiary this share of the time (by hash
+ * of the kill): half again the points. Every kill counted twice took a medium user's bestiary past
+ * its "at most about 10% kills per hour at a year" target (12.6%); this keeps it at about 10%.
+ */
+export const FEATURED_BESTIARY_EXTRA = 0.5
 
 const NONE = Object.freeze([])
 
@@ -70,15 +75,18 @@ export function featuredRaceOf(world, content) {
 }
 
 /**
- * Counts a kill in the world's bestiary (bestiary.mjs's noteKill), twice for the race of a race week.
+ * Counts a kill in the world's bestiary (bestiary.mjs's noteKill), and a kill of a race week's race
+ * once more FEATURED_BESTIARY_EXTRA of the time.
  *
  * @param {object | null} bestiary
  * @param {object} monster
- * @param {{ day: number, index: object | null, featuredRace: string | null }} options
+ * @param {{ day: number, index: object | null, featuredRace: string | null, seed?: string }} options
+ *   `seed` is the kill's, so the same kill always counts the same
  * @returns {{ bestiary: object | null, news: object[] }}
  */
-export function noteWeeklyKill(bestiary, monster, { day, index, featuredRace }) {
-  const times = featuredRace && monster.race === featuredRace ? FEATURED_BESTIARY_COUNT : 1
+export function noteWeeklyKill(bestiary, monster, { day, index, featuredRace, seed = '' }) {
+  const isFeatured = Boolean(featuredRace) && monster.race === featuredRace
+  const times = isFeatured && chanceOf(`${seed}|weekly-bestiary`) < FEATURED_BESTIARY_EXTRA ? 2 : 1
   let noted = { bestiary, news: [] }
   for (let count = 0; count < times; count++) {
     const next = noteKill(noted.bestiary, monster, { day, index })
@@ -105,7 +113,10 @@ export function withWeek(save, at, content) {
   for (const [worldId, world] of Object.entries(save.worlds)) {
     const kept = world.weekly
     const isSame = kept?.week === week.key && kept.event === eventId
-    const weekly = isSame ? { ...kept, seenAt: Math.max(kept.seenAt ?? at, at) } : { week: week.key, event: eventId, progress: 0, done: false, seenAt: at }
+    const goals = kept?.goals ? { goals: kept.goals } : {}
+    const weekly = isSame
+      ? { ...kept, seenAt: Math.max(kept.seenAt ?? at, at) }
+      : { week: week.key, event: eventId, progress: 0, done: false, seenAt: at, ...goals }
     worlds ??= { ...save.worlds }
     worlds[worldId] = { ...world, weekly }
   }
@@ -160,7 +171,8 @@ export function noteWeeklyProgress(save, events, content) {
     const done = progress >= event.goal.count
     const materials = done ? addMaterials(world.materials, weeklyReward(world, event, index.rewardKills)) : world.materials
     worlds ??= { ...save.worlds }
-    worlds[worldId] = { ...world, materials, weekly: { ...world.weekly, progress, done } }
+    const goals = (world.weekly.goals ?? 0) + (done ? 1 : 0)
+    worlds[worldId] = { ...world, materials, weekly: { ...world.weekly, progress, done, ...(goals ? { goals } : {}) } }
   }
   return worlds ? { ...save, worlds } : save
 }
@@ -177,4 +189,23 @@ export function noteWeeklyProgress(save, events, content) {
 export function advanceWeek(save, interval, content, advance) {
   const moved = advance(withWeek(save, interval.to, content))
   return { ...moved, save: noteWeeklyProgress(moved.save, moved.events, content) }
+}
+
+/**
+ * The journal's highlights of a change: each world whose week's goal was reached by it, as a
+ * `weekly` highlight naming the event.
+ *
+ * @param {object | null} before
+ * @param {object} after
+ * @param {number} at
+ * @returns {{ at: number, kind: 'weekly', ref: string }[]}
+ */
+export function weeklyHighlights(before, after, at) {
+  if (!before) return []
+  return Object.entries(after.worlds).flatMap(([worldId, world]) => {
+    const now = world.weekly
+    const was = before.worlds[worldId]?.weekly
+    const isNew = now?.done && !(was?.done && was.week === now.week)
+    return isNew ? [{ at, kind: 'weekly', ref: now.event }] : []
+  })
 }

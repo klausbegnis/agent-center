@@ -209,6 +209,9 @@ export const METRICS = Object.freeze({
   },
   traitSwaps: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.traits?.swaps ?? 0)) },
 
+  // Weekly events (weekly.mjs): the weeks whose goal a world reached, over every world.
+  weeklyGoals: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.weekly?.goals ?? 0)) },
+
   // Worlds
   worlds: { measure: (save) => Object.keys(save.worlds).length },
   rooms: { measure: (save) => projectsOf(save).length },

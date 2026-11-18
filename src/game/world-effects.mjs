@@ -24,17 +24,8 @@ const NO_UPGRADES = {}
 export function worldEffectsOf(world, content) {
   const standing = standingEffectsOf(world, content)
   const weekly = weeklyEffectsOf(world, content)
-  return weekly.length ? withWeekly(standing, weekly) : standing
-}
-
-/** The standing effects with the week's, joined once per pair of lists. */
-const joined = new WeakMap()
-function withWeekly(standing, weekly) {
-  const known = joined.get(standing)
-  if (known?.weekly === weekly) return known.effects
-  const effects = [...standing, ...weekly]
-  joined.set(standing, { weekly, effects })
-  return effects
+  // A new list each call: a cache keyed on the standing list played a world with another's week.
+  return weekly.length ? [...standing, ...weekly] : standing
 }
 
 /** The bestiary's and the settlement's effects, which last from week to week. */

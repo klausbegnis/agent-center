@@ -51,7 +51,7 @@ test('every shipped event says what each of its effects does', () => {
 
 test('a race week says its race comes twice as often, and a festival names its city', () => {
   const lines = eventLines(weekly())
-  assert.equal(lines[0], 'Werewolves come twice as often and count double in the bestiary')
+  assert.equal(lines[0], 'Werewolves come twice as often and earn half again the bestiary points')
   assert.equal(lines[1], '+3% damage against werewolves')
   const fair = eventLines({ kind: 'festival', cityName: 'Goldmill', effects: [] })
   assert.deepEqual(fair, ['Goldmill holds its festival'])

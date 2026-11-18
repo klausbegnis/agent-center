@@ -5,6 +5,7 @@
 import { effectiveLevel } from './progression.mjs'
 import { settlementNews, totalLevels } from './settlement.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
+import { weeklyHighlights } from './weekly.mjs'
 
 const SKILL_IDS = [...WORK_SKILLS, ...GATHERING_SKILLS]
 const BOSS_RANKS = new Set(['boss', 'legendary'])
@@ -110,7 +111,9 @@ export function journalGains({ before, after, midway, events = [], at, tierOf, s
       .map((event) => ({ at, kind: 'instance', ref: event.instance, value: event.tier })),
     ...settlementHighlights(before, after, settlementIndex, at),
     // A trait scroll a kill dropped (traits.mjs).
-    ...kills.filter((event) => typeof event.scroll === 'string').map((event) => ({ at, kind: 'scroll', ref: event.scroll }))
+    ...kills.filter((event) => typeof event.scroll === 'string').map((event) => ({ at, kind: 'scroll', ref: event.scroll })),
+    // A week's goal reached (weekly.mjs).
+    ...weeklyHighlights(before, after, at)
   ]
   return {
     counts: {

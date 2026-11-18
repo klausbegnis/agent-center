@@ -906,9 +906,9 @@ cheaper would change the old upgrades' prices, which the settlement keeps exactl
 
 Long-term goals over every part of the game (`game/achievements.json`, checked by
 `src/game/achievement-content.mjs`; granted by `achievements.mjs`, measured by
-`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 141 achievements in twelve
+`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 144 achievements in thirteen
 groups (Battle, Bosses, Bestiary, Growth, Legacy, Treasure, Market, Settlement, Instances, Journal,
-Collector, Traits), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
+Collector, Traits, Weekly events), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
 Each has a name, a description, points (1 to 100) and a condition; some are `hidden` until earned,
 and 37 grant a `title`.
 
@@ -924,7 +924,8 @@ every world: a sum (`kills`, `bossWins`, `rankKills` by rank, `raceKills` by rac
 `bestMastery`, `itemTier`, `itemLevel`, `coins`, `citiesOpen`, `buildingLevels`, `stage`,
 `buildingTier` by building, `renovationStars`, `instanceTier`, and for traits `traitsCollected`,
 `mythicTraits` and `traitsCarried`, the most traits one living character carries), and `traitSwaps`
-counts the swaps at the trait brokers (see "Traits"). `coinsEarned`, `materialsEarned`,
+counts the swaps at the trait brokers (see "Traits"), and `weeklyGoals` the weeks whose goal a world
+reached (see "Weekly events"). `coinsEarned`, `materialsEarned`,
 `notableLoot` and `activeDays` read the journal's lifetime totals (see "The day's journal"), and
 `achievements` and `achievementPoints` the achievements themselves. The content check refuses a
 metric that does not exist and a parameter the content does not have, so an achievement for a new
@@ -979,8 +980,8 @@ A rolling log for the "While you worked" summary (`src/game/journal.mjs`, counte
 | `cleared`, `failed` | instance results |
 
 A short list of highlights names what was notable: legendary finds, new best gear, a boss's first
-win, achievements, a building's new tier, a new stage, an instance cleared and a trait scroll a kill
-dropped (`scroll`), each as a content id.
+win, achievements, a building's new tier, a new stage, an instance cleared, a trait scroll a kill
+dropped (`scroll`) and a week's goal reached (`weekly`, the event), each as a content id.
 An imported game is no news and adds nothing.
 
 `journal: { days: [[day, ...counts]], totals, since, seenAt, activeDays, highlights }`: at most
@@ -1103,7 +1104,7 @@ world's collection, of 48, at day 30 / 90 / 180 / 365:
 
 Commons come with new sessions; the epics and the five mythic traits, which only bosses drop, keep
 the whole catalogue a goal past the first year for every user. Traits move no other balance check:
-the same five fail as before them.
+the four that fail fail as before them.
 
 ## Weekly events
 
@@ -1129,8 +1130,9 @@ not a multiplier: it needs no network and no server, and is the same on every ma
   one at a cap gets nothing past it.
 - **Kinds.** A **race week** (six: werewolves, skeletons, goblins, insects, slimes, dragons) brings
   its race twice as often (`FEATURED_RACE_WEIGHT`, in the race pick of `races.mjs`; bosses and
-  instances are unchanged), counts each kill of it twice in the bestiary, and adds 3% damage against
-  it. A **festival** (Goldmill, Deepforge, Runespire, Brinehaven) gives more of its city's goods from
+  instances are unchanged), counts a kill of it once more in the bestiary half the time (by hash of
+  the kill: every kill twice took a medium user's bestiary to +12.6% kills per hour at a year, past
+  its 10% target), and adds 3% damage against it. A **festival** (Goldmill, Deepforge, Runespire, Brinehaven) gives more of its city's goods from
   gathering (+6%) and kills (+5%); it does not touch market prices. A **bloom** gives 7.5% more of
   one gathered material. The **boss hunt** gives 5% damage against bosses and legendary bosses and
   20% faster legendary pity on the waves; the **bounties** 5% damage against elites and champions
@@ -1141,14 +1143,14 @@ not a multiplier: it needs no network and no server, and is the same on every ma
   or champions, counted per world from the advance's kill events (a kill event now carries the
   monster's `race`). Reached, it pays at once, once a week, materials worth `rewardKills` (30) plain
   kills at the world's level split over the event's two reward materials. Sized with the simulator
-  (`npm run simulate` prints the share of weeks whose goal was reached): a light user reaches 49%
-  of them (none of the boss hunts: it meets a boss every few weeks), a medium one 98% and a heavy
-  one all. With the events in play every balance target that passed still passes; kills per hour
+  (`npm run simulate` prints the share of weeks whose goal was reached): a light user reaches 51%
+  of them (a third of the boss hunts: it meets a boss every few weeks), a medium and a heavy one 98%
+  (one boss hunt missed). With the events in play every balance target that passed still passes; kills per hour
   and the other numbers move by a few percent at most.
-- **In the save.** A world keeps `weekly: { week, event, progress, done, seenAt }` from its first
-  advance with events: the ISO key, the event's id (a changed catalogue starts the week over),
-  the goal's count so far, whether it paid, and the last advance's time, so the time left is told on
-  the game's own clock. A save from before has none and loads unchanged. `migrate` drops a malformed
+- **In the save.** A world keeps `weekly: { week, event, progress, done, seenAt, goals? }` from its
+  first advance with events: the ISO key, the event's id (a changed catalogue starts the week over),
+  the goal's count so far, whether it paid, the last advance's time, so the time left is told on the
+  game's own clock, and how many weeks' goals it ever reached (kept from week to week). A save from before has none and loads unchanged. `migrate` drops a malformed
   one (the next advance starts the week again); `cleanSave` refuses an unknown event, a week a year
   does not have, a `seenAt` outside its week, progress past the goal, `done` that disagrees with the
   progress, and any of it when the content has no events.
@@ -1157,6 +1159,9 @@ not a multiplier: it needs no network and no server, and is the same on every ma
   its progress bar and reward, and a **Next week** button that shows next week's event. Each room's
   header shows the event's icon with the same in its label. The icons are drawn by
   `scripts/event-art/events.py` into `ui/art/events/<kind>.png`.
+- **Achievements and journal.** The `weeklyGoals` metric counts goals reached over every world; the
+  Weekly events group has three (1, 10 and 52 goals, the last with a title). A goal reached is a
+  `weekly` highlight in the day's journal ("Weekly goal reached: The Howling Moon").
 - **Demo.** `EVENT=<id>` with `GAME=1` plays that event every week (`pinned` in the events data).
 
 ## Scenes
@@ -2152,7 +2157,7 @@ three scenarios (agents run commands less than they write or read), so their par
 at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow the
 world level, not the party, so that shows as a slightly longer fight.
 
-Targets the numbers do not meet, and why (four of 59: the light and heavy hit split, and the light
+Targets the numbers do not meet, and why (four of 63: the light and heavy hit split, and the light
 and heavy upgrade pace):
 
 - The hit split is right only in the middle. A character's own share is bounded (seasoning
@@ -2357,7 +2362,7 @@ tokens alone make them.
 ### Instances
 
 The fourth policy, against the scenarios as usual (the world levels are the same: tokens alone
-make them). Instances change no balance target (55 of 59 pass; the four that fail are the
+make them). Instances change no balance target (59 of 63 pass; the four that fail are the
 hit splits and the upgrade pace under "Balance"), and a player who never enters an instance plays exactly as before.
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
@@ -2374,9 +2379,9 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
-| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 12 | 11.2, 9.5, 12.9 | 4.4, 3.3, 4.1 |
-| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 10/6, 17/11 | 8.3, 9.6, 11.6 | 3.3, 3.2, 4.0 |
-| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/8/7, 9/14/14, 20/23/24 | 12.1, 13.9, 17.4 | 3.3, 4.0, 4.9 |
+| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 12 | 11.2, 9.6, 12.8 | 4.4, 2.9, 4.1 |
+| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 11/5, 17/9 | 8.2, 9.4, 11.5 | 2.7, 3.3, 3.9 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/9/8, 11/15/14, 25/24/22 | 12.2, 13.6, 17.4 | 3.5, 4.2, 4.9 |
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
@@ -2389,14 +2394,14 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 - **Failures** are 43 to 49% of runs because the policy climbs a tier after every clear until it
   fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
   it found and costs two hours of working time on the waves before that room may try again.
-- **Collection** is a goal of several years. With instances (and the weekly events) a light room
-  owns 12 of 40 legendary items after a year, a medium one 17 and 11, a heavy one 20 to 24; before
+- **Collection** is a goal of several years. With instances (and the weekly events and traits) a
+  light room owns 12 of 40 legendary items after a year, a medium one 17 and 9, a heavy one 22 to 25; before
   the events, 28 to 32 after two years for a heavy room (a one-off run with 730 days), while the
   first still comes on day 5. In a year the light world gains 3 from the waves' bosses, 6 instance
-  relics (each instance's first clear), 2 from a run's boss and 1 from a vault; the heavy world 44,
-  6, 15 and 2. The simulator prints that split and checks the pace (light 8 to 12, medium about 14
-  to 20 per room, heavy at least ten short at a year, the first item within three weeks); medium's
-  second room, which enters less, sits at 11.
+  relics (each instance's first clear), 2 from a run's boss and 1 from a vault; the heavy world 46,
+  6, 13 and 6. The simulator prints that split and checks the pace (light 8 to 12, medium about 14
+  to 20 per room, held to a mean of 12 to 20, heavy at least ten short at a year, the first item
+  within three weeks); medium's second room, which enters less, sits at 9, so its mean is 13.
   Before this tuning a light room owned 18 and a heavy one 31 to 33 in a year: the run's boss rolled
   at 10% + 1% a tier (at most 30%) with the waves' pity on top, which every miss raised by 5%, so a
   daily run soon made its item and every wave boss's item near certain; the vault rolled at 1% +

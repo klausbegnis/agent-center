@@ -18,7 +18,7 @@ export const EVENTS = {
   reward: (text) => `Reward: ${text}`,
   marker: (name, timeLeft) => `This week's event: ${name}, ${timeLeft}`,
   /** What a race week does beyond its effects. */
-  raceWeek: (raceName) => `${raceName} come twice as often and count double in the bestiary`,
+  raceWeek: (raceName) => `${raceName} come twice as often and earn half again the bestiary points`,
   festival: (cityName) => `${cityName} holds its festival`
 }
 

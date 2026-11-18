@@ -11,7 +11,8 @@
     {"id": "instances", "name": "Instances"},
     {"id": "journal", "name": "Journal"},
     {"id": "collector", "name": "Collector"},
-    {"id": "traits", "name": "Traits"}
+    {"id": "traits", "name": "Traits"},
+    {"id": "events", "name": "Weekly events"}
   ],
   "achievements": [
     {"id": "monsters-1", "group": "battle", "name": "First Blood", "description": "Defeat 1 monster.", "points": 5, "when": {"metric": "kills", "atLeast": 1}},
@@ -154,6 +155,9 @@
     {"id": "traits-4", "group": "traits", "name": "Every Kind of Soul", "description": "Collect 45 traits in a world.", "points": 60, "when": {"metric": "traitsCollected", "atLeast": 45}, "title": "Keeper of Quirks", "hidden": true},
     {"id": "mythic-trait-1", "group": "traits", "name": "Touched by Legend", "description": "Collect a mythic trait.", "points": 25, "when": {"metric": "mythicTraits", "atLeast": 1}, "title": "the Star-Touched", "hidden": true},
     {"id": "full-slots", "group": "traits", "name": "Well Rounded", "description": "Have a character carry four traits.", "points": 20, "when": {"metric": "traitsCarried", "atLeast": 4}},
-    {"id": "trait-swap-1", "group": "traits", "name": "Change of Heart", "description": "Swap a trait for a scroll.", "points": 5, "when": {"metric": "traitSwaps", "atLeast": 1}}
+    {"id": "trait-swap-1", "group": "traits", "name": "Change of Heart", "description": "Swap a trait for a scroll.", "points": 5, "when": {"metric": "traitSwaps", "atLeast": 1}},
+    {"id": "weekly-goals-1", "group": "events", "name": "Week's Work", "description": "Reach a weekly event's goal.", "points": 5, "when": {"metric": "weeklyGoals", "atLeast": 1}},
+    {"id": "weekly-goals-2", "group": "events", "name": "Ten Good Weeks", "description": "Reach 10 weekly event goals.", "points": 20, "when": {"metric": "weeklyGoals", "atLeast": 10}},
+    {"id": "weekly-goals-3", "group": "events", "name": "A Year of Errands", "description": "Reach 52 weekly event goals.", "points": 50, "when": {"metric": "weeklyGoals", "atLeast": 52}, "title": "of the Long Calendar"}
   ]
 }
