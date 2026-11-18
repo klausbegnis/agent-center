@@ -198,8 +198,9 @@ export function collectionChecks(instanceRuns, total) {
   return [
     ['light: the first legendary item within the first three weeks', firstDay <= 21, `day ${firstDay}`],
     ['light: about 8 to 12 legendary items in a year', year('light') >= 8 && year('light') <= 12, shown('light')],
-    ['medium: about 14 to 20 legendary items in a year', year('medium') >= 12 && year('medium') <= 20, shown('medium')],
-    ['heavy: the collection is far from complete at a year', most <= total - 10, `${fixed(year('heavy'))}, at most ${most}, of ${total}`]
+    ['medium: about 14 to 22 legendary items in a year', year('medium') >= 14 && year('medium') <= 22, shown('medium')],
+    // Not complete before about two years: a year holds at most about three fifths of it.
+    ['heavy: the collection is far from complete at a year', most <= Math.round(total * 0.6), `${fixed(year('heavy'))}, at most ${most}, of ${total}`]
   ]
 }
 

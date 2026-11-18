@@ -140,3 +140,33 @@ export function waveRosterOf(content) {
   return rosters.get(bosses)
 }
 
+
+/**
+ * The regions that opened between two saves, in any world: locked before, open after.
+ *
+ * @param {object | null} before
+ * @param {object} after
+ * @param {{ regions: object[] } | null} index
+ * @returns {string[]} their ids
+ */
+export function regionsOpened(before, after, index) {
+  if (!before || !index) return []
+  const opened = []
+  for (const [worldId, world] of Object.entries(after.worlds ?? {})) {
+    const was = before.worlds?.[worldId]
+    if (!was) continue
+    for (const region of index.regions) {
+      if (region.after && !isRegionUnlocked(was, region, index) && isRegionUnlocked(world, region, index)) opened.push(region.id)
+    }
+  }
+  return opened
+}
+
+/** How many regions after the first are open in a world, and how many regions it has completed. */
+export function regionCounts(world, index) {
+  if (!index) return { opened: 0, complete: 0 }
+  return {
+    opened: index.regions.filter((region) => region.after && isRegionUnlocked(world, region, index)).length,
+    complete: index.regions.filter((region) => isRegionComplete(world, region)).length
+  }
+}

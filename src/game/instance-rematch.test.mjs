@@ -81,9 +81,11 @@ test('a rematch needs the boss beaten, the rematch below cleared and the world\'
 test('the boss is tougher each rematch, and its odds at its own item better, within a cap', () => {
   assert.equal(rematchBonuses({}).bossHp, 1)
   assert.ok(rematchBonuses({ rematch: 5 }).bossHp > rematchBonuses({ rematch: 4 }).bossHp)
-  assert.equal(rematchItemChance(0.1, 0), 0.1)
-  assert.ok(rematchItemChance(0.1, 3) > rematchItemChance(0.1, 2))
-  assert.ok(rematchItemChance(0.3, 10) <= 0.45)
+  assert.equal(rematchItemChance(0.004, 0), 0.004)
+  assert.ok(rematchItemChance(0.006, 3) > rematchItemChance(0.006, 2))
+  assert.ok(rematchItemChance(0.006, 1) > 0.006, 'better than the same tier outside a rematch')
+  assert.ok(Math.abs(rematchItemChance(0.012, 10) - 0.03) < 1e-12, 'Rematch X at its tier rolls 3%')
+  assert.ok(rematchItemChance(1, 10) <= 0.03, 'never more than the most')
   const monster = (rematch) => instanceMonster({
     instance: crypt, roomKind: 'boss', seed: 'same', level: 20, partySize: 4, content,
     bonuses: runContext({ instance: 'sunken-crypt', tier: 3, room: 5, boon: null, ...(rematch ? { rematch } : {}) }, index).bonuses,

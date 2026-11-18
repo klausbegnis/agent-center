@@ -2,6 +2,8 @@
 // content, over every world (a sum, a count of distinct things, or the best of them). A metric may
 // take one parameter (a race, a rank, a skill, a building, an instance), which the content check
 // holds to the ids the content has. New features add a metric here and achievements as data. Pure.
+import { instanceIndexOf } from './instance-content.mjs'
+import { regionCounts } from './instance-regions.mjs'
 import { BESTIARY_RANKS, BOSS_BEATEN, BOSS_LEGENDARY, distinctBossesOf, hunterRankOf, killsOf, masteryOf, totalPointsOf }
   from './bestiary.mjs'
 import { bestiaryIndexOf } from './bestiary-content.mjs'
@@ -187,6 +189,18 @@ export const METRICS = Object.freeze({
     measure: (save) => distinctOver(save, (world) =>
       Object.entries(world.instances ?? {}).filter(([, progress]) => progress.clears > 0).map(([id]) => id))
   },
+  // Rematches and regions (instance-rematch.mjs, instance-regions.mjs): the best rematch won, and
+  // how many regions after the first a world opened and how many it completed.
+  bestRematch: {
+    measure: (save) => best(Object.values(save.worlds).flatMap((world) =>
+      Object.values(world.instances ?? {}).map((progress) => progress.rematch ?? 0)))
+  },
+  regionsOpened: {
+    measure: (save, context) => best(Object.values(save.worlds).map((world) => regionCounts(world, context.instanceIndex).opened))
+  },
+  regionsComplete: {
+    measure: (save, context) => best(Object.values(save.worlds).map((world) => regionCounts(world, context.instanceIndex).complete))
+  },
   instanceCleared: {
     param: 'instance',
     measure: (save, _context, instanceId) => sum(Object.values(save.worlds).map((world) => world.instances?.[instanceId]?.clears ?? 0))
@@ -271,6 +285,7 @@ export function metricContext(content) {
     settlementIndex: settlementIndexOf(content),
     cities: content.cities?.cities ?? [],
     traitIndex: traitIndexOf(content),
+    instanceIndex: instanceIndexOf(content),
     earnedCount: 0,
     earnedPoints: 0
   }

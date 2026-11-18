@@ -18,9 +18,14 @@ export const REMATCH_BOSS_HP_STEP = 0.1
  * follows a person's real progress and clearing it again and again opens nothing.
  */
 export const REMATCH_LEVEL_SHARE = 0.3
-/** The boss's own item: this much more chance per rematch, up to the most (the waves' pity on top). */
-export const REMATCH_ITEM_STEP = 0.02
-export const REMATCH_ITEM_MAX = 0.45
+/**
+ * The boss's own item: each rematch makes the run's chance (0.4% + 0.08% a tier, at most 1.2%;
+ * instance-constants.mjs) this share larger, up to the most. Rematch X at its tier rolls 3%: the
+ * surest way to chase one boss's item, about one clear in thirty-three, yet no faucet; a run's boss
+ * never uses the waves' pity.
+ */
+export const REMATCH_ITEM_STEP = 0.15
+export const REMATCH_ITEM_MAX = 0.03
 /**
  * The first clear of rematch n pays, once per world: materials worth this many plain kills × n, coins
  * this many × n × REWARD_GROWTH ** level, and this many champions × n of each of its races for the
@@ -77,7 +82,7 @@ export const rematchBonuses = (run) => ({ bossHp: 1 + REMATCH_BOSS_HP_STEP * (ru
 
 /** The boss's chance to leave its own item in a rematch, given the run's usual chance. */
 export const rematchItemChance = (chance, rematch) =>
-  (rematch ? Math.min(REMATCH_ITEM_MAX, chance + REMATCH_ITEM_STEP * rematch) : chance)
+  (rematch ? Math.min(REMATCH_ITEM_MAX, chance * (1 + REMATCH_ITEM_STEP * rematch)) : chance)
 
 /**
  * What a rematch's clear adds: nothing outside a rematch or for one cleared before; for a first

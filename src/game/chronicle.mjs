@@ -3,6 +3,7 @@
 // the view, a party's title and "seen" are the rest. Pure: the caller passes the time and the day.
 import { achievementIndexOf } from './achievement-content.mjs'
 import { achievementsView, grantAchievements, setPartyTitle, titleProblem } from './achievements.mjs'
+import { instanceIndexOf } from './instance-content.mjs'
 import { journalGains } from './journal-gains.mjs'
 import { journalView, markJournalSeen, recordJournal } from './journal.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
@@ -26,6 +27,8 @@ function highlightNamer(content) {
       case 'achievement': return achievementIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'stage': return stages.get(ref) ?? null
       case 'instance': return instances.get(ref) ?? null
+      case 'rematch': return instances.get(ref) ?? null
+      case 'region': return instanceIndexOf(content)?.regions.find((region) => region.id === ref)?.name ?? null
       case 'scroll': return traitIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'weekly': return eventIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'city': return cities.get(ref) ?? null
@@ -57,7 +60,7 @@ export function chronicleActions(content) {
     let next = save
     if (isNews) {
       const gains = journalGains({ before, after: save, midway, events, at, tierOf: (id) => tiers.get(id) ?? 0,
-        settlementIndex: settlementIndexOf(content) })
+        settlementIndex: settlementIndexOf(content), instanceIndex: instanceIndexOf(content) })
       const journal = recordJournal(save.journal, { day, ...gains })
       if (journal !== save.journal) next = { ...next, journal }
     }

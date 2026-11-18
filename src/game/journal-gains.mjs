@@ -2,6 +2,7 @@
 // change told and from the save before and after it. Kills, bosses, character levels, notable loot
 // and instance results come from the events; skill levels, coins, materials and building levels
 // from the two saves, so a purchase by hand counts as well as one by autoSpend. Pure.
+import { regionsOpened } from './instance-regions.mjs'
 import { cityRankHighlights } from './city-ranks.mjs'
 import { effectiveLevel } from './progression.mjs'
 import { settlementNews, totalLevels } from './settlement.mjs'
@@ -95,12 +96,12 @@ function settlementHighlights(before, after, settlementIndex, at) {
  * What a change gained.
  *
  * @param {{ before: object | null, after: object, midway?: object, events?: object[], at: number,
- *   tierOf: (entryId: string) => number, settlementIndex?: object | null }} change `midway` is the
+ *   tierOf: (entryId: string) => number, settlementIndex?: object | null, instanceIndex?: object | null }} change `midway` is the
  *   save before anything was spent (a round's, before autoSpend): materials are counted up to it,
  *   and not at all without it, so a trade is not counted as earning
  * @returns {{ counts: Record<string, number>, highlights: import('./journal.mjs').Highlight[] }}
  */
-export function journalGains({ before, after, midway, events = [], at, tierOf, settlementIndex = null }) {
+export function journalGains({ before, after, midway, events = [], at, tierOf, settlementIndex = null, instanceIndex = null }) {
   const kills = events.filter((event) => event.type === 'kill')
   const instances = events.filter((event) => event.type === 'instance')
   const loot = notableLoot(events, before, tierOf, at)
@@ -109,7 +110,11 @@ export function journalGains({ before, after, midway, events = [], at, tierOf, s
     ...events.filter((event) => event.type === 'bestiary' && event.kind === 'boss' && event.discovered && event.creatureId)
       .map((event) => ({ at, kind: 'boss', ref: event.creatureId })),
     ...instances.filter((event) => event.kind === 'cleared' && typeof event.instance === 'string')
-      .map((event) => ({ at, kind: 'instance', ref: event.instance, value: event.tier })),
+      .map((event) => (event.rematch
+        ? { at, kind: 'rematch', ref: event.instance, value: event.rematch }
+        : { at, kind: 'instance', ref: event.instance, value: event.tier })),
+    // A region of the road that opened (instance-regions.mjs).
+    ...regionsOpened(before, after, instanceIndex).map((regionId) => ({ at, kind: 'region', ref: regionId })),
     ...settlementHighlights(before, after, settlementIndex, at),
     // A trait scroll a kill dropped (traits.mjs).
     ...kills.filter((event) => typeof event.scroll === 'string').map((event) => ({ at, kind: 'scroll', ref: event.scroll })),

@@ -79,5 +79,7 @@ export const HIGHLIGHT = {
   instance: (name, tier) => `Cleared ${name} at tier ${tier}`,
   scroll: (name) => `Trait scroll found: ${name}`,
   weekly: (name) => `Weekly goal reached: ${name}`,
-  city: (name, rank) => `${name} rose to rank ${numeral(rank)}`
+  city: (name, rank) => `${name} rose to rank ${numeral(rank)}`,
+  rematch: (name, rematch) => `Won Rematch ${numeral(rematch)} in ${name}`,
+  region: (name) => `A new region opened: ${name}`
 }

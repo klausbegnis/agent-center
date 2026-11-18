@@ -840,7 +840,7 @@ change.
 | Tier | rematch n plays at a fixed tier: its levels, check and tier modifier as that tier's | `REMATCH_FIRST_TIER` 3 + `REMATCH_TIER_STEP` 2 × (n − 1): I at tier 3, X at tier 21 |
 | Boss | the boss has more health (its room's time does not grow with it) | × (1 + `REMATCH_BOSS_HP_STEP` 0.1 × n): X's boss twice as much |
 | Opens | the boss beaten once, rematch n − 1 cleared, and the world's level | World Lv ≥ the instance's level × (1 + `REMATCH_LEVEL_SHARE` 0.3 × n): the crypt's X at 20, the spire's at 184 |
-| Every clear | the purse of its tier, and the boss's own item at better odds | + `REMATCH_ITEM_STEP` 2% a rematch over the tier's chance, at most `REMATCH_ITEM_MAX` 45%, plus the waves' pity |
+| Every clear | the purse of its tier, and the boss's own item at better odds | the tier's chance (0.4% + 0.08% a tier, at most 1.2%) × (1 + `REMATCH_ITEM_STEP` 0.15 × n), at most `REMATCH_ITEM_MAX` 3%: Rematch I rolls about 0.6%, X 3%; no pity, as for any run |
 | First clear of rematch n | a tier-clear reward, once per world | materials worth `REMATCH_FIRST_KILLS` 12 × n plain kills, `REMATCH_FIRST_COINS` 300 × n × `REWARD_GROWTH ** level` coins and `REMATCH_CHAMPIONS` 2 × n champions of each of its races for the bestiary |
 
 - **Gated by real progress.** Only tokens raise the world's level, so the ladder opens as the world
@@ -853,6 +853,12 @@ change.
   tier. The Roadmap shows the best one as a roman tier badge on the instance's card and beside its
   marker, and the next one as **Rematch IV** beside **Enter**, with the level it opens at and why a
   room cannot go.
+
+Achievements follow both (metrics `bestRematch`, `regionsOpened`, `regionsComplete` in
+`achievement-metrics.mjs`): Old Grudges (a first rematch won), Grudge Match (Rematch V, title "the
+Unforgiving"), Undisputed (Rematch X, title "the Undisputed"), Beyond the Old Road (the second region
+opened) and Islewarden (every instance of the Gloaming Isles cleared, title "Islewarden"). The day
+journal keeps a rematch won (`rematch`, with its number) and a region opened (`region`) as highlights.
 
 ### The relics
 
@@ -2565,35 +2571,40 @@ what it pays count every run, the second region's included.
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
 |---|---|---|---|---|---|---|
-| First clear: light | day 5 | 15 | 38 | 88 | 179 | 319 |
-| medium | day 1 | 2 | 4 | 12 | 29 | 50 |
+| First clear: light | day 5 | 15 | 38 | 87 | 180 | 319 |
+| medium | day 1 | 2 | 4 | 12 | 25 | 47 |
 | heavy | day 1 | 1 | 2 | 3 | 5 | 10 |
 
 | | runs a year | clears | failed | best tiers | time inside | materials/h inside | on waves (plain) | coins/h inside |
 |---|---|---|---|---|---|---|---|---|
-| light | 264 | 151 | 43% | 14/7/12/12/8/9 | 87% | 701 | 805 | 157 |
-| medium | 1,215 | 639 | 47% | 13/7/15/13/11/10 | 93% | 13.0 k | 10.6 k | 3.3 k |
-| heavy | 2,719 | 1,319 | 51% | 18/6/17/16/12/10 | 94% | 41.9 T | 41.8 T | 8.3 T |
+| light | 255 | 144 | 44% | 13/7/12/12/8/9 | 87% | 664 | 809 | 117 |
+| medium | 1,189 | 629 | 47% | 13/8/14/13/11/10 | 93% | 12.7 k | 10.9 k | 3.6 k |
+| heavy | 2,736 | 1,323 | 52% | 17/5/17/15/12/10 | 94% | 44.4 T | 43.9 T | 6.8 T |
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
-| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 12 | 11.2, 9.6, 12.8 | 4.4, 2.9, 4.1 |
-| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 11/5, 17/9 | 8.2, 9.4, 11.5 | 2.7, 3.3, 3.9 |
-| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/9/8, 11/15/14, 25/24/22 | 12.2, 13.6, 17.4 | 3.5, 4.2, 4.9 |
+| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 11 | 11.2, 9.6, 12.8 | 4.7, 4.1, 3.9 |
+| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 8/7, 25/19 | 8.2, 9.4, 11.5 | 2.7, 3.2, 3.3 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/8/7, 13/17/14, 25/26/26 | 12.2, 13.6, 17.4 | 3.1, 3.3, 3.8 |
 
 The policy also goes for the next rematch of a beaten boss (after any road instance not cleared yet,
 before climbing tiers), and tries a lost one again once the world's level is a tenth higher:
 
 | | rematches won | lost | best rematch, road order | first I won | first V | first X |
 |---|---|---|---|---|---|---|
-| light | 14 | 20 | 4/2/4/3/1/- | day 10 | - | - |
-| medium | 49 | 85 | 7/3/6/6/4/4 | day 2 | day 51 | - |
-| heavy | 80 | 260 | 9/3/7/8/6/5 | day 1 | day 16 | - |
+| light | 10 | 23 | 4/1/3/2/-/- | day 10 | - | - |
+| medium | 50 | 85 | 8/3/7/6/3/4 | day 2 | day 53 | - |
+| heavy | 79 | 267 | 8/3/8/8/6/5 | day 1 | day 11 | - |
 
 - **Rematches are the long ladder.** Nobody reaches Rematch X in a year: the world's level opens the
   ladder quickly for a heavy user, but a rematch's fixed tier and tougher boss make each step above V
   a wall the party's own gear and relics must climb. The policy's best tiers and the tables above moved
-  a little because rematch runs share the time inside; the balance targets are unchanged (54 of 59).
+  a little because rematch runs share the time inside; the balance targets that pass are unchanged.
+- **The surest way to one boss's item, not a faucet.** A rematch makes the run's own odds at its
+  boss's item larger by 15% a rematch, at most 3% (Rematch X at tier 21, where the plain run's
+  chance stops at 1.2%). The first tuning, +2% a rematch up to 45%, was set against the old 10%
+  base; against the retuned base (0.4% + 0.08% a tier) it gave the heavy world 21 boss items a
+  year from runs. Now it gives 10, and the whole collection stays a goal of years.
 
 The second region, with the same policy (a road instance not cleared yet comes first, so it pushes
 into the Gloaming Isles as soon as each opens):
@@ -2601,18 +2612,18 @@ into the Gloaming Isles as soon as each opens):
 | | opens | lighthouse | labyrinth | warren | grove | leviathan | abbey | anvil | gate | cleared in the year |
 |---|---|---|---|---|---|---|---|---|---|---|
 | light | day 319 | - | - | - | - | - | - | - | - | 0 of 8 |
-| medium | day 50 | day 82 | 121 | 169 | 185 | 222 | 262 | 310 | 341 | 8 of 8 |
-| heavy | day 10 | day 17 | 24 | 33 | 38 | 46 | 54 | 65 | 73 | 8 of 8 |
+| medium | day 47 | day 82 | 121 | 166 | 185 | 222 | 262 | 310 | 340 | 8 of 8 |
+| heavy | day 10 | day 17 | 24 | 33 | 38 | 46 | 54 | 64 | 73 | 8 of 8 |
 
 - **A long-term goal.** A medium user reaches the second region in its third month and finishes it in
   the last weeks of the year; a light user completes the first road near the end of the year and,
   at World Lv 49, waits for the Saltreach Lighthouse's 60 in its second; a heavy one crosses it in two
   months. Its levels (60 to 176) were set against the simulator's world levels: a medium world is at
   62 on day 90 and 191 on day 365.
-- **Collection.** With the second region's sixteen items, a medium room owns 40 and 32 of 56 legendary
-  items after a year (29 and 17 with the first region alone), a heavy one 41, 46 and 39; a light one
-  is unchanged (20).
-  Its bosses never come on the waves, so a heavy user cannot collect their items before it gets there.
+- **Collection.** With the second region's sixteen items (56 in all), a medium room owns 25 and 19
+  after a year (17 and 9 with the first region alone), mostly the region's eight relics; a heavy one
+  25 to 26 (22 to 25 before); a light one 11, as it never reaches the region in its first year. Its
+  bosses never come on the waves, so a heavy user cannot collect their items before it gets there.
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
@@ -2626,13 +2637,16 @@ into the Gloaming Isles as soon as each opens):
   fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
   it found and costs two hours of working time on the waves before that room may try again.
 - **Collection** is a goal of several years. With instances (and the weekly events and traits) a
-  light room owns 12 of 40 legendary items after a year, a medium one 17 and 9, a heavy one 22 to 25; before
+  light room owns 11 of 56 legendary items after a year, a medium one 25 and 19, a heavy one 25 to 26
+  (with the first region alone, of 40: 12, 17 and 9, and 22 to 25); before
   the events, 28 to 32 after two years for a heavy room (a one-off run with 730 days), while the
   first still comes on day 5. In a year the light world gains 3 from the waves' bosses, 6 instance
   relics (each instance's first clear), 2 from a run's boss and 1 from a vault; the heavy world 46,
-  6, 13 and 6. The simulator prints that split and checks the pace (light 8 to 12, medium about 14
-  to 20 per room, held to a mean of 12 to 20, heavy at least ten short at a year, the first item
-  within three weeks); medium's second room, which enters less, sits at 9, so its mean is 13.
+  6, 13 and 6 (with the second region, medium 15, 14, 9 and 6, heavy 47, 14, 10 and 6). The
+  simulator prints that split and checks the pace for 56 items (light 8 to 12, medium a mean of 14
+  to 22 per room, heavy holding at most three fifths of the collection at a year, so not complete
+  before about two years, the first item within three weeks): light 11.0, medium 22.0, heavy 25.7
+  with its best room at 26 of 56, the first item on day 5.
   Before this tuning a light room owned 18 and a heavy one 31 to 33 in a year: the run's boss rolled
   at 10% + 1% a tier (at most 30%) with the waves' pity on top, which every miss raised by 5%, so a
   daily run soon made its item and every wave boss's item near certain; the vault rolled at 1% +
