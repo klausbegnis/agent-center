@@ -77,7 +77,7 @@ export function checkWorldTraits(value, { index, cityIds }) {
   if (value === undefined) return { ok: true }
   if (!index) return refuse('traits', 'are kept but this game has none')
   if (!isPlainObject(value)) return refuse('traits', 'is not an object')
-  const extra = Object.keys(value).find((key) => key !== 'known' && key !== 'sold')
+  const extra = Object.keys(value).find((key) => !['known', 'sold', 'swaps'].includes(key))
   if (extra !== undefined) return refuse(`traits.${extra.slice(0, 40)}`, 'is not a field the game writes')
   const known = traitList(value.known ?? [], 'traits.known', index)
   if (!known.ok) return known
@@ -91,8 +91,10 @@ export function checkWorldTraits(value, { index, cityIds }) {
       sold[cityId] = checked.value
     }
   }
-  if (known.value.length === 0 && Object.keys(sold).length === 0) return refuse('traits', 'is kept empty')
-  return { ok: true, value: { known: known.value, ...(Object.keys(sold).length ? { sold } : {}) } }
+  const swaps = value.swaps ?? 0
+  if (!isWhole(swaps, 1, Number.MAX_SAFE_INTEGER) && value.swaps !== undefined) return refuse('traits.swaps', 'is not a whole count')
+  if (known.value.length === 0 && Object.keys(sold).length === 0 && swaps === 0) return refuse('traits', 'is kept empty')
+  return { ok: true, value: { known: known.value, ...(Object.keys(sold).length ? { sold } : {}), ...(swaps ? { swaps } : {}) } }
 }
 
 /**
@@ -107,6 +109,7 @@ export function normalizeTraitRecord(value) {
   const known = Array.isArray(value.known) ? value.known.filter((id) => typeof id === 'string') : []
   const sold = Object.fromEntries(Object.entries(isPlainObject(value.sold) ? value.sold : {})
     .filter(([cityId, day]) => !RESERVED.has(cityId) && soldDay(day, cityId).ok))
-  if (known.length === 0 && Object.keys(sold).length === 0) return null
-  return { known, ...(Object.keys(sold).length ? { sold } : {}) }
+  const swaps = isWhole(value.swaps, 1, Number.MAX_SAFE_INTEGER) ? value.swaps : 0
+  if (known.length === 0 && Object.keys(sold).length === 0 && swaps === 0) return null
+  return { known, ...(Object.keys(sold).length ? { sold } : {}), ...(swaps ? { swaps } : {}) }
 }

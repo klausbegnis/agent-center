@@ -99,7 +99,7 @@ test('the party\'s traits make items drop more against their races and scrolls d
 })
 
 test('every living character\'s trading traits lower the world\'s broker prices, under a cap', () => {
-  const traders = ['merchant-prince', 'silver-tongue', 'haggler'].map((id, at) => characterOf(`t${at}`, { traits: [id] }))
+  const traders = ['guild-patron', 'silver-tongue', 'haggler'].map((id, at) => characterOf(`t${at}`, { traits: [id] }))
   const world = { projects: { a: roomWith(...traders), b: roomWith(characterOf('plain', { traits: [] })) } }
   assert.equal(brokerDiscountOf(world, index), TRAIT_EFFECT_CAPS.brokerDiscount)
   assert.equal(brokerDiscountOf({ projects: {} }, index), 0)

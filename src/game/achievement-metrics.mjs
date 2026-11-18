@@ -10,6 +10,7 @@ import { JOURNAL_COUNTERS } from './journal.mjs'
 import { renovationStars, stageIndexOf, tierOf, totalLevels } from './settlement.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
 import { GATHERING_SKILLS, WORK_SKILLS } from './skills.mjs'
+import { traitIndexOf } from './trait-content.mjs'
 
 const SKILL_IDS = [...WORK_SKILLS, ...GATHERING_SKILLS]
 
@@ -194,6 +195,20 @@ export const METRICS = Object.freeze({
       Object.values(world.instances ?? {}).map((progress) => progress.bestTier ?? 0)))
   },
 
+  // Traits (traits.mjs): a world's collection, its mythic traits, the most one character carries, swaps
+  traitsCollected: { measure: (save) => best(Object.values(save.worlds).map((world) => world.traits?.known?.length ?? 0)) },
+  mythicTraits: {
+    measure: (save, { traitIndex }) => (traitIndex
+      ? best(Object.values(save.worlds).map((world) =>
+        (world.traits?.known ?? []).filter((id) => traitIndex.byId.get(id)?.tier === 'mythic').length))
+      : 0)
+  },
+  traitsCarried: {
+    measure: (save) => best(projectsOf(save).flatMap((project) => Object.values(project.characters ?? {})
+      .map((character) => (Array.isArray(character.traits) ? character.traits.length : 0))))
+  },
+  traitSwaps: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.traits?.swaps ?? 0)) },
+
   // Worlds
   worlds: { measure: (save) => Object.keys(save.worlds).length },
   rooms: { measure: (save) => projectsOf(save).length },
@@ -236,6 +251,7 @@ export function metricContext(content) {
     bestiaryIndex: bestiaryIndexOf(content),
     settlementIndex: settlementIndexOf(content),
     cities: content.cities?.cities ?? [],
+    traitIndex: traitIndexOf(content),
     earnedCount: 0,
     earnedPoints: 0
   }

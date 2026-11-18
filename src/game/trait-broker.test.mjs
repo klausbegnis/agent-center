@@ -52,6 +52,15 @@ test('prices grow with the tier and the world level, and a discount lowers them'
   assert.ok(swapFee('rare', 10) < scrollPrice('rare', 10))
 })
 
+test('a scroll sells for more than a scroll of the tier below costs, at every discount', () => {
+  const tiers = ['common', 'rare', 'epic', 'mythic']
+  for (const level of [1, 20, 80]) {
+    for (let at = 1; at < tiers.length; at += 1) {
+      assert.ok(scrollSalePrice(tiers[at], level) > scrollPrice(tiers[at - 1], level), `${tiers[at]} at ${level}`)
+    }
+  }
+})
+
 test('buying an offer puts its scroll in the room\'s chest for coins, once a day', () => {
   const save = started(1_000_000)
   const [offer] = offersOf(save)

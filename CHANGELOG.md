@@ -14,7 +14,9 @@ All notable changes to this project are recorded here. The format follows
   sends them to another room), teach their trait into a free slot from the Party tab, and trade at
   each open city's Trait broker in the Market tab, which also takes a trait back as a scroll in a
   swap for a fee. 48 traits in four tiers, a few of them double-edged; the world keeps a collection.
-  Old saves keep everything and get every character's trait at once.
+  Old saves keep everything and get every character's trait at once. A scroll found is told in its
+  room and kept in the journal's highlights, and a Traits group of seven achievements follows the
+  collection.
 
 ## 0.3.0 - 2026-11-17
 

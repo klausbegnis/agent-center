@@ -10,7 +10,8 @@
     {"id": "settlement", "name": "Settlement"},
     {"id": "instances", "name": "Instances"},
     {"id": "journal", "name": "Journal"},
-    {"id": "collector", "name": "Collector"}
+    {"id": "collector", "name": "Collector"},
+    {"id": "traits", "name": "Traits"}
   ],
   "achievements": [
     {"id": "monsters-1", "group": "battle", "name": "First Blood", "description": "Defeat 1 monster.", "points": 5, "when": {"metric": "kills", "atLeast": 1}},
@@ -146,6 +147,13 @@
     {"id": "collector-3", "group": "collector", "name": "Trophy Room", "description": "Earn 50 achievements.", "points": 25, "when": {"metric": "achievements", "atLeast": 50}},
     {"id": "collector-4", "group": "collector", "name": "Trophy Hall", "description": "Earn 80 achievements.", "points": 50, "when": {"metric": "achievements", "atLeast": 80}, "title": "the Accomplished"},
     {"id": "points-1", "group": "collector", "name": "Point Taken", "description": "Collect 500 achievement points.", "points": 10, "when": {"metric": "achievementPoints", "atLeast": 500}},
-    {"id": "points-2", "group": "collector", "name": "High Score", "description": "Collect 2,000 achievement points.", "points": 40, "when": {"metric": "achievementPoints", "atLeast": 2000}}
+    {"id": "points-2", "group": "collector", "name": "High Score", "description": "Collect 2,000 achievement points.", "points": 40, "when": {"metric": "achievementPoints", "atLeast": 2000}},
+    {"id": "traits-1", "group": "traits", "name": "Quirks and Habits", "description": "Collect 5 traits in a world.", "points": 5, "when": {"metric": "traitsCollected", "atLeast": 5}},
+    {"id": "traits-2", "group": "traits", "name": "A Colourful Crew", "description": "Collect 15 traits in a world.", "points": 15, "when": {"metric": "traitsCollected", "atLeast": 15}},
+    {"id": "traits-3", "group": "traits", "name": "Character Study", "description": "Collect 30 traits in a world.", "points": 30, "when": {"metric": "traitsCollected", "atLeast": 30}, "title": "the Peculiar"},
+    {"id": "traits-4", "group": "traits", "name": "Every Kind of Soul", "description": "Collect 45 traits in a world.", "points": 60, "when": {"metric": "traitsCollected", "atLeast": 45}, "title": "Keeper of Quirks", "hidden": true},
+    {"id": "mythic-trait-1", "group": "traits", "name": "Touched by Legend", "description": "Collect a mythic trait.", "points": 25, "when": {"metric": "mythicTraits", "atLeast": 1}, "title": "the Star-Touched", "hidden": true},
+    {"id": "full-slots", "group": "traits", "name": "Well Rounded", "description": "Have a character carry four traits.", "points": 20, "when": {"metric": "traitsCarried", "atLeast": 4}},
+    {"id": "trait-swap-1", "group": "traits", "name": "Change of Heart", "description": "Swap a trait for a scroll.", "points": 5, "when": {"metric": "traitSwaps", "atLeast": 1}}
   ]
 }

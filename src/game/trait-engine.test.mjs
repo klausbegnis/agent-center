@@ -75,6 +75,7 @@ test('a swap puts the scroll\'s trait in the old one\'s slot, and the old one ba
   assert.deepEqual(traitsOfFirst(swapped), [scroll])
   assert.deepEqual(project(swapped).scrolls, { [born]: 1 })
   assert.ok(swapped.worlds.main.coins < 100_000)
+  assert.equal(swapped.worlds.main.traits.swaps, 1)
 })
 
 test('a swap the world cannot pay for is refused', () => {

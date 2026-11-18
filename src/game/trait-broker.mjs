@@ -236,6 +236,8 @@ export function swapTrait(save, swap, index) {
   const taught = { ...character, traits }
   const used = takeScroll({ ...project, characters: { ...project.characters, [character.sessionId]: taught } }, swap.traitId)
   const next = addScrolls(used, [swap.oldTraitId]).project
-  const nextWorld = { ...world, coins: world.coins - fee, projects: { ...world.projects, [swap.projectId]: next } }
+  const paid = { ...world, coins: world.coins - fee, projects: { ...world.projects, [swap.projectId]: next } }
+  const record = traitRecordOf(world)
+  const nextWorld = withTraitRecord(paid, { ...record, swaps: record.swaps + 1 })
   return { ...save, worlds: { ...save.worlds, [worldId]: nextWorld } }
 }

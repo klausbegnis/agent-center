@@ -904,9 +904,9 @@ Outpost on day 15 and the Hamlet on day 30, a medium one the Village on day 53 a
 
 Long-term goals over every part of the game (`game/achievements.json`, checked by
 `src/game/achievement-content.mjs`; granted by `achievements.mjs`, measured by
-`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 134 achievements in eleven
+`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 141 achievements in twelve
 groups (Battle, Bosses, Bestiary, Growth, Legacy, Treasure, Market, Settlement, Instances, Journal,
-Collector), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
+Collector, Traits), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
 Each has a name, a description, points (1 to 100) and a condition; some are `hidden` until earned,
 and 37 grant a `title`.
 
@@ -920,7 +920,9 @@ every world: a sum (`kills`, `bossWins`, `rankKills` by rank, `raceKills` by rac
 `legendaryItems`, `instancesCleared`), or the best of the worlds (`wave`, `worldLevel`,
 `skillLevel` by skill, `bestWorkSkill`, `prestigeStars`, `characterLevel`, `hunterRank`,
 `bestMastery`, `itemTier`, `itemLevel`, `coins`, `citiesOpen`, `buildingLevels`, `stage`,
-`buildingTier` by building, `renovationStars`, `instanceTier`). `coinsEarned`, `materialsEarned`,
+`buildingTier` by building, `renovationStars`, `instanceTier`, and for traits `traitsCollected`,
+`mythicTraits` and `traitsCarried`, the most traits one living character carries), and `traitSwaps`
+counts the swaps at the trait brokers (see "Traits"). `coinsEarned`, `materialsEarned`,
 `notableLoot` and `activeDays` read the journal's lifetime totals (see "The day's journal"), and
 `achievements` and `achievementPoints` the achievements themselves. The content check refuses a
 metric that does not exist and a parameter the content does not have, so an achievement for a new
@@ -975,7 +977,8 @@ A rolling log for the "While you worked" summary (`src/game/journal.mjs`, counte
 | `cleared`, `failed` | instance results |
 
 A short list of highlights names what was notable: legendary finds, new best gear, a boss's first
-win, achievements, a building's new tier, a new stage and an instance cleared, each as a content id.
+win, achievements, a building's new tier, a new stage, an instance cleared and a trait scroll a kill
+dropped (`scroll`), each as a content id.
 An imported game is no news and adds nothing.
 
 `journal: { days: [[day, ...counts]], totals, since, seenAt, activeDays, highlights }`: at most
@@ -1051,7 +1054,9 @@ Every open city has one (`src/game/trait-broker.mjs`):
   `city`; mythic ones none, and are never sold), a tier by `BROKER_TIER_WEIGHTS`, by hash of world,
   city and day. A scroll costs `BROKER_PRICES[tier] × REWARD_GROWTH ** worldLevel × (1 −
   brokerDiscount)` coins and goes into a room's chest; each offer sells once a day.
-- **Sell**: any open city buys a scroll back for `BROKER_SELL_SHARE` (a quarter) of its price.
+- **Sell**: any open city buys a scroll back for `BROKER_SELL_SHARE` (a quarter) of its price. The
+  tier prices (150, 700, 3,000 and 14,000) are set so a scroll always sells for more than a scroll of
+  the tier below costs, so the two never read as the same number on the broker's card (a test checks it).
 - **Swap**: a character swaps a trait it carries for a scroll of its room's chest in the same slot
   (`swapTrait`); the old trait goes back to the chest as a scroll, for a fee of `SWAP_FEE_SHARE`
   (a quarter) of its price. The design left open whether a swapped trait is lost; it comes back.
@@ -1060,9 +1065,10 @@ Every open city has one (`src/game/trait-broker.mjs`):
 
 - `Character.traits` (optional): distinct traits of the catalogue, no more than the level's slots.
 - `Project.scrolls` (optional): whole counts from 1 to 5, by trait of the catalogue.
-- `World.traits` (optional): `{ known, sold? }`, the traits the world ever had (its collection;
-  written after every advance and trait action, and worked out for a save from before traits from
-  its characters, kept retirees and scrolls) and the brokers' sales of the day by city.
+- `World.traits` (optional): `{ known, sold?, swaps? }`, the traits the world ever had (its
+  collection; written after every advance and trait action, and worked out for a save from before
+  traits from its characters, kept retirees and scrolls), the brokers' sales of the day by city, and
+  the swaps the world ever made.
 - `migrate` keeps a world's record and repairs a broken one; `cleanSave` refuses a trait or a city
   the content does not have, a trait twice, more traits than slots, a count out of range, an offer
   the broker never has, and any trait field when the content has no traits. A save from before
@@ -1076,6 +1082,11 @@ levels), each world's `traits` (`known`, `discount`, `brokers` by open city with
 (`carried`, `slots`, `nextSlotAt`, `born`). The view state passes them to rooms and characters. One
 action, `traitAction({ action, ... })` (`/api/game/trait`, local only like every game route, and
 the panel request `game.trait`), teaches, swaps, buys, sells or sends (`src/game-trait-actions.mjs`).
+
+A kill that drops a scroll carries `scroll` on its `kill` event; its room shows "Trait scroll: Name!"
+and the journal keeps it as a highlight. Seven achievements of the Traits group follow the
+collection (5, 15, 30 and 45 traits), a first mythic trait, a character with four traits and a
+first swap.
 
 ### Pace
 
@@ -1091,7 +1102,6 @@ world's collection, of 48, at day 30 / 90 / 180 / 365:
 Commons come with new sessions; the epics and the five mythic traits, which only bosses drop, keep
 the whole catalogue a goal past the first year for every user. Traits move no other balance check:
 the same five fail as before them.
-
 
 ## Scenes
 
@@ -1352,7 +1362,7 @@ Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
             pinned?, traits?: string[] }
-TraitRecord { known: string[], sold?: { [cityId]: { day, offers: number[] } } }
+TraitRecord { known: string[], sold?: { [cityId]: { day, offers: number[] } }, swaps? }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy, legendary?: true }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }

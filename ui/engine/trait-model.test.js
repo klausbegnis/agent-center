@@ -60,3 +60,11 @@ test('the collection counts the traits a world has had of the whole catalogue', 
   assert.deepEqual(collection({ traits: { known: ['a', 'b'] } }, game), { known: 2, total: traits.traits.length })
   assert.equal(collection({}, game), null)
 })
+
+test('a kill that drops a trait scroll tells its room, by the trait\'s name', async () => {
+  const { gameEffects } = await import('./game-effects.js')
+  const state = { game: { traits: catalogue, rooms: { room: { joined: true, chest: [] } }, worlds: [] } }
+  const event = { type: 'kill', roomId: 'room', wave: 3, materials: {}, scroll: 'whirlwind' }
+  const effects = gameEffects({ events: [event], arrivals: [], hits: [] }, state)
+  assert.ok(effects.some((effect) => effect.text === 'Trait scroll: Whirlwind!' && effect.target === 'room'))
+})

@@ -97,7 +97,9 @@ export const SCROLLS = {
   noScrollPick: 'No scroll to send',
   noRoomPick: 'No other room',
   noRoom: 'No other room in this world plays yet.',
-  sent: (traitName, roomName) => `A scroll of ${traitName} went to ${roomName}.`
+  sent: (traitName, roomName) => `A scroll of ${traitName} went to ${roomName}.`,
+  /** The room's line when a kill drops a scroll. */
+  found: (traitName) => `Trait scroll: ${traitName}!`
 }
 
 export const BROKER = {

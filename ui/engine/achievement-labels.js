@@ -75,5 +75,6 @@ export const HIGHLIGHT = {
   achievement: (name) => `Achievement: ${name}`,
   building: (name) => `Built: ${name}`,
   stage: (name) => `The settlement became a ${name}`,
-  instance: (name, tier) => `Cleared ${name} at tier ${tier}`
+  instance: (name, tier) => `Cleared ${name} at tier ${tier}`,
+  scroll: (name) => `Trait scroll found: ${name}`
 }

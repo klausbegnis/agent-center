@@ -43,8 +43,12 @@ export const BROKER_TIER_WEIGHTS = Object.freeze({ common: 70, rare: 27, epic: 3
  * commons; a heavy user can buy every offer, which the daily stock and the tiers keep a long way
  * from the whole catalogue.
  */
-export const BROKER_PRICES = Object.freeze({ common: 150, rare: 600, epic: 3000, mythic: 12000 })
-/** The broker pays this share of a scroll's price for one sold to it. */
+export const BROKER_PRICES = Object.freeze({ common: 150, rare: 700, epic: 3000, mythic: 14000 })
+/**
+ * The broker pays this share of a scroll's price for one sold to it. With BROKER_PRICES above, a
+ * scroll of one tier always sells for more than a scroll of the tier below costs, so the two never
+ * read as the same number side by side on the broker's card.
+ */
 export const BROKER_SELL_SHARE = 0.25
 /** Swapping a trait out (it comes back as a scroll) costs this share of its price. */
 export const SWAP_FEE_SHARE = 0.25

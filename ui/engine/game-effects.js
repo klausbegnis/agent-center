@@ -9,6 +9,7 @@ import { BESTIARY_EVENT, prestigeTitle } from './bestiary-labels.js'
 import { instanceNews } from './instance-model.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
 import { SETTLEMENT_EVENT } from './settlement-labels.js'
+import { SCROLLS } from './trait-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
 export const MAX_ROOM_LINES = 3
@@ -114,6 +115,10 @@ function lineEffects(events, game) {
       // Entering, a room cleared, the vault, a boon, the clear: the room tells its run (instance-model.js).
       const news = instanceNews(event, game)
       if (news) effects.push({ roomId: event.roomId, target: 'room', ...news })
+    } else if (event.type === 'kill' && room && typeof event.scroll === 'string') {
+      // A trait scroll a kill dropped (trait-labels.js).
+      const entry = game.traits?.entries?.find((trait) => trait.id === event.scroll)
+      effects.push({ roomId: event.roomId, target: 'room', text: SCROLLS.found(entry?.name ?? nameFromId(event.scroll)), tone: 'drop' })
     } else if (event.type === 'bestiary' && room) {
       const text = bestiaryText(event)
       if (text) effects.push({ roomId: event.roomId, target: 'room', text, tone: 'bestiary' })

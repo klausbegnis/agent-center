@@ -237,19 +237,22 @@ export function collectedTraits(world, index) {
 }
 
 /**
- * The world's trait record: the traits it ever had (`known`) and its brokers' sales of the day.
+ * The world's trait record: the traits it ever had (`known`), its brokers' sales of the day and the
+ * swaps it ever made (for an achievement).
  *
  * @param {{ traits?: { known?: string[], sold?: object } }} world
  */
-export const traitRecordOf = (world) => ({ known: world?.traits?.known ?? [], sold: world?.traits?.sold ?? {} })
+export const traitRecordOf = (world) =>
+  ({ known: world?.traits?.known ?? [], sold: world?.traits?.sold ?? {}, swaps: world?.traits?.swaps ?? 0 })
 
 /** The world with this trait record; the field is left out while it holds nothing. */
 export function withTraitRecord(world, record) {
   const { traits: _old, ...rest } = world
   const known = [...record.known].sort()
   const sold = record.sold ?? {}
-  if (known.length === 0 && Object.keys(sold).length === 0) return rest
-  return { ...rest, traits: { known, ...(Object.keys(sold).length ? { sold } : {}) } }
+  const swaps = record.swaps ?? 0
+  if (known.length === 0 && Object.keys(sold).length === 0 && swaps === 0) return rest
+  return { ...rest, traits: { known, ...(Object.keys(sold).length ? { sold } : {}), ...(swaps ? { swaps } : {}) } }
 }
 
 /**

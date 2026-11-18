@@ -108,7 +108,9 @@ export function journalGains({ before, after, midway, events = [], at, tierOf, s
       .map((event) => ({ at, kind: 'boss', ref: event.creatureId })),
     ...instances.filter((event) => event.kind === 'cleared' && typeof event.instance === 'string')
       .map((event) => ({ at, kind: 'instance', ref: event.instance, value: event.tier })),
-    ...settlementHighlights(before, after, settlementIndex, at)
+    ...settlementHighlights(before, after, settlementIndex, at),
+    // A trait scroll a kill dropped (traits.mjs).
+    ...kills.filter((event) => typeof event.scroll === 'string').map((event) => ({ at, kind: 'scroll', ref: event.scroll }))
   ]
   return {
     counts: {
