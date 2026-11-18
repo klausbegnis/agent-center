@@ -2096,13 +2096,14 @@ by the usual closing rules.
       cleared: 1, total: 6, complete: false,   // the first region's, as before regions
       regions: [{ id: 'old-road', unlocked: true, map, cleared: 1, total: 6, complete: false },
         { id: 'gloaming-isles', unlocked: false, map, cleared: 0, total: 8, complete: false }],
-      list: [{ id: 'sunken-crypt', region: 'old-road', state: 'open',  // hidden | locked | open | inside
+      list: [{ id: 'sunken-crypt', region: 'old-road', state: 'open',  // hidden | locked | open | inside;
+                                    // a hidden one sends only { id, region, state, clears }
         runs: 3, clears: 2, bestTier: 1, highestTier: 2, relic: 'tidewake-bell', relicFound: true,
         rematch: 1,                 // the best rematch cleared, 0 for none
         nextRematch: { rematch: 2, tier: 5, opensAt: 8,  // null before its boss is beaten or past X
           entry: { 'local:/work/sneaky-pancake': null } },  // why each room cannot go, or null
         roomInside: null, roomIndex: null,          // the room inside and the room of the run it is in
-        entry: {                    // {} for a hidden instance: every room has the same answer 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
+        entry: { 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
     },
     bestiary: {                     // about 9 KB a world
       discovered: 12, raceCount: 20, beaten: 12, bossCount: 55,

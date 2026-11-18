@@ -286,7 +286,10 @@ test('the view state of a busy save stays far below the panel post limit', async
   // (about 3 KiB), and 104 KiB until the trait catalogue (about 10 KiB) took it to 103.2 KiB. Each
   // world's weekly event, with next week's (about 1.6 KiB), takes it to 104.8 KiB, and the city
   // ranks (each open city's rank card and next charter, and four achievements: about 2 KiB) to 106.8 KiB.
-  assert.ok(size < 112 * 1024, `${size} bytes`)
+  // The second region (eight instances and sixteen bosses in the content, about 12 KiB the same for
+  // every world, with an instance under fog sending only its place) and the rematches take it to
+  // about 121 KiB.
+  assert.ok(size < 126 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
 })
 

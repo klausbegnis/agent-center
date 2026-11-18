@@ -56,9 +56,13 @@ function instanceView(worldId, world, instance, { index, owned }) {
   const progress = progressOf(world, instance.id)
   const inside = roomInside(world, instance.id)
   const state = stateOf(world, instance, index)
+  const region = regionOfInstance(index, instance.id)?.id ?? null
+  // Under fog an instance shows nothing but its place: it sends no progress and no entries, so the
+  // view stays small with a whole region locked.
+  if (state === 'hidden') return { id: instance.id, region, state, clears: progress.clears }
   return {
     id: instance.id,
-    region: regionOfInstance(index, instance.id)?.id ?? null,
+    region,
     state,
     runs: progress.runs,
     clears: progress.clears,
@@ -70,8 +74,7 @@ function instanceView(worldId, world, instance, { index, owned }) {
     relicFound: owned.has(instance.relic),
     roomInside: inside,
     roomIndex: inside ? world.projects[inside].run.room : null,
-    // Under fog every room has the same answer, so a hidden instance sends none: the view stays small.
-    entry: state === 'hidden' ? {} : entriesOf(worldId, world, instance, index)
+    entry: entriesOf(worldId, world, instance, index)
   }
 }
 
