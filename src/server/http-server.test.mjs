@@ -264,7 +264,7 @@ test('the instance routes reach the controller with their fields', async (t) => 
   assert.equal((await post('/api/game/choose-boon', { roomId: room, boonId: 'second-wind' })).status, 200)
   assert.equal((await post('/api/game/recall-party', { roomId: room })).status, 200)
   assert.deepEqual(calls, [
-    ['enterInstance', room, 'sunken-crypt', 2],
+    ['enterInstance', room, 'sunken-crypt', 2, undefined],
     ['chooseBoon', room, 'second-wind'],
     ['recallParty', room]
   ])

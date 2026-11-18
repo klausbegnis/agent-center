@@ -1,8 +1,9 @@
 // The World tab's Roadmap: the region's map for the world's progress with a live marker on each
 // site (and on a party inside), the cooldowns of the room picked above the tabs, then one card per
 // instance: its banner with the name over it, its state, races, boss and relic, an Enter control
-// (room and tier, with the reason a room cannot) for an open one, and the run's card for one a room
-// is inside. Cards are made once and updated, so focus, choices and open questions survive redraws.
+// (room and tier, with the reason a room cannot) for an open one, a Rematch beside it once its boss
+// is beaten (with a tier badge on the banner and the map), and the run's card for one a room is
+// inside. Cards are made once and updated, so focus, choices and open questions survive redraws.
 import { button, el, select, setOptions } from './dom.js'
 import { INSTANCES } from './instance-labels.js'
 import { cooldownLines, roadmapModel, runCardModel } from './instance-model.js'
@@ -26,7 +27,8 @@ function createInstanceCard(model, { actions, choices }) {
   art.decoding = 'async'
   art.draggable = false
   const name = el('h3', 'ac-instance-name')
-  banner.append(art, name)
+  const badge = el('span', 'ac-instance-rematch-badge')
+  banner.append(art, name, badge)
   const stateLine = el('p', 'ac-instance-state')
   const cleared = el('p', 'ac-game-card-line ac-muted ac-instance-cleared')
   const races = el('p', 'ac-game-card-line ac-instance-races')
@@ -47,17 +49,25 @@ function createInstanceCard(model, { actions, choices }) {
     onClick: () => actions.enterInstance?.(roomPick.value, model.id, Number(tierPick.value))
   })
   go.dataset.key = `${model.key}:go`
+  // The rematch of a beaten boss goes beside Enter, with the same room.
+  const rematchGo = button('', 'ac-button ac-instance-rematch-go', {
+    onClick: () => current.rematch?.next && actions.enterInstance?.(roomPick.value, model.id, 1, current.rematch.next)
+  })
+  rematchGo.dataset.key = `${model.key}:rematch`
   const why = el('p', 'ac-game-card-line ac-muted ac-instance-why')
   why.setAttribute('aria-live', 'polite')
+  const rematchWhy = el('p', 'ac-game-card-line ac-muted ac-instance-why')
+  rematchWhy.setAttribute('aria-live', 'polite')
+  const rematchLines = el('div', 'ac-instance-rematch')
   const roomLabel = el('label', 'ac-instance-field')
   roomLabel.append(el('span', 'ac-instance-field-name', INSTANCES.room), roomPick)
   const tierLabel = el('label', 'ac-instance-field')
   tierLabel.append(el('span', 'ac-instance-field-name', INSTANCES.tier), tierPick)
   const fields = el('div', 'ac-instance-fields')
-  fields.append(roomLabel, tierLabel, go)
-  enter.append(fields, why)
+  fields.append(roomLabel, tierLabel, go, rematchGo)
+  enter.append(fields, why, rematchWhy)
   const run = createRunCard({ actions })
-  element.append(banner, stateLine, cleared, races, boss, relic, enter, run.element)
+  element.append(banner, stateLine, cleared, races, boss, relic, rematchLines, enter, run.element)
   let current = model
   /** Re-reads the choice: the reason of the room picked, and whether Enter can go. */
   function sync() {
@@ -67,6 +77,15 @@ function createInstanceCard(model, { actions, choices }) {
     why.textContent = reason ? INSTANCES.why(reason) : ''
     go.setAttribute('aria-label', INSTANCES.enterLabel(current.name, chosen?.name ?? '', Number(tierPick.value)))
     choices.set(current.id, { roomId: roomPick.value, tier: Number(tierPick.value) })
+    const rematch = current.rematch
+    const rematchRoom = rematch?.rooms.find((room) => room.id === roomPick.value)
+    rematchGo.hidden = !rematch?.next
+    rematchGo.textContent = rematch?.buttonText ?? ''
+    const rematchReason = rematchRoom?.reason ?? null
+    rematchGo.disabled = !rematchRoom || rematchReason !== null
+    // A reason Enter already gives is said once.
+    rematchWhy.textContent = rematch?.next && rematchReason && rematchReason !== reason ? INSTANCES.rematchWhy(rematchReason) : ''
+    if (rematch?.next) rematchGo.setAttribute('aria-label', INSTANCES.rematchLabel(current.name, rematchRoom?.name ?? '', rematch.next))
   }
   roomPick.addEventListener('change', sync)
   tierPick.addEventListener('change', sync)
@@ -92,6 +111,13 @@ function createInstanceCard(model, { actions, choices }) {
       if (art.getAttribute('src') !== model.banner) art.src = model.banner
       art.alt = model.alt
       name.textContent = model.name
+      badge.textContent = model.rematchBadge ?? ''
+      badge.hidden = !model.rematchBadge
+      if (model.rematchBadge) badge.title = INSTANCES.rematchBest(model.rematch.best)
+      rematchLines.hidden = !model.rematch
+      rematchLines.replaceChildren(...(model.rematch
+        ? [el('p', 'ac-game-card-line', model.rematch.bestText), el('p', 'ac-game-card-line ac-muted', model.rematch.nextText)]
+        : []))
       stateLine.textContent = model.stateText
       cleared.textContent = model.clearedText
       cleared.hidden = !model.clearedText
@@ -147,7 +173,7 @@ export function createRoadmapView({ actions, base }) {
     const signature = JSON.stringify(model.markers)
     if (signature === markersDrawn) return
     markersDrawn = signature
-    markers.replaceChildren(...model.markers.map((marker) => {
+    markers.replaceChildren(...model.markers.flatMap((marker) => {
       const node = el('img', `ac-roadmap-marker ac-roadmap-marker-${marker.state}`)
       node.src = marker.icon
       node.width = MARKER_SIZE
@@ -156,7 +182,13 @@ export function createRoadmapView({ actions, base }) {
       node.title = marker.label
       node.style.left = `${marker.left}%`
       node.style.top = `${marker.top}%`
-      return node
+      if (!marker.badge) return [node]
+      // The best rematch cleared, a small tier badge beside the site's marker.
+      const badge = el('span', 'ac-roadmap-badge', marker.badge)
+      badge.setAttribute('aria-hidden', 'true')
+      badge.style.left = `${marker.left}%`
+      badge.style.top = `${marker.top}%`
+      return [node, badge]
     }))
   }
 

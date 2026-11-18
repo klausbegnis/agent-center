@@ -23,6 +23,7 @@ import {
   INSTANCE_VAULT_KILLS
 } from './instance-constants.mjs'
 import { runLevel } from './instance-monsters.mjs'
+import { progressAfterClear, rematchItemChance, rematchReward } from './instance-rematch.mjs'
 import { progressOf, runContext } from './instance-run.mjs'
 import { legendaryItemFor, rollBossItem } from './legendary-drops.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
@@ -89,11 +90,11 @@ export function vaultLoot(state, context, seed) {
  * and so is the waves' pity: a run meets its boss far more often than the waves do, and those
  * relics are the stalls' to sell. The Seeker's Candle makes the chance larger by its share.
  */
-function bossLoot(state, context, { monster, seed, bonuses, tier }) {
+function bossLoot(state, context, { monster, seed, bonuses, tier, rematch }) {
   const index = legendaryIndexOf(context.content)
   if (!index) return []
   const drops = []
-  const chance = Math.min(1, bossItemChance(tier) * (1 + bonuses.bossItem))
+  const chance = Math.min(1, rematchItemChance(bossItemChance(tier), rematch) * (1 + bonuses.bossItem))
   for (let roll = 0; roll <= bonuses.rewardRolls; roll++) {
     const own = rollBossItem(state, {
       rank: 'boss', seed: roll ? `again-${roll}|${seed}` : seed, index, bossId: monster.id, level: monster.level, chance, withPity: false
@@ -108,11 +109,11 @@ function bossLoot(state, context, { monster, seed, bonuses, tier }) {
 }
 
 /** Each of the instance's races counted as having lost champions to the party: bestiary points. */
-function creditRaces(context, instance, tier) {
+function creditRaces(context, instance, champions) {
   const bestiaryIndex = bestiaryIndexOf(context.content)
   if (!bestiaryIndex) return
   for (const race of instance.races) {
-    for (let count = 0; count < INSTANCE_BESTIARY_CHAMPIONS * tier; count++) {
+    for (let count = 0; count < champions; count++) {
       const champion = { id: race, race, rank: 'champion', kind: 'common' }
       context.tally.bestiary = noteKill(context.tally.bestiary, champion, { day: context.day, index: bestiaryIndex }).bestiary
     }
@@ -145,14 +146,14 @@ export function clearRewards(state, context, { monster, seed }) {
       coins += Math.round(INSTANCE_RELIC_COINS * REWARD_GROWTH ** level)
     }
   }
-  legendary.push(...bossLoot(state, context, { monster, seed, bonuses, tier: run.tier }))
+  legendary.push(...bossLoot(state, context, { monster, seed, bonuses, tier: run.tier, rematch: run.rematch }))
   const share = tierFactor(run.tier) * (1 + bonuses.purse)
-  coins += Math.round(INSTANCE_PURSE_COINS * REWARD_GROWTH ** level * share)
-  addFound(state, context, { materials: materialsWorth(instance, level, INSTANCE_PURSE_KILLS * share, `${seed}|purse`), coins, legendary })
-  creditRaces(context, instance, run.tier)
-  context.tally.instances = {
-    ...context.tally.instances,
-    [run.instance]: { ...progress, clears: progress.clears + 1, bestTier: Math.max(progress.bestTier, run.tier) }
-  }
+  // A rematch cleared for the first time adds its tier-clear reward (instance-rematch.mjs).
+  const first = rematchReward(run, progress, level)
+  coins += Math.round(INSTANCE_PURSE_COINS * REWARD_GROWTH ** level * share) + first.coins
+  const kills = INSTANCE_PURSE_KILLS * share + first.kills
+  addFound(state, context, { materials: materialsWorth(instance, level, kills, `${seed}|purse`), coins, legendary })
+  creditRaces(context, instance, INSTANCE_BESTIARY_CHAMPIONS * run.tier + first.champions)
+  context.tally.instances = { ...context.tally.instances, [run.instance]: progressAfterClear(progress, run) }
   return legendary
 }

@@ -43,8 +43,8 @@ import { traitInputOf } from './game-trait-actions.mjs'
  *   sends a relic that is not active to another room of the world
  * @property {(input: object) => Promise<GameResult>} gameTraitAction teaches, swaps, buys, sells or
  *   sends a trait scroll, as `input.action` names (game-trait-actions.mjs)
- * @property {(roomId: string, instanceId: string, tier: number) => Promise<GameResult>} gameEnterInstance
- *   sends a room's party into an open instance at a tier
+ * @property {(roomId: string, instanceId: string, tier: number, rematch?: number) => Promise<GameResult>} gameEnterInstance
+ *   sends a room's party into an open instance at a tier, or into a rematch of its boss
  * @property {(roomId: string, boonId: string) => Promise<GameResult>} gameChooseBoon takes a boon
  *   the vault of a room's run offers
  * @property {(roomId: string) => Promise<GameResult>} gameRecallParty ends a room's run by hand
@@ -244,10 +244,12 @@ export function createController({
       entryId: requireText(entryId, 'offer'),
       roomId: requireText(roomId, 'room')
     })),
-    gameEnterInstance: (roomId, instanceId, tier) => playAction(() => game.enterInstance({
+    gameEnterInstance: (roomId, instanceId, tier, rematch) => playAction(() => game.enterInstance({
       roomId: requireText(roomId, 'room'),
       instanceId: requireText(instanceId, 'instance'),
-      tier: requireWhole(tier, 'tier')
+      tier: requireWhole(tier, 'tier'),
+      // A rematch (Rematch I to X) plays at its own tier.
+      ...(rematch === undefined || rematch === null ? {} : { rematch: requireWhole(rematch, 'rematch') })
     })),
     gameChooseBoon: (roomId, boonId) => playAction(() => game.chooseBoon({
       roomId: requireText(roomId, 'room'),

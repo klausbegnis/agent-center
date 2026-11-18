@@ -22,6 +22,8 @@
 //                 banner and marker (the calendar's event of the week otherwise)
 //   CITY_RANK=n  with GAME, every city of the market at rank n (1 to 5); the frozen game shows
 //                 cities at mixed ranks otherwise
+//   INSTANCE_ROAD=cleared  with GAME, the first region cleared, with rematch tier badges on its
+//                 sites and a rematch ready to enter
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -201,7 +203,9 @@ const game = engine
     // INSTANCE_VAULT=1 puts a room in the Sunken Crypt's vault, to see the boon choice.
     instanceVault: process.env.INSTANCE_VAULT === '1',
     // CITY_RANK=n puts every city at rank n (1 to 5), to review its banner and rank card.
-    cityRank: process.env.CITY_RANK ? Number(process.env.CITY_RANK) : null
+    cityRank: process.env.CITY_RANK ? Number(process.env.CITY_RANK) : null,
+    // INSTANCE_ROAD=cleared moves the road further on (demo-regions.mjs).
+    instanceRoad: process.env.INSTANCE_ROAD ?? null
   })
   : createUnavailableGame('off')
 controller = createController({

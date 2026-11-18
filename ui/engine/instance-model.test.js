@@ -152,3 +152,30 @@ test('a run\'s news is told in its room: entering and the clear celebrated, with
     { text: 'The Sunken Crypt cleared!', tone: 'legendary', artId: 'tidewake-bell' })
   assert.equal(at({ kind: 'retry' }), null)
 })
+
+test('a beaten instance offers its next rematch beside Enter, and shows its best one as a badge', () => {
+  const state = game()
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  const crypt = model.cards[0]
+  assert.equal(crypt.rematchBadge, null, 'no badge before a rematch is cleared')
+  assert.equal(crypt.rematch.next, 1)
+  assert.equal(crypt.rematch.buttonText, 'Rematch I')
+  assert.match(crypt.rematch.nextText, /Rematch I, at tier 3/)
+  assert.equal(model.cards[1].rematch, null, 'no rematch before the boss is beaten')
+  assert.equal(model.markers[0].badge, null)
+})
+
+test('a rematch cleared shows as a roman tier badge on the card and beside the marker', () => {
+  const state = game()
+  const entry = state.worlds[0].instances.list[0]
+  entry.rematch = 3
+  entry.nextRematch = { rematch: 4, tier: 9, opensAt: 11, entry: { [ROOM]: null, [OTHER]: 'the room has no characters' } }
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  assert.equal(model.cards[0].rematchBadge, 'III')
+  assert.equal(model.markers[0].badge, 'III')
+  assert.match(model.markers[0].label, /best rematch III/)
+  assert.match(model.cards[0].rematch.bestText, /III of X/)
+  assert.deepEqual(model.cards[0].rematch.rooms.map((room) => room.reason), [null, 'the room has no characters'])
+  assert.equal(instanceNews({ kind: 'cleared', instance: 'sunken-crypt', room: 5, rematch: 3 }, state).text,
+    'The Sunken Crypt: Rematch III won!')
+})

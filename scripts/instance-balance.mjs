@@ -19,7 +19,7 @@ export function newInstanceStats(data, legendary = { legendary: [] }) {
   return {
     kinds: new Map(legendary.legendary.map((entry) => [entry.id, entry.kind])),
     guardianItems: new Set(legendary.legendary.filter((entry) => guardians.has(entry.boss)).map((entry) => entry.id)),
-    memory: { order: data.instances.map((entry) => entry.id), tiers: {} },
+    memory: { order: data.instances.map((entry) => entry.id), tiers: {}, rematchRetry: {} },
     names: Object.fromEntries(data.instances.map((entry) => [entry.id, entry.name])),
     cleared: 0,
     failed: 0,
@@ -32,7 +32,12 @@ export function newInstanceStats(data, legendary = { legendary: [] }) {
     insideCoins: 0,
     rewards: [],
     /** Legendary items gained in a year, by where they came from: waves' bosses, or a run's relic, boss and vault. */
-    sources: { waves: 0, relic: 0, boss: 0, vault: 0 }
+    sources: { waves: 0, relic: 0, boss: 0, vault: 0 },
+    // Rematches (instance-rematch.mjs): clears, failures and the best one per instance.
+    rematchCleared: 0,
+    rematchFailed: 0,
+    bestRematch: {},
+    rematchDay: {}
   }
 }
 
@@ -55,10 +60,19 @@ export function noteInstanceEvents(run, events, { day, remember }) {
     stats.ticksInside += event.ticks
     stats.insideMaterials += materialTotal(event.found.materials)
     stats.insideCoins += event.found.coins
+    if (event.rematch) {
+      if (event.kind === 'cleared') {
+        stats.rematchCleared += 1
+        stats.bestRematch[event.instance] = Math.max(stats.bestRematch[event.instance] ?? 0, event.rematch)
+        stats.rematchDay[event.rematch] ??= day + 1
+      } else {
+        stats.rematchFailed += 1
+      }
+    }
     if (event.kind === 'cleared') {
       stats.cleared += 1
       stats.firstClear[event.instance] ??= day + 1
-      stats.bestTier[event.instance] = Math.max(stats.bestTier[event.instance] ?? 0, event.tier)
+      if (!event.rematch) stats.bestTier[event.instance] = Math.max(stats.bestTier[event.instance] ?? 0, event.tier)
       stats.rewards.push(...(event.drops ?? []).map((drop) => drop.id))
     } else {
       stats.failed += 1
@@ -139,7 +153,25 @@ export function printInstances(plainRuns, instanceRuns, { content }) {
     .map(([source, count]) => `${count} ${source}`).join(', ')}`)
   console.log(`Legendary items gained in a year by source (all rooms): ${sources.join('; ')}. Waves: a wave boss's ` +
     'drop; relic: an instance\'s first clear; boss: a run\'s boss or elite item; vault: the vault.')
+  console.log('')
+  printRematches(instanceRuns, ids)
 }
+
+/** The rematch ladder: how many were won and lost, the best per instance, and when I, V and X came. */
+function printRematches(instanceRuns, ids) {
+  const firstDay = (stats, rematch) => {
+    const days = Object.entries(stats.rematchDay).filter(([at]) => Number(at) >= rematch).map(([, day]) => day)
+    return days.length ? `day ${Math.min(...days)}` : '-'
+  }
+  printTable(['scenario', 'won', 'lost', 'best rematch', 'first I', 'first V', 'first X'], instanceRuns.map((run) => {
+    const stats = run.instances
+    return [run.scenario.id, stats.rematchCleared, stats.rematchFailed, ids.map((id) => stats.bestRematch[id] ?? '-').join('/'),
+      firstDay(stats, 1), firstDay(stats, 5), firstDay(stats, 10)]
+  }))
+  console.log('Rematches (I to X) of beaten bosses: runs won and lost, the best per instance in road order, and the ' +
+    'day the first rematch of at least I, V and X was won.')
+}
+
 
 /** The mean of a room's legendary items at a day of a run. */
 const ownedAt = (run, day) => {

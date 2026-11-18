@@ -7,6 +7,7 @@ import { TICK_SECONDS } from './constants.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { roomTimeLimit } from './instance-fight.mjs'
 import { fightsIn, runLevel } from './instance-monsters.mjs'
+import { REMATCH_TIERS, bestRematch, rematchOpensAt, rematchTier } from './instance-rematch.mjs'
 import { cooldownOf, enterProblem, highestTier, openness, progressOf, roomInside, runContext } from './instance-run.mjs'
 import { worldLevel } from './progression.mjs'
 
@@ -24,11 +25,30 @@ function stateOf(world, instance, index) {
   return open.reason === 'the road to it is not cleared yet' ? 'hidden' : 'locked'
 }
 
-/** Why each room of the world cannot enter the instance at its first tier, or null when it can. */
-function entriesOf(worldId, world, instance, index) {
+/**
+ * Why each room of the world cannot enter the instance at its first tier (or, with `rematch`, go for
+ * that rematch), or null when it can.
+ */
+function entriesOf(worldId, world, instance, index, rematch) {
   const save = { worlds: { [worldId]: world }, projectWorld: Object.fromEntries(Object.keys(world.projects).map((id) => [id, worldId])) }
+  const entry = rematch ? { instanceId: instance.id, tier: 1, rematch } : { instanceId: instance.id, tier: 1 }
   return Object.fromEntries(Object.keys(world.projects).sort()
-    .map((projectId) => [projectId, enterProblem(save, { projectId, instanceId: instance.id, tier: 1 }, index)]))
+    .map((projectId) => [projectId, enterProblem(save, { ...entry, projectId }, index)]))
+}
+
+/**
+ * The next rematch of a beaten instance (instance-rematch.mjs): its number, tier, the world level it
+ * opens at and why each room cannot go; null before the boss is beaten or past Rematch X.
+ */
+function nextRematchOf(worldId, world, instance, index, progress) {
+  const rematch = bestRematch(progress) + 1
+  if (progress.clears === 0 || rematch > REMATCH_TIERS) return null
+  return {
+    rematch,
+    tier: rematchTier(rematch),
+    opensAt: rematchOpensAt(instance, rematch),
+    entry: entriesOf(worldId, world, instance, index, rematch)
+  }
 }
 
 function instanceView(worldId, world, instance, { index, owned }) {
@@ -41,6 +61,8 @@ function instanceView(worldId, world, instance, { index, owned }) {
     clears: progress.clears,
     bestTier: progress.bestTier,
     highestTier: highestTier(world, instance.id),
+    rematch: bestRematch(progress),
+    nextRematch: nextRematchOf(worldId, world, instance, index, progress),
     relic: instance.relic,
     relicFound: owned.has(instance.relic),
     roomInside: inside,
@@ -122,6 +144,7 @@ export function runView(worldId, projectId, project, world, content) {
     instance: instance.id,
     name: instance.name,
     tier: run.tier,
+    rematch: run.rematch ?? null,
     level: runLevel(worldLevel(world.skills), run.tier),
     room: run.room,
     roomName: room.name,

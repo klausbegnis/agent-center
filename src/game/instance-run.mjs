@@ -5,6 +5,7 @@
 import { modifierAt, runBonuses } from './instance-boons.mjs'
 import { FIGHT_ROOMS } from './instance-content.mjs'
 import { INSTANCE_COOLDOWN_MS } from './instance-constants.mjs'
+import { rematchBonuses, rematchProblem, rematchTier } from './instance-rematch.mjs'
 import { worldLevel } from './progression.mjs'
 import { withProjectIn, worldIdOf } from './worlds.mjs'
 
@@ -25,7 +26,7 @@ export const INSTANCE_REFUSALS = Object.freeze({
   unknownBoon: 'not a boon offered in this vault'
 })
 
-/** @typedef {{ runs: number, clears: number, bestTier: number }} InstanceProgress */
+/** @typedef {{ runs: number, clears: number, bestTier: number, rematch?: number }} InstanceProgress */
 
 /**
  * A world's progress in one instance; nothing for one it never entered.
@@ -67,11 +68,12 @@ export const cooldownOf = (project, instanceId) => project?.instanceCooldowns?.[
  * Why a room cannot enter an instance at a tier, or null when it can.
  *
  * @param {object} save
- * @param {{ projectId: string, instanceId: string, tier: number }} entry
+ * @param {{ projectId: string, instanceId: string, tier: number, rematch?: number }} entry a rematch
+ *   (instance-rematch.mjs) plays at its own tier, so `tier` is then not read
  * @param {import('./instance-content.mjs').InstanceIndex | null} index
  * @returns {string | null}
  */
-export function enterProblem(save, { projectId, instanceId, tier }, index) {
+export function enterProblem(save, { projectId, instanceId, tier, rematch }, index) {
   if (!index) return INSTANCE_REFUSALS.noInstances
   const instance = index.byId.get(instanceId)
   if (!instance) return INSTANCE_REFUSALS.unknownInstance
@@ -82,7 +84,10 @@ export function enterProblem(save, { projectId, instanceId, tier }, index) {
   if (project.run) return INSTANCE_REFUSALS.inside
   const open = openness(world, instance, index)
   if (!open.open) return open.reason
-  if (!Number.isInteger(tier) || tier < 1 || tier > highestTier(world, instanceId)) return INSTANCE_REFUSALS.tier
+  if (rematch !== undefined) {
+    const problem = rematchProblem(progressOf(world, instanceId), instance, rematch, worldLevel(world.skills))
+    if (problem) return problem
+  } else if (!Number.isInteger(tier) || tier < 1 || tier > highestTier(world, instanceId)) return INSTANCE_REFUSALS.tier
   if (roomInside(world, instanceId)) return INSTANCE_REFUSALS.taken
   if (Object.keys(project.characters).length === 0) return INSTANCE_REFUSALS.noCharacters
   if (cooldownOf(project, instanceId) > 0) return INSTANCE_REFUSALS.cooldown
@@ -90,10 +95,11 @@ export function enterProblem(save, { projectId, instanceId, tier }, index) {
 }
 
 /** The run's first room, with the room's wave kept to come back to. */
-function startedRun(project, { instanceId, tier, attempt }) {
+function startedRun(project, { instanceId, tier, attempt, rematch }) {
   return {
     instance: instanceId,
     tier,
+    ...(rematch ? { rematch } : {}),
     attempt,
     room: 0,
     fight: 0,
@@ -129,7 +135,8 @@ export function enterInstance(save, entry, index) {
   const world = save.worlds[worldId]
   const project = world.projects[entry.projectId]
   const progress = progressOf(world, entry.instanceId)
-  const run = startedRun(project, { instanceId: entry.instanceId, tier: entry.tier, attempt: progress.runs })
+  const tier = entry.rematch !== undefined ? rematchTier(entry.rematch) : entry.tier
+  const run = startedRun(project, { instanceId: entry.instanceId, tier, attempt: progress.runs, rematch: entry.rematch })
   const inside = { ...project, run, monster: null, restTicks: 0, fightTicks: 0, fightRested: false }
   const instances = { ...world.instances, [entry.instanceId]: { ...progress, runs: progress.runs + 1 } }
   return { ...save, worlds: { ...save.worlds, [worldId]: { ...withProjectIn(world, entry.projectId, inside), instances } } }
@@ -238,7 +245,7 @@ export function runContext(run, index) {
   const instance = index.byId.get(run.instance)
   const modifier = modifierAt(instance, run.tier, index)
   const boon = run.boon ? index.boonById.get(run.boon) ?? null : null
-  return { instance, room: instance.rooms[run.room], modifier, boon, bonuses: runBonuses(boon, modifier) }
+  return { instance, room: instance.rooms[run.room], modifier, boon, bonuses: { ...runBonuses(boon, modifier), ...rematchBonuses(run) } }
 }
 
 /** Whether a room's kind is fought. */

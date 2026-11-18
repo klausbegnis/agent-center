@@ -18,6 +18,7 @@ import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migra
 import { showDemoChronicle } from './demo-achievements.mjs'
 import { demoCityRanks, showDemoCityRanks } from './demo-city-ranks.mjs'
 import { showDemoInstances } from './demo-instances.mjs'
+import { showDemoRoad } from './demo-regions.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
 import { showDemoTraits } from './demo-traits.mjs'
 
@@ -292,7 +293,7 @@ function relicDaysAhead() {
  */
 export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
-  const { settlementLevels = null, instanceVault = false, cityRank = null } = options
+  const { settlementLevels = null, instanceVault = false, cityRank = null, instanceRoad = null } = options
   let { store } = options
   const startedAt = Date.now()
   let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
@@ -363,6 +364,7 @@ export async function createDemoGame(options) {
     await showDemoCityRanks(game, demoCityRanks(cityRank))
     await showDemoTraits(game)
     await showDemoChronicle(game, { now: frozenClock, titleRoom: LEGENDARY_ROOM })
+    if (instanceRoad) await showDemoRoad(game, instanceRoad)
     return game
   }
   await game.round()
@@ -371,6 +373,7 @@ export async function createDemoGame(options) {
   if (cityRank !== null) await showDemoCityRanks(game, demoCityRanks(cityRank))
   await showDemoTraits(game)
   await showDemoChronicle(game, { now: now(), titleRoom: LEGENDARY_ROOM })
+  if (instanceRoad) await showDemoRoad(game, instanceRoad)
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

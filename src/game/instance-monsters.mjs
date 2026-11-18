@@ -113,7 +113,9 @@ function appearanceOf({ roomKind, rank, instance, content, seed }) {
 export function instanceMonster({ instance, roomKind, seed, level, partySize, bonuses, content, referencePartyHit }) {
   const { kind, rank } = shapeOf(roomKind, seed)
   const partyShare = Math.min(Math.max(1, partySize), REFERENCE_PARTY_SIZE) / REFERENCE_PARTY_SIZE
-  const maxHp = HITS_TO_KILL * referencePartyHit(level).total * partyShare * healthShare(roomKind, kind, rank)
+  // A rematch's boss is tougher than its share says (instance-rematch.mjs); its time is not longer.
+  const bossHp = roomKind === 'boss' ? bonuses.bossHp ?? 1 : 1
+  const maxHp = HITS_TO_KILL * referencePartyHit(level).total * partyShare * healthShare(roomKind, kind, rank) * bossHp
   const affix = affixOf(roomKind, rank, seed, bonuses)
   const resist = affix === 'armored' || affix === 'ethereal' ? MONSTER_KINDS[affix] : MONSTER_KINDS[kind]
   return {

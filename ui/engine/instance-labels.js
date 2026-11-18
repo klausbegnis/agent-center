@@ -82,6 +82,10 @@ const CHECK_WORD = { strength: 'strength', arcane: 'arcane', agility: 'agility',
 export const checkText = (check, skillLabel = {}) =>
   (check?.skill ? `the world's ${skillLabel[check.skill] ?? check.skill}` : `the party's best ${CHECK_WORD[check?.attribute] ?? check?.attribute}`)
 
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+/** A rematch's number as the roadmap writes it: 3 is "III". */
+export const romanOf = (rematch) => ROMAN[rematch - 1] ?? String(rematch)
+
 /** The World tab's Roadmap view, an instance's card, a run's card and their controls. */
 export const INSTANCES = {
   views: { creatures: 'Creatures', bosses: 'Bosses', roadmap: 'Roadmap', achievements: 'Achievements' },
@@ -114,7 +118,7 @@ export const INSTANCES = {
   noWorld: 'Pick a room that plays to see its world\'s road.',
   noInstances: 'This game has no instances.',
   // A run's card.
-  runTitle: (name, tier) => `${name} · tier ${tier}`,
+  runTitle: (name, tier, rematch) => (rematch ? `${name} · Rematch ${romanOf(rematch)} (tier ${tier})` : `${name} · tier ${tier}`),
   roomLine: (room, name) => `Room ${room + 1} of 6: ${name}`,
   roomsName: 'Rooms of the run',
   roomIcon: (index, label, name, stage) => `Room ${index + 1}, ${label}: ${name}, ${stage}`,
@@ -147,10 +151,22 @@ export const INSTANCES = {
     vault: 'The vault!',
     boon: (name) => `Boon: ${name}`,
     cleared: (name) => `${name} cleared!`,
+    rematchCleared: (name, rematch) => `${name}: Rematch ${romanOf(rematch)} won!`,
     failed: (name) => `Driven out of ${name}`,
     recalled: (name) => `Back from ${name}`
   },
   band: (name, room, roomName) => `${name} · room ${room + 1} of 6 · ${roomName}`,
   bandShort: (name, room) => `${name} · ${room + 1}/6`,
-  chip: 'Inside an instance'
+  chip: 'Inside an instance',
+  // Rematches of a beaten boss.
+  rematch: (rematch) => `Rematch ${romanOf(rematch)}`,
+  rematchBadge: (rematch) => romanOf(rematch),
+  rematchBest: (rematch) => `Best rematch cleared: ${romanOf(rematch)} of X`,
+  rematchNone: 'No rematch cleared yet',
+  rematchNext: (rematch, tier) => `Next: Rematch ${romanOf(rematch)}, at tier ${tier}, its boss tougher and its own item likelier`,
+  rematchOpens: (level) => `Opens at World Lv ${level}`,
+  rematchDone: 'Every rematch cleared: the boss is mastered.',
+  rematchLabel: (name, roomName, rematch) => `Send ${roomName}'s party into a rematch of ${name}: Rematch ${romanOf(rematch)}`,
+  rematchWhy: (reason) => `No rematch: ${reason}.`,
+  rematchMarker: (rematch) => `best rematch ${romanOf(rematch)}`
 }

@@ -157,7 +157,7 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
       controller.gameTradeMaterial(input.worldId, input.cityId, input.fromId, input.toId, input.amount),
     '/api/game/buy-offer': (input) =>
       controller.gameBuyStallOffer(input.worldId, input.cityId, input.offerIndex, input.entryId, input.roomId),
-    '/api/game/enter-instance': (input) => controller.gameEnterInstance(input.roomId, input.instanceId, input.tier),
+    '/api/game/enter-instance': (input) => controller.gameEnterInstance(input.roomId, input.instanceId, input.tier, input.rematch),
     '/api/game/choose-boon': (input) => controller.gameChooseBoon(input.roomId, input.boonId),
     '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId),
     '/api/game/party-title': (input) => controller.gameSetPartyTitle(input.roomId, input.achievementId ?? null),

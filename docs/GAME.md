@@ -39,7 +39,7 @@ milliseconds the caller passes.
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
 | `sendItem(save, { fromProjectId, toProjectId, itemId \| itemIds, confirmHeld? })` | Sends items of a project's chest to another project of the same world, one a character holds only with `confirmHeld` (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged, sentSalvaged, repicks }`: the copies the target's cap salvaged, which of them were sent ones, and what each holder took instead. The same save when refused; `sendItemProblem(save, sending)` says why, or null. `itemName(entryId)` names an item's entry. |
-| `enterInstance(save, { projectId, instanceId, tier })` | Sends a room's party into an open instance at a tier, freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
+| `enterInstance(save, { projectId, instanceId, tier, rematch? })` | Sends a room's party into an open instance at a tier, or into a rematch of its boss (see "Rematches"), freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
 | `chooseBoon(save, { projectId, boonId })` | Takes one of the two boons a room's run is offered in the vault; the same save when refused, and `boonProblem(save, choice)` says why. |
 | `recallParty(save, { projectId })` | Ends a room's run by hand, as a failed run ends: what it found is kept, its wave comes back, and the instance waits on a cooldown for that room. |
 | `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
@@ -767,6 +767,32 @@ a working day, and with the waves' pity that roll handed a light user every city
 No roll ever gives a second copy (`rollBossItem` and the vault pick only what the room lacks).
 Materials and coins go to the world as they are found, so a run that fails keeps them.
 
+### Rematches
+
+Once a world has beaten an instance's boss, it may go back for **Rematch I** to **X**
+(`src/game/instance-rematch.mjs`), entered beside the normal run with `rematch` on the entry. A
+rematch is a run of the same instance with the same rooms, rules, boons and cooldown; only its numbers
+change.
+
+| | Rule | Numbers |
+|---|---|---|
+| Tier | rematch n plays at a fixed tier: its levels, check and tier modifier as that tier's | `REMATCH_FIRST_TIER` 3 + `REMATCH_TIER_STEP` 2 × (n − 1): I at tier 3, X at tier 21 |
+| Boss | the boss has more health (its room's time does not grow with it) | × (1 + `REMATCH_BOSS_HP_STEP` 0.1 × n): X's boss twice as much |
+| Opens | the boss beaten once, rematch n − 1 cleared, and the world's level | World Lv ≥ the instance's level × (1 + `REMATCH_LEVEL_SHARE` 0.3 × n): the crypt's X at 20, the spire's at 184 |
+| Every clear | the purse of its tier, and the boss's own item at better odds | + `REMATCH_ITEM_STEP` 2% a rematch over the tier's chance, at most `REMATCH_ITEM_MAX` 45%, plus the waves' pity |
+| First clear of rematch n | a tier-clear reward, once per world | materials worth `REMATCH_FIRST_KILLS` 12 × n plain kills, `REMATCH_FIRST_COINS` 300 × n × `REWARD_GROWTH ** level` coins and `REMATCH_CHAMPIONS` 2 × n champions of each of its races for the bestiary |
+
+- **Gated by real progress.** Only tokens raise the world's level, so the ladder opens as the world
+  grows; repeating a rematch opens nothing and pays only the purse after its first clear. A loss costs
+  time only: the run ends as any failed run, keeps what it found, and the room waits the usual
+  cooldown.
+- **Within the caps.** A rematch pays materials, coins, bestiary points and the boss's own item at
+  better odds: kinds the game already has, under the same caps. It never gives a second copy.
+- A rematch's clear counts as a clear (`clears`) and records the best rematch (`rematch`), not a best
+  tier. The Roadmap shows the best one as a roman tier badge on the instance's card and beside its
+  marker, and the next one as **Rematch IV** beside **Enter**, with the level it opens at and why a
+  room cannot go.
+
 ### The relics
 
 Six relics of a new legendary kind, `instance-relic` (`instance` names its instance): never sold and
@@ -788,15 +814,17 @@ stay within every cap, now checked per work skill for `skillXp` as for races and
 
 ### In the save
 
-A world keeps `instances: { [instanceId]: { runs, clears, bestTier } }` once a room entered one; a
-room inside keeps `run: { instance, tier, attempt, room, fight, tries, tryTicks, waitTicks, ticks,
+A world keeps `instances: { [instanceId]: { runs, clears, bestTier, rematch? } }` once a room entered
+one (`rematch`, the best rematch cleared, only once one is); a room inside keeps `run: { instance,
+tier, rematch?, attempt, room, fight, tries, tryTicks, waitTicks, ticks,
 boon, offered, found: { materials, coins, legendary, kills }, frozen: { wave, waveKills, monster,
 fightTicks, fightRested } }` (about 700 bytes with its frozen monster), and a room after a failed
 run `instanceCooldowns: { [instanceId]: ms }`. None of them exists in a save from before, which loads
 unchanged. `migrate` drops a run it cannot play (the room back on the monster it left) and
 cooldowns without time left; `cleanSave` refuses an instance or boon the content does not have, a
 room index, tier or count out of range, found loot that is not content, progress with more clears
-than runs or a best tier without a clear, a cooldown longer than a whole one, two rooms inside one
+than runs or a best tier without a clear, a best rematch out of I to X or above the clears, a
+rematch run whose tier is not its rematch's, a cooldown longer than a whole one, two rooms inside one
 instance, and any of it when the content has no instances. A world reset forgets it all; a chest
 left behind moves as before, and a room left behind inside an instance frees it when its chest
 moves (or can be recalled).
@@ -1869,7 +1897,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
-| `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier }`: a room that plays, an instance of `game/instances.json` and a whole tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
+| `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier, rematch? }`: a room that plays, an instance of `game/instances.json` and a whole tier, or a rematch (1 to 10) of a beaten boss, which plays at its own tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
 | `game.chooseBoon` | `/api/game/choose-boon` | `{ roomId, boonId }`: a room whose run is at the vault and one of the two boons it offers |
 | `game.recallParty` | `/api/game/recall-party` | `{ roomId }`: a room inside an instance (one left behind too, so it frees its instance) |
 | `game.partyTitle` | `/api/game/party-title` | `{ roomId, achievementId }`: a room that plays and an achievement it earned that grants a title, or null for none |
@@ -2004,6 +2032,9 @@ by the usual closing rules.
       cleared: 1, total: 6, complete: false,
       list: [{ id: 'sunken-crypt', state: 'open',  // hidden | locked | open | inside
         runs: 3, clears: 2, bestTier: 1, highestTier: 2, relic: 'tidewake-bell', relicFound: true,
+        rematch: 1,                 // the best rematch cleared, 0 for none
+        nextRematch: { rematch: 2, tier: 5, opensAt: 8,  // null before its boss is beaten or past X
+          entry: { 'local:/work/sneaky-pancake': null } },  // why each room cannot go, or null
         roomInside: null, roomIndex: null,          // the room inside and the room of the run it is in
         entry: { 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
     },
@@ -2463,21 +2494,35 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
 |---|---|---|---|---|---|---|
-| First clear: light | day 5 | 15 | 39 | 88 | 180 | 318 |
-| medium | day 1 | 2 | 4 | 12 | 26 | 51 |
+| First clear: light | day 5 | 15 | 38 | 88 | 179 | 319 |
+| medium | day 1 | 2 | 4 | 12 | 29 | 50 |
 | heavy | day 1 | 1 | 2 | 3 | 5 | 10 |
 
 | | runs a year | clears | failed | best tiers | time inside | materials/h inside | on waves (plain) | coins/h inside |
 |---|---|---|---|---|---|---|---|---|
-| light | 279 | 158 | 43% | 14/8/13/11/8/7 | 86% | 711 | 805 | 86 |
-| medium | 1,263 | 657 | 48% | 16/7/17/15/11/10 | 90% | 12.3 k | 10.6 k | 1.5 k |
-| heavy | 2,717 | 1,388 | 49% | 18/7/18/17/14/11 | 89% | 41.0 T | 41.8 T | 5.4 T |
+| light | 264 | 151 | 43% | 14/7/12/12/8/9 | 87% | 701 | 805 | 157 |
+| medium | 1,244 | 619 | 50% | 16/7/16/15/10/10 | 90% | 11.8 k | 10.6 k | 2.1 k |
+| heavy | 2,736 | 1,331 | 51% | 20/7/18/18/14/10 | 89% | 38.8 T | 41.8 T | 4.9 T |
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
 | light | 30, 90, 365 | 3, 3, 4 | 4, 7, 12 | 11.2, 9.6, 12.8 | 4.4, 2.9, 4.1 |
 | medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 11/5, 17/9 | 8.2, 9.4, 11.5 | 2.7, 3.3, 3.9 |
 | heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/9/8, 11/15/14, 25/24/22 | 12.2, 13.6, 17.4 | 3.5, 4.2, 4.9 |
+
+The policy also goes for the next rematch of a beaten boss (after any road instance not cleared yet,
+before climbing tiers), and tries a lost one again once the world's level is a tenth higher:
+
+| | rematches won | lost | best rematch, road order | first I won | first V | first X |
+|---|---|---|---|---|---|---|
+| light | 14 | 20 | 4/2/4/3/1/- | day 10 | - | - |
+| medium | 30 | 81 | 7/3/7/7/3/3 | day 2 | day 51 | - |
+| heavy | 36 | 160 | 8/3/8/7/6/4 | day 1 | day 16 | - |
+
+- **Rematches are the long ladder.** Nobody reaches Rematch X in a year: the world's level opens the
+  ladder quickly for a heavy user, but a rematch's fixed tier and tougher boss make each step above V
+  a wall the party's own gear and relics must climb. The policy's best tiers and the tables above moved
+  a little because rematch runs share the time inside; the balance targets are unchanged (54 of 59).
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).

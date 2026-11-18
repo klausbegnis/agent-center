@@ -70,6 +70,25 @@ function enterModel(game, entry, content, { roomIds, roomId, names }) {
 }
 
 /**
+ * The rematch control of a beaten instance: the next rematch, the reason of each room on screen, and
+ * the lines that say the best one and what the next asks. Null before the boss is beaten.
+ */
+function rematchModel(entry, { roomIds, names }) {
+  const best = entry.rematch ?? 0
+  const next = entry.nextRematch ?? null
+  if (!next && best === 0) return null
+  const rooms = next ? roomIds.filter((id) => Object.hasOwn(next.entry, id)).map((id) => ({ id, name: names(id), reason: next.entry[id] })) : []
+  return {
+    best,
+    bestText: best ? INSTANCES.rematchBest(best) : INSTANCES.rematchNone,
+    next: next?.rematch ?? null,
+    nextText: next ? `${INSTANCES.rematchNext(next.rematch, next.tier)}. ${INSTANCES.rematchOpens(next.opensAt)}.` : INSTANCES.rematchDone,
+    buttonText: next ? INSTANCES.rematch(next.rematch) : '',
+    rooms
+  }
+}
+
+/**
  * A card of the roadmap.
  *
  * @param {object} game
@@ -103,6 +122,8 @@ export function instanceCard(game, entry, context) {
       foundText: entry.relicFound ? INSTANCES.relicFound : INSTANCES.relicNotFound
     } : null,
     roomInside: entry.roomInside,
+    rematchBadge: entry.rematch ? INSTANCES.rematchBadge(entry.rematch) : null,
+    rematch: hidden ? null : rematchModel(entry, context),
     enter: hidden ? null : enterModel(game, entry, content, context)
   }
 }
@@ -130,7 +151,9 @@ export function roadmapModel(game, world, context) {
       top: (100 * (content?.map.y ?? 0)) / region.height,
       state: isCleared ? 'cleared' : entry.state,
       icon: roomIconUrl(context.base, isCleared ? 'icon-cleared' : STATE_ICON[entry.state] ?? 'icon-locked'),
-      label: INSTANCES.marker(name, content ? stateText(entry, content, context.names) : '')
+      badge: entry.rematch ? INSTANCES.rematchBadge(entry.rematch) : null,
+      label: INSTANCES.marker(name, content ? stateText(entry, content, context.names) : '') +
+        (entry.rematch ? `, ${INSTANCES.rematchMarker(entry.rematch)}` : '')
     }
   })
   return {
@@ -172,7 +195,7 @@ export function runCardModel(game, roomId, { base }) {
   const route = content.route
   return {
     roomId,
-    title: INSTANCES.runTitle(run.name, run.tier),
+    title: INSTANCES.runTitle(run.name, run.tier, run.rematch),
     roomLine: `${INSTANCES.roomLine(run.room, run.roomName)}${run.fights > 1 ? ` · ${INSTANCES.fights(run.fight, run.fights)}` : ''}`,
     icons: roomIcons(run, content, base),
     route: route ? { src: instanceArtUrl(base, route[ROUTE_STAGE[run.room] ?? 'mid']), alt: route.alt } : null,
@@ -247,7 +270,10 @@ export function instanceNews(event, game) {
       const boon = game?.rooms?.[event.roomId]?.run?.boon
       return { text: INSTANCES.news.boon(boon?.id === event.boon ? boon.name : event.boon), tone: 'instance' }
     }
-    case 'cleared': return { text: INSTANCES.news.cleared(name), tone: 'legendary', ...(relic ? { artId: relic.id } : {}) }
+    case 'cleared': {
+      const text = event.rematch ? INSTANCES.news.rematchCleared(name, event.rematch) : INSTANCES.news.cleared(name)
+      return { text, tone: 'legendary', ...(relic ? { artId: relic.id } : {}) }
+    }
     case 'failed': return { text: INSTANCES.news.failed(name), tone: 'instance' }
     case 'recalled': return { text: INSTANCES.news.recalled(name), tone: 'instance' }
     default: return null
