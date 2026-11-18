@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkGameContent } from './game-content.mjs'
+import { PANEL_MODULES_FILE, panelModulesSource } from './panel-modules.mjs'
 import { checkEmoteMotions, checkThemeGuide, checkThemes } from './theme-contract.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -96,10 +97,19 @@ function checkRulesCopy() {
   if (!isSame) report(copy, 'differs from rules/; edit rules/ and run `npm run sync-rules`')
 }
 
+/** ui/boot/panel-modules.js lists the panel's modules in loading order; it must follow the imports. */
+function checkPanelModules() {
+  const current = fs.existsSync(PANEL_MODULES_FILE) ? fs.readFileSync(PANEL_MODULES_FILE, 'utf8') : ''
+  if (current !== panelModulesSource()) {
+    report(PANEL_MODULES_FILE, 'differs from the imports of ui/boot/orca.js; run `npm run sync-panel-modules`')
+  }
+}
+
 checkSyntax()
 checkManifest()
 checkNoLinks()
 checkRulesCopy()
+checkPanelModules()
 checkThemes({ root: ROOT, report, readJson })
 checkThemeGuide({ root: ROOT, report })
 checkEmoteMotions({ root: ROOT, report })
@@ -111,6 +121,6 @@ if (problems.length) {
   process.exit(1)
 }
 console.log(
-  'check: all modules parse, the manifest is consistent, the rules copy is current, and every theme ' +
-    'and the theme template follow the contract.'
+  'check: all modules parse, the manifest is consistent, the rules copy and the panel module list are current, and every ' +
+    'theme and the theme template follow the contract.'
 )
