@@ -12,6 +12,7 @@ import { settlementIndexOf } from '../src/game/settlement-content.mjs'
 import { stageIndexOf, totalLevels } from '../src/game/settlement.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
+import { noteWeek, printWeekly } from './event-balance.mjs'
 import { funnelGear } from './funnel-policy.mjs'
 import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
 import { collectionChecks, newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
@@ -41,7 +42,8 @@ const content = {
   bestiary: readJson('../game/bestiary.json'),
   settlement: readJson('../game/settlement.json'),
   instances: readJson('../game/instances.json'),
-  traits: readJson('../game/traits.json')
+  traits: readJson('../game/traits.json'),
+  events: readJson('../game/events.json')
 }
 const engine = createEngine({ content })
 /**
@@ -426,6 +428,7 @@ function simulate(scenario, { trades = false, funnel = false, instances = false,
     trackLegendary(run, day)
     trackLastPowered(run, day)
     trackStages(run, day)
+    noteWeek(run)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -632,6 +635,7 @@ printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => [...
 const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: true }))
 printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
+printWeekly(runs, content.events)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 printInstances(runs, instanceRuns, { content, legendaryKind })

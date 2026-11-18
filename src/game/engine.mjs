@@ -28,6 +28,7 @@ import { closeSessionKeepingTraits, moveKeepingTraits, traitActions } from './tr
 import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
+import { advanceWeek } from './weekly.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
@@ -191,8 +192,9 @@ export function createEngine({ content }) {
   }
   return {
     applyTokens: (save, reading) => applyTokens(save, reading, content),
-    advance: (save, interval) => advanceNoting(save, interval).save,
-    advanceWithEvents: advanceNoting,
+    // The weekly event is checked against the advance's end first and its goal counted after (weekly.mjs).
+    advance: (save, interval) => advanceWeek(save, interval, content, (dated) => advanceNoting(dated, interval)).save,
+    advanceWithEvents: (save, interval) => advanceWeek(save, interval, content, (dated) => advanceNoting(dated, interval)),
     prepareFights: (save, readings) => prepareFights(save, readings, context),
     closeSession: closeSessionKeepingTraits(closeSession, traitIndexOf(content)),
     prestige,
@@ -221,7 +223,8 @@ export function createEngine({ content }) {
       settlement: content.settlement,
       instances: content.instances,
       achievements: content.achievements,
-      traits: content.traits
+      traits: content.traits,
+      events: content.events
     }),
     moveProjectItems: moveKeepingTraits(moveProjectItems, traitIndexOf(content)),
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.

@@ -8,6 +8,7 @@ import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
 import { normalizeTraitRecord } from './trait-check.mjs'
+import { normalizeWeekly } from './weekly-save.mjs'
 
 export const SAVE_VERSION = 1
 /** The world a project plays in until it is assigned another one. */
@@ -258,11 +259,14 @@ function normalizeWorld(value) {
   const coins = isNumber(value.coins) ? Math.min(MARKET_MAX_COINS, Math.max(0, Math.floor(value.coins))) : 0
   const bestiary = normalizeBestiary(value.bestiary)
   const instances = normalizeWorldInstances(value.instances)
+  const weekly = normalizeWeekly(value.weekly)
   return {
     // Kept only once the world has killed; a save from before the bestiary has none.
     ...(bestiary ? { bestiary } : {}),
     // Kept only once a room has entered an instance (instance-save.mjs).
     ...(instances ? { instances } : {}),
+    // Kept from the first advance with weekly events (weekly-save.mjs).
+    ...(weekly ? { weekly } : {}),
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),

@@ -20,6 +20,7 @@ import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS, groupLevel, groupUpgradeCost, isUpgradeOpen } from './spending.mjs'
 import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
 import { withTraitsView } from './trait-view.mjs'
+import { weeklyView } from './weekly-view.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 
 /** A skill as a UI shows it: level, stars, effective level and progress to the next level. */
@@ -148,7 +149,9 @@ function worldView(worldId, world, names, content, index) {
     market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary }),
     bestiary: worldBestiaryView(world, content),
     settlement: settlementView(world, content),
-    instances: worldInstancesView(worldId, world, content)
+    instances: worldInstancesView(worldId, world, content),
+    // This week's event, its goal and next week's (weekly-view.mjs); null before the first advance.
+    weekly: weeklyView(world, content)
   }
 }
 

@@ -1,0 +1,67 @@
+/* Game mode's weekly event: the banner between the room switcher and the tabs, next week's event
+   under it, and the small marker in a room's header. Colours come from Orca's theme (--orca-*) and
+   the game's own (--ac-game-*), with dark defaults. The icons are pixel art, drawn pixelated. */
+
+.ac-event-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-left: 3px solid var(--ac-game-gold, #f2c14e);
+  border-radius: 6px;
+  background: var(--orca-secondary, #1f232c);
+  color: var(--orca-secondary-foreground, #e8eaf0);
+  font-size: 12px;
+  line-height: 1.35;
+  container: ac-event / inline-size;
+}
+.ac-event-banner[hidden], .ac-event-next[hidden], .ac-event-toggle[hidden], .ac-event-marker[hidden] { display: none; }
+.ac-event-banner.ac-event-done { border-left-color: var(--ac-game-good, #6fe0d2); }
+.ac-event-icon { width: 32px; height: 32px; image-rendering: pixelated; }
+.ac-event-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-event-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
+.ac-event-name { font-size: 13px; color: var(--orca-foreground, #f2f4f8); }
+.ac-event-kind, .ac-event-left, .ac-event-reward, .ac-event-flavour {
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-event-left { margin-left: auto; white-space: nowrap; }
+.ac-event-does, .ac-event-flavour { margin: 0; overflow-wrap: anywhere; }
+.ac-event-flavour { font-style: italic; }
+.ac-event-goal { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.ac-event-goal-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ac-event-progress {
+  flex: 1 1 60px;
+  max-width: 160px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ac-game-track, rgba(232, 234, 240, 0.14));
+  overflow: hidden;
+}
+.ac-event-progress-fill { display: block; height: 100%; background: var(--ac-game-gold, #f2c14e); }
+.ac-event-done .ac-event-progress-fill { background: var(--ac-game-good, #6fe0d2); }
+.ac-event-toggle { align-self: start; white-space: nowrap; }
+.ac-event-toggle:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-event-next {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--orca-border, #2a2f3a);
+}
+.ac-event-next-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; image-rendering: pixelated; }
+.ac-event-next-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* A narrow panel: the icon shrinks, the button goes under the text and the time left onto its own
+   place in the line; nothing scrolls sideways. */
+@container ac-event (max-width: 420px) {
+  .ac-event-banner { grid-template-columns: auto minmax(0, 1fr); }
+  .ac-event-icon { width: 16px; height: 16px; }
+  .ac-event-toggle { grid-column: 2; justify-self: start; }
+  .ac-event-left { margin-left: 0; }
+}
+
+/* In a room's header: the event's icon, small, before the occupancy. */
+.ac-event-marker { flex: none; display: inline-flex; align-items: center; line-height: 0; }
+.ac-event-marker-icon { width: 16px; height: 16px; image-rendering: pixelated; }

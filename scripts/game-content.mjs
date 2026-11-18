@@ -2,9 +2,10 @@
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
 // be there, and game/instances.json, whose art must be there too, and game/achievements.json and
-// game/traits.json must exist and be valid. The rules are in src/game/content.mjs,
-// content-races.mjs, content-cities.mjs, legendary-content.mjs, bestiary-content.mjs,
-// settlement-content.mjs, instance-content.mjs, achievement-content.mjs and trait-content.mjs.
+// game/traits.json must exist and be valid, and game/events.json with an icon for each kind of
+// weekly event. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
+// legendary-content.mjs, bestiary-content.mjs, settlement-content.mjs, instance-content.mjs,
+// achievement-content.mjs, trait-content.mjs and weekly-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateAchievements } from '../src/game/achievement-content.mjs'
@@ -18,6 +19,7 @@ import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { validateTraits } from '../src/game/trait-content.mjs'
+import { EVENT_KINDS, validateEvents } from '../src/game/weekly-content.mjs'
 
 /**
  * Reports every problem of the game's content files.
@@ -46,6 +48,25 @@ export function checkGameContent({ root, report, readJson }) {
   checkInstances({ root, report, readJson })
   checkAchievements({ root, report, readJson })
   checkTraits({ root, report, readJson })
+  checkEvents({ root, report, readJson })
+}
+
+/** game/events.json: the weekly events against the races and cities, and an icon for every kind. */
+function checkEvents({ root, report, readJson }) {
+  const eventsFile = path.join(root, 'game', 'events.json')
+  if (!fs.existsSync(eventsFile)) return report(eventsFile, 'is missing; the game needs its weekly events')
+  const events = readJson(eventsFile)
+  if (events === null) return
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  const others = { races: readIfThere('races.json'), cities: readIfThere('cities.json') }
+  for (const problem of validateEvents(events, others)) report(eventsFile, problem)
+  for (const kind of EVENT_KINDS) {
+    const icon = path.join('ui', 'art', 'events', `${kind}.png`)
+    if (!fs.existsSync(path.join(root, icon))) report(eventsFile, `the icon ${icon} is missing`)
+  }
 }
 
 /** game/achievements.json, its conditions' ids checked against the other content files. */

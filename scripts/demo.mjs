@@ -18,6 +18,8 @@
 //   INSTANCE_VAULT=1  with GAME, a room waits in the Sunken Crypt's vault at tier 2, so the boon
 //                 choice, the route's picture and a tier's modifier can be seen (the frozen game
 //                 shows the roadmap with one instance cleared and a room facing a boss otherwise)
+//   EVENT=<id>    with GAME, play that weekly event of game/events.json every week, to review its
+//                 banner and marker (the calendar's event of the week otherwise)
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -181,7 +183,7 @@ let controller = null
 const publish = () => {
   if (controller) server?.broadcast(controller.getState())
 }
-const engine = process.env.GAME ? loadGameEngine(ROOT, console.error) : null
+const engine = process.env.GAME ? loadGameEngine(ROOT, console.error, { pinnedEvent: process.env.EVENT }) : null
 const game = engine
   ? await createDemoGame({
     engine,

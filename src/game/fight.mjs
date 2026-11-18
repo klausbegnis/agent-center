@@ -1,7 +1,6 @@
 // A project's fight over some ticks of working time: the party its working members make, the
 // monster it meets, kills, rests, rewards and drops. Pure; works on copies and returns them.
 import { bestiaryIndexOf } from './bestiary-content.mjs'
-import { noteKill } from './bestiary.mjs'
 import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
@@ -24,6 +23,7 @@ import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
 import { traitIndexOf } from './trait-content.mjs'
 import { traitPartyBonuses, withTraitEffects } from './trait-effects.mjs'
 import { settleScrollDrop } from './traits.mjs'
+import { featuredRaceOf, noteWeeklyKill } from './weekly.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { addMaterials } from './worlds.mjs'
 
@@ -153,7 +153,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     races: content.races,
     bosses: content.bosses,
     referencePartyHit,
-    partySize
+    partySize,
+    featuredRace: featuredRaceOf(world, content)
   })
   const runeFactor = runeCircleFactorOf(project, legendaryIndexOf(content), worldEffectsOf(world, content))
   const runeCut = runeCircleShare(groupLevel(world.upgrades, 'runeCircle')) * runeFactor
@@ -199,10 +200,12 @@ function settleKill(state, context) {
   const pityFactor = 1 + (loot?.legendaryPity ?? 0)
   const legendary = settleLegendaryDrops(state, { monster, seed, content, pityFactor })
   const scroll = settleScrollDrop(state, { monster, seed, scrollFind: party.traits?.scrollFind ?? 0 }, traitIndexOf(content))
-  const noted = noteKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content) })
+  // A race week counts its race twice (weekly.mjs).
+  const featuredRace = featuredRaceOf(world, content)
+  const noted = noteWeeklyKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content), featuredRace })
   context.tally.bestiary = noted.bestiary
   events.push({
-    type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
+    type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster), race: monster.race ?? null,
     affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
     materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null,
     ...(legendary.length ? { legendary } : {}),

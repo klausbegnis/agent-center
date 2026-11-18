@@ -5,7 +5,8 @@ import { playEmote, stopEmote } from './emote-view.js'
 import { createEmoteSchedule } from './emotes.js'
 import { createFamiliarMarker, drawFamiliar, drawFamiliarMarker, placeFamiliar } from './familiar-view.js'
 import { familiarPoints, household, subagentScale } from './familiars.js'
-import { gameModeOf } from './game-model.js'
+import { createEventMarker } from './event-banner.js'
+import { gameModeOf, worldById } from './game-model.js'
 import { occupancy, roomThemeOptions } from './labels.js'
 import { createRoomGame } from './room-game-view.js'
 import { ROOM_ASPECT, slotPoint, stationFor } from './stations.js'
@@ -31,7 +32,9 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   const title = el('h2', 'ac-room-name', room.name)
   if (room.host && room.host !== 'local') title.append(el('span', 'ac-room-host', ` · ${room.host}`))
   const meta = el('span', 'ac-room-meta')
-  head.append(title, meta)
+  // The icon of the week's event of the room's world, while the game runs (event-banner.js).
+  const eventMarker = createEventMarker({ base: transport.base ?? '' })
+  head.append(title, eventMarker.element, meta)
 
   const pin = button('pin', 'ac-link ac-room-control ac-pin', {
     title: 'Show this room large, with the others in a strip (Gallery view)',
@@ -211,6 +214,7 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
       updateThemePicker(state)
       const cast = updateActors(current.agents, selectedAgentId)
       const running = gameModeOf(state.game) === 'running' ? state.game : null
+      eventMarker.update(running ? worldById(running, running.rooms?.[room.id]?.worldId) : null)
       const placeOf = (id) => cast.get(id)?.place
       const fighting = game.update(current, running, (id) => actors.get(id), placeOf, now)
       observeEmotes([...cast.values()], fighting, now)

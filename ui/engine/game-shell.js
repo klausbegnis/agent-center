@@ -2,6 +2,7 @@
 // materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market, Bestiary); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { button, el, svgIcon } from './dom.js'
+import { createEventBanner } from './event-banner.js'
 import { createGameActions } from './game-actions.js'
 import { ALL_ROOMS, createGameContext } from './game-context.js'
 import { card } from './game-controls.js'
@@ -79,7 +80,9 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   })
   // The picker and the strip sit above the tabs and keep their size on every tab.
   const top = el('div', 'ac-game-top')
-  top.append(context.element, bar)
+  // The week's event of the world shown, between the room switcher and the tabs (event-banner.js).
+  const eventBanner = createEventBanner({ base: transport.base ?? '' })
+  top.append(context.element, eventBanner.element, bar)
 
   const notice = el('p', 'ac-game-notice')
   notice.setAttribute('role', 'status')
@@ -206,6 +209,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     if (!state) return
     const isRunning = mode === 'running'
     context.element.hidden = !isRunning
+    eventBanner.update(isRunning ? worldById(state.game, state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId) : null)
     if (!isRunning) {
       if (!panels[tab]) return
       contents[tab].hidden = true

@@ -13,14 +13,17 @@ import { validateInstances } from './game/instance-content.mjs'
 import { validateLegendary } from './game/legendary-content.mjs'
 import { validateSettlement } from './game/settlement-content.mjs'
 import { validateTraits } from './game/trait-content.mjs'
+import { pinEvent, validateEvents } from './game/weekly-content.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 
 /**
  * @param {string} root the plugin folder
  * @param {(message: string) => void} log told what is wrong when the engine cannot be built
+ * @param {{ pinnedEvent?: string }} [options] `pinnedEvent` plays that weekly event every week (the
+ *   demo's EVENT switch)
  * @returns {ReturnType<typeof createEngine> | null}
  */
-export function loadGameEngine(root, log) {
+export function loadGameEngine(root, log, { pinnedEvent } = {}) {
   try {
     const readJson = (name) => JSON.parse(fs.readFileSync(path.join(root, 'game', name), 'utf8'))
     const content = {
@@ -34,7 +37,8 @@ export function loadGameEngine(root, log) {
       settlement: readJson('settlement.json'),
       instances: readJson('instances.json'),
       achievements: readJson('achievements.json'),
-      traits: readJson('traits.json')
+      traits: readJson('traits.json'),
+      events: pinEvent(readJson('events.json'), pinnedEvent)
     }
     const problems = [
       ...validateMonsters(content.monsters),
@@ -48,7 +52,8 @@ export function loadGameEngine(root, log) {
       ...validateInstances(content.instances, content),
       ...validateRunContent(content.instances, content),
       ...validateAchievements(content.achievements, content),
-      ...validateTraits(content.traits, content)
+      ...validateTraits(content.traits, content),
+      ...validateEvents(content.events, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)

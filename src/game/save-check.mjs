@@ -27,6 +27,7 @@ import { indexSettlement } from './settlement-content.mjs'
 import { GROUP_UPGRADE_IDS, isUpgradeOpen } from './spending.mjs'
 import { checkCharacterTraits, checkRoomScrolls, checkWorldTraits } from './trait-check.mjs'
 import { traitIndexOf } from './trait-content.mjs'
+import { checkWeekly } from './weekly-save.mjs'
 import { SAVE_VERSION } from './worlds.mjs'
 
 /** Ids and titles the engine keeps are short; a longer one did not come from it. */
@@ -379,12 +380,14 @@ function buildingLevels(value, path, settlementIndex) {
   return upgrades
 }
 
-function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex }) {
+function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events }) {
   const source = record(value, path)
   const checked = checkWorldBestiary(source.bestiary, bestiaryIndex)
   if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
   const instances = checkWorldInstances(source.instances, instanceIndex)
   if (!instances.ok) fail(`${path}.${instances.problem[0]}`, instances.problem[1])
+  const weekly = checkWeekly(source.weekly, events)
+  if (!weekly.ok) fail(`${path}.${weekly.problem[0]}`, weekly.problem[1])
   const projects = entries(source.projects, `${path}.projects`, {
     key: text,
     entry: (item, at) => project(item, at, legendaryIndex, instanceIndex, traitIndex)
@@ -396,6 +399,8 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
     ...(checked.bestiary ? { bestiary: checked.bestiary } : {}),
     // A world that never entered an instance has no progress in one.
     ...(instances.value ? { instances: instances.value } : {}),
+    // A save from before the weekly events, or a world not yet advanced, has none.
+    ...(weekly.value ? { weekly: weekly.value } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
     materials: amounts(source.materials, `${path}.materials`, MATERIALS),
     upgrades: buildingLevels(source.upgrades, `${path}.upgrades`, settlementIndex),
@@ -421,10 +426,11 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
  *   without which a save that keeps one is refused; the parsed game/settlement.json, whose stages
  *   open the buildings a world may have levels of; the parsed game/instances.json, whose instances
  *   and boons a world's progress and a room's run may name; the parsed game/traits.json, whose
- *   traits a character, a room's scrolls and a world's collection may name
+ *   traits a character, a room's scrolls and a world's collection may name; the parsed
+ *   game/events.json, whose events a world's week may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits } = {}) {
+export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
   const traitIndex = traitIndexOf({ traits })
   const instanceIndex = instanceIndexOf({ instances })
@@ -435,7 +441,7 @@ export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, se
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex })
+      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.

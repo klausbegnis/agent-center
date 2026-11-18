@@ -18,6 +18,14 @@ All notable changes to this project are recorded here. The format follows
   room and kept in the journal's highlights, and a Traits group of seven achievements follows the
   collection.
 
+- Game mode: weekly events. Each calendar week (ISO week, UTC) has one of twenty events, chosen
+  from the calendar alone so it is the same everywhere, never the same two weeks in a row: race
+  weeks (that race twice as often and double in the bestiary), city festivals, blooms, a boss hunt,
+  bounties, training weeks, a gold rush and season weeks. Each gives a small bonus within the usual
+  caps and a goal for the week that pays materials once. A banner above the game's tabs shows the
+  event, what it does, the time left, the goal and next week's event; each room's header shows its
+  icon. `EVENT=<id>` with `GAME=1` shows one in the demo.
+
 ### Changed
 
 - Game mode: legendary items come much more slowly from instances, so the collection is a goal of

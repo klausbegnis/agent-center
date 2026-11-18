@@ -1105,6 +1105,60 @@ Commons come with new sessions; the epics and the five mythic traits, which only
 the whole catalogue a goal past the first year for every user. Traits move no other balance check:
 the same five fail as before them.
 
+## Weekly events
+
+Each calendar week the whole game has one event (`game/events.json`, checked by
+`src/game/weekly-content.mjs`; the rules are `weekly*.mjs`). It is a nudge so the routine varies,
+not a multiplier: it needs no network and no server, and is the same on every machine.
+
+- **The week.** An ISO week in UTC, Monday 00:00 to Monday 00:00 (`weekly-calendar.mjs`): 2026 has
+  a week 53, and 2027-W01 starts on the 4th of January.
+- **Which event.** Weeks are numbered from the one of 1970-01-01, so a year's end changes nothing.
+  Each run of as many weeks as there are events (20) plays every event once, in an order of
+  `hashOf` the run's number; when a run would open with the event the last one closed on, its first
+  two swap. So the same event never comes two weeks in a row, and next week's event is known.
+- **When it changes.** Every advance first checks its end time against the week each world keeps
+  (`withWeek`): a new week switches the event and starts its goal over, in the round that crosses
+  midnight, with no reload.
+- **What it does.** Its `effects` are effects of the closed set legendary loot uses, scope `world`
+  (`raceDamage`, `damage` against ranks, `legendaryPity`, `itemDrop`, `killMaterials`, `gatherYield`
+  of materials, `gatherHours`, `gatherXp`, `characterXp`, `skillXp`, `restTime`, `staminaPool`).
+  They join the bestiary's and the settlement's in `worldEffectsOf`, so they act wherever those do
+  and are summed under the same `LEGENDARY_EFFECT_CAPS`; no cap was raised. Each effect is at most
+  half its cap (the content check refuses more), so a world far from a cap gets the whole nudge and
+  one at a cap gets nothing past it.
+- **Kinds.** A **race week** (six: werewolves, skeletons, goblins, insects, slimes, dragons) brings
+  its race twice as often (`FEATURED_RACE_WEIGHT`, in the race pick of `races.mjs`; bosses and
+  instances are unchanged), counts each kill of it twice in the bestiary, and adds 3% damage against
+  it. A **festival** (Goldmill, Deepforge, Runespire, Brinehaven) gives more of its city's goods from
+  gathering (+6%) and kills (+5%); it does not touch market prices. A **bloom** gives 7.5% more of
+  one gathered material. The **boss hunt** gives 5% damage against bosses and legendary bosses and
+  20% faster legendary pity on the waves; the **bounties** 5% damage against elites and champions
+  and 5% more item drops. The **training** weeks give experience (+2.5% characters and +5%
+  gathering, or +4% Lore and Arcana), the **gold rush** 5% more materials from kills, and the
+  **season** weeks gatherers' half hour or shorter rests and a slightly larger stamina pool.
+- **The goal.** Each event has one: defeat 9 of its race, 80 or 100 monsters, a boss, or 10 elites
+  or champions, counted per world from the advance's kill events (a kill event now carries the
+  monster's `race`). Reached, it pays at once, once a week, materials worth `rewardKills` (30) plain
+  kills at the world's level split over the event's two reward materials. Sized with the simulator
+  (`npm run simulate` prints the share of weeks whose goal was reached): a light user reaches 49%
+  of them (none of the boss hunts: it meets a boss every few weeks), a medium one 98% and a heavy
+  one all. With the events in play every balance target that passed still passes; kills per hour
+  and the other numbers move by a few percent at most.
+- **In the save.** A world keeps `weekly: { week, event, progress, done, seenAt }` from its first
+  advance with events: the ISO key, the event's id (a changed catalogue starts the week over),
+  the goal's count so far, whether it paid, and the last advance's time, so the time left is told on
+  the game's own clock. A save from before has none and loads unchanged. `migrate` drops a malformed
+  one (the next advance starts the week again); `cleanSave` refuses an unknown event, a week a year
+  does not have, a `seenAt` outside its week, progress past the goal, `done` that disagrees with the
+  progress, and any of it when the content has no events.
+- **View and UI.** `worlds[].weekly` (see "View state"). The game panel shows a banner between the
+  room switcher and the tabs: the event's icon, name, kind and time left, what it does, the goal with
+  its progress bar and reward, and a **Next week** button that shows next week's event. Each room's
+  header shows the event's icon with the same in its label. The icons are drawn by
+  `scripts/event-art/events.py` into `ui/art/events/<kind>.png`.
+- **Demo.** `EVENT=<id>` with `GAME=1` plays that event every week (`pinned` in the events data).
+
 ## Scenes
 
 A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
@@ -1353,7 +1407,7 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles }, achievements?, journal? }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market, bestiary?, instances?, traits?: TraitRecord }
+            coins, market: Market, bestiary?, instances?, traits?: TraitRecord, weekly? }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
@@ -1836,6 +1890,14 @@ by the usual closing rules.
                                     // a room's relic is null once it owns the city's two
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
+    weekly: {                       // this week's event (see "Weekly events"), null before the first round
+      week: '2026-W47', endsAt, msLeft,  // msLeft from the last round, on the game's clock
+      id: 'howling-moon', name, kind: 'race', flavour, race: 'werewolf', raceName: 'Werewolves',
+      city: null, cityName: null, effects: [{ effect, scope: 'world', amount, ...qualifiers }],
+      goal: { kind: 'race', count: 9, progress: 4, done: false },
+      reward: { hides: 155, seals: 154 },  // what the goal pays at the world's level now
+      next: { week: '2026-W48', id, name, kind, flavour, race, raceName, city, cityName, effects, goal }
+    },
     instances: {                    // the world's road; under 2 KB
       map: { cleared: 0, art: 'ui/instances/roadmap-1.png', alt },  // the picture for its progress
       cleared: 1, total: 6, complete: false,
@@ -2312,9 +2374,9 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
-| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 11 | 11.0, 9.8, 12.7 | 4.4, 3.5, 4.3 |
-| medium | 30, 90, 365 | 3/3, 4/3, 9/7 | 7/3, 9/5, 16/11 | 8.1, 9.0, 11.4 | 2.8, 3.1, 4.0 |
-| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 3/8/8, 8/15/14, 23/24/24 | 12.0, 13.9, 17.4 | 3.8, 4.2, 5.0 |
+| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 12 | 11.2, 9.5, 12.9 | 4.4, 3.3, 4.1 |
+| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 10/6, 17/11 | 8.3, 9.6, 11.6 | 3.3, 3.2, 4.0 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/8/7, 9/14/14, 20/23/24 | 12.1, 13.9, 17.4 | 3.3, 4.0, 4.9 |
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
@@ -2327,13 +2389,14 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 - **Failures** are 43 to 49% of runs because the policy climbs a tier after every clear until it
   fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
   it found and costs two hours of working time on the waves before that room may try again.
-- **Collection** is a goal of several years. With instances a light room owns 11 of 40 legendary
-  items after a year, a medium one 16 and 11, a heavy one 23 to 24, and 28 to 32 after two years
-  (measured with `DAYS=730`), while the first still comes on day 5. In a year the light world gains
-  3 from the waves' bosses, 6 instance relics (each instance's first clear), 1 from a run's boss and
-  1 from a vault; the heavy world 45, 6, 14 and 6. The simulator prints that split and checks the
-  pace (light 8 to 12, medium about 14 to 20 per room, heavy at least ten short at a year, the first
-  item within three weeks); medium sits a little low at 13.5 a room, its second room entering less.
+- **Collection** is a goal of several years. With instances (and the weekly events) a light room
+  owns 12 of 40 legendary items after a year, a medium one 17 and 11, a heavy one 20 to 24; before
+  the events, 28 to 32 after two years for a heavy room (a one-off run with 730 days), while the
+  first still comes on day 5. In a year the light world gains 3 from the waves' bosses, 6 instance
+  relics (each instance's first clear), 2 from a run's boss and 1 from a vault; the heavy world 44,
+  6, 15 and 2. The simulator prints that split and checks the pace (light 8 to 12, medium about 14
+  to 20 per room, heavy at least ten short at a year, the first item within three weeks); medium's
+  second room, which enters less, sits at 11.
   Before this tuning a light room owned 18 and a heavy one 31 to 33 in a year: the run's boss rolled
   at 10% + 1% a tier (at most 30%) with the waves' pity on top, which every miss raised by 5%, so a
   daily run soon made its item and every wave boss's item near certain; the vault rolled at 1% +
