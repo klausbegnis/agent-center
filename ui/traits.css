@@ -1,0 +1,144 @@
+/* Traits: a badge per trait in its tier's colour (from game/traits.json, set as --ac-trait-colour),
+   the Party tab's trait slots and pickers, the agent card's row, the Chest tab's scrolls and a
+   city's trait broker. Colours come from Orca's theme (--orca-*) with dark defaults. */
+
+.ac-trait-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.ac-trait-slots { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+/* An open picker makes its card taller than its row's other one; the other's level bar must not
+   grow to fill it (the meter grows in a row, where it sits elsewhere). */
+.ac-game-hero > .ac-game-hero-progress { flex-grow: 0; }
+.ac-trait-head { display: flex; align-items: baseline; gap: 6px; }
+
+.ac-trait-badge {
+  --ac-trait-colour: #a8b4c0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 2px 7px 2px 5px;
+  border: 1px solid color-mix(in srgb, var(--ac-trait-colour) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ac-trait-colour) 14%, var(--orca-secondary, #262b35));
+  color: var(--orca-foreground, #e8eaf0);
+  font: inherit;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: left;
+}
+button.ac-trait-badge { cursor: pointer; }
+button.ac-trait-badge:hover { background: color-mix(in srgb, var(--ac-trait-colour) 26%, var(--orca-secondary, #262b35)); }
+.ac-trait-badge[aria-expanded='true'] { box-shadow: 0 0 0 1px var(--ac-trait-colour); }
+.ac-trait-badge:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-trait-badge-small { font-size: 10px; line-height: 14px; padding: 1px 6px 1px 4px; }
+.ac-trait-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The tier's gem: a small diamond, filled for the better tiers so it reads without colour too. */
+.ac-trait-gem {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ac-trait-colour);
+  transform: rotate(45deg);
+}
+.ac-trait-badge[data-tier='rare'] .ac-trait-gem { background: linear-gradient(135deg, var(--ac-trait-colour) 50%, transparent 50%); }
+.ac-trait-badge[data-tier='epic'] .ac-trait-gem { background: var(--ac-trait-colour); }
+.ac-trait-badge[data-tier='mythic'] .ac-trait-gem {
+  background: var(--ac-trait-colour);
+  box-shadow: 0 0 4px var(--ac-trait-colour);
+}
+
+/* The effect on hover and on keyboard focus, under the badge. */
+.ac-trait-tip {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  max-width: min(240px, 70vw);
+  padding: 6px 8px;
+  border: 1px solid var(--ac-trait-colour);
+  border-radius: 6px;
+  background: var(--orca-popover, var(--orca-card, #1f232c));
+  color: var(--orca-popover-foreground, var(--orca-foreground, #e8eaf0));
+  font-size: 11px;
+  line-height: 15px;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.ac-trait-badge:hover > .ac-trait-tip,
+.ac-trait-badge:focus-visible > .ac-trait-tip { display: flex; }
+.ac-trait-tip-tier { color: var(--ac-trait-colour); font-weight: 600; }
+.ac-trait-tip-flavour { color: var(--orca-muted-foreground, #9aa3b2); font-style: italic; }
+
+.ac-trait-slot-free {
+  padding: 2px 8px;
+  border: 1px dashed var(--orca-border, #3a4150);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font: inherit;
+  font-size: 11px;
+  line-height: 16px;
+}
+button.ac-trait-slot-free { cursor: pointer; }
+button.ac-trait-slot-free:hover { color: var(--orca-foreground, #e8eaf0); border-color: var(--orca-foreground, #e8eaf0); }
+.ac-trait-slot-free:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
+.ac-trait-slot-free[aria-expanded='true'] { border-style: solid; color: var(--orca-foreground, #e8eaf0); }
+.ac-trait-slot-locked {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--orca-muted-foreground, #9aa3b2);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+/* A slot's picker: the scrolls it can take, one row each, then Close. */
+.ac-trait-picker:empty { display: none; }
+.ac-trait-picker-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--orca-border, #2a2f3a);
+  border-radius: 6px;
+  background: var(--orca-card, #1f232c);
+}
+.ac-trait-choices, .ac-trait-scroll-list { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.ac-trait-choice, .ac-trait-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+}
+.ac-trait-choice .ac-button { margin-left: auto; }
+.ac-trait-choice-text { flex: 1 1 140px; min-width: 0; color: var(--orca-muted-foreground, #9aa3b2); font-size: 11px; }
+.ac-trait-count { flex: none; font-size: 11px; }
+.ac-trait-close { align-self: flex-end; }
+.ac-trait-status:empty { display: none; }
+
+/* The agent card's row sits under its equipment. */
+.ac-detail-traits { margin-top: 4px; }
+
+/* The Chest tab's Trait scrolls card. */
+.ac-trait-scrolls-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
+.ac-trait-scrolls-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+/* A city's Trait broker card. */
+.ac-trait-offer .ac-market-offer-head { flex-wrap: wrap; gap: 4px 8px; }
+.ac-trait-sell { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.ac-trait-sell .ac-game-row { flex-wrap: wrap; gap: 6px; }
+.ac-trait-sell .ac-select { flex: 1 1 140px; min-width: 0; }
+.ac-trait-subtitle { margin: 0; font-size: 12px; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-trait-badge[data-tier='mythic'] .ac-trait-gem { box-shadow: none; }
+}

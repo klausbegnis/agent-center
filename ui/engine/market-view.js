@@ -11,6 +11,7 @@ import { cityTrades, sellCard, stallCard } from './market-city-view.js'
 import { MARKET } from './market-labels.js'
 import { stallRoomId } from './market-model.js'
 import { tradeCard } from './market-trade-view.js'
+import { createBrokerCard } from './trait-broker-view.js'
 
 /** A city's banner, scaled up pixel for pixel, with its name on the lower left. */
 function banner(city, base) {
@@ -65,6 +66,8 @@ export function createMarketView({ panel, actions, base }) {
    * new image would flash empty while it loads.
    */
   const banners = new Map()
+  /** A city's trait broker, after its stall (trait-broker-view.js). */
+  const broker = createBrokerCard({ actions })
   const bannerOf = (city) => {
     if (!banners.has(city.id)) banners.set(city.id, banner(city, base))
     return banners.get(city.id)
@@ -136,8 +139,9 @@ export function createMarketView({ panel, actions, base }) {
       sellCard({ world, city, chosen, open: openSell, actions }),
       tradeCard({ world, city, form: trade, actions }),
       stallCard({ world, city, rooms: rooms.map((room) => [room.id, roomTitle(room)]), roomId, onRoom,
-        actions, game: state.game, base })
-    ]
+        actions, game: state.game, base }),
+      broker.render({ world, city, roomId, game: state.game })
+    ].filter(Boolean)
   }
 
   function draw() {

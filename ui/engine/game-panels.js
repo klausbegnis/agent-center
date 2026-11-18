@@ -15,6 +15,7 @@ import { portraitOf } from './portraits.js'
 import { roomThemeIds } from './room-themes.js'
 import { campCosts } from './settlement-model.js'
 import { createSkillsView } from './skills-view.js'
+import { createScrollsCard } from './trait-view.js'
 import { createWorldView } from './world-view.js'
 
 /**
@@ -55,6 +56,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
   const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })
+  const scrolls = createScrollsCard({ actions })
   const camp = createCampView({ actions, base })
   /** A tab's views in one block that spans the panel and lays itself out by its own width. */
   const block = (...elements) => {
@@ -63,7 +65,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
     return node
   }
   contents.party.append(block(party.element))
-  contents.chest.append(block(chest.element, relics.element, orphans.element))
+  contents.chest.append(block(chest.element, relics.element, scrolls.element, orphans.element))
   contents.camp.append(block(camp.element))
   const skills = createSkillsView({ panel: contents.skills, actions })
   const market = createMarketView({ panel: contents.market, actions, base })
@@ -89,6 +91,7 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
       if (tab === 'chest') {
         chest.update({ state, game, roomId, room, world })
         relics.update({ game, roomId, state })
+        scrolls.update({ state, roomId, world })
         const shown = state.rooms.find((entry) => entry.id === roomId)
         orphans.update({ roomId, roomName: shown ? roomTitle(shown) : roomId, world })
       }

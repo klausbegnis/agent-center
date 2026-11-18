@@ -6,6 +6,8 @@ import { meter } from './game-controls.js'
 import { gameIcon } from './icon-view.js'
 import { legendaryPicture } from './legendary-art.js'
 import { activityLabel, since, subagentOf } from './labels.js'
+import { agentTraits } from './trait-model.js'
+import { traitRow } from './trait-view.js'
 
 /** The character's class, level, progress and trade on one line. */
 function characterHead(card) {
@@ -72,11 +74,11 @@ function relicRow(relic, base) {
 }
 
 /** What the card adds for the agent's game character, or nothing. */
-function characterPart(card, base) {
+function characterPart(card, base, traits = null) {
   if (!card) return []
   const part = el('div', 'ac-detail-game')
   if (card.kind === 'guest') part.append(el('span', 'ac-muted', card.text))
-  else part.append(characterHead(card), attributeRow(card), equipmentRow(card, base))
+  else part.append(characterHead(card), attributeRow(card), equipmentRow(card, base), ...traitRow(traits))
   if (card.relic) part.append(relicRow(card.relic, base))
   return [part]
 }
@@ -125,7 +127,7 @@ export function createDetail(transport, { onOpenWorkspace } = {}) {
           })
         )
       }
-      element.append(...characterPart(agentCharacter(state, agent), transport.base ?? ''))
+      element.append(...characterPart(agentCharacter(state, agent), transport.base ?? '', agentTraits(state, agent)))
     }
   }
 }

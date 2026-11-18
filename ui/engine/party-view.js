@@ -24,6 +24,7 @@ import {
   skillLabel
 } from './labels.js'
 import { TRADES_TEXT } from './trade-labels.js'
+import { createTraitSlots } from './trait-view.js'
 import { canChooseTrades, characterTradeOptions, pickerValue, roomTradeOptions } from './trade-model.js'
 import { tradePicker } from './trade-picker.js'
 
@@ -68,8 +69,10 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   const details = el('div', 'ac-game-hero-details')
   const attributes = el('div', 'ac-game-hero-attributes')
   const equip = createEquipSlots({ roomId: () => roomId, sessionId, name, actions, open: openSlot, base })
+  // The character's traits: a free slot teaches a scroll, a trait can be swapped (trait-view.js).
+  const traits = createTraitSlots({ getRoomId: () => roomId, sessionId, name, actions })
   details.append(attributes, equip.element)
-  node.append(top, progress.element, details)
+  node.append(top, progress.element, details, traits.element)
   let drawnDetails = null
   return {
     element: node,
@@ -104,6 +107,7 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
       const shown = canChoose ? picker.element : tradeText
       if (tradeSlot.firstChild !== shown) tradeSlot.replaceChildren(shown)
       equip.update({ state, room, character, canChoose: canEquip })
+      traits.update({ state, character, canChoose: canEquip })
       const shownDetails = JSON.stringify([agent.name, character.attributes])
       if (shownDetails === drawnDetails) return
       drawnDetails = shownDetails

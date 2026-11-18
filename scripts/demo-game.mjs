@@ -18,6 +18,7 @@ import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migra
 import { showDemoChronicle } from './demo-achievements.mjs'
 import { showDemoInstances } from './demo-instances.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
+import { showDemoTraits } from './demo-traits.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -358,12 +359,14 @@ export async function createDemoGame(options) {
     await showDemoBestiary(game, frozenClock)
     await showDemoSettlement(game, settlementLevels ?? DEMO_VILLAGE)
     await showDemoInstances(game, { vault: instanceVault })
+    await showDemoTraits(game)
     await showDemoChronicle(game, { now: frozenClock, titleRoom: LEGENDARY_ROOM })
     return game
   }
   await game.round()
   if (settlementLevels) await showDemoSettlement(game, settlementLevels)
   if (instanceVault) await showDemoInstances(game, { vault: true })
+  await showDemoTraits(game)
   await showDemoChronicle(game, { now: now(), titleRoom: LEGENDARY_ROOM })
   setInterval(() => game.round(), ROUND_MS)
   return game
