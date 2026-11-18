@@ -113,7 +113,7 @@ export function memberBonuses(relic, held) {
     healingFactor: 1 + totalOf(held, 'healing'),
     outfitFactor: 1 + totalOf(held, 'outfitStamina'),
     hitFactor: (damageType, rank, race = null) => speed *
-      (1 + totalOf(both, 'damage', damageApplies(damageType, rank)) + totalOf(relic, 'raceDamage', raceApplies(race)))
+      (1 + totalOf(both, 'damage', damageApplies(damageType, rank)) + totalOf(both, 'raceDamage', raceApplies(race)))
   }
 }
 
@@ -189,7 +189,7 @@ export function gatherBonuses(relic, held, material) {
  */
 export function tokenBonuses(relic, held, skillId) {
   return {
-    characterFactor: 1 + totalOf(relic, 'characterXp'),
+    characterFactor: 1 + totalOf([...relic, ...held], 'characterXp'),
     skillFactor: 1 + totalOf([...relic, ...held], 'skillXp', (effect) => effect.skill === skillId)
   }
 }

@@ -66,6 +66,7 @@ const transport = {
   recallParty: (roomId) => postGame('recall-party', { roomId }),
   setPartyTitle: (roomId, achievementId) => postGame('party-title', { roomId, achievementId }),
   markSummarySeen: () => postGame('summary-seen', {}),
+  traitAction: (input) => postGame('trait', input),
   sellMaterial: (worldId, cityId, materialId, amount) => postGame('sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) => postGame('trade', { worldId, cityId, fromId, toId, amount }),
   buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>

@@ -1,5 +1,6 @@
 // The one set of operations every surface uses. The Orca panel reaches it through panel
 // requests and the external view through HTTP, but both end up here, so they cannot drift apart.
+import { traitInputOf } from './game-trait-actions.mjs'
 
 /**
  * @typedef {object} Controller
@@ -40,6 +41,8 @@
  *   holds only with confirmHeld; says what was salvaged and what each holder took instead
  * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
  *   sends a relic that is not active to another room of the world
+ * @property {(input: object) => Promise<GameResult>} gameTraitAction teaches, swaps, buys, sells or
+ *   sends a trait scroll, as `input.action` names (game-trait-actions.mjs)
  * @property {(roomId: string, instanceId: string, tier: number) => Promise<GameResult>} gameEnterInstance
  *   sends a room's party into an open instance at a tier
  * @property {(roomId: string, boonId: string) => Promise<GameResult>} gameChooseBoon takes a boon
@@ -255,6 +258,7 @@ export function createController({
       roomId: requireText(roomId, 'room'),
       achievementId: achievementId === null ? null : requireText(achievementId, 'achievement')
     })),
-    gameMarkSummarySeen: () => playAction(() => game.markSummarySeen())
+    gameMarkSummarySeen: () => playAction(() => game.markSummarySeen()),
+    gameTraitAction: (input) => playAction(() => game.traitAction(traitInputOf(input)))
   }
 }

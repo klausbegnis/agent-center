@@ -39,7 +39,8 @@ const content = {
   legendary: readJson('../game/legendary.json'),
   bestiary: readJson('../game/bestiary.json'),
   settlement: readJson('../game/settlement.json'),
-  instances: readJson('../game/instances.json')
+  instances: readJson('../game/instances.json'),
+  traits: readJson('../game/traits.json')
 }
 const engine = createEngine({ content })
 /**

@@ -12,6 +12,7 @@ import { validateRunContent } from './game/instance-boons.mjs'
 import { validateInstances } from './game/instance-content.mjs'
 import { validateLegendary } from './game/legendary-content.mjs'
 import { validateSettlement } from './game/settlement-content.mjs'
+import { validateTraits } from './game/trait-content.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 
 /**
@@ -32,7 +33,8 @@ export function loadGameEngine(root, log) {
       bestiary: readJson('bestiary.json'),
       settlement: readJson('settlement.json'),
       instances: readJson('instances.json'),
-      achievements: readJson('achievements.json')
+      achievements: readJson('achievements.json'),
+      traits: readJson('traits.json')
     }
     const problems = [
       ...validateMonsters(content.monsters),
@@ -45,7 +47,8 @@ export function loadGameEngine(root, log) {
       ...validateSettlement(content.settlement, { upgradeIds: GROUP_UPGRADE_IDS }),
       ...validateInstances(content.instances, content),
       ...validateRunContent(content.instances, content),
-      ...validateAchievements(content.achievements, content)
+      ...validateAchievements(content.achievements, content),
+      ...validateTraits(content.traits, content)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)

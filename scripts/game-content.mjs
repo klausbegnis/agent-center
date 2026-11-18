@@ -16,6 +16,7 @@ import { validateInstances } from '../src/game/instance-content.mjs'
 import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
+import { validateTraits } from '../src/game/trait-content.mjs'
 
 /**
  * Reports every problem of the game's content files.
@@ -43,6 +44,7 @@ export function checkGameContent({ root, report, readJson }) {
   checkSettlement({ root, report, readJson })
   checkInstances({ root, report, readJson })
   checkAchievements({ root, report, readJson })
+  checkTraits({ root, report, readJson })
 }
 
 /** game/achievements.json, its conditions' ids checked against the other content files. */
@@ -62,6 +64,20 @@ function checkAchievements({ root, report, readJson }) {
     instances: read('instances.json')
   }
   for (const problem of validateAchievements(achievements, content)) report(file, problem)
+}
+
+/** game/traits.json, its cities checked against game/cities.json and its races against game/races.json. */
+function checkTraits({ root, report, readJson }) {
+  const traitsFile = path.join(root, 'game', 'traits.json')
+  if (!fs.existsSync(traitsFile)) return report(traitsFile, 'is missing; the game needs it for traits')
+  const traits = readJson(traitsFile)
+  if (traits === null) return
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  const others = { cities: readIfThere('cities.json'), races: readIfThere('races.json') }
+  for (const problem of validateTraits(traits, others)) report(traitsFile, problem)
 }
 
 /** game/settlement.json: its buildings against the group upgrades, and that every picture it names is there. */

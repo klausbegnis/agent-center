@@ -19,6 +19,7 @@ import { groupEffect, settlementView } from './settlement-view.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS, groupLevel, groupUpgradeCost, isUpgradeOpen } from './spending.mjs'
 import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
+import { withTraitsView } from './trait-view.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 
 /** A skill as a UI shows it: level, stars, effective level and progress to the next level. */
@@ -167,7 +168,8 @@ export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
   const index = legendaryIndexOf(content)
   for (const [id, entry] of index?.byId ?? []) names.set(id, entry.name)
-  return {
+  // Traits add their parts to the worlds, rooms and characters (trait-view.mjs).
+  return withTraitsView({
     worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names, content, index)),
     projectWorld: { ...save.projectWorld },
     keepTitles: save.settings.keepTitles,
@@ -177,5 +179,5 @@ export function viewOf(save, content) {
     legendary: legendaryView(index, content.bosses, content.instances),
     bestiary: bestiaryContentView(content),
     instances: instancesContentView(content)
-  }
+  }, save, content)
 }

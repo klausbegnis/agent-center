@@ -520,6 +520,7 @@ export function createUnavailableGame(status) {
     recallParty: refuse,
     setPartyTitle: refuse,
     markSummarySeen: refuse,
+    traitAction: refuse,
     sellMaterial: refuse,
     tradeMaterial: refuse,
     buyStallOffer: refuse

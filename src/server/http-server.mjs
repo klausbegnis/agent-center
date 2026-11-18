@@ -161,7 +161,9 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/choose-boon': (input) => controller.gameChooseBoon(input.roomId, input.boonId),
     '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId),
     '/api/game/party-title': (input) => controller.gameSetPartyTitle(input.roomId, input.achievementId ?? null),
-    '/api/game/summary-seen': () => controller.gameMarkSummarySeen()
+    '/api/game/summary-seen': () => controller.gameMarkSummarySeen(),
+    // Teach, swap, buy, sell or send a trait scroll; `action` names which (game-trait-actions.mjs).
+    '/api/game/trait': (input) => controller.gameTraitAction(input)
   }
 
   async function handlePost(pathname, request, response, isLocal) {

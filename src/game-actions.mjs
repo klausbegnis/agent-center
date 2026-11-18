@@ -5,6 +5,7 @@ import { worldWorkMix } from './domain/skill-mix.mjs'
 import { createChronicleActions } from './game-chronicle.mjs'
 import { createInstanceActions } from './game-instance-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
+import { createTraitActions } from './game-trait-actions.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
@@ -457,6 +458,8 @@ export function createGameActions(dependencies) {
 
     // Entering an instance, choosing the vault's boon, recalling the party (game-instance-actions.mjs).
     ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) }),
-    ...createChronicleActions({ engine, change, joinedProject, now })
+    ...createChronicleActions({ engine, change, joinedProject, now }),
+    // Teaching, swapping, the trait broker and sending scrolls (game-trait-actions.mjs).
+    ...createTraitActions({ engine, change, joinedProject, requireSending, requireWorld, requireCity })
   }
 }

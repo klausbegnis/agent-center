@@ -199,7 +199,8 @@ const ACTION_NAMES = {
   tradeMaterial: 'The trade',
   buyStallOffer: 'The purchase',
   setPartyTitle: 'Changing the title',
-  markSummarySeen: 'Marking the summary read'
+  markSummarySeen: 'Marking the summary read',
+  traitAction: 'The trait deal'
 }
 
 /**

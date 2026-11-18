@@ -7,6 +7,7 @@ import { normalizeProjectInstance, normalizeWorldInstances } from './instance-sa
 import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
+import { normalizeTraitRecord } from './trait-check.mjs'
 
 export const SAVE_VERSION = 1
 /** The world a project plays in until it is assigned another one. */
@@ -270,7 +271,9 @@ function normalizeWorld(value) {
     lastTokenAt: isNumber(value.lastTokenAt) ? value.lastTokenAt : null,
     // Saves from before the market have no coins.
     coins,
-    market: normalizeMarket(value.market)
+    market: normalizeMarket(value.market),
+    // Kept once the world has a trait collection or a broker sale (traits.mjs); checked on import.
+    ...(normalizeTraitRecord(value.traits) ? { traits: normalizeTraitRecord(value.traits) } : {})
   }
 }
 

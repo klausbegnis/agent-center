@@ -9,6 +9,7 @@ import { equipLegendary } from './legendary-equip.mjs'
 import { emptySkill, grantSkillXp, worldLevel, xpFromTokens } from './progression.mjs'
 import { comeBack, retire } from './retirement.mjs'
 import { CLASSES, skillForActivity } from './skills.mjs'
+import { withTraitEffects } from './trait-effects.mjs'
 import { effectiveTrade } from './trades.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { emptyProject, withCharacter, withProjectIn, withWorld, worldIdOf } from './worlds.mjs'
@@ -95,7 +96,8 @@ export function applyTokens(save, reading, content) {
     project = { ...project, themeId: themeId ?? project.themeId }
     const index = legendaryIndexOf(content)
     project = ensureCharacter(project, { sessionId, skills: world.skills, now, index })
-    const held = heldEffects(project, project.characters[sessionId], index)
+    const own = project.characters[sessionId]
+    const held = withTraitEffects(heldEffects(project, own, index), project, own, content)
     const bonus = tokenBonuses([...relicEffects(project, index), ...worldEffectsOf(world, content)], held, skillId)
     const character = grantCharacterXp(project.characters[sessionId], xp * bonus.characterFactor, activity)
     const skillXp = skillId

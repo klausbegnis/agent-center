@@ -23,6 +23,8 @@ import { applyPurchase, groupLevel, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
+import { traitIndexOf } from './trait-content.mjs'
+import { closeSessionKeepingTraits, moveKeepingTraits, traitActions } from './trait-engine.mjs'
 import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
@@ -181,12 +183,18 @@ export function createEngine({ content }) {
     return references.get(level)
   }
   const context = { content, referencePartyHit }
+  // Traits (trait-engine.mjs): each advance brings the worlds' collections up to date.
+  const traits = traitActions(content)
+  const advanceNoting = (save, interval) => {
+    const moved = advanceWithEvents(save, interval, context)
+    return { ...moved, save: traits.noteKnownTraits(moved.save) }
+  }
   return {
     applyTokens: (save, reading) => applyTokens(save, reading, content),
-    advance: (save, interval) => advanceWithEvents(save, interval, context).save,
-    advanceWithEvents: (save, interval) => advanceWithEvents(save, interval, context),
+    advance: (save, interval) => advanceNoting(save, interval).save,
+    advanceWithEvents: advanceNoting,
     prepareFights: (save, readings) => prepareFights(save, readings, context),
-    closeSession,
+    closeSession: closeSessionKeepingTraits(closeSession, traitIndexOf(content)),
     prestige,
     upgradeItem: (save, which) => upgradeItem(save, which, content),
     buyGroupUpgrade: (save, which) => buyGroupUpgrade(save, which, settlementIndexOf(content)),
@@ -212,9 +220,10 @@ export function createEngine({ content }) {
       bosses: content.bosses,
       settlement: content.settlement,
       instances: content.instances,
-      achievements: content.achievements
+      achievements: content.achievements,
+      traits: content.traits
     }),
-    moveProjectItems,
+    moveProjectItems: moveKeepingTraits(moveProjectItems, traitIndexOf(content)),
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
     // An item a character holds is taken from it, and the slot re-picked under the legendary rules.
     sendItem: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)).save,
@@ -234,6 +243,7 @@ export function createEngine({ content }) {
     recallParty,
     // Achievements and the journal (chronicle.mjs): granted and counted after every change kept.
     ...chronicleActions(content),
+    ...traits,
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }
