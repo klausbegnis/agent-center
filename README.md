@@ -142,7 +142,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   defeating nine werewolves, that pays materials once. A banner above the tabs says what this
   week's does, how long it has left and how far the goal is, and shows next week's event.
 
-![The Roadmap: a parchment map of the road with a cleared crypt and a party on its way to the foundry, then the Sunken Crypt's card with its banner, "Cleared ×2", its races, boss and the Tidewake Bell relic, and its Enter control with a room and a tier](docs/screenshots/game-roadmap.png)
+![The Roadmap tab under the weekly event's banner: the switch between The Old Road and The Gloaming Isles (locked), then the parchment map of the road with a cleared crypt, a party on its way to the foundry and the sites ahead under fog](docs/screenshots/game-roadmap.png)
 
 ![The Bestiary tab: the hunter rank and boss hunter bars, then cards of slimes with the title Slime-scourer II, goblins, orcs and skeletons, each with its level, points to the next level, damage bonus and next step](docs/screenshots/game-bestiary.png)
 
