@@ -47,15 +47,16 @@ milliseconds the caller passes.
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
 | `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
 | `buyMaterial(save, { worldId, cityId, materialId, amount })` | Buys a material an open city produces with the world's coins. The engine's own (the simulator uses it); no surface offers it in this version. |
-| `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall"). |
+| `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall" and "City ranks"). Every sale, purchase, trade and stall purchase adds to the world's standing in that city. |
 | `teachTrait(save, { projectId, sessionId, traitId })` / `swapTrait(save, { projectId, sessionId, oldTraitId, traitId })` | Teaches a scroll's trait into a free slot, or swaps a carried trait for a scroll (the old one back as a scroll, for a fee); `teachProblem` / `swapProblem` say why one is refused. See "Traits". |
 | `buyTraitScroll(save, { worldId, cityId, offerIndex, traitId, projectId })` / `sellTraitScroll(save, { worldId, cityId, projectId, traitId })` / `sendScroll(save, { fromProjectId, toProjectId, traitId })` | The trait broker and sending a scroll to another room; each has its `…Problem`. |
+| `buyCharter(save, { worldId, cityId })` | Buys a city's next charter: its rank rises by one (see "City ranks"); unchanged when it cannot, and `charterProblem(save, which)` says why. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost, coins and the market (see "View state"); per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
 upgrades and `autoSpend`), `drops.mjs` (item drops), `market.mjs`, `market-prices.mjs` and
-`stall.mjs` (the market), `transfer.mjs` (sending to another room), `settlement*.mjs` and
+`stall.mjs` (the market), `city-ranks*.mjs` and `city-stall-legendary.mjs` (its cities' ranks), `transfer.mjs` (sending to another room), `settlement*.mjs` and
 `buildings.mjs` (the settlement), `world-effects.mjs` (what a world gives every party in it), and
 `view.mjs` with `market-view.mjs` and `settlement-view.mjs`, over the rule modules described
 below.
@@ -1403,6 +1404,74 @@ player that is three a year for a light user and twelve for a medium one, a burs
 month while the world is young and its stock of starter surplus sells, then one every three to
 five weeks; a heavy user buys every relic its cities have as soon as each is offered.
 
+### City ranks
+
+Each city grows through five ranks, I to V, per world (`src/game/city-ranks*.mjs`,
+`city-rank-constants.mjs`, `city-stall-legendary.mjs`), the way the settlement grows: a long axis
+to invest in, with a banner of its own at every rank. A world earns **standing** with a city by
+trading there, and once it has enough it buys the city's **charter** for the next rank, which
+raises the rank by one.
+
+- **Standing.** Every sale, purchase and trade made in a city adds the base value of every unit it
+  moved (a trade counts both sides); a stall piece, relic or legendary piece adds its price. Each
+  is divided by `REWARD_GROWTH ** worldLevel` at the time, so standing grows at the same pace at
+  every level, as prices do. It only grows, and buying a charter does not spend it.
+- **Charters.** The charter for rank r needs `CITY_STANDING[r - 1]` standing in all (3,000,
+  25,000, 120,000 and 500,000 for ranks II to V) and costs `CHARTER_COINS[r - 1]` coins (500,
+  2,000, 6,000, 15,000) and `CHARTER_UNITS[r - 1]` units (100, 400, 1,200, 3,000) of each material
+  the city wants, both times `REWARD_GROWTH ** worldLevel`, rounded. It is bought in the city, from
+  the rank card on its page; `charterProblem` says why it cannot be (the city closed, its last rank,
+  too little standing, coins or materials). The charters' names are flavour in `game/cities.json`.
+
+| Rank | Title | The city's fee | Its stall | Its perk (one per city) |
+|---|---|---|---|---|
+| I | Hamlet | the world's | as before | none |
+| II | Town | 0.5 points lower | a fourth piece of gear a day (offer index 4) | the first charter's |
+| III | City | 1 point lower | its gear one tier higher | the second's |
+| IV | Capital | 1.5 points lower | a relic on 40% of days instead of 25% | the third's |
+| V | Golden age | 2 points lower | on 20% of days, one of the city's two legendary pieces (offer index 5) | the fourth's |
+
+- **The fee** in a city is the world's (`MARKET_FEE` less the Storehouse's cut) less
+  `CITY_RANK_FEE_CUT` (0.005) a rank above the first: 4% at its lowest, with a Storehouse far up and
+  a city at rank V. It is still above 0, so every sale pays less than base value and every
+  purchase costs more, and no trade can make money (`city-ranks.test.mjs` checks it with the fee
+  at its lowest). The view gives each open city its own `fee`; the UI quotes with it.
+- **The legendary piece** is one of the city's own list (`ranks.legendary`, two pieces of legendary
+  equipment each, ten in all, none sold by two cities) that the room it would go to lacks, at
+  `STALL_LEGENDARY_PRICE_BASE` (6,000) × `REWARD_GROWTH ** worldLevel` coins, twice a stall relic.
+  It arrives as a boss would drop it, at the reference gear of the world. It adds no power the
+  boss's drop could not give, since every piece already counts towards the caps.
+- **The perks** are effects of the world (scope `world`), summed with the relics, the equipment,
+  the bestiary and the settlement under `LEGENDARY_EFFECT_CAPS`. They are kept small so that, with
+  every city at rank V and every other source at its top, no type passes its cap
+  (`city-ranks-save.test.mjs` checks it, and `npm run check` refuses a file whose perks add up past
+  a cap):
+
+| City | II | III | IV | V |
+|---|---|---|---|---|
+| Goldmill | Millers' Bread: `gatherHours` +0.15 | Harvest Lore: `gatherXp` +0.5% | Full Granaries: `staminaPool` +0.5% | Golden Sheaf: `killMaterials` +0.2% |
+| Deepforge | Dwarven Whetstones: `upgradeCost` −0.5% | Foundry Edges: `critDamage` +0.5% | Spiked Plate: `thorns` 1.5% | Kings' Anvil: `upgradeCost` −0.5% |
+| Brinehaven | Tide Tables: `gatherHours` +0.15 | Salvage Rights: `itemDrop` +0.5% | Ship's Biscuit: `staminaPool` +0.5% | Merchant Fleet: `itemDrop` +0.5% |
+| Tallwood | Hunters' Lodge: `gatherHours` +0.15 | Woodcraft Lessons: `gatherXp` +0.5% | Long Summer Days: `gatherHours` +0.15 | Canopy Wardens: `thorns` 1.5% |
+| Runespire | Scribed Wards: `runeCircle` +0.5% | Lamplight Archive: `gatherHours` +0.15 | Seers' Insight: `critDamage` +0.5% | Spire Light: `runeCircle` +0.5% |
+
+- **Content.** A city of `game/cities.json` may have `ranks: { banners, charters, legendary }`: five
+  `{ banner, alt }` (PNGs under `ui/cities/`, `<city>-<rank>.png`), four `{ name, perk, effect }`
+  for ranks II to V, and the legendary equipment its last rank sells; the file's `rankTitles` names
+  the five ranks. A city without `ranks` stays at rank I. The banners are drawn by
+  `scripts/city-art/ranks.py` (see its README).
+- **In the save.** A world keeps `cityRanks: { [cityId]: { rank, standing } }` once it has traded
+  with a city. A save from before has none: every city is at rank I with no standing, and nothing
+  else changes. `migrate` drops an entry that is not a rank from 1 to 5 and a standing from 0 to
+  1e15; `cleanSave` refuses one, a city without ranks in the content, and a sold offer past index 5.
+  A world reset forgets the ranks with the world.
+- **Pace.** Tuned with the simulator's trading player, which buys every charter it can on its daily
+  visit and keeps the next charter's coins aside from buildings paid in coins (see "Market" under
+  "Balance"): a light user reaches rank II in a first city on day 17 and holds three cities at II
+  after a year; a medium one has a city at II on day 2, III on day 59 and IV on day 316, and no
+  city at V after a year; a heavy one has every city at II within a month and three at III by
+  day 136. Rank V of every city is a goal of years, not months.
+
 ## Save shape
 
 One JSON value:
@@ -1412,7 +1481,7 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles }, achievements?, journal? }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market, bestiary?, instances?, traits?: TraitRecord, weekly? }
+            coins, market: Market, bestiary?, instances?, traits?: TraitRecord, weekly?, cityRanks? }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
@@ -1789,12 +1858,13 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.partyTitle` | `/api/game/party-title` | `{ roomId, achievementId }`: a room that plays and an achievement it earned that grants a title, or null for none |
 | `game.summarySeen` | `/api/game/summary-seen` | none: marks the "While you worked" summary read |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
+| `game.buyCharter` | `/api/game/buy-charter` | `{ worldId, cityId }`: a world of the save and a city of `game/cities.json`; a charter the rules refuse says why (see "City ranks") |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
 `sendItem`, which add what they changed. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
 character of the room, a gathering skill, a city of `game/cities.json`, a material, an offer
-index from 0 to `STALL_OFFERS` (the last is the relic's); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
+index from 0 to 5 (the gear's, the relic's at 3, a ranked city's extra piece at 4 and legendary piece at 5); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
 trade or a purchase the market cannot make (a city not open yet, more than the world holds, an
 offer sold or changed) answers `{ changed: false }`. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
@@ -1891,8 +1961,17 @@ by the usual closing rules.
         stall: [{ index: 0, kind: 'item', entryId, name, slot, damageType, tier, power, price,
           sold: false, affordable: true, fullIn: [] }],  // open cities only
         relic: { index: 3, kind: 'relic', price: 4814, sold: false, affordable: true,
-          byRoom: { 'local:/work/sneaky-pancake': 'millwind-vane' } }  // or null: none today;
+          byRoom: { 'local:/work/sneaky-pancake': 'millwind-vane' } },  // or null: none today;
                                     // a room's relic is null once it owns the city's two
+        legendary: null,            // at rank V now and then, shaped as `relic`, at index 5
+        fee: 0.095,                 // the fee in this city (lower at a higher rank); open cities only
+        rank: { rank: 2, max: 5, title: 'Town', banner, bannerAlt, standing: 4120.5, fee: 0.095,
+          perks: [{ name, perk, effect }], legendary: [{ id, name }],
+          next: { rank: 3, title: 'City', standing: 25000, coins, materials: { ore, bars },
+            charter: { name, perk, effect }, feeCut: 0.005, extraOffer, tierBonus, relicMoreOften,
+            legendary, block: 'standing' } }   // block: standing | coins | materials | null;
+                                    // next: null at rank V; rank: null for a city without ranks,
+                                    // and banner is the rank's banner
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
     weekly: {                       // this week's event (see "Weekly events"), null before the first round

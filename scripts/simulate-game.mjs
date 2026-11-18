@@ -17,6 +17,7 @@ import { funnelGear } from './funnel-policy.mjs'
 import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
 import { collectionChecks, newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
 import { visitMarket } from './market-policy.mjs'
+import { printCityRanks, trackCityRanks } from './city-rank-balance.mjs'
 import {
   fixed,
   hitShares,
@@ -429,6 +430,7 @@ function simulate(scenario, { trades = false, funnel = false, instances = false,
     trackLastPowered(run, day)
     trackStages(run, day)
     noteWeek(run)
+    if (trades) trackCityRanks(run, day, content.cities.cities)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -636,6 +638,7 @@ const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: tru
 printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
 printWeekly(runs, content.events)
+printCityRanks(tradingRuns, content.cities.cities)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 printInstances(runs, instanceRuns, { content, legendaryKind })

@@ -26,6 +26,14 @@ All notable changes to this project are recorded here. The format follows
   event, what it does, the time left, the goal and next week's event; each room's header shows its
   icon. `EVENT=<id>` with `GAME=1` shows one in the demo.
 
+- Game mode: every market city grows through five ranks, I to V, each with a banner of its own.
+  Trading in a city earns standing there; with enough, the city's charter (coins and the
+  materials it wants) raises its rank: a lower fee in that city, a richer stall (a fourth piece,
+  gear a tier higher, relics more often and, at rank V, now and then legendary equipment) and a
+  small perk for every party of the world, kept under the existing caps. The city's page has a
+  rank card with its standing, the charter's price and what the next rank gives. New local-only
+  route `/api/game/buy-charter`. Saves from before load with every city at rank I.
+
 ### Changed
 
 - Game mode: legendary items come much more slowly from instances, so the collection is a goal of
