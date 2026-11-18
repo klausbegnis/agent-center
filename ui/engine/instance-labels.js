@@ -158,6 +158,12 @@ export const INSTANCES = {
   band: (name, room, roomName) => `${name} · room ${room + 1} of 6 · ${roomName}`,
   bandShort: (name, room) => `${name} · ${room + 1}/6`,
   chip: 'Inside an instance',
+  // Regions of the road.
+  regionsName: 'Region',
+  regionOpen: (name, cleared, total) => `${name}: ${cleared} of ${total} cleared`,
+  regionLockedLabel: (name) => `${name}: locked`,
+  regionLockedText: (name) => `${name} (locked)`,
+  regionLocked: (before, cleared, total) => `Locked. It opens when ${before} is complete: ${cleared} of ${total} cleared there.`,
   // Rematches of a beaten boss.
   rematch: (rematch) => `Rematch ${romanOf(rematch)}`,
   rematchBadge: (rematch) => romanOf(rematch),

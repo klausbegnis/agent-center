@@ -129,40 +129,66 @@ export function instanceCard(game, entry, context) {
 }
 
 /**
- * The Roadmap view of a world: the picture for its progress, a marker on each site and on the
- * party of a run, and a card per instance. Null without instances or a world.
+ * The Roadmap view of a world's region: the switch between regions, the picture for the region's
+ * progress, a marker on each site and on the party of a run, and a card per instance; a locked
+ * region says what opens it. Null without instances or a world.
  *
  * @param {object | undefined} game the view state's game
  * @param {object | null} world the world picked above the tabs
- * @param {{ base: string, roomIds: string[], roomId: string | null, names: (id: string) => string }} context
- *   `roomIds` the rooms on screen in that world, `names` a room's name as shown
+ * @param {{ base: string, roomIds: string[], roomId: string | null, names: (id: string) => string,
+ *   regionId?: string | null }} context `roomIds` the rooms on screen in that world, `names` a room's
+ *   name as shown, `regionId` the region picked (the furthest open one otherwise)
  */
 export function roadmapModel(game, world, context) {
-  const region = game?.instances?.region
+  const content = game?.instances
   const road = world?.instances
-  if (!region || !road) return null
-  const markers = road.list.map((entry) => {
-    const content = instanceContent(game, entry.id)
-    const name = entry.state === 'hidden' ? INSTANCES.hidden : content?.name ?? entry.id
+  if (!content?.region || !road) return null
+  const first = content.region.id
+  const regions = content.regions ?? [{ ...content.region, after: null }]
+  const places = road.regions ?? [{ id: first, unlocked: true, map: road.map, cleared: road.cleared, total: road.total, complete: road.complete }]
+  const placeOf = (id) => places.find((place) => place.id === id) ?? places[0]
+  const unlocked = regions.filter((region) => placeOf(region.id).unlocked)
+  // The region picked, or the furthest one open: where the world's road goes on.
+  const region = regions.find((each) => each.id === context.regionId) ?? unlocked.at(-1) ?? regions[0]
+  const place = placeOf(region.id)
+  const list = road.list.filter((entry) => (entry.region ?? first) === region.id)
+  const before = regions.find((each) => each.id === region.after)
+  const markers = list.map((entry) => {
+    const entryContent = instanceContent(game, entry.id)
+    const name = entry.state === 'hidden' ? INSTANCES.hidden : entryContent?.name ?? entry.id
     const isCleared = entry.clears > 0 && entry.state !== 'inside'
     return {
       id: entry.id,
-      left: (100 * (content?.map.x ?? 0)) / region.width,
-      top: (100 * (content?.map.y ?? 0)) / region.height,
+      left: (100 * (entryContent?.map.x ?? 0)) / region.width,
+      top: (100 * (entryContent?.map.y ?? 0)) / region.height,
       state: isCleared ? 'cleared' : entry.state,
       icon: roomIconUrl(context.base, isCleared ? 'icon-cleared' : STATE_ICON[entry.state] ?? 'icon-locked'),
       badge: entry.rematch ? INSTANCES.rematchBadge(entry.rematch) : null,
-      label: INSTANCES.marker(name, content ? stateText(entry, content, context.names) : '') +
+      label: INSTANCES.marker(name, entryContent ? stateText(entry, entryContent, context.names) : '') +
         (entry.rematch ? `, ${INSTANCES.rematchMarker(entry.rematch)}` : '')
     }
   })
   return {
+    regionId: region.id,
+    // The region switch: one button per region, a locked one saying what opens it.
+    regions: regions.length > 1 ? regions.map((each) => {
+      const eachPlace = placeOf(each.id)
+      return {
+        id: each.id,
+        name: each.name,
+        text: eachPlace.unlocked ? each.name : INSTANCES.regionLockedText(each.name),
+        locked: !eachPlace.unlocked,
+        pressed: each.id === region.id,
+        label: eachPlace.unlocked ? INSTANCES.regionOpen(each.name, eachPlace.cleared, eachPlace.total) : INSTANCES.regionLockedLabel(each.name)
+      }
+    }) : [],
+    locked: place.unlocked ? null : INSTANCES.regionLocked(before?.name ?? '', placeOf(before?.id).cleared, placeOf(before?.id).total),
     title: INSTANCES.title(region),
-    summary: INSTANCES.cleared(road.cleared, road.total),
-    complete: road.complete ? INSTANCES.complete(region.title) : null,
-    map: { src: instanceArtUrl(context.base, road.map.art), alt: road.map.alt, width: region.width, height: region.height },
-    markers,
-    cards: road.list.map((entry) => instanceCard(game, entry, context)).filter(Boolean)
+    summary: INSTANCES.cleared(place.cleared, place.total),
+    complete: place.complete ? INSTANCES.complete(region.title) : null,
+    map: { src: instanceArtUrl(context.base, place.map.art), alt: place.map.alt, width: region.width, height: region.height },
+    markers: place.unlocked ? markers : [],
+    cards: list.map((entry) => instanceCard(game, entry, context)).filter(Boolean)
   }
 }
 

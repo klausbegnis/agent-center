@@ -87,15 +87,19 @@ test('clearing an instance opens the next on the road; the last cleared leaves n
   const foundry = index.byId.get('emberdeep-foundry')
   assert.equal(openness(save.worlds.main, foundry, index).reason, INSTANCE_REFUSALS.closed)
   let from = START
-  for (const id of index.order) {
+  const firstRegion = index.regions[0].instanceIds
+  for (const id of firstRegion) {
     const ran = clear(save, id, { from })
     assert.equal(ran.end.kind, 'cleared', id)
     save = ran.save
     from += 12 * 3_600_000
   }
-  for (const entry of index.instances) assert.equal(openness(save.worlds.main, entry, index).open, true)
+  for (const id of firstRegion) assert.equal(openness(save.worlds.main, index.byId.get(id), index).open, true)
+  // The first road complete unlocks the next region: its first instance waits only for the world's level.
+  const next = index.byId.get(index.regions[1].instanceIds[0])
+  assert.notEqual(openness(save.worlds.main, next, index).reason, INSTANCE_REFUSALS.regionLocked)
   const relics = legendaryOf(project(save)).relics
-  for (const entry of index.instances) assert.ok(relics.includes(entry.relic), entry.relic)
+  for (const id of firstRegion) assert.ok(relics.includes(index.byId.get(id).relic), id)
 })
 
 test('a clear credits the instance\'s races with champions in the bestiary', () => {

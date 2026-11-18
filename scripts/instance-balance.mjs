@@ -117,7 +117,8 @@ function pay(run, plain) {
  */
 export function printInstances(plainRuns, instanceRuns, { content }) {
   console.log('\n## Instances: running the highest open instance whenever one is available\n')
-  const ids = content.instances.instances.map((entry) => entry.id)
+  // The first region's instances; the regions after it are printRegions'.
+  const ids = content.instances.instances.filter((entry) => !entry.region).map((entry) => entry.id)
   printTable(['scenario', ...ids.map((id) => id.split('-').at(-1)), 'title'], instanceRuns.map((run) => [
     run.scenario.id,
     ...ids.map((id) => (run.instances.firstClear[id] ? `day ${run.instances.firstClear[id]}` : '-')),
@@ -155,6 +156,7 @@ export function printInstances(plainRuns, instanceRuns, { content }) {
     'drop; relic: an instance\'s first clear; boss: a run\'s boss or elite item; vault: the vault.')
   console.log('')
   printRematches(instanceRuns, ids)
+  printRegions(instanceRuns, content.instances)
 }
 
 /** The rematch ladder: how many were won and lost, the best per instance, and when I, V and X came. */
@@ -199,4 +201,24 @@ export function collectionChecks(instanceRuns, total) {
     ['medium: about 14 to 20 legendary items in a year', year('medium') >= 12 && year('medium') <= 20, shown('medium')],
     ['heavy: the collection is far from complete at a year', most <= total - 10, `${fixed(year('heavy'))}, at most ${most}, of ${total}`]
   ]
+}
+
+/**
+ * The regions after the first: the day each opens (the region before it complete), the day each of
+ * its instances is first cleared, and how many are cleared in the year.
+ */
+function printRegions(instanceRuns, data) {
+  for (const region of data.regions ?? []) {
+    const ids = data.instances.filter((entry) => entry.region === region.id).map((entry) => entry.id)
+    const before = data.instances.filter((entry) => (region.after === data.region.id ? !entry.region : entry.region === region.after))
+    console.log(`\n## ${region.name}: the second region of the road\n`)
+    printTable(['scenario', 'opens', ...ids.map((id) => id.split('-').at(-1)), 'cleared', 'best tiers'], instanceRuns.map((run) => {
+      const first = run.instances.firstClear
+      const opens = before.every((entry) => first[entry.id]) ? `day ${Math.max(...before.map((entry) => first[entry.id]))}` : '-'
+      return [run.scenario.id, opens, ...ids.map((id) => (first[id] ? `day ${first[id]}` : '-')),
+        `${ids.filter((id) => first[id]).length} of ${ids.length}`, ids.map((id) => run.instances.bestTier[id] ?? '-').join('/')]
+    }))
+    console.log(`Opens: the day the region before it is complete. Then the day each of its instances is first cleared ` +
+      `(each also waits for its World Lv: ${ids.map((id) => data.instances.find((entry) => entry.id === id).opensAt).join(', ')}).`)
+  }
 }

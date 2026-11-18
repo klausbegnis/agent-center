@@ -5,6 +5,7 @@
 import { modifierAt, runBonuses } from './instance-boons.mjs'
 import { FIGHT_ROOMS } from './instance-content.mjs'
 import { INSTANCE_COOLDOWN_MS } from './instance-constants.mjs'
+import { REGION_LOCKED, isRegionUnlocked, regionBonuses, regionOfInstance } from './instance-regions.mjs'
 import { rematchBonuses, rematchProblem, rematchTier } from './instance-rematch.mjs'
 import { worldLevel } from './progression.mjs'
 import { withProjectIn, worldIdOf } from './worlds.mjs'
@@ -16,6 +17,7 @@ export const INSTANCE_REFUSALS = Object.freeze({
   notPlaying: 'not a room that plays',
   inside: 'the room is already inside an instance',
   closed: 'the road to it is not cleared yet',
+  regionLocked: REGION_LOCKED,
   level: 'the world\'s level is too low',
   tier: 'that tier is not open: clear the one below it first',
   taken: 'another room is inside it',
@@ -47,6 +49,9 @@ export const progressOf = (world, instanceId) => world?.instances?.[instanceId] 
  * @returns {{ open: boolean, reason: string | null }} `reason` says why not
  */
 export function openness(world, instance, index) {
+  const region = regionOfInstance(index, instance.id)
+  // A later region opens once the one before it is complete (instance-regions.mjs).
+  if (region && !isRegionUnlocked(world, region, index)) return { open: false, reason: INSTANCE_REFUSALS.regionLocked }
   const at = index.order.indexOf(instance.id)
   if (at > 0 && progressOf(world, index.order[at - 1]).clears === 0) return { open: false, reason: INSTANCE_REFUSALS.closed }
   if (worldLevel(world.skills) < instance.opensAt) return { open: false, reason: INSTANCE_REFUSALS.level }
@@ -245,7 +250,7 @@ export function runContext(run, index) {
   const instance = index.byId.get(run.instance)
   const modifier = modifierAt(instance, run.tier, index)
   const boon = run.boon ? index.boonById.get(run.boon) ?? null : null
-  return { instance, room: instance.rooms[run.room], modifier, boon, bonuses: { ...runBonuses(boon, modifier), ...rematchBonuses(run) } }
+  return { instance, room: instance.rooms[run.room], modifier, boon, bonuses: { ...runBonuses(boon, modifier), ...rematchBonuses(run), ...regionBonuses(index, run.instance) } }
 }
 
 /** Whether a room's kind is fought. */

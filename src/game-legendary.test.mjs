@@ -67,10 +67,12 @@ test('the view state shows a room\'s relics, the active one, and the entries it 
   const { game } = await setup()
   const view = game.getView()
   assert.deepEqual(view.rooms[BANANA].relics, { owned: ['tidecall-conch', 'rimeheart'], active: 'tidecall-conch' })
-  assert.equal(view.legendary.relicCount, 28)
+  assert.equal(view.legendary.relicCount, 41)
   // The roadmap names every instance's relic too, found or not.
   const instanceRelics = ['amber-of-the-sleeping-queen', 'drowned-concordance', 'fang-of-the-coiled-wyrm',
-    'heart-of-the-last-pour', 'rimebitten-horn', 'tidewake-bell']
+    'heart-of-the-last-pour', 'rimebitten-horn', 'tidewake-bell', 'lens-of-the-last-keeper', 'coral-compass',
+    'smugglers-doubloon', 'seed-of-the-drowned-oak', 'boiler-heart-governor', 'silver-moon-rosary', 'thunderhead-ingot',
+    'tidecrown-of-the-deep']
   assert.deepEqual(Object.keys(view.legendary.entries).sort(),
     [...instanceRelics, 'labyrinth-cleaver', 'rimeheart', 'tidecall-conch'].sort())
   assert.deepEqual(view.legendary.entries.rimeheart.effect, { effect: 'staminaDrain', scope: 'party', amount: 0.05 })

@@ -178,3 +178,10 @@
   line-height: 1.3;
   pointer-events: none;
 }
+
+/* Regions: a switch above the map; a locked region's map is dimmed under its note. */
+.ac-roadmap-regions { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.ac-roadmap-regions[hidden], .ac-roadmap-locked[hidden] { display: none; }
+.ac-roadmap-region[data-locked='true'] { opacity: 0.7; }
+.ac-roadmap-locked { color: var(--ac-game-gold, #f2c14e); }
+.ac-roadmap-map[data-locked='true'] .ac-roadmap-art { filter: grayscale(0.6) brightness(0.55); }

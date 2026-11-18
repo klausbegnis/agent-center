@@ -5,6 +5,7 @@ import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
+import { waveRosterOf } from './instance-regions.mjs'
 import { rollLegendaryDrops } from './legendary-drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import {
@@ -151,7 +152,8 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     themeId: project.themeId,
     content: content.monsters,
     races: content.races,
-    bosses: content.bosses,
+    // The bosses of later regions are met only in their instances (instance-regions.mjs).
+    bosses: waveRosterOf(content),
     referencePartyHit,
     partySize,
     featuredRace: featuredRaceOf(world, content)

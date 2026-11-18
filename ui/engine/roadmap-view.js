@@ -150,6 +150,11 @@ function createInstanceCard(model, { actions, choices }) {
 export function createRoadmapView({ actions, base }) {
   const element = el('div', 'ac-roadmap')
   const head = el('section', 'ac-game-card ac-roadmap-head')
+  // The switch between regions, shown once there is more than one.
+  const regionSwitch = el('div', 'ac-bestiary-switch ac-roadmap-regions')
+  regionSwitch.setAttribute('role', 'group')
+  regionSwitch.setAttribute('aria-label', INSTANCES.regionsName)
+  const locked = el('p', 'ac-game-card-line ac-roadmap-locked')
   const title = el('h2', 'ac-game-card-title')
   const summary = el('p', 'ac-game-card-line ac-roadmap-summary')
   const complete = el('p', 'ac-game-card-line ac-roadmap-complete')
@@ -160,7 +165,7 @@ export function createRoadmapView({ actions, base }) {
   const markers = el('div', 'ac-roadmap-markers')
   figure.append(map, markers)
   const cooldowns = el('div', 'ac-roadmap-cooldowns')
-  head.append(title, summary, complete, figure, el('p', 'ac-game-card-line ac-muted', INSTANCES.mapNote), cooldowns)
+  head.append(regionSwitch, title, summary, locked, complete, figure, el('p', 'ac-game-card-line ac-muted', INSTANCES.mapNote), cooldowns)
   const list = el('div', 'ac-instance-list')
   const empty = el('p', 'ac-game-card-line', INSTANCES.noWorld)
   element.append(head, list, empty)
@@ -168,6 +173,31 @@ export function createRoadmapView({ actions, base }) {
   /** The room and tier chosen on each card, kept across redraws and across worlds. */
   const choices = new Map()
   let markersDrawn = ''
+  /** The region picked on the switch, and what was last drawn, to draw again on a pick. */
+  let regionId = null
+  let lastShown = null
+  let regionsDrawn = ''
+
+  function drawRegions(model) {
+    regionSwitch.hidden = model.regions.length === 0
+    const signature = JSON.stringify(model.regions)
+    if (signature === regionsDrawn) return
+    regionsDrawn = signature
+    regionSwitch.replaceChildren(...model.regions.map((region) => {
+      const node = el('button', 'ac-button ac-bestiary-switch-button ac-roadmap-region', region.text)
+      node.type = 'button'
+      node.dataset.key = `region:${region.id}`
+      node.dataset.locked = String(region.locked)
+      node.setAttribute('aria-pressed', String(region.pressed))
+      node.setAttribute('aria-label', region.label)
+      node.title = region.label
+      node.addEventListener('click', () => {
+        regionId = region.id
+        if (lastShown) view.update(lastShown)
+      })
+      return node
+    }))
+  }
 
   function drawMarkers(model) {
     const signature = JSON.stringify(model.markers)
@@ -192,22 +222,28 @@ export function createRoadmapView({ actions, base }) {
     }))
   }
 
-  return {
+  const view = {
     element,
     /**
      * @param {{ state: object, world: object | null, roomId: string | null }} shown the view state,
      *   the world picked above the tabs and its picked room
      */
-    update({ state, world, roomId }) {
+    update(shown) {
+      lastShown = shown
+      const { state, world, roomId } = shown
       const game = state.game
       const shownRooms = new Map(state.rooms.map((room) => [room.id, roomTitle(room)]))
       const names = (id) => shownRooms.get(id) ?? id.split('/').at(-1)
       const roomIds = (world?.roomIds ?? []).filter((id) => shownRooms.has(id))
-      const model = roadmapModel(game, world, { base, roomIds, roomId, names })
+      const model = roadmapModel(game, world, { base, roomIds, roomId, names, regionId })
       head.hidden = !model
       list.hidden = !model
       empty.hidden = Boolean(model)
       if (!model) return
+      drawRegions(model)
+      locked.hidden = !model.locked
+      locked.textContent = model.locked ?? ''
+      figure.dataset.locked = String(Boolean(model.locked))
       title.textContent = model.title
       summary.textContent = model.summary
       complete.hidden = !model.complete
@@ -228,4 +264,5 @@ export function createRoadmapView({ actions, base }) {
       if (list.childElementCount !== nodes.length || nodes.some((node, at) => list.children[at] !== node)) list.replaceChildren(...nodes)
     }
   }
+  return view
 }

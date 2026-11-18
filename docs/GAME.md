@@ -398,14 +398,14 @@ name, a flavour line, a colour and a picture in `ui/art/legendary/`:
   (`city`, checked). They drop from bosses, and a city's stall sells one now and then (see "The
   stall"); `relicsCityCanOffer(index, { cityId, ownedIds })` gives that city's relics a room does
   not own.
-- **Boss relics** (`boss-relic`, twelve): relics too, but each is the signature of one named boss
+- **Boss relics** (`boss-relic`, seventeen): relics too, but each is the signature of one named boss
   of `game/bosses.json` (`boss`, its id), drops only from that boss and is never sold.
-- **Legendary equipment** (`equipment`, twelve): a weapon, outfit or tool dropped only by its boss,
+- **Legendary equipment** (`equipment`, fifteen): a weapon, outfit or tool dropped only by its boss,
   made for a class (`class`) or, for a tool, a trade (`trade`), with a recipe. It lives in the
   chest like other gear (`legendary: true` on the item, its id its entry's id), is upgraded the
   same way, goes back to the chest on retirement and moves with a chest left behind. It is never
   salvaged or capped away, and a room never holds two of one.
-- **Instance relics** (`instance-relic`, six): relics too, each the reward of an instance's first
+- **Instance relics** (`instance-relic`, fourteen): relics too, each the reward of an instance's first
   clear (`instance`, its id; see "Instances"), never sold and never dropped.
 
 ### Effects
@@ -592,7 +592,7 @@ for that boss. The first boss already gives a level.
 | 2 | 5 | `legendaryPity` +15% |
 | 3 | 15 | `damage` +0.5% against bosses and legendary bosses |
 | 4 | 30 | `legendaryPity` +15% |
-| 5 | 55 (all) | `damage` +0.5% against bosses and legendary bosses, `legendaryPity` +20% |
+| 5 | 55 | `damage` +0.5% against bosses and legendary bosses, `legendaryPity` +20% |
 
 ### As effects
 
@@ -607,7 +607,7 @@ caps. A level reached during an advance counts from the next one, as a relic tha
 A world keeps `bestiary: { races, bosses, others?, filled? }` from its first advance: a race's (and
 the others') counter is `[normal, veteran, elite, champion, boss, legendary, firstDay]`, a boss's
 `[beaten, legendary, firstDay]`, `filled` the kills given by the back-fill. Points, levels and ranks
-are worked out from them and never stored. Twenty races and 55 bosses fit in under 2 KB. `migrate`
+are worked out from them and never stored. Twenty races and 71 bosses fit in under 2 KB. `migrate`
 drops counters of another shape and keeps `filled`; `cleanSave` refuses a race or boss the content
 does not have, a list of the wrong length or with a number that is not a whole count, a counter
 with no kill (or no win), more legendary wins than wins, a `filled` that is not a whole count, an
@@ -626,7 +626,7 @@ The bridge turns each into a `bestiary` event of `recent` (see "View state").
 
 ## Instances
 
-A road of six dungeons (`game/instances.json`, checked by `src/game/instance-content.mjs` and
+A road of dungeons, six in its first region and eight in the second (`game/instances.json`, checked by `src/game/instance-content.mjs` and
 `instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
 and `instance-rewards.mjs`, its numbers `instance-constants.mjs`). A room sends its party into an
 open instance at a tier; while inside, its wave, wave kills and standing monster are frozen, and its
@@ -766,6 +766,65 @@ A clear's boss does not roll for a city's relic as a wave's boss does: a run mee
 a working day, and with the waves' pity that roll handed a light user every city relic within weeks.
 No roll ever gives a second copy (`rollBossItem` and the vault pick only what the room lacks).
 Materials and coins go to the world as they are found, so a run that fails keeps them.
+
+### Regions
+
+The road goes on past the first region (`src/game/instance-regions.mjs`). `region` in
+`game/instances.json` is the first one, the Old Road, and holds the instances without a `region` key;
+each entry of `regions` comes `after` a region before it and holds the instances that name it, listed
+together after the region before. A region has its own name, title, map size and pictures, and may
+raise its rooms' plain monsters by `rankStep` ranks (normal to veteran, veteran to elite; the elite's
+chamber and the boss keep theirs). A third region is only data and art: a `regions` entry, its
+instances, its bosses in `game/bosses.json`, its relics and items in `game/legendary.json` and its
+pictures.
+
+- **Unlock.** A later region opens when every instance of the region it comes after has been cleared
+  once; until then its instances are under fog and refuse a room (`its region is not open yet`).
+  Inside, its instances open one after another as on the first road, each at its World Lv.
+- **The Roadmap** gains a switch between regions above the map. It opens on the furthest open region;
+  a locked one shows its map dimmed with what opens it ("It opens when The Old Road is complete: 4 of 6
+  cleared there"). Clearing a whole region gives its title.
+
+The second region, **The Gloaming Isles** (title **Islewarden**, `rankStep` 1), a night sea chart:
+
+| | Instance | Races | Opens at World Lv | Boss | Elite | Third room | Relic |
+|---|---|---|---|---|---|---|---|
+| 7 | Saltreach Lighthouse | skeletons, ghosts, lizardfolk | 60 | Keeper Ondrel, the Drowned Lamp | Grisk Saltjaw, the Wrecker | trap, resilience | Lens of the Last Keeper |
+| 8 | The Coral Labyrinth | minotaurs, slimes, elementals | 72 | Hathra, the Coral Horn | Murkle, the Tidepool Glutton | puzzle, Lore | The Coral Compass |
+| 9 | The Smugglers' Warren | goblins, humans, orcs | 86 | Corvina Vale, the Tide Broker | Snatchgut, the Bilge King | trap, luck | The Smugglers' Doubloon |
+| 10 | Gloomroot Grove | treants, spiders, insects | 100 | Old Brackenmere, the Drowned Oak | Lacewire, the Reed Weaver | trap, medicine | Seed of the Drowned Oak |
+| 11 | The Brass Leviathan | golems, elementals | 116 | Hullgrind, the Boiler Heart | Sparkwhirl, the Steam Wraith | puzzle, Engineering | The Boiler-Heart Governor |
+| 12 | Moonwake Abbey | werewolves, vampires, ghosts | 134 | Abbess Morwen, the Silver Fang | Cantor Lisle, the Night Choir | puzzle, Arcana | The Silver Moon Rosary |
+| 13 | The Storm Anvil | ogres, orcs, trolls | 154 | Thundergut, the Storm Smith | Varka Ironjaw, the Spark Bearer | trap, strength | The Thunderhead Ingot |
+| 14 | The Abyssal Gate | dragons, demons, lizardfolk | 176 | Nhalazor, the Deep Tide | Vashtiel, the Gate Warden | puzzle, Command | Tidecrown of the Deep |
+
+Its sixteen bosses and elites are new named bosses with fixed looks. Each instance has its relic
+(first clear), and each boss guards an item of its own that drops only from it, in its instance, at the
+usual instance odds (10% + 1% a tier, plus pity and rematches):
+
+| Item | Kind | Boss | Effect |
+|---|---|---|---|
+| Lens of the Last Keeper | instance relic | (Saltreach Lighthouse) | `runeCircle` +8% |
+| The Coral Compass | instance relic | (The Coral Labyrinth) | `restTime` 8 s |
+| The Smugglers' Doubloon | instance relic | (The Smugglers' Warren) | `killMaterials` +5% |
+| Seed of the Drowned Oak | instance relic | (Gloomroot Grove) | `gatherXp` +5% |
+| The Boiler-Heart Governor | instance relic | (The Brass Leviathan) | `skillXp` +5% Engineering, every character |
+| The Silver Moon Rosary | instance relic | (Moonwake Abbey) | `raceDamage` +5% against werewolves, vampires and ghosts |
+| The Thunderhead Ingot | instance relic | (The Storm Anvil) | `critDamage` +20% |
+| Tidecrown of the Deep | instance relic | (The Abyssal Gate) | `damage` +6% against bosses and legendary bosses |
+| Ondrel's Storm Lantern | boss relic | Keeper Ondrel | `gatherHours` +15 min |
+| The Coralhorn | boss relic | Hathra | `affixWeakening` 15% |
+| The Tide Broker's Ledger | boss relic | Corvina Vale | `upgradeCost` 4% |
+| Brackenmere's Bough-Axe | tool, woodcutting | Old Brackenmere | `gatherYield` +12% logs |
+| The Boiler-Rune Chisel | tool, runecraft | Hullgrind | `gatherYield` +12% runes |
+| Morwen's Moon-Bell | boss relic | Abbess Morwen | `staminaPerKill` 3% |
+| The Stormsmith's Hammer | weapon, physical | Thundergut | `skillXp` +10% Forge, the holder's |
+| The Abyssal Pearl | boss relic | Nhalazor | `itemDrop` +12% |
+
+Every relic stays at or under the strongest relic of its type that was already there, so the caps
+tests hold as they were; the three pieces of equipment follow the first tools (12% of one material)
+and the Moonwane Scepter (10% of one work skill's experience), in work skills and materials nothing
+else held.
 
 ### Rematches
 
@@ -1279,7 +1338,10 @@ its race's rig, its extras, and all eight colours, boss-only parts allowed) that
 shown as "Morvash, the Bog Tyrant". Each project meets the roster in an order of its own (the
 bosses sorted by a hash of world, project and boss id); the boss of a boss wave is the
 `wave / BOSS_EVERY`-th of that order, wrapping round. Waves never go down, so a project meets
-every boss once before any comes back: with 55 bosses, after 550 waves.
+every boss once before any comes back: with 55 bosses, after 550 waves. The sixteen bosses and
+elites of the second region (see "Regions") are in the roster too, so the bestiary counts them, but
+the waves never bring them (`waveRosterOf` in `instance-regions.mjs`): they and their items are met
+only in their instances.
 
 ### Which look a monster gets
 
@@ -2491,6 +2553,8 @@ tokens alone make them.
 The fourth policy, against the scenarios as usual (the world levels are the same: tokens alone
 make them). Instances change no balance target (59 of 63 pass; the four that fail are the
 hit splits and the upgrade pace under "Balance"), and a player who never enters an instance plays exactly as before.
+The best tiers and best rematches below are the first region's instances; the runs, time inside and
+what it pays count every run, the second region's included.
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
 |---|---|---|---|---|---|---|
@@ -2501,8 +2565,8 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 | | runs a year | clears | failed | best tiers | time inside | materials/h inside | on waves (plain) | coins/h inside |
 |---|---|---|---|---|---|---|---|---|
 | light | 264 | 151 | 43% | 14/7/12/12/8/9 | 87% | 701 | 805 | 157 |
-| medium | 1,244 | 619 | 50% | 16/7/16/15/10/10 | 90% | 11.8 k | 10.6 k | 2.1 k |
-| heavy | 2,736 | 1,331 | 51% | 20/7/18/18/14/10 | 89% | 38.8 T | 41.8 T | 4.9 T |
+| medium | 1,215 | 639 | 47% | 13/7/15/13/11/10 | 93% | 13.0 k | 10.6 k | 3.3 k |
+| heavy | 2,719 | 1,319 | 51% | 18/6/17/16/12/10 | 94% | 41.9 T | 41.8 T | 8.3 T |
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
@@ -2516,13 +2580,32 @@ before climbing tiers), and tries a lost one again once the world's level is a t
 | | rematches won | lost | best rematch, road order | first I won | first V | first X |
 |---|---|---|---|---|---|---|
 | light | 14 | 20 | 4/2/4/3/1/- | day 10 | - | - |
-| medium | 30 | 81 | 7/3/7/7/3/3 | day 2 | day 51 | - |
-| heavy | 36 | 160 | 8/3/8/7/6/4 | day 1 | day 16 | - |
+| medium | 49 | 85 | 7/3/6/6/4/4 | day 2 | day 51 | - |
+| heavy | 80 | 260 | 9/3/7/8/6/5 | day 1 | day 16 | - |
 
 - **Rematches are the long ladder.** Nobody reaches Rematch X in a year: the world's level opens the
   ladder quickly for a heavy user, but a rematch's fixed tier and tougher boss make each step above V
   a wall the party's own gear and relics must climb. The policy's best tiers and the tables above moved
   a little because rematch runs share the time inside; the balance targets are unchanged (54 of 59).
+
+The second region, with the same policy (a road instance not cleared yet comes first, so it pushes
+into the Gloaming Isles as soon as each opens):
+
+| | opens | lighthouse | labyrinth | warren | grove | leviathan | abbey | anvil | gate | cleared in the year |
+|---|---|---|---|---|---|---|---|---|---|---|
+| light | day 319 | - | - | - | - | - | - | - | - | 0 of 8 |
+| medium | day 50 | day 82 | 121 | 169 | 185 | 222 | 262 | 310 | 341 | 8 of 8 |
+| heavy | day 10 | day 17 | 24 | 33 | 38 | 46 | 54 | 65 | 73 | 8 of 8 |
+
+- **A long-term goal.** A medium user reaches the second region in its third month and finishes it in
+  the last weeks of the year; a light user completes the first road near the end of the year and,
+  at World Lv 49, waits for the Saltreach Lighthouse's 60 in its second; a heavy one crosses it in two
+  months. Its levels (60 to 176) were set against the simulator's world levels: a medium world is at
+  62 on day 90 and 191 on day 365.
+- **Collection.** With the second region's sixteen items, a medium room owns 40 and 32 of 56 legendary
+  items after a year (29 and 17 with the first region alone), a heavy one 41, 46 and 39; a light one
+  is unchanged (20).
+  Its bosses never come on the waves, so a heavy user cannot collect their items before it gets there.
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).

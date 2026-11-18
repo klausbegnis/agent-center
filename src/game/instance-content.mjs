@@ -2,6 +2,7 @@
 // and the instances along it, each with its races, the world level it opens at, its art, its six
 // rooms, its boss and elite from the roster, its signature relic and its vault. Boons and tier
 // modifiers are checked by instance-boons.mjs. Pure: problems come back as text, nothing is thrown.
+import { LATER_REGION_KEYS, indexRegions, mapSizeOf, validateRegions } from './instance-regions.mjs'
 import { ATTRIBUTES, MATERIALS, WORK_SKILLS } from './skills.mjs'
 
 /** The rooms of every instance, in order. The third is a trap or a puzzle. */
@@ -11,10 +12,10 @@ const ROOM_ORDER = [['entrance'], ['hall'], ['trap', 'puzzle'], ['elite'], ['vau
 export const FIGHT_ROOMS = Object.freeze(['entrance', 'hall', 'elite', 'boss'])
 export const CHECK_ROOMS = Object.freeze(['trap', 'puzzle'])
 
-const TOP_KEYS = ['region', 'instances', 'boons', 'modifiers']
+const TOP_KEYS = ['region', 'regions', 'instances', 'boons', 'modifiers']
 const INSTANCE_KEYS = [
   'id', 'name', 'races', 'opensAt', 'banner', 'card', 'alt', 'route', 'map', 'boss', 'elite', 'relic', 'loot',
-  'vault', 'rooms', 'modifiers'
+  'vault', 'rooms', 'modifiers', 'region'
 ]
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 /** Art is served with the UI, so the panel, the tab and the external view all reach it. */
@@ -45,24 +46,24 @@ function checkPoint(name, point, map) {
   return unknownKeys(name, point, ['x', 'y'])
 }
 
-function checkRegion(region) {
-  if (!isObject(region)) return ['"region" must be an object']
-  const problems = unknownKeys('region', region, ['id', 'name', 'title', 'map', 'maps'])
-  if (typeof region.id !== 'string' || !KEBAB_CASE.test(region.id)) problems.push('region: "id" must be in kebab-case')
+function checkRegion(region, name = 'region', keys = ['id', 'name', 'title', 'map', 'maps']) {
+  if (!isObject(region)) return [`"${name}" must be an object`]
+  const problems = unknownKeys(name, region, keys)
+  if (typeof region.id !== 'string' || !KEBAB_CASE.test(region.id)) problems.push(`${name}: "id" must be in kebab-case`)
   for (const key of ['name', 'title']) {
-    if (!isShortText(region[key])) problems.push(`region: "${key}" must be text of at most ${TEXT_LIMIT} characters`)
+    if (!isShortText(region[key])) problems.push(`${name}: "${key}" must be text of at most ${TEXT_LIMIT} characters`)
   }
   const size = region.map
   if (!isObject(size) || !Number.isInteger(size.width) || !Number.isInteger(size.height) || size.width < 1 || size.height < 1) {
-    problems.push('region: "map" must be { width, height } in whole pixels')
+    problems.push(`${name}: "map" must be { width, height } in whole pixels`)
   }
   const maps = region.maps
   const isMap = (map) => isObject(map) && Number.isInteger(map.cleared) && map.cleared >= 0 && isArt(map.art) &&
     isShortText(map.alt, ALT_LIMIT) && unknownKeys('', map, ['cleared', 'art', 'alt']).length === 0
   if (!Array.isArray(maps) || maps.length === 0 || !maps.every(isMap)) {
-    problems.push('region: "maps" must list { cleared, art, alt }, art a PNG under ui/instances/')
+    problems.push(`${name}: "maps" must list { cleared, art, alt }, art a PNG under ui/instances/`)
   } else if (maps[0].cleared !== 0 || maps.some((map, at) => at > 0 && map.cleared <= maps[at - 1].cleared)) {
-    problems.push('region: "maps" must start at 0 cleared and rise')
+    problems.push(`${name}: "maps" must start at 0 cleared and rise`)
   }
   return problems
 }
@@ -167,7 +168,7 @@ function checkInstance(entry, index, context) {
   return [
     ...problems,
     ...checkArt(name, entry),
-    ...checkPoint(name, entry.map, context.mapSize),
+    ...checkPoint(name, entry.map, mapSizeOf(context.data, entry)),
     ...checkBosses(name, entry, context),
     ...checkVault(name, entry, context),
     ...checkRooms(name, entry.rooms)
@@ -190,11 +191,12 @@ export function validateInstances(data, { races, bosses, legendary } = {}) {
   }
   const problems = Object.keys(data).filter((key) => !TOP_KEYS.includes(key)).map((key) => `"${key}" is not a known key`)
   problems.push(...checkRegion(data.region))
+  problems.push(...validateRegions(data, (region, name) => checkRegion(region, name, LATER_REGION_KEYS)))
   const context = {
     seenIds: new Set(),
     bossesUsed: new Set(),
     lastOpensAt: 1,
-    mapSize: data.region?.map,
+    data,
     raceIds: new Set((races?.races ?? []).map((race) => race.id)),
     bossById: new Map((bosses?.bosses ?? []).map((boss) => [boss.id, boss])),
     legendaryById: new Map((legendary?.legendary ?? []).map((entry) => [entry.id, entry])),
@@ -206,7 +208,7 @@ export function validateInstances(data, { races, bosses, legendary } = {}) {
 }
 
 /**
- * @typedef {{ region: object, instances: object[], byId: Map<string, object>, order: string[],
+ * @typedef {{ region: object, regions: object[], instances: object[], byId: Map<string, object>, order: string[],
  *   byRelic: Map<string, object>, boons: object[], boonById: Map<string, object>,
  *   modifierById: Map<string, object> }} InstanceIndex
  */
@@ -223,6 +225,8 @@ export function indexInstances(data) {
   const instances = data.instances
   return {
     region: data.region,
+    // Every region of the road, the first included, with its instances (instance-regions.mjs).
+    regions: indexRegions(data),
     instances,
     byId: new Map(instances.map((entry) => [entry.id, entry])),
     order: instances.map((entry) => entry.id),

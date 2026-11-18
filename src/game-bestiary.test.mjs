@@ -70,10 +70,10 @@ test('the view state carries the bestiary\'s races and bosses once, and each wor
   const { game } = await setup()
   const view = game.getView()
   assert.equal(view.bestiary.races.length, 20)
-  assert.equal(view.bestiary.bosses.length, 55)
+  assert.equal(view.bestiary.bosses.length, 71)
   assert.ok(view.bestiary.races.every((race) => race.look.rig && race.name))
   const bestiary = view.worlds[0].bestiary
-  assert.deepEqual([bestiary.discovered, bestiary.raceCount, bestiary.beaten, bestiary.bossCount], [1, 20, 1, 55])
+  assert.deepEqual([bestiary.discovered, bestiary.raceCount, bestiary.beaten, bestiary.bossCount], [1, 20, 1, 71])
   const goblin = bestiary.races.find((race) => race.id === 'goblin')
   assert.deepEqual([goblin.kills, goblin.level, goblin.from, goblin.to], [13, 4, 13, 20])
   assert.equal(bestiary.bosses.find((boss) => boss.id === 'skrix').legendary, 1)
@@ -97,5 +97,5 @@ test('a page on another machine sees the bestiary as it is', async () => {
   const { game } = await setup()
   const shown = createNetworkView()({ rooms: [], game: game.getView() }).game
   assert.deepEqual(shown.worlds[0].bestiary, game.getView().worlds[0].bestiary)
-  assert.equal(shown.bestiary.bosses.length, 55)
+  assert.equal(shown.bestiary.bosses.length, 71)
 })

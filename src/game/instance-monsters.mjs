@@ -12,6 +12,7 @@ import {
   INSTANCE_TIER_LEVELS,
   INSTANCE_VETERAN_ONE_IN
 } from './instance-constants.mjs'
+import { steppedRank } from './instance-regions.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { generateMonster, rigIdOf } from './races.mjs'
 
@@ -37,12 +38,12 @@ export function fightsIn(kind, bonuses) {
   return ['entrance', 'elite', 'boss'].includes(kind) ? 1 : 0
 }
 
-/** A room's monster's kind and rank, before its looks. */
-function shapeOf(kind, seed) {
+/** A room's monster's kind and rank, before its looks; a later region's plain monsters rank higher. */
+function shapeOf(kind, seed, rankStep = 0) {
   if (kind === 'boss') return { kind: 'boss', rank: 'boss' }
   if (kind === 'elite') return { kind: ROOM_KINDS[hashOf(`${seed}|kind`) % ROOM_KINDS.length], rank: INSTANCE_ELITE_RANK }
   const isVeteran = kind === 'hall' && hashOf(`${seed}|veteran`) % INSTANCE_VETERAN_ONE_IN === 0
-  return { kind: ROOM_KINDS[hashOf(`${seed}|kind`) % ROOM_KINDS.length], rank: isVeteran ? 'veteran' : 'normal' }
+  return { kind: ROOM_KINDS[hashOf(`${seed}|kind`) % ROOM_KINDS.length], rank: steppedRank(isVeteran ? 'veteran' : 'normal', rankStep) }
 }
 
 /**
@@ -57,7 +58,7 @@ export function healthShare(roomKind, monsterKind, rank) {
 export function roomHealthShare(roomKind, bonuses, seedOf) {
   let share = 0
   for (let fight = 0; fight < fightsIn(roomKind, bonuses); fight++) {
-    const { kind, rank } = shapeOf(roomKind, seedOf(fight))
+    const { kind, rank } = shapeOf(roomKind, seedOf(fight), bonuses.rankStep)
     share += healthShare(roomKind, kind, rank)
   }
   return share
@@ -111,7 +112,7 @@ function appearanceOf({ roomKind, rank, instance, content, seed }) {
  * @returns {object} a monster the fight plays like a wave's
  */
 export function instanceMonster({ instance, roomKind, seed, level, partySize, bonuses, content, referencePartyHit }) {
-  const { kind, rank } = shapeOf(roomKind, seed)
+  const { kind, rank } = shapeOf(roomKind, seed, bonuses.rankStep)
   const partyShare = Math.min(Math.max(1, partySize), REFERENCE_PARTY_SIZE) / REFERENCE_PARTY_SIZE
   // A rematch's boss is tougher than its share says (instance-rematch.mjs); its time is not longer.
   const bossHp = roomKind === 'boss' ? bonuses.bossHp ?? 1 : 1

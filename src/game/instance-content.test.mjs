@@ -12,10 +12,11 @@ const problemsWith = (change) => {
 }
 const mentions = (problems, text) => assert.ok(problems.some((problem) => problem.includes(text)), problems.join('\n'))
 
-test('the shipped instances are valid, six along the road', () => {
+test('the shipped instances are valid, six along the first road and eight in the second region', () => {
   const data = readJson('instances.json')
   assert.deepEqual(validateInstances(data, others), [])
-  assert.equal(data.instances.length, 6)
+  assert.equal(data.instances.filter((entry) => !entry.region).length, 6)
+  assert.equal(data.instances.filter((entry) => entry.region === 'gloaming-isles').length, 8)
 })
 
 test('every picture the instances name is shipped with the UI', () => {

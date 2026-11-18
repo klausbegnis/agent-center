@@ -1437,6 +1437,430 @@
         "hair": "#8a7a4a",
         "eye": "#7ae05a"
       }
+    },
+    {
+      "id": "keeper-ondrel",
+      "name": "Keeper Ondrel",
+      "epithet": "the Drowned Lamp",
+      "race": "ghost",
+      "parts": {
+        "body": "ghost-wraith",
+        "face": "ghost-face-glare",
+        "extras": [
+          "ghost-lantern",
+          "ghost-tatters"
+        ]
+      },
+      "colours": {
+        "skin": "#9ad8c8",
+        "cloth": "#2e4a5a",
+        "metal": "#8e959e",
+        "leather": "#3a3a40",
+        "accent": "#5ef0a8",
+        "bone": "#e8dcc0",
+        "hair": "#c8e8e0",
+        "eye": "#7ff0c0"
+      }
+    },
+    {
+      "id": "grisk-saltjaw",
+      "name": "Grisk Saltjaw",
+      "epithet": "the Wrecker",
+      "race": "lizardfolk",
+      "parts": {
+        "head": "lizard-frilled",
+        "torso": "medium-scaled",
+        "legs": "medium-digitigrade",
+        "outfit": "leather",
+        "headgear": "bandana",
+        "held": "club",
+        "extras": [
+          "lizard-tail",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#4a8a7a",
+        "cloth": "#7a2a2a",
+        "metal": "#8e959e",
+        "leather": "#4a3426",
+        "accent": "#e8b040",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0d040"
+      }
+    },
+    {
+      "id": "hathra",
+      "name": "Hathra",
+      "epithet": "the Coral Horn",
+      "race": "minotaur",
+      "parts": {
+        "head": "bull-horned",
+        "torso": "large-hulking",
+        "legs": "large-hooves",
+        "outfit": "chain",
+        "headgear": "none",
+        "held": "greataxe",
+        "extras": [
+          "warpaint",
+          "chains",
+          "bone-necklace"
+        ]
+      },
+      "colours": {
+        "skin": "#8a5a48",
+        "cloth": "#2a6a7a",
+        "metal": "#c88a6a",
+        "leather": "#4a3020",
+        "accent": "#ff8f7a",
+        "bone": "#f0d8c0",
+        "hair": "#3a2418",
+        "eye": "#ff9a5a"
+      }
+    },
+    {
+      "id": "murkle",
+      "name": "Murkle",
+      "epithet": "the Tidepool Glutton",
+      "race": "slime",
+      "parts": {
+        "body": "slime-dome",
+        "face": "slime-face-grin",
+        "extras": [
+          "slime-bubbles",
+          "slime-drops"
+        ]
+      },
+      "colours": {
+        "skin": "#4ac0c8",
+        "cloth": "#2a5a6a",
+        "metal": "#8e959e",
+        "leather": "#3a3a40",
+        "accent": "#f0a0c0",
+        "bone": "#e8dcc0",
+        "hair": "#2a8a9a",
+        "eye": "#ffffff"
+      }
+    },
+    {
+      "id": "corvina-vale",
+      "name": "Corvina Vale",
+      "epithet": "the Tide Broker",
+      "race": "human",
+      "parts": {
+        "head": "human-long-hair",
+        "torso": "medium-lean",
+        "legs": "medium-stance",
+        "outfit": "noble-coat",
+        "headgear": "great-crown",
+        "held": "dagger",
+        "extras": [
+          "cape"
+        ]
+      },
+      "colours": {
+        "skin": "#d8a888",
+        "cloth": "#2a3a6a",
+        "metal": "#d8b050",
+        "leather": "#4a2a1a",
+        "accent": "#c83040",
+        "bone": "#e8dcc0",
+        "hair": "#1a1a24",
+        "eye": "#3a6a9a"
+      }
+    },
+    {
+      "id": "snatchgut",
+      "name": "Snatchgut",
+      "epithet": "the Bilge King",
+      "race": "goblin",
+      "parts": {
+        "head": "goblin-warty",
+        "torso": "small-potbelly",
+        "legs": "small-bowed",
+        "outfit": "rags",
+        "headgear": "bandana",
+        "held": "torch",
+        "extras": [
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#7a9a52",
+        "cloth": "#6a3a2a",
+        "metal": "#8e959e",
+        "leather": "#3a2a1a",
+        "accent": "#e8a030",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#f0e040"
+      }
+    },
+    {
+      "id": "brackenmere",
+      "name": "Old Brackenmere",
+      "epithet": "the Drowned Oak",
+      "race": "treant",
+      "parts": {
+        "roots": "treant-roots-spread",
+        "trunk": "treant-trunk-hollow",
+        "crown": "treant-crown-leafy",
+        "face": "treant-face-scowl",
+        "extras": [
+          "treant-moss",
+          "treant-fireflies"
+        ]
+      },
+      "colours": {
+        "skin": "#4a3a30",
+        "cloth": "#3a5a4a",
+        "metal": "#8e959e",
+        "leather": "#3a3028",
+        "accent": "#e0c050",
+        "bone": "#e8dcc0",
+        "hair": "#3a6a3a",
+        "eye": "#f0e070"
+      }
+    },
+    {
+      "id": "lacewire",
+      "name": "Lacewire",
+      "epithet": "the Reed Weaver",
+      "race": "spider",
+      "parts": {
+        "legs": "spider-legs-long",
+        "abdomen": "spider-abdomen-striped",
+        "head": "spider-head-crowned",
+        "extras": [
+          "spider-web",
+          "spider-glow-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#3a4a3a",
+        "cloth": "#5a6a4a",
+        "metal": "#8e959e",
+        "leather": "#2a2a24",
+        "accent": "#c8d070",
+        "bone": "#e8e8d0",
+        "hair": "#6a7a4a",
+        "eye": "#c0f070"
+      }
+    },
+    {
+      "id": "hullgrind",
+      "name": "Hullgrind",
+      "epithet": "the Boiler Heart",
+      "race": "golem",
+      "parts": {
+        "legs": "golem-legs-pillars",
+        "torso": "golem-torso-barrel",
+        "arms": "golem-arms-fists",
+        "head": "golem-head-dome",
+        "extras": [
+          "golem-bands",
+          "golem-cracks"
+        ]
+      },
+      "colours": {
+        "skin": "#b08040",
+        "cloth": "#5a3a2a",
+        "metal": "#d8a048",
+        "leather": "#4a3020",
+        "accent": "#ff6a2a",
+        "bone": "#e8dcc0",
+        "hair": "#6a4a2a",
+        "eye": "#ffb040"
+      }
+    },
+    {
+      "id": "sparkwhirl",
+      "name": "Sparkwhirl",
+      "epithet": "the Steam Wraith",
+      "race": "elemental",
+      "parts": {
+        "body": "elemental-vortex",
+        "face": "elemental-face-cyclops",
+        "extras": [
+          "elemental-sparks",
+          "elemental-gusts"
+        ]
+      },
+      "colours": {
+        "skin": "#c8d8e0",
+        "cloth": "#5a6a7a",
+        "metal": "#8e959e",
+        "leather": "#3a3a40",
+        "accent": "#ffb040",
+        "bone": "#e8dcc0",
+        "hair": "#a0b8c8",
+        "eye": "#ff8a3a"
+      }
+    },
+    {
+      "id": "abbess-morwen",
+      "name": "Abbess Morwen",
+      "epithet": "the Silver Fang",
+      "race": "werewolf",
+      "parts": {
+        "head": "wolf-grizzled",
+        "torso": "large-furred",
+        "legs": "large-digitigrade",
+        "outfit": "rags",
+        "headgear": "none",
+        "held": "skull-staff",
+        "extras": [
+          "glowing-eyes",
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#a8a8b8",
+        "cloth": "#3a2a4a",
+        "metal": "#d8e0f0",
+        "leather": "#3a2a2a",
+        "accent": "#c8d4f0",
+        "bone": "#e8e8f0",
+        "hair": "#d0d0d8",
+        "eye": "#c8e0ff"
+      }
+    },
+    {
+      "id": "cantor-lisle",
+      "name": "Cantor Lisle",
+      "epithet": "the Night Choir",
+      "race": "vampire",
+      "parts": {
+        "head": "vampire-widows-peak",
+        "torso": "medium-lean",
+        "legs": "medium-straight",
+        "outfit": "robe",
+        "headgear": "hood",
+        "held": "staff",
+        "extras": [
+          "bat-wings"
+        ]
+      },
+      "colours": {
+        "skin": "#d8d0d8",
+        "cloth": "#4a1a3a",
+        "metal": "#a8a8b8",
+        "leather": "#2a1a1a",
+        "accent": "#a04070",
+        "bone": "#e8dcc0",
+        "hair": "#1a1a24",
+        "eye": "#ff4a6a"
+      }
+    },
+    {
+      "id": "thundergut",
+      "name": "Thundergut",
+      "epithet": "the Storm Smith",
+      "race": "ogre",
+      "parts": {
+        "head": "ogre-underbite",
+        "torso": "large-hulking",
+        "legs": "large-stance",
+        "outfit": "leather",
+        "headgear": "none",
+        "held": "hammer",
+        "extras": [
+          "warpaint",
+          "chains"
+        ]
+      },
+      "colours": {
+        "skin": "#8a8a6a",
+        "cloth": "#3a4a6a",
+        "metal": "#a0b8e0",
+        "leather": "#5a3a20",
+        "accent": "#7ab8ff",
+        "bone": "#e8dcc0",
+        "hair": "#3a3028",
+        "eye": "#ffe060"
+      }
+    },
+    {
+      "id": "varka-ironjaw",
+      "name": "Varka Ironjaw",
+      "epithet": "the Spark Bearer",
+      "race": "orc",
+      "parts": {
+        "head": "orc-scarred",
+        "torso": "medium-broad",
+        "legs": "medium-stance",
+        "outfit": "chain",
+        "headgear": "horned-helm",
+        "held": "mace-shield",
+        "extras": [
+          "warpaint"
+        ]
+      },
+      "colours": {
+        "skin": "#6a8a4a",
+        "cloth": "#6a2a1a",
+        "metal": "#9aa0aa",
+        "leather": "#4a3020",
+        "accent": "#ff9a30",
+        "bone": "#e8dcc0",
+        "hair": "#2e2622",
+        "eye": "#ffb030"
+      }
+    },
+    {
+      "id": "nhalazor",
+      "name": "Nhalazor",
+      "epithet": "the Deep Tide",
+      "race": "dragon",
+      "parts": {
+        "body": "dragon-body-rearing",
+        "head": "dragon-head-frilled",
+        "wings": "dragon-wings-tattered",
+        "tail": "dragon-tail-spade",
+        "extras": [
+          "dragon-belly-glow",
+          "dragon-scales"
+        ]
+      },
+      "colours": {
+        "skin": "#2a6a7a",
+        "cloth": "#1a3a4a",
+        "metal": "#8e959e",
+        "leather": "#2a3038",
+        "accent": "#3ad0c0",
+        "bone": "#d8e8e0",
+        "hair": "#1a4a5a",
+        "eye": "#f0b040"
+      }
+    },
+    {
+      "id": "vashtiel",
+      "name": "Vashtiel",
+      "epithet": "the Gate Warden",
+      "race": "demon",
+      "parts": {
+        "head": "demon-ram",
+        "torso": "medium-broad",
+        "legs": "medium-digitigrade",
+        "outfit": "plate",
+        "headgear": "none",
+        "held": "scythe",
+        "extras": [
+          "demon-wings",
+          "glowing-eyes"
+        ]
+      },
+      "colours": {
+        "skin": "#5a3a6a",
+        "cloth": "#2a1a3a",
+        "metal": "#6a7a8a",
+        "leather": "#2a1a1a",
+        "accent": "#8a6aff",
+        "bone": "#e8dcc0",
+        "hair": "#1a1424",
+        "eye": "#c0a0ff"
+      }
     }
   ]
 }

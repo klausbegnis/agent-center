@@ -7,8 +7,9 @@ import { TICK_SECONDS } from './constants.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { roomTimeLimit } from './instance-fight.mjs'
 import { fightsIn, runLevel } from './instance-monsters.mjs'
+import { isRegionComplete, isRegionUnlocked, regionOfInstance } from './instance-regions.mjs'
 import { REMATCH_TIERS, bestRematch, rematchOpensAt, rematchTier } from './instance-rematch.mjs'
-import { cooldownOf, enterProblem, highestTier, openness, progressOf, roomInside, runContext } from './instance-run.mjs'
+import { INSTANCE_REFUSALS, cooldownOf, enterProblem, highestTier, openness, progressOf, roomInside, runContext } from './instance-run.mjs'
 import { worldLevel } from './progression.mjs'
 
 const MS_PER_TICK = TICK_SECONDS * 1000
@@ -22,7 +23,7 @@ function stateOf(world, instance, index) {
   const open = openness(world, instance, index)
   if (roomInside(world, instance.id)) return 'inside'
   if (open.open) return 'open'
-  return open.reason === 'the road to it is not cleared yet' ? 'hidden' : 'locked'
+  return open.reason === INSTANCE_REFUSALS.closed || open.reason === INSTANCE_REFUSALS.regionLocked ? 'hidden' : 'locked'
 }
 
 /**
@@ -54,9 +55,11 @@ function nextRematchOf(worldId, world, instance, index, progress) {
 function instanceView(worldId, world, instance, { index, owned }) {
   const progress = progressOf(world, instance.id)
   const inside = roomInside(world, instance.id)
+  const state = stateOf(world, instance, index)
   return {
     id: instance.id,
-    state: stateOf(world, instance, index),
+    region: regionOfInstance(index, instance.id)?.id ?? null,
+    state,
     runs: progress.runs,
     clears: progress.clears,
     bestTier: progress.bestTier,
@@ -67,7 +70,8 @@ function instanceView(worldId, world, instance, { index, owned }) {
     relicFound: owned.has(instance.relic),
     roomInside: inside,
     roomIndex: inside ? world.projects[inside].run.room : null,
-    entry: entriesOf(worldId, world, instance, index)
+    // Under fog every room has the same answer, so a hidden instance sends none: the view stays small.
+    entry: state === 'hidden' ? {} : entriesOf(worldId, world, instance, index)
   }
 }
 
@@ -84,9 +88,24 @@ export function worldInstancesView(worldId, world, content) {
   if (!index) return null
   const owned = new Set(Object.values(world.projects).flatMap((project) => project.legendary?.relics ?? []))
   const list = index.instances.map((instance) => instanceView(worldId, world, instance, { index, owned }))
-  const cleared = list.filter((entry) => entry.clears > 0).length
-  const map = [...index.region.maps].reverse().find((each) => each.cleared <= cleared) ?? index.region.maps[0]
-  return { map: { ...map }, cleared, total: list.length, complete: cleared === list.length, list }
+  const regions = index.regions.map((region) => regionView(world, region, index, list))
+  // The first region's place stays at the top, as before regions.
+  const { map, cleared, total, complete } = regions[0]
+  return { map, cleared, total, complete, list, regions }
+}
+
+/** A region's place on the road: open or not, the picture for its progress, its cleared count. */
+function regionView(world, region, index, list) {
+  const cleared = list.filter((entry) => region.instanceIds.includes(entry.id) && entry.clears > 0).length
+  const map = [...region.maps].reverse().find((each) => each.cleared <= cleared) ?? region.maps[0]
+  return {
+    id: region.id,
+    unlocked: isRegionUnlocked(world, region, index),
+    map: { ...map },
+    cleared,
+    total: region.instanceIds.length,
+    complete: isRegionComplete(world, region)
+  }
 }
 
 /**
@@ -99,11 +118,16 @@ export function worldInstancesView(worldId, world, content) {
 export function instancesContentView(content) {
   const index = instanceIndexOf(content)
   if (!index) return null
-  const { region } = index
+  const regionOf = (region) => ({
+    id: region.id, name: region.name, title: region.title, width: region.map.width, height: region.map.height, after: region.after
+  })
   return {
-    region: { id: region.id, name: region.name, title: region.title, width: region.map.width, height: region.map.height },
+    region: regionOf(index.regions[0]),
+    // Every region in road order, the first included; `after` names the region that unlocks it.
+    regions: index.regions.map(regionOf),
     instances: index.instances.map((instance) => ({
       id: instance.id,
+      region: regionOfInstance(index, instance.id).id,
       name: instance.name,
       races: [...instance.races],
       opensAt: instance.opensAt,

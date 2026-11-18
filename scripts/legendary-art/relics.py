@@ -1353,6 +1353,569 @@ def sickle(s):
     s.glint(27, 13)
 
 
+# ---- the Gloaming Isles: sea islands at dusk
+
+BRASS = R('#4a260e', '#8a5a1c', '#c8923a', '#ecc262', '#fff2b4')
+SILVER = R('#2c304a', '#5a6286', '#9aa4c6', '#d6def2', '#ffffff')
+GREENFIRE = R('#0e5a3a', '#22a462', '#4ee68e', '#b4ffd2', '#ffffff')
+BOLT = R('#2a5ac0', '#5aa0ff', '#b0e0ff', '#e8f8ff', '#ffffff')
+PEARL = R('#6a5a7a', '#b0a4c0', '#e8e0ec', '#fff8fc', '#ffffff')
+KELP = R('#10241a', '#1e4a2c', '#2e7a3e', '#5aa84e', '#a0d870')
+
+
+def emboss(s, m, rp, base=2):
+    """A raised stamp on a flat face: lit on its top-left rim, shadowed on its bottom-right."""
+    for (x, y) in m:
+        if (x + 1, y + 1) not in m and (x + 1, y) not in m or (x, y + 1) not in m and \
+                (x + 1, y + 1) not in m:
+            i = base - 1
+        elif (x - 1, y - 1) not in m or (x - 1, y) not in m or (x, y - 1) not in m:
+            i = base + 2
+        else:
+            i = base + 1
+        s.put(x, y, rp, i)
+
+
+def polyline(pts):
+    out = []
+    for a, b in zip(pts, pts[1:]):
+        out += bres(a[0], a[1], b[0], b[1])
+    return out
+
+
+def lens(s):
+    glass = R('#24525e', '#4a8a94', '#82c4c2', '#c4f0e6', '#f4fffc')
+    s.paint(poly([(7, 24), (25, 24), (26.5, 28.4), (5.5, 28.4)]), BRASS, cap=2, k=2.2, grad=0.6)
+    for x in range(8, 25, 4):
+        s.put(x, 26, BRASS, 1)
+    body = (ell(16, 16.5, 9.4, 11.5) & rect(0, 6, 31, 23)) | rect(8, 20, 23, 23)
+    s.paint(body, glass, cap=3, grad=0.8, k=2.0, base=2, lo=1)
+    rim = edge(body)
+    for (x, y) in body - rim:                        # stacked prism rings
+        r = (y - 6) % 3
+        if r == 0:
+            s.shade((x, y), -1)
+        elif r == 1 and s.ix[(x, y)] < 4:
+            s.shade((x, y), 1)
+    for (x, y) in body - rim:                        # vertical facet seams
+        if x in (10, 22):
+            s.put(x, y, glass, 1 if x == 22 else 2)
+    eye = disc(16, 16, 4.6)
+    for (x, y) in eye:
+        d = math.hypot(x + .5 - 16, y + .5 - 16)
+        s.put(x, y, GREENFIRE, 1 if d > 3.8 else (3 if d > 2.9 else 2), noline=True)
+    flame = ell(16, 17.0, 1.8, 2.4) | poly([(14.6, 16.5), (16.4, 12.4), (17.4, 16.5)])
+    s.paint(flame, GREENFIRE, cap=2, base=3, lo=3, hi=4, noline=True, shadow=False)
+    s.putc(16, 17, WHITE)
+    s.paint(rect(7, 22, 24, 23), BRASS, cap=1, k=2)
+    s.paint(ell(16, 5.6, 3.0, 1.3), BRASS, cap=1, k=2)
+    s.paint(disc(16, 3.6, 1.2), BRASS, cap=1, base=3)
+    for (x, y) in ((9, 10), (8, 12), (8, 13), (10, 9)):
+        s.putc(x, y, (240, 255, 250), noline=False)
+    for (x, y, i) in ((27, 9, 3), (4, 11, 2), (28, 18, 2), (3, 20, 1)):
+        s.put(x, y, GREENFIRE, i, noline=True)
+    s.glint(22, 8)
+
+
+def compass(s):
+    coral = R('#6a1426', '#c03c48', '#ff7a6a', '#ffb4a0', '#fff0e4')
+    face = R('#0c1a28', '#163246', '#244c64', '#3c6e86', '#80b4c4')
+    s.paint(disc(16, 4.6, 2.5) - disc(16, 4.6, 1.1), BRASS, cap=1, k=2)
+    s.paint(rect(14, 6, 18, 8), BRASS, cap=1, k=2)
+    for x in (14, 16, 18):
+        s.put(x, 7, BRASS, 1)
+    case = disc(16, 18, 10.6)
+    s.paint(case, BRASS, cap=3, grad=0.7, k=2.4)
+    inner = disc(16, 18, 8.0)
+    s.paint(inner, face, cap=2, inv=True, base=2, grad=0.4, shadow=False)
+    for a in range(0, 360, 45):
+        ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+        p = (int(16 + ca * 6.6), int(18 + sa * 6.6))
+        s.put(p[0], p[1], BONE, 3 if a % 90 == 0 else 1)
+    s.put(15, 11, coral, 3)                          # north mark
+    s.put(16, 11, coral, 3)
+    # the needle: a living branch of coral, tip to the north-east, a short dark tail
+    s.paint(seg(16, 18, 11.5, 22.5, 0.9, 0.5), face, flat=4, shadow=False)
+    stem = seg(16, 18, 21.5, 12.5, 1.1, 0.6)
+    twigs = seg(18.5, 15.5, 21.5, 16.5, 0.6) | seg(17.5, 16.5, 16, 13, 0.6) | \
+        seg(20, 14, 19.5, 11.5, 0.5)
+    s.paint(stem | twigs, coral, cap=1, base=3, k=2)
+    for (x, y) in ((21, 12), (21, 16), (16, 13), (19, 11)):
+        s.put(x, y, coral, 4)
+    s.paint(disc(16, 18, 1.4), BRASS, cap=1, base=3)
+    for (x, y) in ((10, 15), (11, 14), (12, 13)):     # glass catch-light
+        s.putc(x, y, (200, 236, 244), noline=False)
+    s.glint(24, 10)
+
+
+def doubloon(s):
+    g = R('#5a2c0c', '#9a5a14', '#d89a26', '#f6cc48', '#fff4b0')
+    coin = disc(16, 16.5, 11.6)
+    for a in range(0, 360, 18):                      # milled edge: shallow notches
+        ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+        coin.discard((int(math.floor(16 + ca * 11.1)), int(math.floor(16.5 + sa * 11.1))))
+    coin -= disc(26.8, 7.4, 3.0)                     # a bite out of the rim
+    coin -= {(24, 5), (28, 9)}
+    s.paint(coin, g, cap=3, grad=0.6, k=2.4)
+    ring = disc(16, 16.5, 9.2) - disc(16, 16.5, 8.2)
+    for (x, y) in ring & coin:
+        s.put(x, y, g, 1 if x + y > 32 else 4)
+        q = (x + 1, y + 1) if x + y <= 32 else (x - 1, y - 1)
+        if q in coin and q not in ring:
+            s.put(q[0], q[1], g, 3 if x + y <= 32 else 2)
+    skull = (ell(16, 11.6, 3.1, 2.6) | rect(14, 12, 18, 14)) - {(14, 14), (18, 14)}
+    anchor = set(bres(16, 15, 16, 23)) | set(bres(13, 16, 19, 16)) | \
+        set(polyline([(11, 19), (12, 21), (14, 23), (18, 23), (20, 21), (21, 19)])) | \
+        {(10, 19), (11, 18), (22, 19), (21, 18)}
+    emboss(s, anchor, g, base=2)
+    emboss(s, skull, g, base=2)
+    for (x, y) in ((15, 12), (17, 12)):
+        s.put(x, y, g, 0)
+    s.put(16, 14, g, 1)
+    for (x, y) in ((8, 26), (24, 24), (25, 26)):     # tooth dents
+        if (x, y) in coin:
+            s.put(x, y, g, 1)
+    s.glint(9, 8)
+
+
+def seedpod(s):
+    pod = R('#1c2c14', '#36521f', '#5a8232', '#90b852', '#d2ea96')
+    calyx = R('#2a1410', '#5a2e1a', '#8a522c', '#b47c44', '#dcb070')
+    leaf = R('#103a1c', '#22703a', '#40aa58', '#84dc8a', '#dcffe0')
+    water = R('#123a6a', '#2a6ab0', '#5aa8e8', '#a8e0ff', '#ffffff')
+    s.paint(seg(19.5, 10.5, 20.5, 6.5, 0.7), pod, flat=2)
+    for (c, a, flip) in (((24.5, 5.0), -25, 1), ((15.5, 4.8), 25, -1)):
+        lf = ell(c[0], c[1], 4.6, 2.0, a)
+        s.paint(lf, leaf, cap=2, k=2.2, grad=0.6)
+        for p in bres(20, 7, int(c[0] + flip * 3.5), int(c[1] - 1)):
+            if p in lf and p not in edge(lf):
+                s.put(p[0], p[1], leaf, 1 if flip > 0 else 4)
+    body = seg(8.5, 26.5, 12.5, 20, 0.6, 2.6) | seg(12.5, 20, 19, 12, 2.6, 1.9)
+    s.paint(body, pod, cap=3, grad=0.6, k=2.4)
+    for (x, y) in ((11, 22), (14, 18), (16, 16), (13, 21), (17, 14), (15, 19)):
+        if (x, y) in body:
+            s.put(x, y, calyx, 2 if s.ix[(x, y)] >= 2 else 1)
+    s.paint(ell(19.5, 11.2, 2.8, 1.8, -40), calyx, cap=1, k=2)
+    for (x, y) in ((17, 11), (21, 13), (18, 13)):
+        s.put(x, y, calyx, 3)
+    s.paint(ell(7.5, 28.2, 1.4, 1.6) | {(7, 26), (8, 26)}, water, mode='sphere',
+            sph=(7.5, 28.2, 1.4, 1.6), k=2.2, lo=1, hi=4)
+    s.putc(7, 27, WHITE, noline=False)
+    for (x, y) in ((4, 25), (27, 13), (25, 16)):
+        s.put(x, y, water, 3, noline=True)
+    s.glint(11, 17)
+
+
+def governor(s):
+    core = R('#4a0a0a', '#a01818', '#f04020', '#ffa040', '#fff0b0')
+    s.paint(seg(16, 4.5, 16, 23, 0.9), STEEL, cap=1, base=3)
+    for sd in (-1, 1):
+        s.paint(seg(16, 8, 16 + sd * 8, 15.5, 0.8), BRASS, cap=1, base=3)
+        s.paint(seg(16, 19.6, 16 + sd * 6.6, 17.2, 0.75), BRASS, cap=1, base=2)
+    for sd in (-1, 1):
+        s.gem(16 + sd * 8.4, 16.2, 3.1, 3.1, BRASS)
+    pulley = ell(16, 5.0, 5.0, 1.9)
+    s.paint(pulley, BRASS, cap=1, k=2.2)
+    for x in range(12, 21):
+        if (x, 5) in pulley:
+            s.put(x, 5, BRASS, 1)
+    s.paint(disc(16, 8.2, 1.4), BRASS, cap=1, base=3)
+    s.paint(rect(13, 18, 19, 20), BRASS, cap=1, k=2)
+    house = poly([(9.5, 22), (22.5, 22), (25, 28.5), (7, 28.5)])
+    s.paint(house, IRON, cap=2, grad=0.6, base=2)
+    s.paint(rect(8, 21, 24, 22), BRASS, cap=1, k=2)
+    win = ell(16, 25.6, 4.4, 2.0)
+    s.paint(win, core, mode='sphere', sph=(16, 25.6, 4.4, 2.0), k=2, lo=1, hi=4)
+    s.put(16, 25, core, 4)
+    s.put(15, 25, core, 4)
+    for (x, y) in ((9, 27), (23, 27)):
+        s.put(x, y, BRASS, 3)
+    for (x, y, i) in ((5, 23, 2), (27, 22, 1), (26, 25, 2), (4, 26, 1)):
+        s.put(x, y, core, i, noline=True)
+    s.glint(24, 9)
+
+
+def rosary(s):
+    blue = R('#1c2a5a', '#34509a', '#6a8ad8', '#b0c8ff', '#ffffff')
+    cx, cy, rx, ry = 16, 11.5, 9.6, 7.6
+    loop = ell(cx, cy, rx + .5, ry + .5) - ell(cx, cy, rx - .5, ry - .5)
+    s.paint(loop, SILVER, flat=1, shadow=False)
+    beads = []
+    for i in range(13):
+        a = math.radians(90 + 22 + i * (360 - 44) / 12)
+        beads.append((cx + rx * math.cos(a), cy + ry * math.sin(a), i % 4 == 0))
+    for (x, y, big) in beads:
+        r = 1.9 if big else 1.5
+        s.gem(x, y, r, r, blue if big else SILVER, glint=big)
+    s.paint(seg(16, 19, 16, 21.5, 0.6), SILVER, flat=2, shadow=False)
+    s.gem(16, 19.2, 1.4, 1.4, SILVER, glint=False)
+    moon = disc(15.2, 25.0, 4.0) - disc(17.6, 23.4, 3.3)
+    s.paint(moon, SILVER, cap=2, k=2.4, grad=0.8, base=3)
+    for p in edge(moon):
+        if p[0] + p[1] < 38:
+            s.put(p[0], p[1], SILVER, 4)
+    s.paint(disc(16, 21.6, 0.9), SILVER, flat=3)
+    for (x, y) in ((22, 23), (25, 26), (20, 27)):
+        s.put(x, y, blue, 3, noline=True)
+    s.glint(20, 22)
+
+
+def ingot(s):
+    blue = R('#141e3a', '#26406e', '#3e66a2', '#6a98d0', '#b4d4f4')
+    A, B, C, D = (5.5, 13.5), (17.5, 8.5), (27, 12), (15, 17)
+    A2, C2, D2 = (3.5, 20.5), (28.6, 19), (15, 25.5)
+    top = poly([A, B, C, D])
+    left = poly([A, D, D2, A2]) - top
+    right = poly([D, C, C2, D2]) - top - left
+    s.paint(left, blue, cap=1, base=2, k=1.2, grad=0.5, lo=1, hi=3)
+    s.paint(right, blue, cap=1, base=1, k=1.2, grad=0.5, lo=0, hi=2)
+    s.paint(top, blue, cap=1, base=3, k=1.2, grad=0.5, lo=2, hi=4)
+    for p in bres(15, 17, 15, 25):
+        if p in left or p in right:
+            s.put(p[0], p[1], blue, 3)
+    for p in bres(6, 14, 15, 17):
+        s.put(p[0], p[1], blue, 4)
+    bolt = polyline([(8, 13), (11, 11), (13, 13), (17, 10), (20, 12), (24, 11)])
+    fork = polyline([(13, 13), (14, 16), (12, 19), (13, 21), (11, 24)])
+    fork2 = polyline([(17, 10), (18, 9)]) + polyline([(20, 12), (22, 15), (21, 18), (23, 21)])
+    for p in bolt + fork + fork2:
+        for dx, dy in D4:
+            q = (p[0] + dx, p[1] + dy)
+            if q in s.col and s.rp.get(q) is blue:
+                s.put(q[0], q[1], blue, min(4, s.ix[q] + 1))
+    for p in bolt + fork + fork2:
+        s.put(p[0], p[1], BOLT, 4 if p[1] < 17 else 3)
+    for (x, y, i) in ((24, 6, 3), (25, 5, 2), (26, 7, 1), (6, 8, 2), (5, 7, 1), (28, 24, 2),
+                      (4, 25, 2), (10, 27, 1)):
+        s.put(x, y, BOLT, i, noline=True)
+    s.glint(9, 12)
+
+
+def tidecrown(s):
+    teal = R('#0a3036', '#14605e', '#2aa096', '#66dcc8', '#d0fff4')
+    for pts in ([(6.5, 20), (5, 22.5), (6.5, 25), (4.8, 27.6)],
+                [(25.5, 20), (27, 22.5), (25.6, 25)]):
+        m = set()
+        for a, b in zip(pts, pts[1:]):
+            m |= seg(a[0], a[1], b[0], b[1], 1.05)
+        s.paint(m, KELP, cap=1, base=2, k=1.8)
+    spikes = set()
+    arms = (((9, 18), (8.6, 13), (6.6, 9)), ((16, 18), (15.2, 11), (16.3, 4.8)),
+            ((23, 18), (23.4, 13), (25.4, 9)))
+    for (p0, p1, p2) in arms:
+        spikes |= bez(p0, p1, p2, 1.5, 0.7)
+    for (x, y, dx, dy) in ((9, 15, 3, -3), (16, 13, -3, -3), (16, 14.5, 3, -2.5),
+                           (23, 15, -3, -3)):
+        spikes |= bez((x, y), (x + dx * .3, y + dy * .8), (x + dx, y + dy), 0.8, 0.5)
+    s.paint(spikes, teal, cap=1, base=2, k=2.2, grad=0.6)
+    for (p0, p1, p2) in arms:
+        s.gem(p2[0], p2[1], 1.4, 1.4, PEARL, glint=False)
+    for (x, y) in ((12, 12), (13, 10), (19, 11.5), (20, 12)):
+        s.gem(x + .5, y + .5, 0.9, 0.9, PEARL, glint=False)
+    band = poly([(5.5, 17), (26.5, 17), (27, 23), (16, 25.2), (5, 23)])
+    s.paint(band, teal, cap=2, grad=0.6, k=2.4)
+    for x in range(6, 27):
+        if (x, 17) in band:
+            s.put(x, 17, teal, 4 if x < 16 else 3)
+    for x in (8, 11, 21, 24):
+        s.gem(x + .5, 21.0, 1.1, 1.1, PEARL, glint=False)
+    s.gem(16.0, 21.2, 2.4, 2.4, PEARL)
+    for (x, y) in ((13, 23), (19, 23), (6, 22)):
+        s.put(x, y, KELP, 3)
+    s.glint(23, 4)
+
+
+def stormlantern(s):
+    glow = R('#0c3a30', '#16705a', '#34b888', '#8af0c0', '#e8fff4')
+    bail = (ell(16, 9.5, 9.0, 7.4) - ell(16, 9.5, 7.6, 6.0)) - rect(0, 9, 31, 31)
+    s.paint(bail, IRON, cap=1, base=3, k=2)
+    s.paint(poly([(10.5, 10), (21.5, 10), (19.5, 6.5), (12.5, 6.5)]), BRASS, cap=2, k=2.2)
+    s.paint(ell(16, 6.2, 2.6, 1.2), BRASS, cap=1, base=3)
+    for x in (13, 16, 19):
+        s.put(x, 8, BRASS, 1)
+    s.paint(rect(9, 10, 23, 11), BRASS, cap=1, k=2)
+    globe = ell(16, 17.2, 7.2, 6.4)
+    s.paint(globe, glow, mode='sphere', sph=(16, 17.2, 7.2, 6.4), k=2.2, lo=1, hi=3)
+    flame = ell(16, 18.5, 2.2, 3.0) | poly([(14.4, 17.5), (16.4, 12.5), (17.6, 17.5)])
+    s.paint(flame, GREENFIRE, cap=2, base=3, lo=3, hi=4, noline=True, shadow=False)
+    s.put(16, 19, GREENFIRE, 4)
+    s.putc(16, 18, WHITE)
+    for t in range(0, 21):                           # wire guards over the glass
+        y = 11 + t * 12 / 20
+        w = math.sqrt(max(0, 1 - ((y - 17.2) / 6.8) ** 2))
+        for k_, i in ((-0.75, 2), (0.75, 1)):
+            x = 16 + k_ * 7.0 * w
+            s.put(int(math.floor(x)), int(math.floor(y)), IRON, i + 1)
+    for x in range(9, 24):
+        if (x, 17) in globe:
+            s.put(x, 17, IRON, 3 if x < 16 else 2)
+    s.paint(ell(16, 24.5, 7.6, 1.8) | rect(10, 23, 22, 24), BRASS, cap=1, k=2.2)
+    s.paint(poly([(9.5, 25), (22.5, 25), (24, 28.5), (8, 28.5)]), BRASS, cap=2, k=2.2,
+            grad=0.6)
+    for x in range(10, 23, 3):
+        s.put(x, 27, BRASS, 1)
+    for (x, y) in ((11, 14), (11, 15), (12, 13)):
+        s.putc(x, y, (210, 255, 236), noline=False)
+    for (x, y, i) in ((27, 15, 2), (28, 17, 1), (4, 18, 2), (5, 14, 1)):
+        s.put(x, y, glow, i + 1, noline=True)
+    s.glint(22, 4)
+
+
+def coralhorn(s):
+    hornr = R('#3a2a26', '#6e5a4e', '#a8927a', '#d6c4a4', '#fff4dc')
+    coral = R('#6a1a10', '#b8401e', '#ff7a3a', '#ffb070', '#fff0c8')
+    p0, p1, p2 = (6.5, 19.5), (21, 30), (26.5, 5)
+    body = bez(p0, p1, p2, 4.6, 0.7)
+    s.paint(body, hornr, cap=3, grad=0.5, k=2.4, base=3, lo=1, hi=4)
+    samples = [(bezpt(p0, p1, p2, i / 200), i / 200) for i in range(201)]
+    for (x, y) in body:
+        t = min(samples, key=lambda q: (q[0][0] - x - .5) ** 2 + (q[0][1] - y - .5) ** 2)[1]
+        f = (t * 12) % 1
+        if t > 0.72:
+            s.shade((x, y), -2 if t > 0.88 else -1)
+        elif t > 0.08 and f < 0.13:
+            s.shade((x, y), -1)
+    s.paint(ell(6.6, 19.6, 1.9, 3.8, 35), R('#100a0c', '#24181a', '#3a2a2a'), cap=1, inv=True,
+            base=1, lo=0, hi=2)
+    clumps = [((12, 19.5), [(9.5, 13.5), (13, 12.5), (15.5, 15)]),
+              ((21.5, 17.5), [(19.5, 11.5), (22.5, 11)]),
+              ((10.5, 25.5), [(7, 28.2)])]
+    for (base, tips) in clumps:
+        m = set()
+        for t in tips:
+            mid = ((base[0] + t[0]) / 2 + .7, (base[1] + t[1]) / 2 + .2)
+            m |= bez(base, mid, t, 1.25, 0.6)
+        s.paint(m, coral, cap=1, base=2, k=2.2, grad=0.5)
+        for t in tips:
+            s.put(int(t[0]), int(t[1]), coral, 4)
+        s.paint(disc(base[0], base[1], 1.5), coral, cap=1, base=3)
+    for (x, y) in ((15, 23), (20, 23), (24, 14)):
+        s.put(x, y, coral, 3)
+    s.glint(24, 5)
+
+
+def ledger(s):
+    cover = R('#1a1620', '#33282a', '#563e30', '#7e5e44', '#a8865e')
+    vane = R('#3a3a4a', '#6c6c84', '#a4a4bc', '#dcdcec', '#ffffff')
+    s.paint(seg(15, 13, 25.5, 3.5, 0.5), BONE, flat=3, shadow=False)
+    s.paint(ell(22.5, 6.6, 6.0, 2.2, -42), vane, cap=1, k=2, grad=0.6)
+    for p in bres(17, 11, 27, 3):
+        if p in s.col:
+            s.put(p[0], p[1], BONE, 4)
+    for (x, y) in ((21, 5), (24, 7), (20, 8), (25, 4)):
+        s.put(x, y, vane, 1)
+    pages = poly([(20.5, 8.8), (25, 10.8), (26.6, 27.2), (22.5, 25.8)])
+    s.paint(pages, PAGE_R, cap=1, base=3, k=1.4)
+    for (x, y) in pages:
+        if y % 2 == 0 and (x - 1, y) in pages:
+            s.put(x, y, PAGE_R, 1)
+    front = poly([(5, 10.5), (21.5, 8.6), (23.4, 26.2), (7, 28)])
+    s.paint(front, cover, cap=3, grad=0.7, k=2.2)
+    fe = edge(front)
+    for (cx, cy, rx, ry) in ((11, 22.5, 3.8, 2.8), (17.5, 12.5, 3.0, 2.2), (20, 23, 2, 1.6)):
+        blot = ell(cx, cy, rx, ry) & front - fe
+        rim = blot - ell(cx, cy, rx - 1, ry - 1)
+        for p in blot - rim:
+            s.put(p[0], p[1], cover, min(4, s.ix[p] + 1))
+        for p in rim:
+            s.put(p[0], p[1], cover, 1)
+    for y in range(11, 28):
+        for x in (6, 7):
+            if (x, y) in front:
+                s.put(x, y, cover, 1 if x == 7 else 2)
+    for (cx, cy) in ((5.8, 11.2), (7.6, 27.0), (21.6, 9.4), (22.6, 25.6)):
+        s.paint(disc(cx, cy, 1.4) & front, BRASS, cap=1, base=3)
+    strap = poly([(17, 15.6), (25.5, 16.4), (25.6, 19.4), (17, 18.8)])
+    s.paint(strap, cover, cap=1, base=2, k=1.6)
+    s.paint(ell(17.6, 17.3, 2.0, 2.3), BRASS, cap=1, k=2.2)
+    s.put(17, 17, IRON, 0)
+    s.put(17, 18, IRON, 1)
+    for (x, y) in ((11, 14), (12, 15), (13, 14), (14, 15), (11, 17), (13, 17)):
+        s.put(x, y, BRASS, 3 if y < 16 else 2)
+    s.glint(9, 7)
+
+
+PAGE_R = R('#5a4c3c', '#8e7c62', '#c2b090', '#e6dcbe', '#fffaea')
+
+
+def boughaxe(s):
+    root = R('#24140e', '#4a2c1a', '#74482a', '#a07040', '#cca068')
+    leaf = R('#1e3a14', '#3e6a22', '#6a9c3a', '#a8cc60', '#e4f4a8')
+    blade = poly([(14.5, 5.8), (20, 6.4), (23.5, 3.4), (28, 8), (28.4, 15), (25, 15.8),
+                  (20.5, 11.4), (14.5, 11)])
+    s.paint(blade, STEEL, cap=2, grad=0.6, k=2.4)
+    for (x, y) in edge(blade):
+        if x >= 25:
+            s.put(x, y, STEEL, 4 if y < 11 else 3)
+    for (x, y) in ((22, 8), (23, 9), (24, 11), (22, 10)):
+        s.put(x, y, leaf, 1)
+    s.paint(bez((9, 23.5), (5, 26), (4, 29), 0.9, 0.5) | bez((10, 25), (11.5, 28), (13.5, 28.5),
+                                                              0.8, 0.5),
+            root, cap=1, base=2, k=1.6)
+    haft = bez((8.5, 27.5), (10.5, 16), (16.5, 4.0), 1.9, 1.3)
+    s.paint(haft, root, cap=2, grad=0.4, k=2.4)
+    p0, p1, p2 = (8.5, 27.5), (10.5, 16), (16.5, 4.0)
+    for i in range(0, 41):                           # a twist of grain round the root
+        x, y = bezpt(p0, p1, p2, i / 40)
+        if i % 5 in (0, 1):
+            q = (int(x + (0.8 if (i // 5) % 2 else -0.8)), int(y))
+            if q in haft:
+                s.put(q[0], q[1], root, 1)
+    for (x, y) in ((10, 20), (12, 14)):
+        s.paint(disc(x + .5, y + .5, 1.0), root, flat=3)
+        s.put(x, y, root, 1)
+    for p in ((14, 7), (15, 8), (16, 9), (17, 10), (16, 6), (15, 10)):
+        s.put(p[0], p[1], root, 2 if p[1] % 2 else 3)
+    for (c, a) in (((12.0, 4.8), -35), ((5.8, 18.0), 35), ((17.2, 17.0), -20)):
+        lf = ell(c[0], c[1], 3.2, 1.5, a)
+        s.paint(lf, leaf, cap=1, k=2.2, grad=0.6)
+    s.glint(27, 6)
+
+
+def chisel(s):
+    hot = R('#7a1a08', '#d04a10', '#ff9a30', '#ffd880', '#ffffff')
+    steam = R('#5a6070', '#9aa0b0', '#cfd4de', '#eef2f8', '#ffffff')
+    s.paint(seg(5.5, 27, 10.6, 21.9, 2.4, 2.1), WOOD, cap=2, grad=0.4)
+    for t in (0.3, 0.65):
+        x, y = 5.5 + 5.1 * t, 27 - 5.1 * t
+        for p in bres(int(x - 1.6), int(y - 1.6), int(x + 1.6), int(y + 1.6)):
+            if p in s.col:
+                s.shade(p, -1)
+    s.paint(seg(10.6, 21.9, 12.8, 19.7, 2.7), BRASS, cap=2, k=2.2)
+    s.paint(seg(12.8, 19.7, 20.5, 12, 1.8), STEEL, cap=2, grad=0.4, k=2.4, base=2)
+    tip = poly([(19, 11), (22.6, 5.6), (28.4, 11.4), (23, 15)])
+    s.paint(tip, STEEL, cap=2, k=2.4, base=2)
+    for p in bres(23, 6, 28, 11):
+        s.put(p[0], p[1], hot, 4 if p[0] in (25, 26) else 3)
+    for p in bres(22, 7, 27, 12):
+        if p in tip:
+            s.put(p[0], p[1], hot, 2)
+    for p in bres(21, 8, 25, 12):
+        if p in tip and s.ix[p] >= 2:
+            s.put(p[0], p[1], hot, 1)
+    for (x, y) in ((14, 17), (15, 18), (15, 16), (17, 15), (17, 14), (18, 15), (19, 13),
+                   (20, 12), (19, 12)):
+        s.put(x, y, hot, 3, noline=False)
+    s.put(17, 15, hot, 4)
+    s.put(15, 17, hot, 4)
+    for (x, y, i) in ((27, 7, 2), (27, 6, 3), (26, 5, 3), (26, 4, 2), (27, 3, 3), (28, 2, 1),
+                      (24, 4, 2), (23, 3, 1), (29, 5, 1)):
+        s.put(x, y, steam, i, noline=True)
+    s.paint(disc(4.8, 27.8, 1.6), BRASS, cap=1)
+    s.glint(9, 21)
+
+
+def moonbell(s):
+    blue = R('#1c2a5a', '#34509a', '#6a8ad8', '#b0c8ff', '#ffffff')
+    body = ell(16, 20.0, 5.6, 4.8) | poly([(10.4, 20), (21.6, 20), (24.5, 26), (7.5, 26)])
+    lip = ell(16, 26, 9.4, 2.2)
+    s.paint(body | lip, SILVER, cap=4, grad=0.9, k=2.6)
+    for x in range(9, 24):
+        if (x, 23) in body:
+            s.put(x, 23, SILVER, 4 if x < 16 else 3)
+            s.put(x, 24, SILVER, 1)
+    s.paint(ell(16, 26.6, 6.6, 1.1), R('#0e1020', '#1c2036', '#2c3250'), flat=1, shadow=False)
+    s.gem(16.5, 28.3, 1.2, 1.2, blue, glint=False)
+    moon = disc(13.6, 20.2, 2.0) - disc(14.6, 19.6, 1.6)
+    for p in moon:
+        s.put(p[0], p[1], blue, 3)
+    s.paint(ell(16, 15.6, 2.8, 1.0), BRASS, cap=1, k=2)
+    ears = poly([(10.2, 7), (10.6, 1.6), (14.4, 5.2)]) | poly([(21.8, 7), (21.4, 1.6),
+                                                               (17.6, 5.2)])
+    head = poly([(11, 4.8), (21, 4.8), (22, 7.5), (23.4, 10.2), (20.6, 10.2), (18.4, 12.2),
+                 (17.2, 14.8), (14.8, 14.8), (13.6, 12.2), (11.4, 10.2), (8.6, 10.2), (10, 7.5)])
+    s.paint(ears, SILVER, cap=1, base=2, k=2)
+    s.paint(head, SILVER, cap=2, grad=0.6, k=2.2)
+    for (x, y) in ((11, 4), (12, 5), (20, 4), (19, 5)):
+        s.put(x, y, SILVER, 0)
+    s.paint(rect(15, 11, 16, 13), SILVER, flat=3, shadow=False)
+    s.put(15, 11, SILVER, 4)
+    for (x, y) in ((15, 14), (16, 14)):
+        s.put(x, y, IRON, 0)
+    for (x, y) in ((12, 8), (13, 9), (19, 8), (18, 9)):
+        s.put(x, y, blue, 4 if x in (13, 18) else 2)
+    for (x, y) in ((12, 7), (13, 7), (18, 7), (19, 7)):
+        s.put(x, y, SILVER, 1)
+    for (x, y) in ((9, 10), (22, 10)):
+        s.put(x, y, SILVER, 1)
+    s.glint(23, 16)
+
+
+def stormhammer(s):
+    head = poly([(7.5, 6.2), (24.5, 6.2), (24.5, 14.2), (7.5, 14.2)])
+    s.paint(seg(16, 14, 16, 27.5, 1.5), WOOD, cap=2, grad=0.2)
+    s.paint(rect(14, 21, 17, 25), LEATHER, cap=1, k=2)
+    for y in (22, 24):
+        s.paint(rect(14, y, 17, y), LEATHER, flat=1, shadow=False)
+    s.paint(disc(16, 28.2, 1.7), BRASS, cap=1)
+    s.paint(head, IRON, cap=3, grad=0.6, base=2, k=2.4)
+    for (x0, x1) in ((3.5, 7.5), (24.5, 28.5)):
+        s.paint(poly([(x0, 5), (x1, 5), (x1, 15.4), (x0, 15.4)]), STEEL, cap=2, k=2.2,
+                grad=0.5)
+    for y in range(6, 15):
+        s.put(8, y, BRASS, 3 if y < 10 else 2)
+        s.put(24, y, BRASS, 2 if y < 10 else 1)
+    scar = polyline([(9, 8), (12, 11), (14, 8), (17, 12), (19, 9), (23, 11)])
+    for p in scar:
+        for dx, dy in ((0, 1), (1, 0)):
+            q = (p[0] + dx, p[1] + dy)
+            if s.rp.get(q) is IRON:
+                s.put(q[0], q[1], IRON, 0)
+    for p in scar:
+        s.put(p[0], p[1], BOLT, 3)
+    for p in ((12, 11), (17, 12), (14, 8)):
+        s.put(p[0], p[1], BOLT, 4)
+    s.paint(rect(15, 14, 16, 15), STEEL, flat=2, shadow=False)
+    for (x, y, i) in ((5, 3, 2), (27, 3, 3), (28, 18, 2), (4, 18, 1), (26, 2, 1)):
+        s.put(x, y, BOLT, i, noline=True)
+    s.glint(5, 6)
+
+
+def abyssalpearl(s):
+    nacre = R('#4a3a5a', '#8a7aa0', '#c8b8d8', '#ece0f0', '#ffffff')
+    shellr = R('#141020', '#28223e', '#443e64', '#6a688e', '#a0a2c0')
+    black = R('#0a0614', '#1e1236', '#3a2866', '#6c52a8', '#c8b4f4')
+    teal = R('#0a4a48', '#10847a', '#2ad0c0', '#90fff0', '#ffffff')
+    back = disc(16, 25, 12.6) - rect(0, 23, 31, 31)
+    s.paint(back, shellr, cap=2, grad=0.6, k=2)
+    inside = disc(16, 25, 11.0) - rect(0, 23, 31, 31)
+    s.paint(inside, nacre, cap=2, inv=True, base=2, k=1.6, grad=0.6, shadow=False)
+    for a in range(200, 345, 20):                    # ribs of the open valve
+        ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+        for r in range(4, 12):
+            p = (int(math.floor(16 + ca * r)), int(math.floor(25 + sa * r)))
+            if p in inside:
+                s.shade(p, -1)
+    pc, pr = (16, 16.6), 6.6
+    pearl = disc(pc[0], pc[1], pr)
+    s.paint(pearl, black, mode='sphere', sph=(pc[0], pc[1], pr, pr), k=2.8, lo=0, hi=3)
+    for (x, y) in pearl:
+        d = math.hypot(x + .5 - 17, y + .5 - 18)
+        if d < 2.0:
+            s.put(x, y, teal, 4 if d < 0.9 else 3)
+        elif d < 3.2:
+            s.put(x, y, teal, 2)
+        elif d < 4.3 and s.ix[(x, y)] < 2:
+            s.put(x, y, teal, 1)
+    for (x, y) in ((12, 13), (13, 12), (12, 14)):
+        s.put(x, y, black, 4)
+    s.putc(13, 13, WHITE, noline=False)
+    lower = ell(16, 23.4, 12.6, 5.0) - rect(0, 0, 31, 22)
+    s.paint(lower, shellr, cap=2, grad=0.7, k=2.2, base=2)
+    for a in range(20, 170, 16):
+        ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+        for r in range(1, 14):
+            p = (int(math.floor(16 + ca * r * 0.95)), int(math.floor(23 + sa * r * 0.4)))
+            if p in lower and p not in edge(lower):
+                s.shade(p, -1)
+    for x in range(4, 29):
+        if (x, 23) in lower:
+            s.put(x, 23, nacre, 3 if x < 16 else 2)
+    for (x, y, i) in ((5, 10, 2), (27, 8, 3), (25, 13, 1), (7, 6, 1)):
+        s.put(x, y, teal, i, noline=True)
+    s.glint(22, 11)
+
+
 # ---------------------------------------------------------------- data
 
 def city(cid, city, name, flavour, buff, colour, fn):
@@ -1371,6 +1934,18 @@ def equip(cid, boss, slot, cls, name, flavour, buff, colour, fn):
     return dict(id=cid, name=name, kind='equipment', boss=boss, slot=slot, **{'class': cls},
                 source='Dropped by %s' % boss.split(',')[0].split(' (')[0], flavour=flavour, buff=buff,
                 colour=colour, draw=fn)
+
+
+def inst(cid, instance, name, flavour, buff, colour, fn):
+    return dict(id=cid, name=name, kind='instance-relic', instance=instance,
+                source='The reward for the first clear of %s' % instance, flavour=flavour,
+                buff=buff, colour=colour, draw=fn)
+
+
+def isles(it):
+    """Marks an item of the second region, the Gloaming Isles."""
+    it['region'] = 'gloaming-isles'
+    return it
 
 
 ITEMS = [
@@ -1479,6 +2054,64 @@ ITEMS = [
     equip('blightmoon-sickle', 'Rotroot, the Withered Warden (treant)', 'tool', 'any (farming)',
           'Blightmoon Sickle', "Rotroot's last harvest: everything it cut grew back twice.",
           '+12% crops while the holder farms', '#c8e060', sickle),
+
+    # ---- the Gloaming Isles (second region)
+    isles(inst('lens-of-the-last-keeper', 'Saltreach Lighthouse', 'Lens of the Last Keeper',
+               'Ground for a lamp that went dark a hundred years ago. It still gathers every '
+               'stray spark.', "The rune circle's cut is 8% larger", '#9af0b8', lens)),
+    isles(inst('coral-compass', 'The Coral Labyrinth', 'The Coral Compass',
+               'Its needle is a living polyp, and it always points the short way out.',
+               'Rests take 8 s less', '#ff8f7a', compass)),
+    isles(inst('smugglers-doubloon', "The Smugglers' Warren", "The Smugglers' Doubloon",
+               'Bitten by every captain who ever held it, and still paying.',
+               'Kills drop 5% more materials', '#e8c45a', doubloon)),
+    isles(inst('seed-of-the-drowned-oak', 'Gloomroot Grove', 'Seed of the Drowned Oak',
+               'It sprouts in salt water and teaches patience to whoever carries it.',
+               '+5% experience to gathering skills', '#7ad08a', seedpod)),
+    isles(inst('boiler-heart-governor', 'The Brass Leviathan', 'The Boiler-Heart Governor',
+               'Spin it once and every engine in the room runs a little truer.',
+               '+5% Engineering experience for every character of the room', '#d8a048',
+               governor)),
+    isles(inst('silver-moon-rosary', 'Moonwake Abbey', 'The Silver Moon Rosary',
+               'Each bead was blessed under a full moon; the night-born flinch at its click.',
+               '+5% damage against werewolves, vampires and ghosts', '#c8d4f0', rosary)),
+    isles(inst('thunderhead-ingot', 'The Storm Anvil', 'The Thunderhead Ingot',
+               'Cast in a lightning strike. It still crackles when a blow lands true.',
+               'Critical hits deal 20% more', '#7ab8ff', ingot)),
+    isles(inst('tidecrown-of-the-deep', 'The Abyssal Gate', 'Tidecrown of the Deep',
+               'Worn by the thing beneath the gate. The kings of the deep bow to whoever '
+               'wears it now.', '+6% damage against bosses and legendary bosses', '#3ad0c0',
+               tidecrown)),
+
+    isles(bossrel('ondrels-storm-lantern', 'Keeper Ondrel, the Drowned Lamp',
+                  "Ondrel's Storm Lantern",
+                  'It burns brighter the worse the weather, and never needs oil.',
+                  'Idle characters keep gathering 15 min longer', '#7ff0c0', stormlantern)),
+    isles(bossrel('the-coralhorn', 'Hathra, the Coral Horn', 'The Coralhorn',
+                  'Hathra shed it in the maze. The walls have grown around its echo ever since.',
+                  'Affixes are 15% weaker', '#ff9a5a', coralhorn)),
+    isles(bossrel('tide-brokers-ledger', 'Corvina Vale, the Tide Broker',
+                  "The Tide Broker's Ledger",
+                  'Every debt in the isles is written here, and every one comes due.',
+                  'Item upgrades cost 4% fewer materials', '#c8a070', ledger)),
+    isles(equip('brackenmeres-bough-axe', 'Old Brackenmere, the Drowned Oak', 'tool',
+                'any (woodcutting)', "Brackenmere's Bough-Axe",
+                "Cut from the oak's own limb. It never dulls on wood it loves.",
+                '+12% logs from gathering', '#9ac060', boughaxe)),
+    isles(equip('boiler-rune-chisel', 'Hullgrind, the Boiler Heart', 'tool', 'any (runecraft)',
+                'The Boiler-Rune Chisel', 'Its edge is hot enough to write on stone like wax.',
+                '+12% runes from gathering', '#f0a040', chisel)),
+    isles(bossrel('morwens-moon-bell', 'Abbess Morwen, the Silver Fang', "Morwen's Moon-Bell",
+                  'Rung once for vespers and once for the hunt. Nobody remembers which came '
+                  'first.', '+3% of the stamina pool back after each kill', '#d8e0ff',
+                  moonbell)),
+    isles(equip('stormsmiths-hammer', 'Thundergut, the Storm Smith', 'weapon', 'physical',
+                "The Stormsmith's Hammer",
+                'Thundergut forged storms with it. Now it forges whoever swings it.',
+                "+10% Forge experience from the holder's tokens", '#a0b8e0', stormhammer)),
+    isles(bossrel('abyssal-pearl', 'Nhalazor, the Deep Tide', 'The Abyssal Pearl',
+                  'It took the deep a thousand years to make. It takes it one breath to give '
+                  'things back.', 'Items drop 12% more often', '#8a6aff', abyssalpearl)),
 ]
 
 
@@ -1632,15 +2265,27 @@ def sheets(arts, framed):
     big_sheet('relic', 'sheet-city-relics.png', 'City relics')
     big_sheet('boss-relic', 'sheet-boss-relics.png', 'Boss-owned relics')
     big_sheet('equipment', 'sheet-equipment.png', 'Legendary equipment')
+    big_sheet('instance-relic', 'sheet-instance-relics.png', 'Instance relics')
 
-    # all 34 at x1 in 40 px slots: clean row block, then with glow
-    per = 12
+    # the Gloaming Isles items, x4: framed with the glow, then clean on the sheet background
+    isl = [it for it in ITEMS if it.get('region') == 'gloaming-isles']
+    cols, cell = 8, 168
+    rows_n = (len(isl) + cols - 1) // cols
+    canvas = [[BG + (255,)] * (8 + cols * cell) for _ in range(8 + 2 * rows_n * cell)]
+    for i, it in enumerate(isl):
+        x, y = 8 + (i % cols) * cell, 8 + (i // cols) * cell
+        composite(canvas, upscale(framed[it['id']], 4), x, y)
+        composite(canvas, upscale(arts[it['id']][0], 5), x, y + rows_n * cell)
+    write_png(os.path.join(HERE, 'sheet-gloaming-isles.png'), canvas)
+
+    # every item at x1 in 40 px slots: clean row block, then with glow
     pad = 4
     groups = []
-    for kind in ('relic', 'boss-relic', 'equipment'):
+    for kind in ('relic', 'boss-relic', 'equipment', 'instance-relic'):
         groups.append([it for it in ITEMS if it['kind'] == kind])
+    per = max(len(g) for g in groups)
     Wd = pad + per * (40 + pad) + pad
-    Ht = pad + 2 * 3 * (40 + pad) + 16 + pad
+    Ht = pad + 2 * len(groups) * (40 + pad) + 16 + pad
     canvas = [[BG + (255,)] * Wd for _ in range(Ht)]
     y = pad
     for glow in (False, True):
@@ -1661,11 +2306,14 @@ def check_texts():
     for it in ITEMS:
         assert it['id'] not in seen, it['id']
         seen.add(it['id'])
-        assert len(it['flavour']) <= 70, (it['id'], len(it['flavour']))
+        # the Gloaming Isles items came with longer flavour lines
+        assert len(it['flavour']) <= (100 if it.get('region') else 70), (it['id'],
+                                                                           len(it['flavour']))
         assert len(it['buff']) <= 80, (it['id'], len(it['buff']))
     kinds = [it['kind'] for it in ITEMS]
-    assert kinds.count('relic') == 10 and kinds.count('boss-relic') == 12
-    assert kinds.count('equipment') == 12
+    assert kinds.count('relic') == 10 and kinds.count('boss-relic') == 17
+    assert kinds.count('equipment') == 15 and kinds.count('instance-relic') == 8
+    assert sum(1 for it in ITEMS if it.get('region') == 'gloaming-isles') == 16
 
 
 def main():
@@ -1694,7 +2342,7 @@ def main():
     out = []
     for it in ITEMS:
         rec = {k: it[k] for k in ('id', 'name', 'kind', 'source') if k in it}
-        for k in ('boss', 'city', 'slot', 'class'):
+        for k in ('boss', 'city', 'instance', 'region', 'slot', 'class'):
             if k in it:
                 rec[k] = it[k]
         rec.update(flavour=it['flavour'], buff=it['buff'], colour=it['colour'])

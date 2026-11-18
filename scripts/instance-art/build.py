@@ -5,7 +5,7 @@ import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from engine import *
-import banners, roadmap, route, icons, rewards, sprite
+import banners, roadmap, isles_map, route, icons, rewards, sprite
 
 OUT = os.path.join(HERE, 'png')
 X1 = os.path.join(OUT, 'x1')
@@ -110,6 +110,9 @@ def main():
     variants(roadmap, 3, 'sheet-roadmap.png',
              ['ROADMAP 1  FIRST SITE REACHED', 'ROADMAP 3  THREE CLEARED, FOURTH IN PROGRESS',
               'ROADMAP 6  ALL CLEARED'], report)
+    variants(isles_map, 3, 'sheet-isles-map.png',
+             ['ISLES MAP 1  FIRST SITE REACHED', 'ISLES MAP 4  FOUR CLEARED, FIFTH REACHED',
+              'ISLES MAP 8  ALL CLEARED'], report)
     variants(route, 3, 'sheet-route.png',
              ['ROUTE START', 'ROUTE MID  THREE ROOMS CLEARED', 'ROUTE BOSS'], report)
     icons_rewards(report)
