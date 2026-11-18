@@ -1,39 +1,90 @@
-/* Game mode's weekly event: the banner between the room switcher and the tabs, next week's event
-   under it, and the small marker in a room's header. Colours come from Orca's theme (--orca-*) and
-   the game's own (--ac-game-*), with dark defaults. The icons are pixel art, drawn pixelated. */
+/* Game mode's weekly events: the calendar's button in the header (a calendar with the week's event
+   as a badge and a thin bar for its goal), the calendar's card in the panels' place, and the small
+   marker in a room's header. Colours come from Orca's theme (--orca-*) and the game's own
+   (--ac-game-*), with dark defaults. The icons are pixel art, drawn pixelated. */
 
-.ac-event-banner {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 4px 10px;
-  padding: 6px 10px;
-  border: 1px solid var(--orca-border, #2a2f3a);
-  border-left: 3px solid var(--ac-game-gold, #f2c14e);
-  border-radius: 6px;
-  background: var(--orca-secondary, #1f232c);
-  color: var(--orca-secondary-foreground, #e8eaf0);
+/* The button: as wide as its neighbours, with the event's name beside the calendar where the
+   window is wide. */
+.ac-game-settings-button.ac-event-button {
+  position: relative;
+  flex: none;
+  gap: 6px;
+  width: auto;
+  min-width: 28px;
+  padding: 0 5px;
+}
+.ac-event-button-mark { position: relative; display: inline-flex; line-height: 0; padding-right: 8px; }
+.ac-event-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -7px;
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px var(--orca-background, #15181e));
+}
+.ac-event-button-name {
+  display: none;
+  max-width: 14em;
+  overflow: hidden;
   font-size: 12px;
-  line-height: 1.35;
-  container: ac-event / inline-size;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.ac-event-banner[hidden], .ac-event-next[hidden], .ac-event-toggle[hidden], .ac-event-marker[hidden] { display: none; }
-.ac-event-banner.ac-event-done { border-left-color: var(--ac-game-good, #6fe0d2); }
-.ac-event-icon { width: 32px; height: 32px; image-rendering: pixelated; }
-.ac-event-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ac-event-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
-.ac-event-name { font-size: 13px; color: var(--orca-foreground, #f2f4f8); }
-.ac-event-kind, .ac-event-left, .ac-event-reward, .ac-event-flavour {
+@media (min-width: 1100px) {
+  .ac-event-button-name { display: inline; padding-left: 4px; }
+}
+.ac-event-button-bar {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ac-game-track, rgba(232, 234, 240, 0.14));
+  overflow: hidden;
+}
+.ac-event-button-fill { display: block; height: 100%; background: var(--ac-game-gold, #f2c14e); }
+.ac-event-button-done .ac-event-button-fill { background: var(--ac-game-good, #6fe0d2); }
+
+/* The card: it takes the panels' place, as the summary and the settings do. */
+.ac-root[data-game-calendar] .ac-rooms,
+.ac-root[data-game-calendar] .ac-shelf,
+.ac-root[data-game-calendar] .ac-game-panel,
+.ac-root[data-game-calendar] .ac-game-settings { display: none !important; }
+.ac-root.ac-gallery[data-game-calendar] { overflow: auto; }
+.ac-event-calendar { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-event-calendar[hidden], .ac-event-marker[hidden] { display: none; }
+.ac-event-calendar-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.ac-event-calendar-body > .ac-game-settings-note { grid-column: 1 / -1; margin: 0; }
+.ac-event-week-current {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-left: 3px solid var(--ac-game-gold, #f2c14e);
+}
+.ac-event-week-current.ac-event-done { border-left-color: var(--ac-game-good, #6fe0d2); }
+.ac-event-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ac-event-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-event-icon { flex: none; width: 32px; height: 32px; image-rendering: pixelated; }
+.ac-event-name { margin: 0; font-size: 14px; color: var(--orca-foreground, #f2f4f8); }
+.ac-event-meta, .ac-event-reward, .ac-event-flavour, .ac-event-week-dates, .ac-event-week-kind {
+  margin: 0;
   color: var(--orca-muted-foreground, #9aa3b2);
+  font-size: 12px;
 }
-.ac-event-left { margin-left: auto; white-space: nowrap; }
-.ac-event-does, .ac-event-flavour { margin: 0; overflow-wrap: anywhere; }
-.ac-event-flavour { font-style: italic; }
-.ac-event-goal { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.ac-event-does { display: flex; flex-direction: column; gap: 2px; margin: 0; padding-left: 1.1em; font-size: 12px; }
+.ac-event-flavour { font-style: italic; overflow-wrap: anywhere; }
+.ac-event-goal { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; }
 .ac-event-goal-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ac-event-progress {
-  flex: 1 1 60px;
-  max-width: 160px;
+  flex: 1 1 80px;
+  max-width: 200px;
   height: 6px;
   border-radius: 3px;
   background: var(--ac-game-track, rgba(232, 234, 240, 0.14));
@@ -41,26 +92,15 @@
 }
 .ac-event-progress-fill { display: block; height: 100%; background: var(--ac-game-gold, #f2c14e); }
 .ac-event-done .ac-event-progress-fill { background: var(--ac-game-good, #6fe0d2); }
-.ac-event-toggle { align-self: start; white-space: nowrap; }
-.ac-event-toggle:focus-visible { outline: 2px solid var(--orca-ring, #6fe0d2); outline-offset: 1px; }
-.ac-event-next {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed var(--orca-border, #2a2f3a);
-}
-.ac-event-next-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; image-rendering: pixelated; }
-.ac-event-next-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
-/* A narrow panel: the icon shrinks, the button goes under the text and the time left onto its own
-   place in the line; nothing scrolls sideways. */
-@container ac-event (max-width: 420px) {
-  .ac-event-banner { grid-template-columns: auto minmax(0, 1fr); }
-  .ac-event-icon { width: 16px; height: 16px; }
-  .ac-event-toggle { grid-column: 2; justify-self: start; }
-  .ac-event-left { margin-left: 0; }
-}
+/* The coming weeks: one row a week. */
+.ac-event-weeks { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ac-event-week-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.ac-event-week-icon { flex: none; width: 16px; height: 16px; margin-top: 1px; image-rendering: pixelated; }
+.ac-event-week-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 12px; }
+.ac-event-week-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ac-event-week-name { color: var(--orca-foreground, #f2f4f8); }
+.ac-event-week-does { overflow-wrap: anywhere; }
 
 /* In a room's header: the event's icon, small, before the occupancy. */
 .ac-event-marker { flex: none; display: inline-flex; align-items: center; line-height: 0; }

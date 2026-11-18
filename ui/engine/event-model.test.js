@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { eventEffectText, eventLines, goalText, rewardText, timeLeftText } from './event-labels.js'
-import { bannerModel, eventIconUrl, markerModel } from './event-model.js'
+import { eventEffectText, eventLines, goalText, rewardText, timeLeftText, timeLeftWords, weekDatesText } from './event-labels.js'
+import { calendarButtonModel, comingWeeks, eventIconUrl, markerModel, thisWeekModel } from './event-model.js'
 
 const events = JSON.parse(readFileSync(new URL('../../game/events.json', import.meta.url), 'utf8')).events
 const HOUR = 3_600_000
@@ -11,6 +11,7 @@ const HOUR = 3_600_000
 function weekly(extra = {}) {
   return {
     week: '2026-W47',
+    startsAt: Date.UTC(2026, 10, 16),
     endsAt: 0,
     msLeft: 3 * 24 * HOUR + 4 * HOUR,
     id: 'howling-moon',
@@ -29,6 +30,10 @@ function weekly(extra = {}) {
       raceName: null, city: null, cityName: null, effects: [{ effect: 'restTime', scope: 'world', amount: 3 }],
       goal: { kind: 'kills', count: 250 }
     },
+    upcoming: [
+      { week: '2026-W48', startsAt: Date.UTC(2026, 10, 23), id: 'clear-skies', name: 'Clear Skies', kind: 'season' },
+      { week: '2026-W49', startsAt: Date.UTC(2026, 10, 30), id: 'bone-tide', name: 'Bone Tide', kind: 'race' }
+    ],
     ...extra
   }
 }
@@ -66,18 +71,19 @@ test('goals and rewards in words', () => {
   assert.equal(rewardText({ hides: 1200, seals: 980 }), '1,200 hides and 980 seals')
 })
 
-test('the banner shows the event, its goal\'s share and next week\'s, and nothing before the first round', () => {
-  const banner = bannerModel({ weekly: weekly() })
+test('the calendar\'s current week shows the event, its dates, its goal\'s share and next week\'s, and nothing before the first round', () => {
+  const banner = thisWeekModel({ weekly: weekly() })
   assert.equal(banner.name, 'The Howling Moon')
   assert.equal(banner.kindLabel, 'Race week')
   assert.equal(banner.timeLeft, '3 d 4 h left')
+  assert.equal(banner.dates, 'Nov 16 – 22')
   assert.equal(banner.goal.share, 0.3)
   assert.equal(banner.reward, 'Reward: 1,200 hides and 980 seals')
   assert.equal(banner.next.name, 'Clear Skies')
   assert.equal(banner.next.goal, 'Defeat 250 monsters')
-  assert.equal(bannerModel({ weekly: null }), null)
-  assert.equal(bannerModel(null), null)
-  const done = bannerModel({ weekly: weekly({ goal: { kind: 'race', count: 40, progress: 40, done: true } }) })
+  assert.equal(thisWeekModel({ weekly: null }), null)
+  assert.equal(thisWeekModel(null), null)
+  const done = thisWeekModel({ weekly: weekly({ goal: { kind: 'race', count: 40, progress: 40, done: true } }) })
   assert.equal(done.goal.done, true)
   assert.equal(done.reward, 'Goal reached, reward paid')
 })
@@ -88,4 +94,33 @@ test('the room\'s marker names the event, the time left and the goal', () => {
   assert.equal(marker.label, 'This week\'s event: The Howling Moon, 3 d 4 h left; 12 of 40')
   assert.equal(markerModel({}), null)
   assert.equal(eventIconUrl('/base/', 'race'), '/base/ui/art/events/race.png')
+})
+
+test('time left and a week\'s dates in words', () => {
+  assert.equal(timeLeftWords(4 * 24 * HOUR + 9 * HOUR), '4 days 9 hours left')
+  assert.equal(timeLeftWords(24 * HOUR + HOUR), '1 day 1 hour left')
+  assert.equal(timeLeftWords(5 * HOUR), '5 hours left')
+  assert.equal(weekDatesText(Date.UTC(2026, 10, 30)), 'Nov 30 – Dec 6')
+  assert.equal(weekDatesText(Date.UTC(2026, 11, 28)), 'Dec 28 – Jan 3')
+})
+
+test('the calendar button says the event, the goal and the time left, and its bar the goal\'s share', () => {
+  const model = calendarButtonModel({ weekly: weekly() })
+  assert.equal(model.label, 'This week: The Howling Moon, goal 12 of 40, 3 days 4 hours left')
+  assert.equal(model.name, 'The Howling Moon')
+  assert.equal(model.kind, 'race')
+  assert.equal(model.share, 0.3)
+  assert.equal(model.done, false)
+  const done = calendarButtonModel({ weekly: weekly({ goal: { kind: 'race', count: 40, progress: 40, done: true } }) })
+  assert.equal(done.label, 'This week: The Howling Moon, goal reached, 3 days 4 hours left')
+  assert.equal(done.done, true)
+  assert.equal(calendarButtonModel({}), null)
+})
+
+test('the coming weeks each have their dates, event and kind', () => {
+  assert.deepEqual(comingWeeks({ weekly: weekly() }), [
+    { week: '2026-W48', dates: 'Nov 23 – 29', id: 'clear-skies', name: 'Clear Skies', kind: 'season', kindLabel: 'Season' },
+    { week: '2026-W49', dates: 'Nov 30 – Dec 6', id: 'bone-tide', name: 'Bone Tide', kind: 'race', kindLabel: 'Race week' }
+  ])
+  assert.deepEqual(comingWeeks({ weekly: null }), [])
 })

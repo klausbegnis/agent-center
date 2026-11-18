@@ -5,7 +5,7 @@ import { playEmote, stopEmote } from './emote-view.js'
 import { createEmoteSchedule } from './emotes.js'
 import { createFamiliarMarker, drawFamiliar, drawFamiliarMarker, placeFamiliar } from './familiar-view.js'
 import { familiarPoints, household, subagentScale } from './familiars.js'
-import { createEventMarker } from './event-banner.js'
+import { createEventMarker } from './event-calendar.js'
 import { gameModeOf, worldById } from './game-model.js'
 import { occupancy, roomThemeOptions } from './labels.js'
 import { createRoomGame } from './room-game-view.js'
@@ -32,7 +32,7 @@ export function createRoomView({ room, theme, variant, transport, emotePace, onS
   const title = el('h2', 'ac-room-name', room.name)
   if (room.host && room.host !== 'local') title.append(el('span', 'ac-room-host', ` · ${room.host}`))
   const meta = el('span', 'ac-room-meta')
-  // The icon of the week's event of the room's world, while the game runs (event-banner.js).
+  // The icon of the week's event of the room's world, while the game runs (event-calendar.js).
   const eventMarker = createEventMarker({ base: transport.base ?? '' })
   head.append(title, eventMarker.element, meta)
 

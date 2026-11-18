@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { createEngine } from './engine.mjs'
 import { weekOfKey } from './weekly-calendar.mjs'
-import { weeklyView } from './weekly-view.mjs'
+import { UPCOMING_WEEKS, weeklyView } from './weekly-view.mjs'
 import { emptySave } from './worlds.mjs'
 
 const readJson = (name) => JSON.parse(readFileSync(new URL(`../../game/${name}`, import.meta.url), 'utf8'))
@@ -30,6 +30,19 @@ test('a world\'s view has its event, what it does, its goal, the time left and n
   assert.ok(Object.values(view.reward).every((amount) => amount > 0))
   assert.equal(view.next.week, '2026-W48')
   assert.notEqual(view.next.id, view.id)
+  assert.equal(view.startsAt, weekOfKey('2026-W47').startsAt)
+})
+
+test('the calendar\'s coming weeks follow on from this one, each with its event, and never repeat it', () => {
+  const view = weeklyView(world(weekly('howling-moon')), content)
+  assert.equal(view.upcoming.length, UPCOMING_WEEKS)
+  assert.deepEqual(view.upcoming.map((entry) => entry.week), ['2026-W48', '2026-W49', '2026-W50', '2026-W51', '2026-W52'])
+  assert.equal(view.upcoming[0].id, view.next.id)
+  assert.equal(view.upcoming[1].startsAt - view.upcoming[0].startsAt, 7 * 86_400_000)
+  for (const [at, entry] of view.upcoming.entries()) {
+    assert.deepEqual(Object.keys(entry).sort(), ['id', 'kind', 'name', 'startsAt', 'week'])
+    assert.notEqual(entry.id, at === 0 ? view.id : view.upcoming[at - 1].id)
+  }
 })
 
 test('a festival names its city', () => {

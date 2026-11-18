@@ -2,7 +2,7 @@
 // materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market, Bestiary); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { button, el, svgIcon } from './dom.js'
-import { createEventBanner } from './event-banner.js'
+import { createEventCalendar } from './event-calendar.js'
 import { createGameActions } from './game-actions.js'
 import { ALL_ROOMS, createGameContext } from './game-context.js'
 import { card } from './game-controls.js'
@@ -80,9 +80,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   })
   // The picker and the strip sit above the tabs and keep their size on every tab.
   const top = el('div', 'ac-game-top')
-  // The week's event of the world shown, between the room switcher and the tabs (event-banner.js).
-  const eventBanner = createEventBanner({ base: transport.base ?? '' })
-  top.append(context.element, eventBanner.element, bar)
+  top.append(context.element, bar)
 
   const notice = el('p', 'ac-game-notice')
   notice.setAttribute('role', 'status')
@@ -112,7 +110,16 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   settingsButton.title = SETTINGS.open
   const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
   // "While you worked" (summary-view.js): its button sits beside the cog, its card in the panels' place.
-  const summary = createSummaryView({ actions, root, onOpen: () => isSettingsOpen && setSettingsOpen(false) })
+  const summary = createSummaryView({ actions, root, onOpen: () => {
+    calendar.close()
+    if (isSettingsOpen) setSettingsOpen(false)
+  } })
+  // The weekly events' calendar (event-calendar.js): its button beside the summary's, its card in the
+  // panels' place, for the world shown above the tabs.
+  const calendar = createEventCalendar({ base: transport.base ?? '', root, onOpen: () => {
+    summary.close()
+    if (isSettingsOpen) setSettingsOpen(false)
+  } })
 
   /** What draws each panel while the game runs. */
   const base = transport.base ?? ''
@@ -167,7 +174,10 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   }
 
   function setSettingsOpen(isOpen, returnFocus = false) {
-    if (isOpen) summary.close()
+    if (isOpen) {
+      summary.close()
+      calendar.close()
+    }
     isSettingsOpen = isOpen
     show()
     onTabChange()
@@ -191,6 +201,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   function select(next) {
     isSettingsOpen = false
     summary.close()
+    calendar.close()
     const wasRooms = tab === 'rooms'
     // Scrolled far enough that the tabs stick to the top: the next tab opens at its own top, with
     // the tabs where they are. Otherwise nothing above the tabs moves.
@@ -209,7 +220,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     if (!state) return
     const isRunning = mode === 'running'
     context.element.hidden = !isRunning
-    eventBanner.update(isRunning ? worldById(state.game, state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId) : null)
+    calendar.update(state, isRunning ? worldById(state.game, state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId) : null)
     if (!isRunning) {
       if (!panels[tab]) return
       contents[tab].hidden = true
@@ -269,9 +280,10 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     /** The picker, the strip and the tab bar go above the rooms; the panels and messages below. */
     top,
     notice,
-    panels: [...Object.values(panels), settings.element, summary.element],
+    panels: [...Object.values(panels), settings.element, summary.element, calendar.element],
     settingsButton,
     summaryButton: summary.button,
+    calendarButton: calendar.button,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {

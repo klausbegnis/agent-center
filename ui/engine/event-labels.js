@@ -1,5 +1,6 @@
 // The words of the weekly events: what an event does, worded from its effects (the same data the
-// engine plays by), its goal, the time left and the banner's labels. Never touches the DOM.
+// engine plays by), its goal, the time left, a week's dates and the calendar's labels. Never touches
+// the DOM.
 import { effectText, listText, WORDED_EFFECTS } from './legendary-labels.js'
 import { materialLabel } from './labels.js'
 import { formatAmount } from './game-format.js'
@@ -9,10 +10,14 @@ const HOUR_MS = 3_600_000
 const DAY_MS = 24 * HOUR_MS
 
 export const EVENTS = {
-  bannerName: 'This week',
-  nextShow: 'Next week',
-  nextHide: 'Hide next week',
-  nextName: (name) => `Next week: ${name}`,
+  calendar: 'Weekly events',
+  close: 'Close',
+  thisWeek: 'This week',
+  comingWeeks: 'Coming weeks',
+  viewOnly: 'You are viewing this game from another computer.',
+  /** The calendar button's label: "This week: Bone Tide, goal 2 of 9, 4 days 9 hours left". */
+  button: (name, goal, left) => `This week: ${name}, ${goal}, ${left}`,
+  buttonGoal: (progress, count, done) => (done ? 'goal reached' : `goal ${progress} of ${count}`),
   goal: 'Goal',
   reached: 'Goal reached, reward paid',
   reward: (text) => `Reward: ${text}`,
@@ -46,6 +51,37 @@ export function timeLeftText(ms) {
   const hours = Math.floor((ms - days * DAY_MS) / HOUR_MS)
   if (days === 0) return `${hours} h left`
   return hours ? `${days} d ${hours} h left` : `${days} d left`
+}
+
+/**
+ * The time left in a week in full words, for a screen reader: "4 days 9 hours left".
+ *
+ * @param {number} ms
+ */
+export function timeLeftWords(ms) {
+  if (!(ms > 0)) return 'ending now'
+  if (ms < HOUR_MS) return 'under an hour left'
+  const days = Math.floor(ms / DAY_MS)
+  const hours = Math.floor((ms - days * DAY_MS) / HOUR_MS)
+  const unit = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`
+  if (days === 0) return `${unit(hours, 'hour')} left`
+  return hours ? `${unit(days, 'day')} ${unit(hours, 'hour')} left` : `${unit(days, 'day')} left`
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const dayText = (date) => `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`
+
+/**
+ * A week's dates, Monday to Sunday in UTC as the calendar counts them: "Nov 16 – 22",
+ * "Nov 30 – Dec 6".
+ *
+ * @param {number} startsAt the week's Monday at 00:00 UTC, in milliseconds
+ */
+export function weekDatesText(startsAt) {
+  const first = new Date(startsAt)
+  const last = new Date(startsAt + 6 * DAY_MS)
+  const end = first.getUTCMonth() === last.getUTCMonth() ? String(last.getUTCDate()) : dayText(last)
+  return `${dayText(first)} – ${end}`
 }
 
 /**
