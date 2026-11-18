@@ -10,6 +10,11 @@ paths:
 
 - `ui/engine/` draws the same thing in the Orca panel, the editor tab and the external view.
   What differs between them lives in a transport, built in `ui/boot/`.
+- The Orca panel and the editor tab start at `ui/boot/panel.js`, which loads the scene's modules
+  one at a time in the order of `ui/boot/panel-modules.js`: Orca serves a panel about 32 files at
+  a time and answers 503 to the rest, so a module graph asked for all at once does not load. The
+  list is generated from the imports. After adding, removing or renaming an import under `ui/`,
+  run `npm run sync-panel-modules`; `npm run check` fails while the list is stale.
 - A feature that needs something from the plugin adds an optional method to the transport. The
   engine checks for it (`if (transport.setRoomHidden)`) and hides the control when it is absent.
 

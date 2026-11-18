@@ -20,6 +20,7 @@
     "demo": "node scripts/demo.mjs",
     "simulate": "node scripts/simulate-game.mjs",
     "sync-rules": "node scripts/sync-rules.mjs",
+    "sync-panel-modules": "node scripts/panel-modules.mjs",
     "verify": "npm run check && npm test"
   },
   "keywords": [

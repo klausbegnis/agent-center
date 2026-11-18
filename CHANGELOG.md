@@ -8,6 +8,13 @@ All notable changes to this project are recorded here. The format follows
 
 ## 0.4.0 - 2026-11-18
 
+### Fixed
+
+- The Orca panel and the editor tab could stay empty: Orca serves a panel about 32 files at a time
+  and refuses the rest, and the scene had grown to 132 modules asked for at once. The panel now
+  loads its modules one at a time, in an order generated from the imports
+  (`npm run sync-panel-modules`, checked by `npm run check`), and tries a refused file again.
+
 ### Added
 
 - Game mode: daily quests. Each local day every world gets three quests (easy, medium, hard),
