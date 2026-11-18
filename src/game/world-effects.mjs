@@ -1,8 +1,10 @@
-// The effects a world gives every party in it, from three sources: its bestiary (bestiary-effects.mjs),
-// its settlement (settlement-effects.mjs) and the week's event (weekly.mjs). They join each room's relic wherever that is read,
-// and every type's sum is capped by LEGENDARY_EFFECT_CAPS. Worked out once per state of the
-// bestiary's counters and of the building levels, since the fight asks for them every tick. Pure.
+// The effects a world gives every party in it, from four sources: its bestiary
+// (bestiary-effects.mjs), its settlement (settlement-effects.mjs), the week's event (weekly.mjs) and
+// the perks of its cities' ranks (city-ranks.mjs). They join each room's relic wherever that is read,
+// and every type's sum is capped by LEGENDARY_EFFECT_CAPS. Pure.
 import { worldEffectsOf as bestiaryWorldEffects } from './bestiary-effects.mjs'
+import { cityRankIndexOf } from './city-ranks-content.mjs'
+import { cityRankEffects } from './city-ranks.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
 import { settlementEffects } from './settlement-effects.mjs'
 import { weeklyEffectsOf } from './weekly.mjs'
@@ -15,7 +17,8 @@ const worked = new WeakMap()
 const NO_UPGRADES = {}
 
 /**
- * Every effect a world gives the parties in it: its bestiary's, its settlement's and its week's event's.
+ * Every effect a world gives the parties in it: its bestiary's, its settlement's, its cities' ranks'
+ * and its week's event's.
  *
  * @param {{ bestiary?: object, upgrades?: Record<string, number> } | null | undefined} world
  * @param {object} [content] the game content
@@ -28,9 +31,17 @@ export function worldEffectsOf(world, content) {
   return weekly.length ? [...standing, ...weekly] : standing
 }
 
-/** The bestiary's and the settlement's effects, which last from week to week. */
+/** The bestiary's, the settlement's and the city ranks' effects, which last from week to week. */
 function standingEffectsOf(world, content) {
   if (!world) return []
+  const own = ownEffectsOf(world, content)
+  // A handful of perks, worked out each time: no cache that could mix one world's ranks with another's.
+  const perks = world.cityRanks ? cityRankEffects(world, cityRankIndexOf(content)) : []
+  return perks.length ? [...own, ...perks] : own
+}
+
+/** The bestiary's and the settlement's effects. */
+function ownEffectsOf(world, content) {
   const bestiary = bestiaryWorldEffects(world, content)
   const index = settlementIndexOf(content)
   const key = world.upgrades ?? NO_UPGRADES

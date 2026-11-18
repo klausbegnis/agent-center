@@ -259,6 +259,10 @@ export function createController({
       achievementId: achievementId === null ? null : requireText(achievementId, 'achievement')
     })),
     gameMarkSummarySeen: () => playAction(() => game.markSummarySeen()),
-    gameTraitAction: (input) => playAction(() => game.traitAction(traitInputOf(input)))
+    gameTraitAction: (input) => playAction(() => game.traitAction(traitInputOf(input))),
+    gameBuyCharter: (worldId, cityId) => playAction(() => game.buyCharter({
+      worldId: requireText(worldId, 'world'),
+      cityId: requireText(cityId, 'city')
+    }))
   }
 }

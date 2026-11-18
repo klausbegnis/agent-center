@@ -72,7 +72,7 @@ test('every game route is for this machine only', () => {
   'auto-spend',
     'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
     'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
-    'choose-boon', 'recall-party', 'party-title', 'summary-seen', 'trait']) {
+    'choose-boon', 'recall-party', 'party-title', 'summary-seen', 'trait', 'buy-charter']) {
     assert.equal(isLocalOnlyRoute(`/api/game/${route}`), true, route)
   }
 })

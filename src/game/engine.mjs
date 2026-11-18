@@ -4,6 +4,8 @@
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { chronicleActions } from './chronicle.mjs'
+import { withCityRanks } from './city-rank-actions.mjs'
+import { cityRankIndexOf } from './city-ranks-content.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { withActiveRelic } from './legendary.mjs'
@@ -217,6 +219,7 @@ export function createEngine({ content }) {
     view: (save) => viewOf(save, content),
     cleanSave: (save) => cleanSave(save, {
       cityIds: (content.cities?.cities ?? []).map((city) => city.id),
+      rankedCityIds: [...(cityRankIndexOf(content)?.byCity.keys() ?? [])],
       legendary: content.legendary,
       bestiary: content.bestiary,
       bosses: content.bosses,
@@ -234,7 +237,8 @@ export function createEngine({ content }) {
     sendItemProblem,
     sendRelic,
     sendRelicProblem,
-    ...marketActions(content),
+    // Every deal counts towards the city's rank; charters raise it (city-rank-actions.mjs).
+    ...withCityRanks(marketActions(content), content),
     /** The name of an item's entry, plain or legendary, as the view gives it; the id when unknown. */
     itemName: (entryId) => itemNameOf(content, entryId),
     // Instances (instance-run.mjs): entering one, choosing the vault's boon, recalling the party;

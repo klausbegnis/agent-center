@@ -75,6 +75,10 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['summarySeen'])
       return { changed: true }
     },
+    gameBuyCharter: async (...input) => {
+      calls.push(['buyCharter', ...input])
+      return { changed: true }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -276,6 +280,13 @@ test('the title and summary routes reach the controller with their fields', asyn
   assert.deepEqual(calls, [['partyTitle', room, 'monsters-4'], ['partyTitle', room, null], ['summarySeen']])
 })
 
+test('the charter route reaches the controller with the world and the city', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  assert.equal((await post('/api/game/buy-charter', { worldId: 'main', cityId: 'goldmill' })).status, 200)
+  assert.deepEqual(calls, [['buyCharter', 'main', 'goldmill']])
+})
+
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
   const { server, calls } = await setup(t)
   const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
@@ -297,7 +308,7 @@ const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', '
   'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
   'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
-  'choose-boon', 'recall-party', 'party-title', 'summary-seen']
+  'choose-boon', 'recall-party', 'party-title', 'summary-seen', 'buy-charter']
 
 const gameState = {
   rooms: [],

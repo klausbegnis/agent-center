@@ -163,7 +163,8 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     '/api/game/party-title': (input) => controller.gameSetPartyTitle(input.roomId, input.achievementId ?? null),
     '/api/game/summary-seen': () => controller.gameMarkSummarySeen(),
     // Teach, swap, buy, sell or send a trait scroll; `action` names which (game-trait-actions.mjs).
-    '/api/game/trait': (input) => controller.gameTraitAction(input)
+    '/api/game/trait': (input) => controller.gameTraitAction(input),
+    '/api/game/buy-charter': (input) => controller.gameBuyCharter(input.worldId, input.cityId)
   }
 
   async function handlePost(pathname, request, response, isLocal) {

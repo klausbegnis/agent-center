@@ -2,6 +2,7 @@
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
 import { normalizeBestiary } from './bestiary.mjs'
 import { migrateChronicle } from './chronicle-save.mjs'
+import { normalizeCityRanks } from './city-ranks-save.mjs'
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
 import { normalizeProjectInstance, normalizeWorldInstances } from './instance-save.mjs'
 import { normalizeLegendary } from './legendary.mjs'
@@ -260,6 +261,7 @@ function normalizeWorld(value) {
   const bestiary = normalizeBestiary(value.bestiary)
   const instances = normalizeWorldInstances(value.instances)
   const weekly = normalizeWeekly(value.weekly)
+  const cityRanks = normalizeCityRanks(value.cityRanks)
   return {
     // Kept only once the world has killed; a save from before the bestiary has none.
     ...(bestiary ? { bestiary } : {}),
@@ -267,6 +269,8 @@ function normalizeWorld(value) {
     ...(instances ? { instances } : {}),
     // Kept from the first advance with weekly events (weekly-save.mjs).
     ...(weekly ? { weekly } : {}),
+    // Kept only once the world has traded with a city (city-ranks-save.mjs).
+    ...(cityRanks ? { cityRanks } : {}),
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),

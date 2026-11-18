@@ -2,6 +2,7 @@
 // progress, materials, upgrades with their next cost, and each project's fight and party.
 import { bestiaryContentView, worldBestiaryView } from './bestiary-view.mjs'
 import { seasoning } from './characters.mjs'
+import { cityRankIndexOf } from './city-ranks-content.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
@@ -146,7 +147,8 @@ function worldView(worldId, world, names, content, index) {
     projects: Object.keys(world.projects).sort()
       .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content, worldId)),
     coins: world.coins ?? 0,
-    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary }),
+    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary,
+      cityRanks: cityRankIndexOf(content) }),
     bestiary: worldBestiaryView(world, content),
     settlement: settlementView(world, content),
     instances: worldInstancesView(worldId, world, content),

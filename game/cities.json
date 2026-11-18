@@ -1,34 +1,424 @@
 {
   "cities": [
     {
-      "id": "goldmill", "name": "Goldmill", "tagline": "Wheat fields and windmills",
-      "opensAt": 1, "produces": ["crops", "fish"], "wants": ["ore", "bars"],
+      "id": "goldmill",
+      "name": "Goldmill",
+      "tagline": "Wheat fields and windmills",
+      "opensAt": 1,
+      "produces": [
+        "crops",
+        "fish"
+      ],
+      "wants": [
+        "ore",
+        "bars"
+      ],
       "banner": "ui/cities/goldmill.png",
-      "bannerAlt": "Golden wheat fields at sunset, with windmills turning on a green hill"
+      "bannerAlt": "Golden wheat fields at sunset, with windmills turning on a green hill",
+      "ranks": {
+        "banners": [
+          {
+            "banner": "ui/cities/goldmill-1.png",
+            "alt": "A few farms and windmills on a green hill above golden wheat fields at sunset"
+          },
+          {
+            "banner": "ui/cities/goldmill-2.png",
+            "alt": "A market street of thatched houses along the road below the windmills"
+          },
+          {
+            "banner": "ui/cities/goldmill-3.png",
+            "alt": "A walled town with red towers, flags and a bell tower among the windmills"
+          },
+          {
+            "banner": "ui/cities/goldmill-4.png",
+            "alt": "A river port with barges, more towers and a great mill by the hill"
+          },
+          {
+            "banner": "ui/cities/goldmill-5.png",
+            "alt": "A golden capital: a great mill-hall, a cathedral spire, terraced fields and festival lights"
+          }
+        ],
+        "charters": [
+          {
+            "name": "Millers' Charter",
+            "perk": "Millers' Bread",
+            "effect": {
+              "effect": "gatherHours",
+              "scope": "world",
+              "amount": 0.15
+            }
+          },
+          {
+            "name": "Harvest Guild Charter",
+            "perk": "Harvest Lore",
+            "effect": {
+              "effect": "gatherXp",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Granary Charter",
+            "perk": "Full Granaries",
+            "effect": {
+              "effect": "staminaPool",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Golden Sheaf Charter",
+            "perk": "Golden Sheaf",
+            "effect": {
+              "effect": "killMaterials",
+              "scope": "world",
+              "amount": 0.002
+            }
+          }
+        ],
+        "legendary": [
+          "blightmoon-sickle",
+          "veil-of-the-regent"
+        ]
+      }
     },
     {
-      "id": "deepforge", "name": "Deepforge", "tagline": "The dwarven mine and foundry",
-      "opensAt": 5, "produces": ["ore", "bars", "gears"], "wants": ["crops", "logs"],
+      "id": "deepforge",
+      "name": "Deepforge",
+      "tagline": "The dwarven mine and foundry",
+      "opensAt": 5,
+      "produces": [
+        "ore",
+        "bars",
+        "gears"
+      ],
+      "wants": [
+        "crops",
+        "logs"
+      ],
       "banner": "ui/cities/deepforge.png",
-      "bannerAlt": "Smoking foundry chimneys and a glowing dwarven gate carved into a night mountain"
+      "bannerAlt": "Smoking foundry chimneys and a glowing dwarven gate carved into a night mountain",
+      "ranks": {
+        "banners": [
+          {
+            "banner": "ui/cities/deepforge-1.png",
+            "alt": "A timbered mine entrance and one smoking smelter at the foot of a night mountain"
+          },
+          {
+            "banner": "ui/cities/deepforge-2.png",
+            "alt": "Smoking foundry chimneys and a glowing dwarven gate carved into a night mountain"
+          },
+          {
+            "banner": "ui/cities/deepforge-3.png",
+            "alt": "A walled foundry with fire pots, banners on the gate and mine carts on the rails"
+          },
+          {
+            "banner": "ui/cities/deepforge-4.png",
+            "alt": "Lit halls carved in the cliff, towers with flags and molten metal pouring into a great forge"
+          },
+          {
+            "banner": "ui/cities/deepforge-5.png",
+            "alt": "A mountain hold: crowned stone kings beside a golden gate, many lit windows and fireworks"
+          }
+        ],
+        "charters": [
+          {
+            "name": "Smelters' Charter",
+            "perk": "Dwarven Whetstones",
+            "effect": {
+              "effect": "upgradeCost",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Foundry Charter",
+            "perk": "Foundry Edges",
+            "effect": {
+              "effect": "critDamage",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Deep Hold Charter",
+            "perk": "Spiked Plate",
+            "effect": {
+              "effect": "thorns",
+              "scope": "world",
+              "amount": 0.015
+            }
+          },
+          {
+            "name": "Kings' Anvil Charter",
+            "perk": "Kings' Anvil",
+            "effect": {
+              "effect": "upgradeCost",
+              "scope": "world",
+              "amount": 0.005
+            }
+          }
+        ],
+        "legendary": [
+          "gravewake-mattock",
+          "labyrinth-cleaver"
+        ]
+      }
     },
     {
-      "id": "brinehaven", "name": "Brinehaven", "tagline": "Harbour of fishers and traders",
-      "opensAt": 10, "produces": ["fish", "hides"], "wants": ["runes", "seals"],
+      "id": "brinehaven",
+      "name": "Brinehaven",
+      "tagline": "Harbour of fishers and traders",
+      "opensAt": 10,
+      "produces": [
+        "fish",
+        "hides"
+      ],
+      "wants": [
+        "runes",
+        "seals"
+      ],
       "banner": "ui/cities/brinehaven.png",
-      "bannerAlt": "A harbour at dusk: a sailing ship, a red and white lighthouse and houses along the quay"
+      "bannerAlt": "A harbour at dusk: a sailing ship, a red and white lighthouse and houses along the quay",
+      "ranks": {
+        "banners": [
+          {
+            "banner": "ui/cities/brinehaven-1.png",
+            "alt": "A fishing hamlet with huts, net racks, rowing boats and a timber beacon at dusk"
+          },
+          {
+            "banner": "ui/cities/brinehaven-2.png",
+            "alt": "A stone quay with rows of houses, a lighthouse and a small ship offshore"
+          },
+          {
+            "banner": "ui/cities/brinehaven-3.png",
+            "alt": "A harbour town on the hill with a sailing ship, market awnings and a red and white lighthouse"
+          },
+          {
+            "banner": "ui/cities/brinehaven-4.png",
+            "alt": "A walled port with round towers, warehouses, a crane and two great ships"
+          },
+          {
+            "banner": "ui/cities/brinehaven-5.png",
+            "alt": "A grand harbour: a tall lighthouse beam, a fleet under sail and a gold-domed guild hall"
+          }
+        ],
+        "charters": [
+          {
+            "name": "Fishers' Charter",
+            "perk": "Tide Tables",
+            "effect": {
+              "effect": "gatherHours",
+              "scope": "world",
+              "amount": 0.15
+            }
+          },
+          {
+            "name": "Salvage Charter",
+            "perk": "Salvage Rights",
+            "effect": {
+              "effect": "itemDrop",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Harbour Charter",
+            "perk": "Ship's Biscuit",
+            "effect": {
+              "effect": "staminaPool",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Merchant Fleet Charter",
+            "perk": "Merchant Fleet",
+            "effect": {
+              "effect": "itemDrop",
+              "scope": "world",
+              "amount": 0.005
+            }
+          }
+        ],
+        "legendary": [
+          "sunken-deck-harpoon",
+          "coldscale-hauberk"
+        ]
+      }
     },
     {
-      "id": "tallwood", "name": "Tallwood", "tagline": "Tree houses, sawmill and hunters",
-      "opensAt": 15, "produces": ["logs", "hides"], "wants": ["gears", "pages"],
+      "id": "tallwood",
+      "name": "Tallwood",
+      "tagline": "Tree houses, sawmill and hunters",
+      "opensAt": 15,
+      "produces": [
+        "logs",
+        "hides"
+      ],
+      "wants": [
+        "gears",
+        "pages"
+      ],
       "banner": "ui/cities/tallwood.png",
-      "bannerAlt": "Tree houses joined by rope bridges in a sunlit forest, a waterfall and a sawmill wheel"
+      "bannerAlt": "Tree houses joined by rope bridges in a sunlit forest, a waterfall and a sawmill wheel",
+      "ranks": {
+        "banners": [
+          {
+            "banner": "ui/cities/tallwood-1.png",
+            "alt": "A hunters' camp in a sunlit forest: a lean-to, a campfire and one tree platform"
+          },
+          {
+            "banner": "ui/cities/tallwood-2.png",
+            "alt": "Tree houses joined by rope bridges in a sunlit forest, a waterfall and a sawmill wheel"
+          },
+          {
+            "banner": "ui/cities/tallwood-3.png",
+            "alt": "More tree houses, lanterns on the bridges, a lookout with a flag and a log raft"
+          },
+          {
+            "banner": "ui/cities/tallwood-4.png",
+            "alt": "A tree town with a great hall and banners, and a bigger sawmill with stacked logs"
+          },
+          {
+            "banner": "ui/cities/tallwood-5.png",
+            "alt": "A canopy city: a golden palace crowning the giant tree, lanterns and fireflies"
+          }
+        ],
+        "charters": [
+          {
+            "name": "Hunters' Charter",
+            "perk": "Hunters' Lodge",
+            "effect": {
+              "effect": "gatherHours",
+              "scope": "world",
+              "amount": 0.15
+            }
+          },
+          {
+            "name": "Woodcraft Charter",
+            "perk": "Woodcraft Lessons",
+            "effect": {
+              "effect": "gatherXp",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Sawmill Charter",
+            "perk": "Long Summer Days",
+            "effect": {
+              "effect": "gatherHours",
+              "scope": "world",
+              "amount": 0.15
+            }
+          },
+          {
+            "name": "Canopy Charter",
+            "perk": "Canopy Wardens",
+            "effect": {
+              "effect": "thorns",
+              "scope": "world",
+              "amount": 0.015
+            }
+          }
+        ],
+        "legendary": [
+          "oathbreaker",
+          "pale-duelists-coat"
+        ]
+      }
     },
     {
-      "id": "runespire", "name": "Runespire", "tagline": "City of scribes, crystals and seals",
-      "opensAt": 25, "produces": ["runes", "crystals", "pages", "seals"], "wants": ["ore", "fish"],
+      "id": "runespire",
+      "name": "Runespire",
+      "tagline": "City of scribes, crystals and seals",
+      "opensAt": 25,
+      "produces": [
+        "runes",
+        "crystals",
+        "pages",
+        "seals"
+      ],
+      "wants": [
+        "ore",
+        "fish"
+      ],
       "banner": "ui/cities/runespire.png",
-      "bannerAlt": "Violet towers under a green aurora, a beam of light rising from the tallest spire"
+      "bannerAlt": "Violet towers under a green aurora, a beam of light rising from the tallest spire",
+      "ranks": {
+        "banners": [
+          {
+            "banner": "ui/cities/runespire-1.png",
+            "alt": "A lone scribes' tower with a small crystal and a few huts under a green aurora"
+          },
+          {
+            "banner": "ui/cities/runespire-2.png",
+            "alt": "Violet towers under a green aurora, a beam of light rising from the tallest spire"
+          },
+          {
+            "banner": "ui/cities/runespire-3.png",
+            "alt": "More towers behind a wall of glowing rune gates, and floating crystal islands"
+          },
+          {
+            "banner": "ui/cities/runespire-4.png",
+            "alt": "A walled arcane city with bridges between towers, a second spire and a floating rune ring"
+          },
+          {
+            "banner": "ui/cities/runespire-5.png",
+            "alt": "A grand arcane capital: a spire crowned with crystals, floating towers and rune circles"
+          }
+        ],
+        "charters": [
+          {
+            "name": "Scribes' Charter",
+            "perk": "Scribed Wards",
+            "effect": {
+              "effect": "runeCircle",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Lamplight Charter",
+            "perk": "Lamplight Archive",
+            "effect": {
+              "effect": "gatherHours",
+              "scope": "world",
+              "amount": 0.15
+            }
+          },
+          {
+            "name": "Seers' Charter",
+            "perk": "Seers' Insight",
+            "effect": {
+              "effect": "critDamage",
+              "scope": "world",
+              "amount": 0.005
+            }
+          },
+          {
+            "name": "Spire Charter",
+            "perk": "Spire Light",
+            "effect": {
+              "effect": "runeCircle",
+              "scope": "world",
+              "amount": 0.005
+            }
+          }
+        ],
+        "legendary": [
+          "stormwing-staff",
+          "moonwane-scepter"
+        ]
+      }
     }
+  ],
+  "rankTitles": [
+    "Hamlet",
+    "Town",
+    "City",
+    "Capital",
+    "Golden age"
   ]
 }

@@ -6,14 +6,15 @@ import { achievementIndexOf } from './achievement-content.mjs'
 import { indexBestiary } from './bestiary-content.mjs'
 import { checkChronicle } from './chronicle-save.mjs'
 import { checkWorldBestiary } from './bestiary-check.mjs'
+import { LAST_OFFER_INDEX } from './city-rank-constants.mjs'
+import { checkCityRanks } from './city-ranks-save.mjs'
 import {
   ITEM_MAX_TIER,
   MARKET_MAX_COINS,
   MARKET_PRESSURE_MAX,
   MARKET_PRESSURE_MIN,
   MONSTER_KINDS,
-  MONSTER_RANKS,
-  STALL_OFFERS
+  MONSTER_RANKS
 } from './constants.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { checkCooldowns, checkRun, checkWorldInstances, sharedInstance } from './instance-save.mjs'
@@ -336,11 +337,11 @@ function project(value, path, legendaryIndex, instanceIndex, traitIndex = null) 
   }
 }
 
-/** The day's offers bought in a city: each offer once, by its index (the relic's is STALL_OFFERS). */
+/** The day's offers bought in a city: each offer once, by its index (city-rank-constants.mjs). */
 function soldToday(value, path) {
   const source = record(value, path)
   const offers = list(source.offers, `${path}.offers`)
-    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS }))
+    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: LAST_OFFER_INDEX }))
   if (new Set(offers).size !== offers.length) fail(`${path}.offers`, 'names an offer twice')
   return { day: whole(source.day, `${path}.day`), offers }
 }
@@ -380,8 +381,11 @@ function buildingLevels(value, path, settlementIndex) {
   return upgrades
 }
 
-function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events }) {
+function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex,
+  events }) {
   const source = record(value, path)
+  const cityRanks = checkCityRanks(source.cityRanks, rankedCityIds)
+  if (!cityRanks.ok) fail(`${path}.${cityRanks.problem[0]}`, cityRanks.problem[1])
   const checked = checkWorldBestiary(source.bestiary, bestiaryIndex)
   if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
   const instances = checkWorldInstances(source.instances, instanceIndex)
@@ -401,6 +405,8 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
     ...(instances.value ? { instances: instances.value } : {}),
     // A save from before the weekly events, or a world not yet advanced, has none.
     ...(weekly.value ? { weekly: weekly.value } : {}),
+    // A world that never traded, or a save from before city ranks, has none.
+    ...(cityRanks.value ? { cityRanks: cityRanks.value } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
     materials: amounts(source.materials, `${path}.materials`, MATERIALS),
     upgrades: buildingLevels(source.upgrades, `${path}.upgrades`, settlementIndex),
@@ -427,10 +433,11 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
  *   open the buildings a world may have levels of; the parsed game/instances.json, whose instances
  *   and boons a world's progress and a room's run may name; the parsed game/traits.json, whose
  *   traits a character, a room's scrolls and a world's collection may name; the parsed
- *   game/events.json, whose events a world's week may name
+ *   game/events.json, whose events a world's week may name; `rankedCityIds`, the cities with ranks,
+ *   which a world's city ranks may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events } = {}) {
+export function cleanSave(value, { cityIds = [], rankedCityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
   const traitIndex = traitIndexOf({ traits })
   const instanceIndex = instanceIndexOf({ instances })
@@ -441,7 +448,7 @@ export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, se
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events })
+      entry: (item, at) => world(item, at, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.
