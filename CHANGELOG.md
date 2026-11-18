@@ -37,6 +37,12 @@ All notable changes to this project are recorded here. The format follows
   and at rank V more epic ones. A rank-up is told in the world's rooms with the new banner and kept
   in the day journal, and a City ranks group of four achievements follows it.
 
+- Game mode: boss rematches. A beaten instance's boss can be fought again in Rematch I to X, each
+  opened by the world's level, with a tougher boss, better odds at its own item and a reward on its
+  first win; the Roadmap shows the best one as a tier badge.
+- Game mode: a second region, the Gloaming Isles, opens once the Old Road is cleared: eight
+  instances with sixteen new named bosses, their relics and items, and its own sea-chart map.
+
 ### Changed
 
 - Game mode: legendary items come much more slowly from instances, so the collection is a goal of
@@ -44,6 +50,10 @@ All notable changes to this project are recorded here. The format follows
   longer uses or raises the waves' pity, a vault holds only equipment and rarely (0.3%, at most
   1%), and the Seeker's Candle doubles the boss's chance. A boss's own relic now comes only from
   that boss. Nothing already owned is taken away.
+
+- Game mode: the Roadmap is a tab of its own, with a dungeon-gate icon; the World tab keeps the
+  bestiary, and old `?tab=world&view=roadmap` links open the Roadmap. In a narrow panel the open
+  tab shows its name beside its icon.
 
 ## 0.3.0 - 2026-11-17
 

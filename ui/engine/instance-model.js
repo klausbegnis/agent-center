@@ -16,8 +16,8 @@ const STATE_ICON = { hidden: 'icon-locked', locked: 'icon-locked', open: 'icon-f
 /** Which picture of a route goes with the room the party is in: the start, the middle, the boss. */
 const ROUTE_STAGE = ['start', 'start', 'mid', 'mid', 'mid', 'boss']
 
-/** The World tab's views, in the order of its switch. */
-export const WORLD_VIEWS = Object.freeze(['creatures', 'bosses', 'roadmap', 'achievements'])
+/** The World tab's views, in the order of its switch; the Roadmap is a tab of its own. */
+export const WORLD_VIEWS = Object.freeze(['creatures', 'bosses', 'achievements'])
 
 /** A saved or asked-for view of the World tab, or the creatures. */
 export const worldViewOrDefault = (value) => (WORLD_VIEWS.includes(value) ? value : 'creatures')

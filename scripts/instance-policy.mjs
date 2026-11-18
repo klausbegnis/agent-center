@@ -4,7 +4,7 @@
 // failed at the world's level now (it waits for a tenth more); then the highest instance at one tier above
 // the last clear there, one below after a failure (never under 1). The first room that may enter
 // goes in (a room another holds, or one on a cooldown, leaves the next one down to the other rooms).
-// Auto takes the vault's first boon. Uses only what the World tab's Roadmap offers.
+// Auto takes the vault's first boon. Uses only what the Roadmap tab offers.
 import { worldLevel } from '../src/game/progression.mjs'
 
 /** A rematch that failed is tried again once the world's level is this share higher (and one more). */

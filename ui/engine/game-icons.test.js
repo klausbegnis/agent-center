@@ -9,7 +9,7 @@ const MATERIALS = ['bars', 'pages', 'gears', 'crystals', 'seals', 'ore', 'fish',
 const CLASSES = ['physical', 'magical', 'defense', 'support']
 const SLOTS = ['weapon-physical', 'weapon-magical', 'outfit', 'tool']
 const UPGRADES = ['campfire', 'workbench', 'runeCircle']
-const TABS = ['tab-rooms', 'tab-party', 'tab-chest', 'tab-bestiary']
+const TABS = ['tab-rooms', 'tab-party', 'tab-chest', 'tab-bestiary', 'tab-dungeon']
 const EVERY_ICON = [...WORK, ...GATHERING, ...MATERIALS, ...CLASSES, ...SLOTS, ...UPGRADES, ...TABS, 'star', 'coin']
 
 /** How many pixels differ between two drawings, counting a pixel of another ink as different. */

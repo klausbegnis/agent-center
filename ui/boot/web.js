@@ -10,10 +10,10 @@ const listeners = new Set()
 //   ?view=gallery|list   start in that view
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
-//   ?tab=rooms|party|chest|camp|skills|market|world   open that tab of game mode; the old
+//   ?tab=rooms|party|chest|camp|skills|market|world|roadmap   open that tab of game mode; the old
 //                ?tab=arsenal&section=items|party|camp opens Chest, Party or Camp, ?tab=bestiary
-//                the World tab
-//   ?view=creatures|bosses|roadmap   with ?tab=world, the World tab's view to open
+//                the World tab, and ?tab=world&view=roadmap the Roadmap tab
+//   ?view=creatures|bosses   with ?tab=world, the World tab's view to open
 //   ?room=<room id>      the room game mode's tabs show first
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()

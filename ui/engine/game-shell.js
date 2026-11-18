@@ -276,10 +276,11 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {
       const read = (key) => Promise.resolve(transport.prefs?.get(key)).catch(() => null)
-      const [saved, section, room, arsenalRoom] =
-        await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom')])
-      // Saved before the Arsenal became Party, Chest and Camp: its section names the tab.
-      tab = tabOrDefault(saved, section)
+      const [saved, section, room, arsenalRoom, view] =
+        await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom'), read('view')])
+      // Saved before the Arsenal became Party, Chest and Camp: its section names the tab. A link to
+      // the World tab's old Roadmap view opens the Roadmap tab.
+      tab = tabOrDefault(saved, section, view)
       const savedRoom = savedRoomOf(room, arsenalRoom)
       if (savedRoom && wantedRoomId === null) wantedRoomId = savedRoom
     },

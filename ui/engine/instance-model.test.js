@@ -138,7 +138,8 @@ test('a room\'s cooldowns are worded with the working time left', () => {
 })
 
 test('the World tab opens on a known view, the creatures otherwise', () => {
-  assert.equal(worldViewOrDefault('roadmap'), 'roadmap')
+  assert.equal(worldViewOrDefault('bosses'), 'bosses')
+  assert.equal(worldViewOrDefault('roadmap'), 'creatures', 'the Roadmap is a tab of its own')
   assert.equal(worldViewOrDefault('gallery'), 'creatures')
 })
 

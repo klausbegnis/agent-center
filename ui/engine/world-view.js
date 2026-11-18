@@ -1,12 +1,12 @@
-// The World tab: a switch between its views, Creatures and Bosses (the bestiary), the Roadmap of
-// instances and the Achievements (achievements-view.js). The view chosen is kept for the surface, and `?tab=world&view=roadmap`
-// (or an old `?tab=bestiary`) opens on it.
+// The World tab: a switch between its views, Creatures and Bosses (the bestiary) and the
+// Achievements (achievements-view.js). The view chosen is kept for the surface, and
+// `?tab=world&view=achievements` (or an old `?tab=bestiary`) opens on it. The Roadmap, once one of
+// its views, is a tab of its own (roadmap-view.js).
 import { createAchievementsView } from './achievements-view.js'
 import { createBestiaryView } from './bestiary-view.js'
 import { el } from './dom.js'
 import { INSTANCES } from './instance-labels.js'
 import { WORLD_VIEWS, worldViewOrDefault } from './instance-model.js'
-import { createRoadmapView } from './roadmap-view.js'
 
 /** The preference the view is kept under; `view` (an address option) is read first. */
 const VIEW_PREF = 'worldView'
@@ -33,18 +33,15 @@ export function createWorldView({ panel, base, actions, prefs }) {
   top.append(switcher)
   const bestiaryPanel = el('div', 'ac-world-bestiary')
   const bestiary = createBestiaryView({ panel: bestiaryPanel, base, outerSwitch: true })
-  const roadmap = createRoadmapView({ actions, base })
   const achievements = createAchievementsView({ actions })
-  panel.append(top, bestiaryPanel, roadmap.element, achievements.element)
+  panel.append(top, bestiaryPanel, achievements.element)
 
   function draw() {
     buttons.forEach((node, at) => node.setAttribute('aria-pressed', String(WORLD_VIEWS[at] === view)))
-    bestiaryPanel.hidden = view === 'roadmap' || view === 'achievements'
-    roadmap.element.hidden = view !== 'roadmap'
+    bestiaryPanel.hidden = view === 'achievements'
     achievements.element.hidden = view !== 'achievements'
     if (!shown) return
-    if (view === 'roadmap') roadmap.update(shown)
-    else if (view === 'achievements') achievements.update(shown)
+    if (view === 'achievements') achievements.update(shown)
     else {
       bestiary.setShow(view)
       bestiary.update(shown.state, shown.world?.id ?? null)

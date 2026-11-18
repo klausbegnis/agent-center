@@ -626,8 +626,8 @@ The bridge turns each into a `bestiary` event of `recent` (see "View state").
 
 ## Instances
 
-A road of dungeons, six in its first region and eight in the second (`game/instances.json`, checked by `src/game/instance-content.mjs` and
-`instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
+A road of dungeons, six in its first region and eight in the second (`game/instances.json`, checked
+by `src/game/instance-content.mjs`, `instance-regions.mjs` and `instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
 and `instance-rewards.mjs`, its numbers `instance-constants.mjs`). A room sends its party into an
 open instance at a tier; while inside, its wave, wave kills and standing monster are frozen, and its
 working time, in the same rounds and ticks as the waves, plays the instance's six rooms. The other
@@ -781,7 +781,9 @@ pictures.
 - **Unlock.** A later region opens when every instance of the region it comes after has been cleared
   once; until then its instances are under fog and refuse a room (`its region is not open yet`).
   Inside, its instances open one after another as on the first road, each at its World Lv.
-- **The Roadmap** gains a switch between regions above the map. It opens on the furthest open region;
+- **The Roadmap** is a tab of its own (`roadmap`, with a dungeon-gate icon), beside World, which keeps
+  the bestiary; an old link to `?tab=world&view=roadmap` opens it. It has a switch between regions
+  above the map. It opens on the furthest open region;
   a locked one shows its map dimmed with what opens it ("It opens when The Old Road is complete: 4 of 6
   cleared there"). Clearing a whole region gives its title.
 
@@ -2091,14 +2093,16 @@ by the usual closing rules.
     },
     instances: {                    // the world's road; under 2 KB
       map: { cleared: 0, art: 'ui/instances/roadmap-1.png', alt },  // the picture for its progress
-      cleared: 1, total: 6, complete: false,
-      list: [{ id: 'sunken-crypt', state: 'open',  // hidden | locked | open | inside
+      cleared: 1, total: 6, complete: false,   // the first region's, as before regions
+      regions: [{ id: 'old-road', unlocked: true, map, cleared: 1, total: 6, complete: false },
+        { id: 'gloaming-isles', unlocked: false, map, cleared: 0, total: 8, complete: false }],
+      list: [{ id: 'sunken-crypt', region: 'old-road', state: 'open',  // hidden | locked | open | inside
         runs: 3, clears: 2, bestTier: 1, highestTier: 2, relic: 'tidewake-bell', relicFound: true,
         rematch: 1,                 // the best rematch cleared, 0 for none
         nextRematch: { rematch: 2, tier: 5, opensAt: 8,  // null before its boss is beaten or past X
           entry: { 'local:/work/sneaky-pancake': null } },  // why each room cannot go, or null
         roomInside: null, roomIndex: null,          // the room inside and the room of the run it is in
-        entry: { 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
+        entry: {                    // {} for a hidden instance: every room has the same answer 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
     },
     bestiary: {                     // about 9 KB a world
       discovered: 12, raceCount: 20, beaten: 12, bossCount: 55,
@@ -2178,9 +2182,11 @@ by the usual closing rules.
     highlights: [{ at, kind, ref, value?, name }], activeDays: 41,
     unread: true                      // a highlight came after seenAt
   },
-  instances: {                      // the content's, the same for every world; about 6 KB
-    region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144 },
-    instances: [{ id: 'sunken-crypt', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
+  instances: {                      // the content's, the same for every world; about 14 KB
+    region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144, after: null },
+    regions: [{ id: 'old-road', ... }, { id: 'gloaming-isles', name: 'The Gloaming Isles', title: 'Islewarden',
+      width: 256, height: 144, after: 'old-road' }],
+    instances: [{ id: 'sunken-crypt', region: 'old-road', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
       alt, route?: { start, mid, boss, alt }, relic: 'tidewake-bell', boss: 'ossric', elite: 'old-mattock',
       rooms: [{ kind: 'entrance', name }, ..., { kind: 'trap', name, check: { attribute: 'agility' } }, ...],
       rotation: ['regenerating-boss', ...] }],

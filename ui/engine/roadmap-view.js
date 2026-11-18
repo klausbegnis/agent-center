@@ -1,4 +1,4 @@
-// The World tab's Roadmap: the region's map for the world's progress with a live marker on each
+// The Roadmap tab: a switch between the road's regions, the region's map for the world's progress with a live marker on each
 // site (and on a party inside), the cooldowns of the room picked above the tabs, then one card per
 // instance: its banner with the name over it, its state, races, boss and relic, an Enter control
 // (room and tier, with the reason a room cannot) for an open one, a Rematch beside it once its boss

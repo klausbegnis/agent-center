@@ -180,10 +180,12 @@
 }
 .ac-game-tab:hover { color: var(--orca-foreground, #e8eaf0); }
 .ac-game-tab-icon { width: 12px; height: 12px; flex: none; }
-/* Too narrow for seven names and the marker: icons only; the name stays the accessible name and
+/* Too narrow for eight names and the marker: icons only, but the open tab keeps its name beside
+   its icon, as a tile of the strip shows its name; the others' names stay the accessible name and
    the tooltip. The open tab keeps its underline, so it never rests on colour alone. */
-@container ac-game-bar (max-width: 680px) {
+@container ac-game-bar (max-width: 760px) {
   .ac-game-tab-label { display: none; }
+  .ac-game-tab[aria-selected='true'] .ac-game-tab-label { display: inline; }
   .ac-game-tab { padding: 0 10px; }
   .ac-game-tab-icon { width: 15px; height: 15px; }
 }

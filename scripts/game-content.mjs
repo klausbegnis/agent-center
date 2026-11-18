@@ -183,7 +183,7 @@ function checkCities({ root, report, readJson }) {
 /** game/instances.json: its races, bosses and loot against the other files, and that every picture it names is there. */
 function checkInstances({ root, report, readJson }) {
   const instancesFile = path.join(root, 'game', 'instances.json')
-  if (!fs.existsSync(instancesFile)) return report(instancesFile, 'is missing; the World tab needs it for the roadmap')
+  if (!fs.existsSync(instancesFile)) return report(instancesFile, 'is missing; the Roadmap tab needs it')
   const instances = readJson(instancesFile)
   const readIfThere = (name) => {
     const file = path.join(root, 'game', name)
