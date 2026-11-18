@@ -13,7 +13,8 @@ the parsed `game/monsters.json`, `game/items.json`, `game/races.json`, `game/bos
 `game/bestiary.json` (optional: without it nothing is counted and no bestiary bonus is given) and
 `game/settlement.json` (optional: without it there are no stages and only the campfire, the
 workbench and the rune circle can be built; see "Settlement") and `game/instances.json` (optional:
-without it there are no instances; see "Instances") and returns
+without it there are no instances; see "Instances") and `game/traits.json` (optional: without it
+there are no traits; see "Traits") and returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -47,6 +48,8 @@ milliseconds the caller passes.
 | `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
 | `buyMaterial(save, { worldId, cityId, materialId, amount })` | Buys a material an open city produces with the world's coins. The engine's own (the simulator uses it); no surface offers it in this version. |
 | `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall"). |
+| `teachTrait(save, { projectId, sessionId, traitId })` / `swapTrait(save, { projectId, sessionId, oldTraitId, traitId })` | Teaches a scroll's trait into a free slot, or swaps a carried trait for a scroll (the old one back as a scroll, for a fee); `teachProblem` / `swapProblem` say why one is refused. See "Traits". |
+| `buyTraitScroll(save, { worldId, cityId, offerIndex, traitId, projectId })` / `sellTraitScroll(save, { worldId, cityId, projectId, traitId })` / `sendScroll(save, { fromProjectId, toProjectId, traitId })` | The trait broker and sending a scroll to another room; each has its `…Problem`. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost, coins and the market (see "View state"); per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
@@ -988,6 +991,108 @@ while a highlight is newer than `seenAt`. It shows Today, Since you last looked 
 card opened), a strip of the last 14 days (monsters defeated, today in gold) and the days played.
 A page on another machine shows it but never marks it read.
 
+## Traits
+
+A trait is a small named perk a character carries (`src/game/trait*.mjs`), from the catalogue in
+`game/traits.json` (checked by `src/game/trait-content.mjs`; `npm run check` and the worker refuse
+a file with problems): 48 traits in four tiers (common, rare, epic, mythic), each with a name, a
+flavour line, a family (for its icon) and one effect, and for four double-edged ones a small
+drawback. Every number lives in `src/game/trait-constants.mjs`.
+
+### Slots
+
+- A character is born with one trait: a tier by `BORN_TIER_WEIGHTS` (common 88, rare 11, epic 1,
+  never mythic), then a trait of it, both by hash of the session id (`bornTrait`). The same session
+  always has the same one.
+- It earns a slot at each of `TRAIT_SLOT_LEVELS` (levels 10, 20 and 30), four in all. Retired
+  characters reach level 26 to 45 in the simulator, so most end with three.
+- `character.traits` is kept only once a person changed what it carries. Without it the character
+  carries its born trait, and its slots follow its level, so a save from before traits needs no
+  migration and every character in it has its trait at once.
+
+### Effects
+
+A trait's effect uses the effect types of legendary loot (see "Effects" under "Legendary loot")
+and acts on the character carrying it as its legendary equipment does (`withTraitEffects` joins
+them wherever the held effects are read: the fight, gathering and tokens). The types a trait may
+have are `damage`, `attackSpeed`, `critChance`, `staminaDrain`, `outfitStamina`, `healing`,
+`supportAura`, `gatherYield`, `skillXp`, and two the holder now reads as well, `characterXp` and
+`raceDamage`; and three of its own: `raceDrop` (items drop more often against some races, for the
+party while the character fights), `scrollFind` (trait scrolls drop more often, the same way) and
+`brokerDiscount` (the world's trait brokers charge less, while the character lives).
+
+Stacking: one character's traits are summed by type and the positive sum is brought down to
+`TRAIT_EFFECT_CAPS` (about a third to a half of each `LEGENDARY_EFFECT_CAPS`; `damage` 5%,
+`critChance` 2%), every bonus of that type shrunk by the same share. Then they join the relic,
+the equipment, the bestiary and the settlement under `LEGENDARY_EFFECT_CAPS` as before. A
+drawback (`staminaDrain`, `gatherYield`, `attackSpeed` ... below 0, at most half a cap) is not
+capped and simply takes its share away. A guest carries no trait.
+
+### Scrolls
+
+- A room keeps scrolls in its chest (`project.scrolls`, by trait), at most `SCROLL_COPIES` (5) of
+  one trait. A scroll teaches its trait into a free slot (`teachTrait`) and is used up; a trait
+  carried already is refused.
+- Elites, champions and bosses drop one now and then (`rollScrollDrop`, from the kill's seed):
+  chance `SCROLL_DROP_CHANCE` by rank (elite 0.4%, champion 1%, boss 5%, legendary 15%) times
+  (1 + `scrollFind`), a tier by `SCROLL_TIER_WEIGHTS` (bosses are the source of mythic ones), and a
+  trait of that tier the room does not keep five of. A kill event carries `scroll` when one dropped.
+- A scroll goes to another room of the same world (`sendScroll`), as an item does.
+- A retiring character gives the traits a person taught it back to the chest as scrolls, as its
+  items go back; its born trait stays its own, and a session that comes back is born with it again.
+  A room left behind that is moved brings its scrolls and its characters' taught traits along. A
+  scroll that finds no room is sold at the broker's price.
+
+### The trait broker
+
+Every open city has one (`src/game/trait-broker.mjs`):
+
+- **Buy**: `BROKER_OFFERS` (3) scrolls a game day of the city's own traits (each trait names its
+  `city`; mythic ones none, and are never sold), a tier by `BROKER_TIER_WEIGHTS`, by hash of world,
+  city and day. A scroll costs `BROKER_PRICES[tier] × REWARD_GROWTH ** worldLevel × (1 −
+  brokerDiscount)` coins and goes into a room's chest; each offer sells once a day.
+- **Sell**: any open city buys a scroll back for `BROKER_SELL_SHARE` (a quarter) of its price.
+- **Swap**: a character swaps a trait it carries for a scroll of its room's chest in the same slot
+  (`swapTrait`); the old trait goes back to the chest as a scroll, for a fee of `SWAP_FEE_SHARE`
+  (a quarter) of its price. The design left open whether a swapped trait is lost; it comes back.
+
+### In the save
+
+- `Character.traits` (optional): distinct traits of the catalogue, no more than the level's slots.
+- `Project.scrolls` (optional): whole counts from 1 to 5, by trait of the catalogue.
+- `World.traits` (optional): `{ known, sold? }`, the traits the world ever had (its collection;
+  written after every advance and trait action, and worked out for a save from before traits from
+  its characters, kept retirees and scrolls) and the brokers' sales of the day by city.
+- `migrate` keeps a world's record and repairs a broken one; `cleanSave` refuses a trait or a city
+  the content does not have, a trait twice, more traits than slots, a count out of range, an offer
+  the broker never has, and any trait field when the content has no traits. A save from before
+  traits loads unchanged.
+
+### View and actions
+
+The engine's view gives `traits` (the catalogue: tiers with their colours, every trait, the slot
+levels), each world's `traits` (`known`, `discount`, `brokers` by open city with the day's offers,
+`salePrices` and `swapFees` by tier), each project's `scrolls` and each party member's `traits`
+(`carried`, `slots`, `nextSlotAt`, `born`). The view state passes them to rooms and characters. One
+action, `traitAction({ action, ... })` (`/api/game/trait`, local only like every game route, and
+the panel request `game.trait`), teaches, swaps, buys, sells or sends (`src/game-trait-actions.mjs`).
+
+### Pace
+
+Tuned with the simulator (`npm run simulate`, its "Traits" table; `scripts/trait-balance.mjs`). The
+world's collection, of 48, at day 30 / 90 / 180 / 365:
+
+| User | Day 30 | 90 | 180 | 365 | With a daily broker visit, 365 | Sessions | Scroll drops a year |
+|---|---|---|---|---|---|---|---|
+| light | 3 | 8 | 15 | 21 | 25 | 35 | 2 |
+| medium | 23 | 32 | 37 | 39 | 39 | 413 | 19 |
+| heavy | 35 | 39 | 41 | 42 | 42 | 2,420 | 45 |
+
+Commons come with new sessions; the epics and the five mythic traits, which only bosses drop, keep
+the whole catalogue a goal past the first year for every user. Traits move no other balance check:
+the same five fail as before them.
+
+
 ## Scenes
 
 A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
@@ -1236,16 +1341,18 @@ Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: 
             settings: { keepTitles }, achievements?, journal? }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market, bestiary?, instances? }
+            coins, market: Market, bestiary?, instances?, traits?: TraitRecord }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
-            retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns? }
+            retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns?,
+            scrolls?: { [traitId]: count } }
 Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
-            pinned? }
+            pinned?, traits?: string[] }
+TraitRecord { known: string[], sold?: { [cityId]: { day, offers: number[] } } }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy, legendary?: true }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }

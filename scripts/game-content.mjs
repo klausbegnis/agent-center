@@ -1,9 +1,10 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
-// be there, and game/instances.json, whose art must be there too, and game/achievements.json. The
-// rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs, legendary-content.mjs,
-// bestiary-content.mjs, settlement-content.mjs, instance-content.mjs and achievement-content.mjs.
+// be there, and game/instances.json, whose art must be there too, and game/achievements.json and
+// game/traits.json must exist and be valid. The rules are in src/game/content.mjs,
+// content-races.mjs, content-cities.mjs, legendary-content.mjs, bestiary-content.mjs,
+// settlement-content.mjs, instance-content.mjs, achievement-content.mjs and trait-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateAchievements } from '../src/game/achievement-content.mjs'

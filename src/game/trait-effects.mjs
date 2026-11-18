@@ -73,6 +73,9 @@ export function pickTrait(index, tier, seed, allowed = () => true) {
   return null
 }
 
+/** Born traits worked out, by index and session id: the fight and every advance ask again and again. */
+const borns = new WeakMap()
+
 /**
  * The trait a session's character is born with: a tier by BORN_TIER_WEIGHTS, a trait of it, both by
  * hash of the session id. The same session always has the same one, before or after a reload.
@@ -82,8 +85,13 @@ export function pickTrait(index, tier, seed, allowed = () => true) {
  * @returns {string | null}
  */
 export function bornTrait(sessionId, index) {
-  const tier = pickTier(BORN_TIER_WEIGHTS, `${sessionId}|trait-tier`)
-  return pickTrait(index, tier, `${sessionId}|trait`, (entry) => entry.tier !== 'mythic')?.id ?? null
+  if (!borns.has(index)) borns.set(index, new Map())
+  const known = borns.get(index)
+  if (!known.has(sessionId)) {
+    const tier = pickTier(BORN_TIER_WEIGHTS, `${sessionId}|trait-tier`)
+    known.set(sessionId, pickTrait(index, tier, `${sessionId}|trait`, (entry) => entry.tier !== 'mythic')?.id ?? null)
+  }
+  return known.get(sessionId)
 }
 
 /**

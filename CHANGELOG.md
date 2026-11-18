@@ -6,6 +6,16 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Game mode: traits. Every character is born with a trait, a small named perk rolled from its
+  session, and earns more trait slots at levels 10, 20 and 30. Trait scrolls drop now and then from
+  elites, champions and bosses, sit in the room's chest (the Chest tab's Trait scrolls card, which
+  sends them to another room), teach their trait into a free slot from the Party tab, and trade at
+  each open city's Trait broker in the Market tab, which also takes a trait back as a scroll in a
+  swap for a fee. 48 traits in four tiers, a few of them double-edged; the world keeps a collection.
+  Old saves keep everything and get every character's trait at once.
+
 ## 0.3.0 - 2026-11-17
 
 ### Changed

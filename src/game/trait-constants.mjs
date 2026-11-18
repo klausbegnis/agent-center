@@ -14,7 +14,7 @@ export const TRAIT_SLOT_LEVELS = Object.freeze([10, 20, 30])
 export const MAX_TRAIT_SLOTS = 1 + TRAIT_SLOT_LEVELS.length
 
 /** The tier a new character is born with, by weight: mostly common, now and then better, never mythic. */
-export const BORN_TIER_WEIGHTS = Object.freeze({ common: 85, rare: 13, epic: 2 })
+export const BORN_TIER_WEIGHTS = Object.freeze({ common: 88, rare: 11, epic: 1 })
 
 /**
  * A trait scroll drops from a kill of these ranks with this chance, times (1 + scrollFind of the

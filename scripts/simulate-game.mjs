@@ -28,6 +28,7 @@ import {
 } from './game-balance.mjs'
 import { bestiaryGain, bestiaryProgress, levelUpsIn } from './bestiary-balance.mjs'
 import { legendaryGain } from './legendary-balance.mjs'
+import { printTraits, traitProgress, visitBroker } from './trait-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
 const content = {
@@ -272,6 +273,7 @@ function playWorkday(run, day) {
   run.save = spent.save
   run.period.purchases += spent.purchases.length
   if (run.trades) tradeAtMarket(run)
+  if (run.traitBroker) run.save = visitBroker(run.engine, run.save, run.traitBroker, content)
   if (run.funnel) {
     const funnelled = funnelGear(run.engine, run.save)
     run.save = funnelled.save
@@ -368,7 +370,8 @@ function snapshot(run, day) {
     gatherShare: income > 0 ? run.period.gathered / income : 0,
     shares: sharesOf(world, projects, level),
     legendary: projects.map((project) => legendaryCounts(project).total),
-    bestiary: bestiaryProgress(world, content)
+    bestiary: bestiaryProgress(world, content),
+    traits: traitProgress(world, content)
   }
 }
 
@@ -383,13 +386,15 @@ function closePeriod(run, day) {
 
 /**
  * @param {object} scenario
- * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, withEngine?: object }} [policy]
+ * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, traits?: boolean, withEngine?: object }} [policy]
  *   `trades` adds a visit to the market every working day; `funnel` sends every spare piece of gear
  *   into one room every working day; `instances` runs the highest open instance whenever one is
- *   available; `withEngine` plays on another engine than the full one
+ *   available; `traits` adds a visit to the trait brokers (trait-balance.mjs); `withEngine` plays on
+ *   another engine than the full one
  */
-function simulate(scenario, { trades = false, funnel = false, instances = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, withEngine = engine } = {}) {
   const run = {
+    traitBroker: traits ? { bought: 0, spent: 0, taught: 0 } : null,
     scenario,
     instances: instances ? newInstanceStats(content.instances) : null,
     trades,
@@ -628,6 +633,7 @@ printSettlement(runs, tradingRuns)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 printInstances(runs, SCENARIOS.map((scenario) => simulate(scenario, { instances: true })), { content, legendaryKind })
+printTraits(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true, traits: true })), content)
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +
