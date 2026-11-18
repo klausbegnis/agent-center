@@ -61,11 +61,11 @@ gone quiet, across every machine Orca is connected to.
 You do not play it so much as feed it. Your agents do their work, and the work is what moves
 the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
-![Game mode playing in a Guild Hall room: the party fights an elite orc, its health bar drops, the orc is defeated with materials and bestiary news popping up, and the next monster, a pack of rats, comes in; above, the room chips, the world's materials, the weekly event's banner and the game's eight tabs](docs/screenshots/game-mode.gif)
+![Game mode playing in a Guild Hall room: the party fights an elite orc, its health bar drops, the orc is defeated with materials and bestiary news popping up, and the next monster, a pack of rats, comes in; above, the header with the weekly event's calendar button, the room chips, the world's materials and the game's eight tabs](docs/screenshots/game-mode.gif)
 
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips, the world's coins and materials and the weekly event's banner over the eight tabs, then the chest's item slots under a Move items button with a legendary sword in a gold frame, a cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill at rank III and Deepforge at rank II during its festival, each with what it sells cheap and pays well for](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips and the world's coins and materials over the eight tabs, then the chest's item slots under a Move items button with a legendary sword in a gold frame, a cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill at rank III and Deepforge at rank II during its festival, each with what it sells cheap and pays well for](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -141,10 +141,11 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Weekly events.** Every calendar week brings one of twenty events, the same for everyone: a
   race that turns up twice as often, a city's festival, a material in bloom, a boss hunt, a quiet
   week of training and more. Each gives a small bonus and a small goal for the week, such as
-  defeating nine werewolves, that pays materials once. A banner above the tabs says what this
-  week's does, how long it has left and how far the goal is, and shows next week's event.
+  defeating nine werewolves, that pays materials once. The calendar button in the header shows
+  the week's event and how far its goal is; it opens a small calendar with what this week's event
+  does, how long it has left, its goal and reward, and the events of the next five weeks.
 
-![The Roadmap tab under the weekly event's banner: the switch between The Old Road and The Gloaming Isles (locked), then the parchment map of the road with a cleared crypt, a party on its way to the foundry and the sites ahead under fog](docs/screenshots/game-roadmap.png)
+![The Roadmap tab: the switch between The Old Road and The Gloaming Isles (locked), then the parchment map of the road with a cleared crypt, a party on its way to the foundry and the sites ahead under fog](docs/screenshots/game-roadmap.png)
 
 - **Achievements and titles.** Over 150 achievements in fourteen groups follow everything the
   game counts, from a first kill to a cleared region; each gives points, and some give a title.

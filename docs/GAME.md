@@ -1255,10 +1255,17 @@ not a multiplier: it needs no network and no server, and is the same on every ma
   one (the next advance starts the week again); `cleanSave` refuses an unknown event, a week a year
   does not have, a `seenAt` outside its week, progress past the goal, `done` that disagrees with the
   progress, and any of it when the content has no events.
-- **View and UI.** `worlds[].weekly` (see "View state"). The game panel shows a banner between the
-  room switcher and the tabs: the event's icon, name, kind and time left, what it does, the goal with
-  its progress bar and reward, and a **Next week** button that shows next week's event. Each room's
-  header shows the event's icon with the same in its label. The icons are drawn by
+- **View and UI.** `worlds[].weekly` (see "View state"), with the next `UPCOMING_WEEKS` (5) weeks in
+  short: the choice is the calendar's, so they are known now. The header has a calendar button
+  beside the summary's scroll and the settings cog (`ui/engine/event-calendar.js`): a pixel calendar
+  with the event's kind as a badge and a thin bar for the goal (gold in progress, teal reached), the
+  event's name beside it on a wide window, and a label such as "This week: Bone Tide, goal 2 of 9, 4
+  days 9 hours left". It opens a card in the panels' place, as the summary does (Escape or Close
+  bring the focus back; a page on another machine may open it too): this week's event in full (its
+  dates, kind, time left, what it does, the goal with its bar, the reward and its flavour) and the
+  coming weeks, each with its event's icon, name, kind and dates, next week's with what it does.
+  Each room's header shows the event's icon with the same in its label. Nothing of it takes a row
+  above the tabs. The icons are drawn by
   `scripts/event-art/events.py` into `ui/art/events/<kind>.png`.
 - **Achievements and journal.** The `weeklyGoals` metric counts goals reached over every world; the
   Weekly events group has three (1, 10 and 52 goals, the last with a title). A goal reached is a
@@ -2094,12 +2101,13 @@ by the usual closing rules.
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
     },
     weekly: {                       // this week's event (see "Weekly events"), null before the first round
-      week: '2026-W47', endsAt, msLeft,  // msLeft from the last round, on the game's clock
+      week: '2026-W47', startsAt, endsAt, msLeft,  // msLeft from the last round, on the game's clock
       id: 'howling-moon', name, kind: 'race', flavour, race: 'werewolf', raceName: 'Werewolves',
       city: null, cityName: null, effects: [{ effect, scope: 'world', amount, ...qualifiers }],
       goal: { kind: 'race', count: 9, progress: 4, done: false },
       reward: { hides: 155, seals: 154 },  // what the goal pays at the world's level now
-      next: { week: '2026-W48', id, name, kind, flavour, race, raceName, city, cityName, effects, goal }
+      next: { week: '2026-W48', id, name, kind, flavour, race, raceName, city, cityName, effects, goal },
+      upcoming: [{ week: '2026-W48', startsAt, id, name, kind }, ...]  // the next five weeks, for the calendar
     },
     instances: {                    // the world's road; under 2 KB
       map: { cleared: 0, art: 'ui/instances/roadmap-1.png', alt },  // the picture for its progress

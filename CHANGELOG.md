@@ -22,9 +22,10 @@ All notable changes to this project are recorded here. The format follows
   from the calendar alone so it is the same everywhere, never the same two weeks in a row: race
   weeks (that race twice as often and worth more in the bestiary), city festivals, blooms, a boss hunt,
   bounties, training weeks, a gold rush and season weeks. Each gives a small bonus within the usual
-  caps and a goal for the week that pays materials once. A banner above the game's tabs shows the
-  event, what it does, the time left, the goal and next week's event; each room's header shows its
-  icon. `EVENT=<id>` with `GAME=1` shows one in the demo.
+  caps and a goal for the week that pays materials once. A calendar button in the header, beside
+  the summary and the settings, shows the week's event as a badge with a thin bar for the goal, and
+  opens a small calendar: this week's event (what it does, the time left, the goal and its reward)
+  and the next five weeks' events. Each room's header shows the event's icon. `EVENT=<id>` with `GAME=1` shows one in the demo.
 
 - Game mode: every market city grows through five ranks, I to V, each with a banner of its own.
   Trading in a city earns standing there; with enough, the city's charter (coins and the
