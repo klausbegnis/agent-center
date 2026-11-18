@@ -28,6 +28,7 @@ import { indexSettlement } from './settlement-content.mjs'
 import { GROUP_UPGRADE_IDS, isUpgradeOpen } from './spending.mjs'
 import { checkCharacterTraits, checkRoomScrolls, checkWorldTraits } from './trait-check.mjs'
 import { traitIndexOf } from './trait-content.mjs'
+import { checkDaily } from './quest-save.mjs'
 import { checkWeekly } from './weekly-save.mjs'
 import { SAVE_VERSION } from './worlds.mjs'
 
@@ -382,7 +383,7 @@ function buildingLevels(value, path, settlementIndex) {
 }
 
 function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex,
-  events }) {
+  events, quests }) {
   const source = record(value, path)
   const cityRanks = checkCityRanks(source.cityRanks, rankedCityIds)
   if (!cityRanks.ok) fail(`${path}.${cityRanks.problem[0]}`, cityRanks.problem[1])
@@ -392,6 +393,8 @@ function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIn
   if (!instances.ok) fail(`${path}.${instances.problem[0]}`, instances.problem[1])
   const weekly = checkWeekly(source.weekly, events)
   if (!weekly.ok) fail(`${path}.${weekly.problem[0]}`, weekly.problem[1])
+  const daily = checkDaily(source.daily, quests)
+  if (!daily.ok) fail(`${path}.${daily.problem[0]}`, daily.problem[1])
   const projects = entries(source.projects, `${path}.projects`, {
     key: text,
     entry: (item, at) => project(item, at, legendaryIndex, instanceIndex, traitIndex)
@@ -405,6 +408,8 @@ function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIn
     ...(instances.value ? { instances: instances.value } : {}),
     // A save from before the weekly events, or a world not yet advanced, has none.
     ...(weekly.value ? { weekly: weekly.value } : {}),
+    // A save from before the daily quests, or a world not yet played today, has none.
+    ...(daily.value ? { daily: daily.value } : {}),
     // A world that never traded, or a save from before city ranks, has none.
     ...(cityRanks.value ? { cityRanks: cityRanks.value } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
@@ -434,10 +439,11 @@ function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIn
  *   and boons a world's progress and a room's run may name; the parsed game/traits.json, whose
  *   traits a character, a room's scrolls and a world's collection may name; the parsed
  *   game/events.json, whose events a world's week may name; `rankedCityIds`, the cities with ranks,
- *   which a world's city ranks may name
+ *   which a world's city ranks may name; the parsed game/quests.json, whose kinds a world's daily
+ *   quests may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], rankedCityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events } = {}) {
+export function cleanSave(value, { cityIds = [], rankedCityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events, quests } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
   const traitIndex = traitIndexOf({ traits })
   const instanceIndex = instanceIndexOf({ instances })
@@ -448,7 +454,7 @@ export function cleanSave(value, { cityIds = [], rankedCityIds = [], legendary, 
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events })
+      entry: (item, at) => world(item, at, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events, quests })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.

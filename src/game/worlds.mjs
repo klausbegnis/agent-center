@@ -9,6 +9,7 @@ import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
 import { normalizeTraitRecord } from './trait-check.mjs'
+import { normalizeDaily } from './quest-save.mjs'
 import { normalizeWeekly } from './weekly-save.mjs'
 
 export const SAVE_VERSION = 1
@@ -261,6 +262,7 @@ function normalizeWorld(value) {
   const bestiary = normalizeBestiary(value.bestiary)
   const instances = normalizeWorldInstances(value.instances)
   const weekly = normalizeWeekly(value.weekly)
+  const daily = normalizeDaily(value.daily)
   const cityRanks = normalizeCityRanks(value.cityRanks)
   return {
     // Kept only once the world has killed; a save from before the bestiary has none.
@@ -269,6 +271,8 @@ function normalizeWorld(value) {
     ...(instances ? { instances } : {}),
     // Kept from the first advance with weekly events (weekly-save.mjs).
     ...(weekly ? { weekly } : {}),
+    // Kept from the first change of a day with daily quests (quest-save.mjs).
+    ...(daily ? { daily } : {}),
     // Kept only once the world has traded with a city (city-ranks-save.mjs).
     ...(cityRanks ? { cityRanks } : {}),
     skills: keepEntries(value.skills, isPlainObject),

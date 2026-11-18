@@ -230,7 +230,8 @@ export function createEngine({ content }) {
       instances: content.instances,
       achievements: content.achievements,
       traits: content.traits,
-      events: content.events
+      events: content.events,
+      quests: content.quests
     }),
     moveProjectItems: moveKeepingTraits(moveProjectItems, traitIndexOf(content)),
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.

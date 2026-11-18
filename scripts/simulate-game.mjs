@@ -13,6 +13,7 @@ import { stageIndexOf, totalLevels } from '../src/game/settlement.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
 import { noteWeek, printWeekly } from './event-balance.mjs'
+import { chronicleStep, doQuestErrands, newQuestStats, noteQuestDay, printQuests, questChecks } from './quest-balance.mjs'
 import { funnelGear } from './funnel-policy.mjs'
 import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
 import { collectionChecks, newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
@@ -44,7 +45,9 @@ const content = {
   settlement: readJson('../game/settlement.json'),
   instances: readJson('../game/instances.json'),
   traits: readJson('../game/traits.json'),
-  events: readJson('../game/events.json')
+  events: readJson('../game/events.json'),
+  quests: readJson('../game/quests.json'),
+  achievements: readJson('../game/achievements.json')
 }
 const engine = createEngine({ content })
 /**
@@ -171,8 +174,12 @@ const newPeriod = () => ({
 /** Advances the engine and counts kills, kill materials and gathered materials. */
 function advanceAndCount(run, from, to, readings) {
   const before = materialTotal(run.save.worlds.main?.materials)
+  const was = run.stepStart ?? run.save
+  run.stepStart = null
   const advanced = run.engine.advanceWithEvents(run.save, { from, to, sessions: readings, autoPlay: Boolean(run.instances) })
   run.save = advanced.save
+  // The quest policy counts every change as the bridge does (quest-balance.mjs).
+  if (run.questStats) chronicleStep(run, { before: was, midway: run.save, events: advanced.events, at: to, day: Math.floor((to - 1) / DAY) })
   // A run's steps are events too (instance policy); the rest of the simulator counts kills.
   const events = advanced.events.filter((event) => event.type === 'kill')
   if (run.instances) noteInstanceEvents(run, advanced.events, { day: Math.floor(to / DAY), remember: rememberRun })
@@ -224,6 +231,9 @@ function closeFinished(run, now) {
 /** One working step: tokens for the working sessions, then the engine's advance. */
 function playStep(run, from, to) {
   if (run.instances) run.save = enterHighestInstance(run.engine, run.save, run.instances.memory)
+  if (run.questStats) questErrands(run, from)
+  // The tokens below level characters and skills: the chronicle counts from before them, as the bridge does.
+  run.stepStart = run.save
   const stepKey = `${from}`
   const readings = []
   for (const session of run.slots) {
@@ -271,6 +281,7 @@ function playWorkday(run, day) {
     clock = end
   }
   advanceAndCount(run, clock, (day + 1) * DAY, idleReadings(run))
+  if (run.questStats) noteQuestDay(run, day)
   if (run.dayFightHours > 1 && run.dayKills === 0) run.daysWithoutKill += 1
   const spent = run.engine.autoSpendWithPurchases(run.save)
   run.save = spent.save
@@ -284,6 +295,13 @@ function playWorkday(run, day) {
     run.funnelled.relics += funnelled.relics
   }
   prestigeAll(run, day)
+}
+
+/** The quest policy's errands, each a change the chronicle counts. */
+function questErrands(run, at) {
+  const before = run.save
+  run.save = doQuestErrands(run.engine, run.save, content)
+  if (run.save !== before) chronicleStep(run, { before, at, day: Math.floor(at / DAY) })
 }
 
 /** The market policy's visit: what it bought counts as purchases, like autoSpend's. */
@@ -395,8 +413,9 @@ function closePeriod(run, day) {
  *   available; `traits` adds a visit to the trait brokers (trait-balance.mjs); `withEngine` plays on
  *   another engine than the full one
  */
-function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, quests = false, withEngine = engine } = {}) {
   const run = {
+    questStats: quests ? newQuestStats() : null,
     traitBroker: traits ? { bought: 0, spent: 0, taught: 0 } : null,
     scenario,
     instances: instances ? newInstanceStats(content.instances, content.legendary) : null,
@@ -632,12 +651,14 @@ const legendary = {
   }
 }
 const instanceRuns = SCENARIOS.map((scenario) => simulate(scenario, { instances: true }))
+const questRuns = SCENARIOS.map((scenario) => simulate(scenario, { quests: true }))
 printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => [...bestiaryChecks(runs, plainRuns, bestRelics),
-  ...settlementChecks(runs), ...collectionChecks(instanceRuns, content.legendary.legendary.length)])
+  ...settlementChecks(runs), ...collectionChecks(instanceRuns, content.legendary.legendary.length), ...questChecks(questRuns)])
 const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: true }))
 printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
 printWeekly(runs, content.events)
+printQuests(questRuns)
 printCityRanks(tradingRuns, content.cities.cities)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))

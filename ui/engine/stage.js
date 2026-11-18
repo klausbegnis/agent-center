@@ -116,6 +116,7 @@ export async function mountStage(root, transport, options = {}) {
     library,
     onShowAgent: (agentId) => showAgentInRoom(agentId)
   })
+  header.addTitleTool(game.questButton)
   header.addTitleTool(game.calendarButton)
   header.addTitleTool(game.summaryButton)
   header.addTitleTool(game.settingsButton)

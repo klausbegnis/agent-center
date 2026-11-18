@@ -23,6 +23,7 @@ import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
 import { isTypingKey, roomAfterShortcut, savedRoomOf } from './room-chips.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
+import { createQuestView } from './quest-view.js'
 import { createSummaryView } from './summary-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
@@ -112,12 +113,20 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   // "While you worked" (summary-view.js): its button sits beside the cog, its card in the panels' place.
   const summary = createSummaryView({ actions, root, onOpen: () => {
     calendar.close()
+    quests.close()
     if (isSettingsOpen) setSettingsOpen(false)
   } })
   // The weekly events' calendar (event-calendar.js): its button beside the summary's, its card in the
   // panels' place, for the world shown above the tabs.
   const calendar = createEventCalendar({ base: transport.base ?? '', root, onOpen: () => {
     summary.close()
+    quests.close()
+    if (isSettingsOpen) setSettingsOpen(false)
+  } })
+  // The daily quests (quest-view.js): a "?" button beside the calendar, its card in the panels' place.
+  const quests = createQuestView({ root, prefs: transport.prefs, onOpen: () => {
+    summary.close()
+    calendar.close()
     if (isSettingsOpen) setSettingsOpen(false)
   } })
 
@@ -177,6 +186,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     if (isOpen) {
       summary.close()
       calendar.close()
+      quests.close()
     }
     isSettingsOpen = isOpen
     show()
@@ -202,6 +212,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     isSettingsOpen = false
     summary.close()
     calendar.close()
+    quests.close()
     const wasRooms = tab === 'rooms'
     // Scrolled far enough that the tabs stick to the top: the next tab opens at its own top, with
     // the tabs where they are. Otherwise nothing above the tabs moves.
@@ -220,7 +231,9 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     if (!state) return
     const isRunning = mode === 'running'
     context.element.hidden = !isRunning
-    calendar.update(state, isRunning ? worldById(state.game, state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId) : null)
+    const shownWorldId = isRunning ? state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId ?? null : null
+    calendar.update(state, shownWorldId ? worldById(state.game, shownWorldId) : null)
+    quests.update(isRunning ? state.game : null, shownWorldId)
     if (!isRunning) {
       if (!panels[tab]) return
       contents[tab].hidden = true
@@ -280,10 +293,11 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     /** The picker, the strip and the tab bar go above the rooms; the panels and messages below. */
     top,
     notice,
-    panels: [...Object.values(panels), settings.element, summary.element, calendar.element],
+    panels: [...Object.values(panels), settings.element, summary.element, calendar.element, quests.element],
     settingsButton,
     summaryButton: summary.button,
     calendarButton: calendar.button,
+    questButton: quests.button,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {

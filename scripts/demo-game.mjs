@@ -19,6 +19,7 @@ import { showDemoChronicle } from './demo-achievements.mjs'
 import { demoCityRanks, showDemoCityRanks } from './demo-city-ranks.mjs'
 import { showDemoInstances } from './demo-instances.mjs'
 import { showDemoRoad } from './demo-regions.mjs'
+import { showDemoQuests } from './demo-quests.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
 import { showDemoTraits } from './demo-traits.mjs'
 
@@ -293,7 +294,7 @@ function relicDaysAhead() {
  */
 export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
-  const { settlementLevels = null, instanceVault = false, cityRank = null, instanceRoad = null } = options
+  const { settlementLevels = null, instanceVault = false, cityRank = null, instanceRoad = null, questsDone = false } = options
   let { store } = options
   const startedAt = Date.now()
   let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
@@ -365,6 +366,7 @@ export async function createDemoGame(options) {
     await showDemoTraits(game)
     await showDemoChronicle(game, { now: frozenClock, titleRoom: LEGENDARY_ROOM })
     if (instanceRoad) await showDemoRoad(game, instanceRoad)
+    await showDemoQuests(game, { allDone: questsDone })
     return game
   }
   await game.round()
@@ -374,6 +376,8 @@ export async function createDemoGame(options) {
   await showDemoTraits(game)
   await showDemoChronicle(game, { now: now(), titleRoom: LEGENDARY_ROOM })
   if (instanceRoad) await showDemoRoad(game, instanceRoad)
+  // The live demo plays its quests from where the made-up day leaves them; QUESTS=done shows them done.
+  if (questsDone) await showDemoQuests(game, { allDone: true })
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

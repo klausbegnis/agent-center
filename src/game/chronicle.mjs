@@ -8,6 +8,9 @@ import { journalGains } from './journal-gains.mjs'
 import { journalView, markJournalSeen, recordJournal } from './journal.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
+import { questIndexOf } from './quest-content.mjs'
+import { questsView } from './quest-view.mjs'
+import { noteQuests } from './quests.mjs'
 import { traitIndexOf } from './trait-content.mjs'
 import { eventIndexOf } from './weekly-content.mjs'
 
@@ -31,6 +34,8 @@ function highlightNamer(content) {
       case 'region': return instanceIndexOf(content)?.regions.find((region) => region.id === ref)?.name ?? null
       case 'scroll': return traitIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'weekly': return eventIndexOf(content)?.byId.get(ref)?.name ?? null
+      case 'quest': return questIndexOf(content)?.byId.get(ref)?.name ?? null
+      case 'quests': return 'Every daily quest'
       case 'city': return cities.get(ref) ?? null
       case 'building': return buildings.get(ref)?.tiers?.[(value ?? 1) - 1]?.name ?? buildings.get(ref)?.name ?? null
       default: return null
@@ -57,12 +62,18 @@ export function chronicleActions(content) {
    *   backfilled: number | null }}
    */
   function chronicle(save, { before, midway, events = [], at, day, isNews = true }) {
-    let next = save
+    // The day's quests first: they roll at a new day, move with what the change gained, and pay
+    // what they earned (quests.mjs).
+    const quested = noteQuests(save, { before, midway, events, day, isNews }, content)
+    let next = quested.save
     if (isNews) {
       const gains = journalGains({ before, after: save, midway, events, at, tierOf: (id) => tiers.get(id) ?? 0,
         settlementIndex: settlementIndexOf(content), instanceIndex: instanceIndexOf(content) })
-      const journal = recordJournal(save.journal, { day, ...gains })
-      if (journal !== save.journal) next = { ...next, journal }
+      const questHighlights = quested.news.map((news) => (news.kind === 'day'
+        ? { at, kind: 'quests', ref: 'day', value: news.streak }
+        : { at, kind: 'quest', ref: news.quest, value: news.target }))
+      const journal = recordJournal(next.journal, { day, ...gains, highlights: [...gains.highlights, ...questHighlights] })
+      if (journal !== next.journal) next = { ...next, journal }
     }
     const granted = grantAchievements(next, { content, index: index(), at })
     next = granted.save
@@ -82,7 +93,8 @@ export function chronicleActions(content) {
     return {
       save: next,
       earned: earned.map((id) => index().byId.get(id)).map(({ id, name, points, title }) => ({ id, name, points, title })),
-      backfilled: granted.backfilled
+      backfilled: granted.backfilled,
+      quests: quested.news
     }
   }
 
@@ -96,7 +108,8 @@ export function chronicleActions(content) {
      */
     chronicleView: (save, { day }) => ({
       achievements: achievementsView(save, { content, index: index() }),
-      journal: journalView(save.journal, { day, nameOf })
+      journal: journalView(save.journal, { day, nameOf }),
+      quests: questsView(save, content, day)
     }),
     setPartyTitle: (save, choice) => setPartyTitle(save, choice, index()),
     titleProblem: (save, choice) => titleProblem(save, choice, index()),
