@@ -242,6 +242,11 @@ export const METRICS = Object.freeze({
   // Weekly events (weekly.mjs): the weeks whose goal a world reached, over every world.
   weeklyGoals: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.weekly?.goals ?? 0)) },
 
+  // Daily quests (quests.mjs): quests and whole days done over every world, and the best streak.
+  questsDone: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.daily?.totals?.[0] ?? 0)) },
+  questDays: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.daily?.totals?.[1] ?? 0)) },
+  questStreak: { measure: (save) => best(Object.values(save.worlds).map((world) => world.daily?.best ?? 0)) },
+
   // Worlds
   worlds: { measure: (save) => Object.keys(save.worlds).length },
   rooms: { measure: (save) => projectsOf(save).length },

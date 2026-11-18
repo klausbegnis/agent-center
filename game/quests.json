@@ -1,0 +1,18 @@
+{
+  "rewards": { "quest": 0.008, "bonus": 0.015, "streakStep": 0.1, "streakCap": 7, "scrollChance": 0.1 },
+  "defaults": { "kills": 40, "levels": 3, "skillLevels": 1 },
+  "kinds": [
+    { "id": "kills", "name": "Monster Hunt", "slots": { "easy": 0.3, "hard": 0.6 } },
+    { "id": "race", "name": "Culling", "slots": { "medium": 0.35 } },
+    { "id": "elites", "name": "Big Game", "slots": { "medium": 0.25, "hard": 0.35 } },
+    { "id": "boss", "name": "Crown Hunt", "slots": { "hard": 1 } },
+    { "id": "collect", "name": "Supply Run", "slots": { "easy": 0.06, "medium": 0.12 } },
+    { "id": "coins", "name": "Coin Purse", "slots": { "medium": 0.2 } },
+    { "id": "trade", "name": "Market Errand", "slots": { "easy": 1 } },
+    { "id": "instance", "name": "Dungeon Run", "slots": { "hard": 1 } },
+    { "id": "rematch", "name": "Grudge Match", "slots": { "hard": 1 } },
+    { "id": "weekly", "name": "Week's Errand", "slots": { "medium": 0.2 } },
+    { "id": "levels", "name": "Drills", "slots": { "easy": 0.3, "medium": 0.6 } },
+    { "id": "skills", "name": "Study Hours", "slots": { "hard": 0.6 } }
+  ]
+}

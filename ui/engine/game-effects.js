@@ -2,6 +2,7 @@
 // monster, "Level 9!" by a character, and short lines about loot, drops, retirements, arrivals
 // and purchases under the fight. Never touches the DOM.
 import { achievementEffects } from './achievement-model.js'
+import { questEffects } from './quest-model.js'
 import { CITY_RANK_EVENT } from './city-rank-labels.js'
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
@@ -213,6 +214,7 @@ export function gameEffects(changes, state) {
     ...levelEffects(changes.events, game.rooms),
     ...arrivalEffects(changes.arrivals, state),
     ...lineEffects(changes.events, game),
-    ...achievementEffects(changes.events, game)
+    ...achievementEffects(changes.events, game),
+    ...questEffects(changes.events, game)
   ])
 }

@@ -13,6 +13,7 @@ import { validateInstances } from './game/instance-content.mjs'
 import { validateLegendary } from './game/legendary-content.mjs'
 import { validateSettlement } from './game/settlement-content.mjs'
 import { validateTraits } from './game/trait-content.mjs'
+import { validateQuests } from './game/quest-content.mjs'
 import { pinEvent, validateEvents } from './game/weekly-content.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 
@@ -38,7 +39,8 @@ export function loadGameEngine(root, log, { pinnedEvent } = {}) {
       instances: readJson('instances.json'),
       achievements: readJson('achievements.json'),
       traits: readJson('traits.json'),
-      events: pinEvent(readJson('events.json'), pinnedEvent)
+      events: pinEvent(readJson('events.json'), pinnedEvent),
+      quests: readJson('quests.json')
     }
     const problems = [
       ...validateMonsters(content.monsters),
@@ -53,7 +55,8 @@ export function loadGameEngine(root, log, { pinnedEvent } = {}) {
       ...validateRunContent(content.instances, content),
       ...validateAchievements(content.achievements, content),
       ...validateTraits(content.traits, content),
-      ...validateEvents(content.events, content)
+      ...validateEvents(content.events, content),
+      ...validateQuests(content.quests)
     ]
     if (problems.length) {
       log(`game: the content files have problems: ${problems.slice(0, 3).join('; ')}`)

@@ -81,5 +81,7 @@ export const HIGHLIGHT = {
   weekly: (name) => `Weekly goal reached: ${name}`,
   city: (name, rank) => `${name} rose to rank ${numeral(rank)}`,
   rematch: (name, rematch) => `Won Rematch ${numeral(rematch)} in ${name}`,
-  region: (name) => `A new region opened: ${name}`
+  region: (name) => `A new region opened: ${name}`,
+  quest: (name) => `Daily quest done: ${name}`,
+  quests: (_name, streak) => `Every daily quest done${streak > 1 ? `, a ${streak}-day streak` : ''}`
 }

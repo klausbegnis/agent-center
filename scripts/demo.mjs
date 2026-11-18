@@ -26,6 +26,8 @@
 //                 sites and a rematch ready, and the second region unlocked; INSTANCE_ROAD=isles
 //                 goes on into the second region (four of eight cleared). Without it the frozen
 //                 game shows the second region locked
+//   QUESTS=done  with GAME, the day's daily quests all done (the frozen game shows them part done
+//                 otherwise)
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -207,7 +209,9 @@ const game = engine
     // CITY_RANK=n puts every city at rank n (1 to 5), to review its banner and rank card.
     cityRank: process.env.CITY_RANK ? Number(process.env.CITY_RANK) : null,
     // INSTANCE_ROAD=cleared or isles moves the road further on (demo-regions.mjs).
-    instanceRoad: process.env.INSTANCE_ROAD ?? null
+    instanceRoad: process.env.INSTANCE_ROAD ?? null,
+    // QUESTS=done shows the day's quests all done, the bonus paid and a streak.
+    questsDone: process.env.QUESTS === 'done'
   })
   : createUnavailableGame('off')
 controller = createController({

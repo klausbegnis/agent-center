@@ -3,9 +3,9 @@
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
 // be there, and game/instances.json, whose art must be there too, and game/achievements.json and
 // game/traits.json must exist and be valid, and game/events.json with an icon for each kind of
-// weekly event. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
+// weekly event, and game/quests.json. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
 // legendary-content.mjs, bestiary-content.mjs, settlement-content.mjs, instance-content.mjs,
-// achievement-content.mjs, trait-content.mjs and weekly-content.mjs.
+// achievement-content.mjs, trait-content.mjs, weekly-content.mjs and quest-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
 import { validateAchievements } from '../src/game/achievement-content.mjs'
@@ -19,6 +19,7 @@ import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { validateTraits } from '../src/game/trait-content.mjs'
+import { validateQuests } from '../src/game/quest-content.mjs'
 import { EVENT_KINDS, validateEvents } from '../src/game/weekly-content.mjs'
 
 /**
@@ -49,6 +50,15 @@ export function checkGameContent({ root, report, readJson }) {
   checkAchievements({ root, report, readJson })
   checkTraits({ root, report, readJson })
   checkEvents({ root, report, readJson })
+  checkQuests({ root, report, readJson })
+}
+
+/** game/quests.json: the kinds of daily quest and the rewards' sizes. */
+function checkQuests({ root, report, readJson }) {
+  const file = path.join(root, 'game', 'quests.json')
+  if (!fs.existsSync(file)) return report(file, 'is missing; the game needs its daily quests')
+  const quests = readJson(file)
+  if (quests !== null) for (const problem of validateQuests(quests)) report(file, problem)
 }
 
 /** game/events.json: the weekly events against the races and cities, and an icon for every kind. */

@@ -115,3 +115,15 @@ test('looking at the summary marks what was new as read', async () => {
   assert.equal(journal.since.achievements, 0)
   assert.ok(journal.today.achievements >= 3)
 })
+
+test('the time until the next local day is measured to the day\'s real start, clock changes included', async () => {
+  const { msToNextDay } = await import('./game-chronicle.mjs')
+  const HOUR = 3_600_000
+  const utc = () => 0
+  const at = Date.UTC(2026, 10, 18, 21, 30)
+  assert.ok(Math.abs(msToNextDay(at, localDayOf(at, utc), (ms) => localDayOf(ms, utc)) - 2.5 * HOUR) <= 1000)
+  // A clock put an hour forward at 22:00 UTC, as when the clocks change: the day ends an hour sooner.
+  const shifted = (ms) => (ms >= Date.UTC(2026, 10, 18, 22) ? -60 : 0)
+  const dayOf = (ms) => localDayOf(ms, shifted)
+  assert.ok(Math.abs(msToNextDay(at, dayOf(at), dayOf) - 1.5 * HOUR) <= 1000)
+})

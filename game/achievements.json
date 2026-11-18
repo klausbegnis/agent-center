@@ -13,6 +13,7 @@
     {"id": "collector", "name": "Collector"},
     {"id": "traits", "name": "Traits"},
     {"id": "events", "name": "Weekly events"},
+    {"id": "quests", "name": "Daily quests"},
     {"id": "cities", "name": "City ranks"}
   ],
   "achievements": [
@@ -168,6 +169,14 @@
     {"id": "charter-1", "group": "cities", "name": "Signed and Sealed", "description": "Buy a city's charter.", "points": 5, "when": {"metric": "charters", "atLeast": 1}},
     {"id": "city-rank-3", "group": "cities", "name": "Freedom of the City", "description": "Raise a city to rank III.", "points": 15, "when": {"metric": "cityRank", "atLeast": 3}},
     {"id": "city-rank-5", "group": "cities", "name": "A Golden Age", "description": "Raise a city to rank V.", "points": 40, "when": {"metric": "cityRank", "atLeast": 5}, "title": "the City-Builder"},
-    {"id": "city-rank-all", "group": "cities", "name": "Patron of Every Gate", "description": "Raise every city of a world to rank V.", "points": 100, "when": {"metric": "citiesAtTopRank", "atLeast": 5}, "title": "Patron of the Five Cities", "hidden": true}
+    {"id": "city-rank-all", "group": "cities", "name": "Patron of Every Gate", "description": "Raise every city of a world to rank V.", "points": 100, "when": {"metric": "citiesAtTopRank", "atLeast": 5}, "title": "Patron of the Five Cities", "hidden": true},
+    {"id": "quests-done-1", "group": "quests", "name": "Odd Jobs", "description": "Finish a daily quest.", "points": 5, "when": {"metric": "questsDone", "atLeast": 1}},
+    {"id": "quests-done-2", "group": "quests", "name": "Reliable Hands", "description": "Finish 25 daily quests.", "points": 10, "when": {"metric": "questsDone", "atLeast": 25}},
+    {"id": "quests-done-3", "group": "quests", "name": "Notice Board Regular", "description": "Finish 100 daily quests.", "points": 25, "when": {"metric": "questsDone", "atLeast": 100}},
+    {"id": "quests-done-4", "group": "quests", "name": "Errand Legend", "description": "Finish 500 daily quests.", "points": 50, "when": {"metric": "questsDone", "atLeast": 500}},
+    {"id": "quest-days-1", "group": "quests", "name": "A Full Day", "description": "Finish all of a day's quests.", "points": 10, "when": {"metric": "questDays", "atLeast": 1}},
+    {"id": "quest-days-2", "group": "quests", "name": "Ten Good Days", "description": "Finish all of a day's quests on 10 days.", "points": 20, "when": {"metric": "questDays", "atLeast": 10}},
+    {"id": "quest-days-3", "group": "quests", "name": "Fifty Good Days", "description": "Finish all of a day's quests on 50 days.", "points": 40, "when": {"metric": "questDays", "atLeast": 50}},
+    {"id": "quest-streak-7", "group": "quests", "name": "Seven in a Row", "description": "Finish all of a day's quests seven played days in a row.", "points": 30, "when": {"metric": "questStreak", "atLeast": 7}, "title": "the Dependable"}
   ]
 }

@@ -289,8 +289,10 @@ test('the view state of a busy save stays far below the panel post limit', async
   // The second region (eight instances and sixteen bosses in the content, about 12 KiB the same for
   // every world, with an instance under fog sending only its place) and the rematches take it to
   // about 121 KiB, each instance's scene path to 122.1 KiB, and the weekly calendar's five coming
-  // weeks (id, name, kind and start of each, about 0.6 KiB a world) to 122.7 KiB.
-  assert.ok(size < 126 * 1024, `${size} bytes`)
+  // weeks (id, name, kind and start of each, about 0.6 KiB a world) to 122.7 KiB. The daily quests
+  // (about 0.4 KiB a world), their eight achievements in the catalogue (about 1.3 KiB) and their
+  // highlights in the journal take it to 125.2 KiB, and the budget to 130 KiB.
+  assert.ok(size < 130 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
 })
 

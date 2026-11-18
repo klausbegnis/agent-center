@@ -1,0 +1,67 @@
+/* Game mode's daily quests: the "?" button in the header with its count and dot, and the card it
+   opens in the panels' place. Colours come from Orca's theme (--orca-*) and the game's own
+   (--ac-game-*), with dark defaults. */
+
+.ac-game-settings-button.ac-quest-button { position: relative; flex: none; gap: 3px; width: auto; min-width: 28px; padding: 0 5px; }
+.ac-quest-button-count { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-quest-button-all .ac-quest-button-count { color: var(--ac-game-good, #6fe0d2); }
+.ac-quest-dot[hidden] { display: none; }
+/* In a narrow header the count goes: the dot and the label still say it. */
+@media (max-width: 420px) {
+  .ac-quest-button-count { display: none; }
+}
+
+.ac-root[data-game-quests] .ac-rooms,
+.ac-root[data-game-quests] .ac-shelf,
+.ac-root[data-game-quests] .ac-game-panel,
+.ac-root[data-game-quests] .ac-game-settings { display: none !important; }
+.ac-root.ac-gallery[data-game-quests] { overflow: auto; }
+.ac-quests { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-quests[hidden] { display: none; }
+.ac-quests-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.ac-quests-body > .ac-game-settings-note { grid-column: 1 / -1; margin: 0; }
+.ac-quest-list { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.ac-quest { display: flex; flex-direction: column; gap: 4px; padding-left: 8px; border-left: 3px solid var(--ac-game-gold, #f2c14e); }
+.ac-quest.ac-quest-done { border-left-color: var(--ac-game-good, #6fe0d2); }
+.ac-quest-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; font-size: 13px; }
+.ac-quest-icon { width: 16px; height: 16px; flex: none; }
+.ac-quest-slot {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+.ac-quest-text { color: var(--orca-foreground, #f2f4f8); overflow-wrap: anywhere; }
+.ac-quest-done .ac-quest-text { text-decoration: line-through; text-decoration-color: var(--ac-game-good, #6fe0d2); }
+.ac-quest-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.ac-quest-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ac-quest-progress {
+  flex: 1 1 80px;
+  max-width: 220px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ac-game-track, rgba(232, 234, 240, 0.14));
+  overflow: hidden;
+}
+.ac-quest-progress-fill { display: block; height: 100%; background: var(--ac-game-gold, #f2c14e); }
+.ac-quest-done .ac-quest-progress-fill { background: var(--ac-game-good, #6fe0d2); }
+.ac-quest-reward, .ac-quest-streak, .ac-quest-note { margin: 0; font-size: 12px; }
+.ac-quest-reward, .ac-quest-note { color: var(--orca-muted-foreground, #9aa3b2); }
+.ac-quests-bonus { display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--ac-game-gold, #f2c14e); }
+.ac-quests-bonus.ac-quest-done { border-left-color: var(--ac-game-good, #6fe0d2); }
+
+/* A narrow header: with the quests' button there are five round buttons beside the title, so they
+   and their gaps shrink to the room four took, and the counters keep their single lines. */
+@media (max-width: 420px) {
+  .ac-title-row { gap: 4px; }
+  .ac-title-row .ac-game-settings-button,
+  .ac-title-row .ac-button.ac-star-link,
+  .ac-title-row .ac-game-settings-button.ac-quest-button { width: 24px; min-width: 24px; padding: 0; }
+  /* The calendar keeps room for its event's badge on its corner. */
+  .ac-title-row .ac-game-settings-button.ac-event-button { min-width: 30px; padding: 0 0 0 3px; }
+}

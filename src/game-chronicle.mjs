@@ -32,6 +32,8 @@ export function chronicleChange(engine, { before, save, midway, events = [], at,
   const news = told.earned.map(({ id, name, points, title }) =>
     ({ type: 'achievement', kind: 'earned', achievement: id, name, points, title }))
   if (told.backfilled) news.push({ type: 'achievement', kind: 'backfill', count: told.backfilled })
+  // A daily quest done, and the day's three done, for the rooms of its world (quests.mjs).
+  news.push(...(told.quests ?? []))
   return { save: told.save, news }
 }
 
@@ -45,8 +47,34 @@ export function chronicleChange(engine, { before, save, midway, events = [], at,
  */
 export function chronicleView(engine, save, at, dayOf = localDayOf) {
   if (typeof engine.chronicleView !== 'function') return {}
-  const { achievements, journal } = engine.chronicleView(save, { day: dayOf(at) })
-  return { ...(achievements ? { achievements } : {}), journal }
+  const day = dayOf(at)
+  const { achievements, journal, quests } = engine.chronicleView(save, { day })
+  const daily = quests && Object.keys(quests).length ? { quests: { worlds: quests, msLeft: msToNextDay(at, day, dayOf) } } : {}
+  return { ...(achievements ? { achievements } : {}), journal, ...daily }
+}
+
+/** Precision of the time left until the next day: a second. */
+const NEXT_DAY_PRECISION_MS = 1000
+/** A local day lasts 23 to 25 hours when the clocks change: the next one begins within this. */
+const LONGEST_DAY_MS = 26 * 60 * 60_000
+
+/**
+ * The time until the next local day begins, on the game's clock: the first moment `dayOf` names a
+ * later day, so a day of 23 or 25 hours, when the clocks change, is measured right.
+ *
+ * @param {number} at
+ * @param {number} day `dayOf(at)`
+ * @param {(ms: number) => number} [dayOf]
+ */
+export function msToNextDay(at, day, dayOf = localDayOf) {
+  let low = at
+  let high = at + LONGEST_DAY_MS
+  while (high - low > NEXT_DAY_PRECISION_MS) {
+    const mid = low + Math.floor((high - low) / 2)
+    if (dayOf(mid) > day) high = mid
+    else low = mid
+  }
+  return high - at
 }
 
 /** An error whose message names what was refused, cut so a long input cannot flood the log. */
