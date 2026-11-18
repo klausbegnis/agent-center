@@ -27,3 +27,21 @@ for city in goldmill deepforge brinehaven tallwood runespire; do cp "scripts/cit
 ```
 
 To draw one city only, name it: `python3 -I scripts/city-art/cities.py tallwood`.
+
+## Ranks
+
+Each city also grows through five ranks (I to V; see "City ranks" in `docs/GAME.md`), each with a
+banner of its own: `ui/cities/<city>-<rank>.png`, the same scene drawn bigger and richer at each
+rank. `ranks.py` draws them, one module per city (`goldmill_ranks.py`, `deepforge_ranks.py`,
+`brinehaven_ranks.py`, `tallwood_ranks.py`, `runespire_ranks.py`, each a `draw(rank)` built from the
+city's banner), on `rank_engine.py`, the extended engine the settlement's art uses:
+
+```bash
+python3 -I scripts/city-art/ranks.py
+for city in goldmill deepforge brinehaven tallwood runespire; do
+  for rank in 1 2 3 4 5; do cp "scripts/city-art/x1/$city-$rank-fade.png" "ui/cities/$city-$rank.png"; done
+done
+```
+
+It also writes 4x previews, a sheet per city (`sheet-ranks-<city>.png`) and one of every city
+side by side (`sheet-ranks.png`); git ignores them. Name cities to draw only those.
