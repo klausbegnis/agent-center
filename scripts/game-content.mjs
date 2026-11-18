@@ -1,11 +1,12 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
-// be there, and game/instances.json, whose art must be there too. The rules are in
-// src/game/content.mjs, content-races.mjs, content-cities.mjs, legendary-content.mjs,
-// bestiary-content.mjs, settlement-content.mjs and instance-content.mjs.
+// be there, and game/instances.json, whose art must be there too, and game/achievements.json. The
+// rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs, legendary-content.mjs,
+// bestiary-content.mjs, settlement-content.mjs, instance-content.mjs and achievement-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
+import { validateAchievements } from '../src/game/achievement-content.mjs'
 import { validateBestiary } from '../src/game/bestiary-content.mjs'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
@@ -41,6 +42,26 @@ export function checkGameContent({ root, report, readJson }) {
   checkBestiary({ root, report, readJson })
   checkSettlement({ root, report, readJson })
   checkInstances({ root, report, readJson })
+  checkAchievements({ root, report, readJson })
+}
+
+/** game/achievements.json, its conditions' ids checked against the other content files. */
+function checkAchievements({ root, report, readJson }) {
+  const file = path.join(root, 'game', 'achievements.json')
+  if (!fs.existsSync(file)) return report(file, 'is missing; the game needs it for the achievements')
+  const achievements = readJson(file)
+  if (achievements === null) return
+  const read = (name) => {
+    const other = path.join(root, 'game', name)
+    return fs.existsSync(other) ? readJson(other) : null
+  }
+  const content = {
+    bestiary: read('bestiary.json'),
+    bosses: read('bosses.json'),
+    settlement: read('settlement.json'),
+    instances: read('instances.json')
+  }
+  for (const problem of validateAchievements(achievements, content)) report(file, problem)
 }
 
 /** game/settlement.json: its buildings against the group upgrades, and that every picture it names is there. */

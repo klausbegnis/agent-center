@@ -1,6 +1,7 @@
-// The World tab: a switch between its three views, Creatures and Bosses (the bestiary) and the
-// Roadmap of instances. The view chosen is kept for the surface, and `?tab=world&view=roadmap`
+// The World tab: a switch between its views, Creatures and Bosses (the bestiary), the Roadmap of
+// instances and the Achievements (achievements-view.js). The view chosen is kept for the surface, and `?tab=world&view=roadmap`
 // (or an old `?tab=bestiary`) opens on it.
+import { createAchievementsView } from './achievements-view.js'
 import { createBestiaryView } from './bestiary-view.js'
 import { el } from './dom.js'
 import { INSTANCES } from './instance-labels.js'
@@ -33,14 +34,17 @@ export function createWorldView({ panel, base, actions, prefs }) {
   const bestiaryPanel = el('div', 'ac-world-bestiary')
   const bestiary = createBestiaryView({ panel: bestiaryPanel, base, outerSwitch: true })
   const roadmap = createRoadmapView({ actions, base })
-  panel.append(top, bestiaryPanel, roadmap.element)
+  const achievements = createAchievementsView({ actions })
+  panel.append(top, bestiaryPanel, roadmap.element, achievements.element)
 
   function draw() {
     buttons.forEach((node, at) => node.setAttribute('aria-pressed', String(WORLD_VIEWS[at] === view)))
-    bestiaryPanel.hidden = view === 'roadmap'
+    bestiaryPanel.hidden = view === 'roadmap' || view === 'achievements'
     roadmap.element.hidden = view !== 'roadmap'
+    achievements.element.hidden = view !== 'achievements'
     if (!shown) return
     if (view === 'roadmap') roadmap.update(shown)
+    else if (view === 'achievements') achievements.update(shown)
     else {
       bestiary.setShow(view)
       bestiary.update(shown.state, shown.world?.id ?? null)

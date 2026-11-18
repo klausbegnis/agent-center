@@ -11,6 +11,7 @@ import { activityLabel, since, subagentOf } from './labels.js'
 function characterHead(card) {
   const head = el('div', 'ac-detail-hero')
   head.append(gameIcon(card.classId, 'ac-detail-icon'), el('strong', 'ac-detail-facts', card.facts))
+  if (card.title) head.append(el('span', 'ac-party-title', card.title))
   const progress = meter('ac-detail-progress', card.progressLabel)
   progress.set(card.progress, card.progressText)
   head.append(progress.element)

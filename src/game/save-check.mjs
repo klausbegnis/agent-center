@@ -2,7 +2,9 @@
 // from the fields the engine writes, so nothing made up can be stored. `migrate` repairs what the
 // plugin's own storage holds; a file is refused instead as soon as one part is not what the engine
 // would have written. Pure.
+import { achievementIndexOf } from './achievement-content.mjs'
 import { indexBestiary } from './bestiary-content.mjs'
+import { checkChronicle } from './chronicle-save.mjs'
 import { checkWorldBestiary } from './bestiary-check.mjs'
 import {
   ITEM_MAX_TIER,
@@ -405,7 +407,7 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
  *   and boons a world's progress and a room's run may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances } = {}) {
+export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances, achievements } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
   const instanceIndex = instanceIndexOf({ instances })
   const bestiaryIndex = indexBestiary(bestiary, bosses)
@@ -422,7 +424,11 @@ export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, se
     const layoutProblem = worldLayoutProblem(worlds, projectWorld)
     if (layoutProblem) fail(...layoutProblem)
     const settings = record(source.settings, 'settings')
-    const save = { version: SAVE_VERSION, worlds, projectWorld, settings: { keepTitles: boolean(settings.keepTitles, 'settings.keepTitles') } }
+    // Achievements and the journal (chronicle-save.mjs), when the save has them.
+    const chronicle = checkChronicle(source, { index: achievementIndexOf({ achievements }), worlds })
+    if (!chronicle.ok) fail(...chronicle.problem)
+    const save = { version: SAVE_VERSION, worlds, projectWorld, settings: { keepTitles: boolean(settings.keepTitles, 'settings.keepTitles') },
+      ...chronicle.value }
     return { ok: true, save }
   } catch (error) {
     if (error instanceof SaveProblem) return { ok: false, problem: error.message }

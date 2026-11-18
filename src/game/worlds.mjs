@@ -1,6 +1,7 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
 import { normalizeBestiary } from './bestiary.mjs'
+import { migrateChronicle } from './chronicle-save.mjs'
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
 import { normalizeProjectInstance, normalizeWorldInstances } from './instance-save.mjs'
 import { normalizeLegendary } from './legendary.mjs'
@@ -302,6 +303,8 @@ export function migrate(value) {
     worlds: Object.fromEntries(Object.entries(keepEntries(save.worlds, isPlainObject))
       .map(([worldId, world]) => [worldId, normalizeWorld(world)])),
     projectWorld: keepEntries(save.projectWorld, isWorldIdOrNull),
-    settings: { keepTitles: objectOr(save.settings, {}).keepTitles === true }
+    settings: { keepTitles: objectOr(save.settings, {}).keepTitles === true },
+    // Achievements and the journal, only when the save has them (chronicle-save.mjs).
+    ...migrateChronicle(save)
   }
 }

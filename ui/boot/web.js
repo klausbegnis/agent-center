@@ -64,6 +64,7 @@ const transport = {
   enterInstance: (roomId, instanceId, tier) => postGame('enter-instance', { roomId, instanceId, tier }),
   chooseBoon: (roomId, boonId) => postGame('choose-boon', { roomId, boonId }),
   recallParty: (roomId) => postGame('recall-party', { roomId }),
+  setPartyTitle: (roomId, achievementId) => postGame('party-title', { roomId, achievementId }),
   sellMaterial: (worldId, cityId, materialId, amount) => postGame('sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) => postGame('trade', { worldId, cityId, fromId, toId, amount }),
   buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>

@@ -42,7 +42,7 @@ import { settlementArtUrl } from './settlement-model.js'
 const EFFECT_MS = 2600
 /** A legendary drop and a new stage of the settlement are celebrated twice as long (ui/legendary.css, ui/settlement.css). */
 const LEGENDARY_EFFECT_MS = 5200
-const LONG_TONES = new Set(['legendary', 'stage'])
+const LONG_TONES = new Set(['legendary', 'stage', 'achievement'])
 
 /** A settlement picture by a line over the room: a building's sprite, or the stage's picture, larger. */
 function settlementPicture(base, path, tone) {

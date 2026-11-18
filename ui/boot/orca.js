@@ -44,6 +44,7 @@ const transport = {
   enterInstance: (roomId, instanceId, tier) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier }),
   chooseBoon: (roomId, boonId) => orca.plugin.request('game.chooseBoon', { roomId, boonId }),
   recallParty: (roomId) => orca.plugin.request('game.recallParty', { roomId }),
+  setPartyTitle: (roomId, achievementId) => orca.plugin.request('game.partyTitle', { roomId, achievementId }),
   sellMaterial: (worldId, cityId, materialId, amount) =>
     orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) =>

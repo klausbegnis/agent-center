@@ -63,4 +63,5 @@ export function registerPanelHandlers(orca, controller) {
     controller.gameEnterInstance(input?.roomId, input?.instanceId, input?.tier))
   orca.panels.handle('game.chooseBoon', (input) => controller.gameChooseBoon(input?.roomId, input?.boonId))
   orca.panels.handle('game.recallParty', (input) => controller.gameRecallParty(input?.roomId))
+  orca.panels.handle('game.partyTitle', (input) => controller.gameSetPartyTitle(input?.roomId, input?.achievementId ?? null))
 }

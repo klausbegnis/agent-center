@@ -3,6 +3,7 @@
 // clock and no randomness: the same save and the same calls always give the same result.
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
+import { chronicleActions } from './chronicle.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { withActiveRelic } from './legendary.mjs'
@@ -210,7 +211,8 @@ export function createEngine({ content }) {
       bestiary: content.bestiary,
       bosses: content.bosses,
       settlement: content.settlement,
-      instances: content.instances
+      instances: content.instances,
+      achievements: content.achievements
     }),
     moveProjectItems,
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
@@ -230,6 +232,8 @@ export function createEngine({ content }) {
     chooseBoon: (save, choice) => chooseBoon(save, choice, instanceIndexOf(content)),
     boonProblem: (save, choice) => boonProblem(save, choice, instanceIndexOf(content)),
     recallParty,
+    // Achievements and the journal (chronicle.mjs): granted and counted after every change kept.
+    ...chronicleActions(content),
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }

@@ -1,6 +1,7 @@
 // What the new events of a state look like over the rooms: a damage number or "Defeated!" by the
 // monster, "Level 9!" by a character, and short lines about loot, drops, retirements, arrivals
 // and purchases under the fight. Never touches the DOM.
+import { achievementEffects } from './achievement-model.js'
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
@@ -19,7 +20,7 @@ export const MAX_ROOM_LINES = 3
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
  * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary' |
- *   'bestiary' | 'settlement' | 'stage' | 'instance'} tone `stage` is a new stage of the settlement and
+ *   'bestiary' | 'settlement' | 'stage' | 'instance' | 'achievement'} tone `stage` is a new stage of the settlement and
  *   `legendary` a legendary drop or an instance entered or cleared, celebrated most
  * @property {string} [artId] a legendary entry whose picture plays with the line
  * @property {string} [settlementArt] a settlement picture (a path the view state gives) that plays with it
@@ -200,6 +201,7 @@ export function gameEffects(changes, state) {
     ...killEffects(changes.events, game.rooms),
     ...levelEffects(changes.events, game.rooms),
     ...arrivalEffects(changes.arrivals, state),
-    ...lineEffects(changes.events, game)
+    ...lineEffects(changes.events, game),
+    ...achievementEffects(changes.events, game)
   ])
 }

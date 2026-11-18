@@ -3,6 +3,7 @@
 // level, progress, trade picker, the seven attributes and the
 // three equipment slots, each opening a picker of the chest's items (equip-view.js), then the
 // retirees and the bonus they leave the project.
+import { partyTitleOf } from './achievement-model.js'
 import { button, el } from './dom.js'
 import { meter, replaceKeepingFocus, section } from './game-controls.js'
 import { clampShare, formatShare } from './game-format.js'
@@ -50,8 +51,10 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   const portrait = createPortrait({ onShow: () => agentId && onShowAgent(agentId) })
   const who = el('div', 'ac-game-hero-who')
   const nameText = el('strong', 'ac-game-entry-name')
+  // The title the room's party wears (achievements-view.js), beside the name.
+  const titleText = el('span', 'ac-party-title')
   const facts = el('span', 'ac-muted')
-  who.append(nameText, facts)
+  who.append(nameText, titleText, facts)
   let classIcon = el('span')
   // Holds the picker, or on a page that cannot choose, the trade as text.
   const tradeSlot = el('span', 'ac-game-trade-slot')
@@ -74,6 +77,8 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
     update({ agent, character }, { roomChoice, canChoose, canEquip, state, room, portraitFor }) {
       agentId = agent.id
       nameText.textContent = agent.name
+      titleText.textContent = partyTitleOf(state.game, roomId) ?? ''
+      titleText.hidden = !titleText.textContent
       if (portraitFor) portrait.set(...portraitFor(agent))
       portrait.element.hidden = !portraitFor
       facts.textContent = characterFacts(character)

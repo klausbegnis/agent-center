@@ -84,7 +84,7 @@ export const checkText = (check, skillLabel = {}) =>
 
 /** The World tab's Roadmap view, an instance's card, a run's card and their controls. */
 export const INSTANCES = {
-  views: { creatures: 'Creatures', bosses: 'Bosses', roadmap: 'Roadmap' },
+  views: { creatures: 'Creatures', bosses: 'Bosses', roadmap: 'Roadmap', achievements: 'Achievements' },
   viewsName: 'Show',
   title: (region) => region.name,
   cleared: (cleared, total) => `${cleared} of ${total} instances cleared`,

@@ -159,7 +159,8 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
       controller.gameBuyStallOffer(input.worldId, input.cityId, input.offerIndex, input.entryId, input.roomId),
     '/api/game/enter-instance': (input) => controller.gameEnterInstance(input.roomId, input.instanceId, input.tier),
     '/api/game/choose-boon': (input) => controller.gameChooseBoon(input.roomId, input.boonId),
-    '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId)
+    '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId),
+    '/api/game/party-title': (input) => controller.gameSetPartyTitle(input.roomId, input.achievementId ?? null)
   }
 
   async function handlePost(pathname, request, response, isLocal) {

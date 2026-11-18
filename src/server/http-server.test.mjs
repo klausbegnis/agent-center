@@ -67,6 +67,10 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['recallParty', ...input])
       return { changed: true }
     },
+    gameSetPartyTitle: async (...input) => {
+      calls.push(['partyTitle', ...input])
+      return { changed: true }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -258,6 +262,15 @@ test('the instance routes reach the controller with their fields', async (t) => 
   ])
 })
 
+test('the title route reaches the controller with their fields', async (t) => {
+  const { server, calls } = await setup(t)
+  const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
+  const room = 'local:/work/rumble-banana'
+  assert.equal((await post('/api/game/party-title', { roomId: room, achievementId: 'monsters-4' })).status, 200)
+  assert.equal((await post('/api/game/party-title', { roomId: room })).status, 200)
+  assert.deepEqual(calls, [['partyTitle', room, 'monsters-4'], ['partyTitle', room, null]])
+})
+
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
   const { server, calls } = await setup(t)
   const post = (body) => request(server, '/api/game/import-save', { method: 'POST', body: JSON.stringify(body) })
@@ -279,7 +292,7 @@ const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', '
   'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
   'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
-  'choose-boon', 'recall-party']
+  'choose-boon', 'recall-party', 'party-title']
 
 const gameState = {
   rooms: [],

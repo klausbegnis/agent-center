@@ -197,7 +197,8 @@ const ACTION_NAMES = {
   bestGear: 'Best gear',
   sellMaterial: 'The sale',
   tradeMaterial: 'The trade',
-  buyStallOffer: 'The purchase'
+  buyStallOffer: 'The purchase',
+  setPartyTitle: 'Changing the title'
 }
 
 /**

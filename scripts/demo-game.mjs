@@ -15,6 +15,7 @@ import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
 import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
 import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { showDemoChronicle } from './demo-achievements.mjs'
 import { showDemoInstances } from './demo-instances.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
 
@@ -357,11 +358,13 @@ export async function createDemoGame(options) {
     await showDemoBestiary(game, frozenClock)
     await showDemoSettlement(game, settlementLevels ?? DEMO_VILLAGE)
     await showDemoInstances(game, { vault: instanceVault })
+    await showDemoChronicle(game, { now: frozenClock, titleRoom: LEGENDARY_ROOM })
     return game
   }
   await game.round()
   if (settlementLevels) await showDemoSettlement(game, settlementLevels)
   if (instanceVault) await showDemoInstances(game, { vault: true })
+  await showDemoChronicle(game, { now: now(), titleRoom: LEGENDARY_ROOM })
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

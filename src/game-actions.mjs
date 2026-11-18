@@ -2,6 +2,7 @@
 // something that exists (or, for a new world, be a well-formed name), so nothing made up is
 // stored. Each action answers whether it changed anything.
 import { worldWorkMix } from './domain/skill-mix.mjs'
+import { createChronicleActions } from './game-chronicle.mjs'
 import { createInstanceActions } from './game-instance-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
@@ -455,6 +456,7 @@ export function createGameActions(dependencies) {
     },
 
     // Entering an instance, choosing the vault's boon, recalling the party (game-instance-actions.mjs).
-    ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) })
+    ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) }),
+    ...createChronicleActions({ engine, change, joinedProject })
   }
 }

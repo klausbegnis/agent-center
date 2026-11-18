@@ -250,6 +250,10 @@ export function createController({
       roomId: requireText(roomId, 'room'),
       boonId: requireText(boonId, 'boon')
     })),
-    gameRecallParty: (roomId) => playAction(() => game.recallParty({ roomId: requireText(roomId, 'room') }))
+    gameRecallParty: (roomId) => playAction(() => game.recallParty({ roomId: requireText(roomId, 'room') })),
+    gameSetPartyTitle: (roomId, achievementId) => playAction(() => game.setPartyTitle({
+      roomId: requireText(roomId, 'room'),
+      achievementId: achievementId === null ? null : requireText(achievementId, 'achievement')
+    }))
   }
 }

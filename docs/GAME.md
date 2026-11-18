@@ -897,6 +897,91 @@ Outpost on day 15 and the Hamlet on day 30, a medium one the Village on day 53 a
 186, and a heavy one the Stronghold on day 169 and the Citadel a little after its first year
 (491 levels at day 365).
 
+## Achievements
+
+Long-term goals over every part of the game (`game/achievements.json`, checked by
+`src/game/achievement-content.mjs`; granted by `achievements.mjs`, measured by
+`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 134 achievements in eleven
+groups (Battle, Bosses, Bestiary, Growth, Legacy, Treasure, Market, Settlement, Instances, Journal,
+Collector), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
+Each has a name, a description, points (1 to 100) and a condition; some are `hidden` until earned,
+and 37 grant a `title`.
+
+### Conditions
+
+A condition is data: `{ "metric": "kills", "atLeast": 1000 }`, with the metric's one parameter when
+it takes one (`{ "metric": "raceKills", "race": "troll", "atLeast": 500 }`), or
+`{ "all": [conditions] }`, met when every part is. A metric is one number read from the save over
+every world: a sum (`kills`, `bossWins`, `rankKills` by rank, `raceKills` by race, `retirements`,
+`instanceClears`), a count of distinct things (`distinctBosses`, `racesDiscovered`, `relics`,
+`legendaryItems`, `instancesCleared`), or the best of the worlds (`wave`, `worldLevel`,
+`skillLevel` by skill, `bestWorkSkill`, `prestigeStars`, `characterLevel`, `hunterRank`,
+`bestMastery`, `itemTier`, `itemLevel`, `coins`, `citiesOpen`, `buildingLevels`, `stage`,
+`buildingTier` by building, `renovationStars`, `instanceTier`). `coinsEarned`, `materialsEarned`,
+`notableLoot` and `activeDays` read the journal's lifetime totals (see "The day's journal"), and
+`achievements` and `achievementPoints` the achievements themselves. The content check refuses a
+metric that does not exist and a parameter the content does not have, so an achievement for a new
+feature is a metric in `achievement-metrics.mjs` and a line of data.
+
+### Granting
+
+After every change the bridge keeps (a round, an action, an import), `chronicle` grants every
+achievement whose condition the save now meets, with the time. One earned is kept for good, through
+a world reset too. An achievement for earning achievements is checked again in the same change.
+Each one earned becomes an `achievement` event of `recent`, which every room that plays celebrates
+in gold.
+
+### Back-fill
+
+A save from before achievements has none. The first time it is checked (its first round, or an
+import), everything it already meets is granted quietly and counted as `filled`; the bridge then
+adds one `achievement` event of kind `backfill` with the count, which plays as one line in the first
+room, not one per achievement. A brand-new save is back-filled with nothing, so its first
+achievements are news.
+
+### Titles
+
+An achievement with a `title` lets a room's party wear it: one title per room, chosen in the World
+tab's Achievements view. It shows beside each character's name in the Party tab and on the agent
+card. It is cosmetic only. A title must be earned; a room that leaves the save takes its title
+along.
+
+### In the save
+
+`achievements: { earned: { [id]: ms }, titles: { [projectId]: id }, filled }`, present once the save
+was first checked. `migrate` keeps the entries that are well formed; `cleanSave` refuses an
+achievement the content does not have, a time that is not one, a title for a room that does not
+play or that was not earned, and a `filled` larger than what was earned.
+
+## The day's journal
+
+A rolling log for the "While you worked" summary (`src/game/journal.mjs`, counted by
+`journal-gains.mjs`). Each change the bridge keeps adds what it gained to the local calendar day
+(the bridge passes `localDayOf(now)`, so a day rolls over at the person's midnight):
+
+| Counter | From |
+|---|---|
+| `kills`, `bosses` | kill events; a boss is a kill of rank `boss` or `legendary` |
+| `levels` | character `level` events |
+| `skillLevels` | the effective levels the world's skills gained |
+| `loot` | legendary finds, and a drop of a higher tier than its room held |
+| `coins` | the coins the worlds gained |
+| `materials` | the materials a round gained before anything was spent |
+| `achievements` | achievements earned |
+| `buildings` | building levels the settlements gained |
+| `cleared`, `failed` | instance results |
+
+A short list of highlights names what was notable: legendary finds, new best gear, a boss's first
+win, achievements, a building's new tier, a new stage and an instance cleared, each as a content id.
+An imported game is no news and adds nothing.
+
+`journal: { days: [[day, ...counts]], totals, since, seenAt, activeDays, highlights }`: at most
+14 days (oldest first, a day going backwards is added to the newest), the same counters over all
+time and since the summary was last opened (`seenAt`), the number of days with something counted,
+and at most 24 highlights `{ at, kind, ref, value? }`. Nothing in it names a session or a room.
+`cleanSave` refuses more days or highlights than that, days out of order, a row of the wrong length,
+a count that is not whole and a highlight of a kind it does not know.
+
 ## Scenes
 
 A project counts every monster it ever killed in `kills`. It only goes up; a world reset starts
@@ -1142,7 +1227,7 @@ One JSON value:
 
 ```
 Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: worldId | null },
-            settings: { keepTitles } }
+            settings: { keepTitles }, achievements?, journal? }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
             coins, market: Market, bestiary?, instances? }
@@ -1517,6 +1602,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier }`: a room that plays, an instance of `game/instances.json` and a whole tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
 | `game.chooseBoon` | `/api/game/choose-boon` | `{ roomId, boonId }`: a room whose run is at the vault and one of the two boons it offers |
 | `game.recallParty` | `/api/game/recall-party` | `{ roomId }`: a room inside an instance (one left behind too, so it frees its instance) |
+| `game.partyTitle` | `/api/game/party-title` | `{ roomId, achievementId }`: a room that plays and an achievement it earned that grants a title, or null for none |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
@@ -1693,6 +1779,23 @@ by the usual closing rules.
     points: { normal: 1, veteran: 2, elite: 5, champion: 10, boss: 25, legendary: 60 },
     levels: 25, perkEvery: 5, hunterThresholds: [1, 5, 15, 30, 55]
   },
+  achievements: {                   // about 19 KB; the same for every world
+    points: 125, totalPoints: 3845, earned: 14, total: 134, filled: 8,
+    groups: [{ id: 'battle', name: 'Battle', earned: 1, list: [
+      { id: 'monsters-2', points: 10, name, description, title: 'the Eager', share: 0.45, value: 45, target: 100 },
+      { id: 'monsters-1', points: 5, name, description, earnedAt: 1767600000000, share: 1 },
+      { id: 'monsters-6', points: 100, hidden: true, share: 0 }]}],   // hidden and not earned: nothing more
+    titles: [{ id: 'relics-1', title: 'the Curious' }],              // the titles earned
+    partyTitles: { 'local:/work/rumble-banana': { id: 'relics-1', title: 'the Curious' } }
+  },
+  journal: {                        // about 3 KB
+    today: { day: 20458, kills, bosses, levels, skillLevels, loot, coins, materials, achievements,
+      buildings, cleared, failed },
+    since: { seenAt, ...the same counters, highlights: [...] },     // since the summary was opened
+    days: [{ day, ...counters }],     // the last 14 days, today last, an empty day all zeros
+    highlights: [{ at, kind, ref, value?, name }], activeDays: 41,
+    unread: true                      // a highlight came after seenAt
+  },
   instances: {                      // the content's, the same for every world; about 6 KB
     region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144 },
     instances: [{ id: 'sunken-crypt', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
@@ -1717,6 +1820,8 @@ by the usual closing rules.
   with the stance from `wants` and `produces`, and its pressure is `pressure[m]` or 0. A stall
   offer's `fullIn` lists the rooms whose chest already keeps `COPIES_PER_ITEM` copies of it.
   Nothing in it names a session, so a page on another machine gets it unchanged.
+- `achievements` and `journal` name no session and no conversation, so a page on another machine
+  gets them unchanged; it shows them but offers no title picker.
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
 - `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw
@@ -1754,6 +1859,8 @@ by the usual closing rules.
   (person, auto or wait), `found` and `ticks`, `drops`: a step of a room's run, which its room
   tells; entering and the clear are celebrated like a legendary drop; a kill inside an instance
   carries `instance` too),
+  `achievement` (`kind` earned, with `achievement`, its `name`, `points` and `title`, or backfill,
+  with the `count` granted quietly: see "Achievements"; a UI celebrates one earned in every room),
   `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
