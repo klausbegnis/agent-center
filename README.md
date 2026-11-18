@@ -144,6 +144,12 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   defeating nine werewolves, that pays materials once. The calendar button in the header shows
   the week's event and how far its goal is; it opens a small calendar with what this week's event
   does, how long it has left, its goal and reward, and the events of the next five weeks.
+- **Daily quests.** Each day brings three small quests sized to how much you usually play: defeat
+  some monsters or forty goblins, collect ore, clear a dungeon on the roadmap, sell at a market. The
+  "?" button in the header shows how many are done; each pays a little at once, all three pay a
+  bonus, and a streak of finished days makes it larger. A day you do not work never breaks it.
+
+![The Daily quests card: the easy quest "Defeat 12 monsters" done and paid, "Level up characters 2 times" at 1 of 2 with its reward, "Gain 1 skill level" not begun, and the bonus for all three below](docs/screenshots/game-quests.png)
 
 ![The Roadmap tab: the switch between The Old Road and The Gloaming Isles (locked), then the parchment map of the road with a cleared crypt, a party on its way to the foundry and the sites ahead under fog](docs/screenshots/game-roadmap.png)
 

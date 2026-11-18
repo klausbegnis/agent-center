@@ -1006,9 +1006,9 @@ cheaper would change the old upgrades' prices, which the settlement keeps exactl
 
 Long-term goals over every part of the game (`game/achievements.json`, checked by
 `src/game/achievement-content.mjs`; granted by `achievements.mjs`, measured by
-`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 144 achievements in thirteen
+`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 161 achievements in fifteen
 groups (Battle, Bosses, Bestiary, Growth, Legacy, Treasure, Market, Settlement, Instances, Journal,
-Collector, Traits, Weekly events), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
+Collector, Traits, Weekly events, Daily quests, City ranks), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
 Each has a name, a description, points (1 to 100) and a condition; some are `hidden` until earned,
 and 37 grant a `title`.
 
@@ -1025,7 +1025,8 @@ every world: a sum (`kills`, `bossWins`, `rankKills` by rank, `raceKills` by rac
 `buildingTier` by building, `renovationStars`, `instanceTier`, and for traits `traitsCollected`,
 `mythicTraits` and `traitsCarried`, the most traits one living character carries), and `traitSwaps`
 counts the swaps at the trait brokers (see "Traits"), and `weeklyGoals` the weeks whose goal a world
-reached (see "Weekly events"). `coinsEarned`, `materialsEarned`,
+reached (see "Weekly events"); `questsDone`, `questDays` and `questStreak` the daily quests done, the
+days all three were done and the best streak (see "Daily quests"). `coinsEarned`, `materialsEarned`,
 `notableLoot` and `activeDays` read the journal's lifetime totals (see "The day's journal"), and
 `achievements` and `achievementPoints` the achievements themselves. The content check refuses a
 metric that does not exist and a parameter the content does not have, so an achievement for a new
@@ -1271,6 +1272,80 @@ not a multiplier: it needs no network and no server, and is the same on every ma
   Weekly events group has three (1, 10 and 52 goals, the last with a title). A goal reached is a
   `weekly` highlight in the day's journal ("Weekly goal reached: The Howling Moon").
 - **Demo.** `EVENT=<id>` with `GAME=1` plays that event every week (`pinned` in the events data).
+
+## Daily quests
+
+Each local day every world that plays gets three quests, one easy, one medium and one hard
+(`game/quests.json`, checked by `src/game/quest-content.mjs`; the rules are `quests.mjs`, the save
+`quest-save.mjs` and the view `quest-view.mjs`). They give a working day something small to aim at.
+
+- **The day.** The journal's local day (`localDayOf` in `src/game-chronicle.mjs`): the bridge passes
+  it with every change it keeps, and nothing in the engine reads the clock. The first change of a new
+  day rolls the day's quests and drops yesterday's, in the round that crosses midnight, with no reload;
+  the card's time left is measured to the first moment of the next local day, so a day of 23 or 25
+  hours when the clocks change is right.
+- **Which quests.** By hash of the world and the day (`rollQuests`), so a reload shows the same ones,
+  from the kinds of the file that can fill each slot and that the world can finish today. Each kind
+  says, per slot, the share of a day's pace it asks:
+
+  | Kind | Asks | Offered when |
+  |---|---|---|
+  | `kills` | defeat N monsters | always |
+  | `race` | defeat N of a race | the race is one the world meets at least as often as the average (its bestiary says, once it counts 200 kills), or this week's featured race (half the time in a race week) |
+  | `elites` | defeat N elites or champions | always |
+  | `boss` | defeat a boss | the world meets five bosses or more on a played day |
+  | `collect` | collect N of a material, by kills or gathering | the world holds a plentiful one |
+  | `coins` | earn N coins | the world earned coins on every recent played day |
+  | `trade` | sell or trade at a market city | a city is open and the world has materials |
+  | `instance` | clear an instance on the roadmap | a room can enter an open instance now (cooldowns and a room inside considered), or is inside one |
+  | `rematch` | win a boss rematch | the next rematch is open and the world cleared that instance at the rematch's tier before |
+  | `weekly` | bring this week's goal N closer | the goal is not reached; N is what a day brings it |
+  | `levels` | level up characters N times | the world's characters level up most days |
+  | `skills` | gain N skill levels | the world's skills gain a level a day |
+
+  A slot no kind can fill falls back to defeating monsters (or levelling, or elites, whichever the day
+  has not used). The pace is the mean of the journal's last seven played days (days with kills), or
+  the file's defaults (`kills` 40, `levels` 3, `skillLevels` 1) before two of them; the journal counts
+  every world together, and most saves have one.
+- **Counting.** After every change the bridge keeps, `noteQuests` (from `chronicle`) moves each quest
+  by what the change gained: kill events by rank and race (`roomId` in the world), the material up to
+  the change's `midway` (before spending, so a trade is not counted as collecting), coins the world
+  gained, a market pressure pushed away from rest (a trade: the market only eases back by itself),
+  instance runs cleared (a rematch's for `rematch`), the weekly goal's progress, the living characters'
+  levels and the world's effective skill levels.
+- **Rewards.** A quest done pays at once, once: materials worth `quest` (0.8%) of a day's kills in
+  plain kills of the world's level, at least half a kill, in its material for a supply run, else the
+  two materials the world holds least of. All three done pay the day's bonus, `bonus` (1.5%) times
+  1 + `streakStep` (0.1) for each day of the streak, up to `streakCap` (7) days, and `scrollChance`
+  (10%) a common trait scroll into the world's first room. No claim is needed; the card shows them
+  paid.
+- **Streak.** A day with all three done adds one. A played day left unfinished (the journal saw kills
+  or levels on it) breaks it; a day nobody worked, or days the game did not run, do not.
+- **In the save.** A world keeps `daily: { day, quests: [{ kind, slot, target, progress, done, race?,
+  material?, reward }], bonus, bonusReward?, streak, best, totals: [quests, days] }` from its first
+  change of a day; a save from before has none and loads unchanged. `migrate` drops a malformed one;
+  `cleanSave` refuses a kind the content does not have, a progress past its target, `done` that
+  disagrees with it, a kind twice, a bonus before all three are done, a streak past the best, and any
+  of it when the content has no quests.
+- **View and UI.** The view state's `game.quests` is `{ worlds: { [worldId]: { quests, bonus: { paid,
+  reward }, streak, best } }, msLeft }`, only today's (about 0.4 KiB a world). A "?" button in the
+  header, beside the calendar, the summary and the settings (`ui/engine/quest-view.js`), shows how
+  many are done (`2/3`, hidden in a narrow header) and a dot when something changed since the card was
+  last opened; its label says the count and the time until new quests. Its card, in the panels' place
+  like the summary's (Escape and Close bring the focus back; a page on another machine may open it),
+  lists each quest with its icon, slot, words ("Defeat 40 goblins"), progress bar and reward, then the
+  bonus, the streak and the time left. A quest done is a short line in the rooms of its world, the day
+  done a larger one, and both are highlights of the journal (`quest`, `quests`).
+- **Achievements.** The Daily quests group: 1, 25, 100 and 500 quests, 1, 10 and 50 whole days, and a
+  seven-day streak with the title "the Dependable".
+- **Pace.** `npm run simulate` plays the scenarios once more with a player who also does the errands
+  quests ask (a sale of a tenth of its most plentiful material, a run into an open instance at tier 1
+  or the next rematch; `scripts/quest-balance.mjs`). All three quests are done on 72% of the light
+  user's working days, 94% of the medium's and 98% of the heavy's (89%, 98% and 99% of the quests),
+  the best streaks 11, 23 and 30 days, and they pay 2% of the materials each world earns.
+- **Demo.** The frozen demo shows the first quest done, the second half way and the third not begun;
+  the live one plays them from the made-up day. `QUESTS=done` with `GAME=1` shows all three done with
+  the bonus paid and a four-day streak.
 
 ## Scenes
 

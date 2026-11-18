@@ -8,6 +8,15 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- Game mode: daily quests. Each local day every world gets three quests (easy, medium, hard),
+  chosen from the day and the world and sized to its own recent pace: defeat monsters, a race,
+  elites or a boss, collect a material, earn coins, trade at a market, clear an instance or win a
+  rematch, bring the weekly goal closer, level up characters or skills. Only quests the world can
+  finish today are offered. Each pays a small reward at once, all three a daily bonus that grows
+  with a streak of finished days (up to a week; days without work do not break it) and sometimes a
+  trait scroll. A "?" button in the header opens the day's quests; rooms tell a quest done, the
+  journal keeps it, and eight achievements follow them. `QUESTS=done` shows them done in the demo.
+
 - Game mode: traits. Every character is born with a trait, a small named perk rolled from its
   session, and earns more trait slots at levels 10, 20 and 30. Trait scrolls drop now and then from
   elites, champions and bosses, sit in the room's chest (the Chest tab's Trait scrolls card, which
