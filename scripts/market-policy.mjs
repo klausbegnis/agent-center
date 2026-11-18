@@ -9,6 +9,7 @@ import { legendaryOf } from '../src/game/legendary.mjs'
 import { isCityOpen, marketDay, pricePoint, tradeUnits } from '../src/game/market.mjs'
 import { unitBuyPrice, unitSellPrice } from '../src/game/market-prices.mjs'
 import { buildingPrices } from '../src/game/buildings.mjs'
+import { buyCharters, charterReserve } from './city-rank-policy.mjs'
 import { SPEND_WEIGHTS } from '../src/game/constants.mjs'
 import { worldLevel } from '../src/game/progression.mjs'
 import { isChestFullOf, soldOffers, stallOffers } from '../src/game/stall.mjs'
@@ -160,13 +161,13 @@ function sellSurplus(engine, save, { cities, settlement }, counts) {
 
 /**
  * Builds the cheapest building level whose price with coins the world can pay, again and again,
- * keeping a relic's price in coins for the stalls.
+ * keeping a relic's price in coins for the stalls and the next charter's for a city's rank.
  */
-function buildWithCoins(engine, save, settlement, counts) {
+function buildWithCoins(engine, save, { settlement, cities }, counts) {
   let next = save
   for (let built = 0; built < COIN_LEVELS_PER_VISIT; built++) {
     const world = next.worlds.main
-    const reserve = stallRelicPrice(worldLevel(world.skills))
+    const reserve = stallRelicPrice(worldLevel(world.skills)) + charterReserve(world, cities)
     const [cheapest] = GROUP_UPGRADE_IDS.filter((id) => isUpgradeOpen(world, id, settlement))
       .map((upgradeId) => ({ upgradeId, price: buildingPrices(world, upgradeId, settlement).withCoins }))
       .filter(({ price }) => price && world.coins - price.coins >= reserve &&
@@ -199,6 +200,7 @@ export function visitMarket(engine, save, { cities, items, legendary, settlement
   next = buyGear(engine, next, cities, items, counts)
   next = sellSurplus(engine, next, { cities, settlement }, counts)
   next = buyRelics(engine, next, { cities, legendary }, counts)
-  next = buildWithCoins(engine, next, settlement, counts)
+  next = buyCharters(engine, next, cities, counts)
+  next = buildWithCoins(engine, next, { settlement, cities }, counts)
   return engine.autoSpend(next)
 }

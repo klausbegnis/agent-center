@@ -2,7 +2,8 @@
 // the room it would go to does not own, at a steep price in coins. It is the offer after the
 // gear (index STALL_OFFERS) and is bought once a day like the others. Boss relics are never sold.
 // Pure: which relic and whether there is one come from a hash of world, city and day.
-import { REWARD_GROWTH, STALL_OFFERS, STALL_RELIC_CHANCE, STALL_RELIC_PRICE_BASE } from './constants.mjs'
+import { cityRankOf, stallExtras } from './city-ranks.mjs'
+import { REWARD_GROWTH, STALL_OFFERS, STALL_RELIC_PRICE_BASE } from './constants.mjs'
 import { chanceOf, hashOf } from './hash.mjs'
 import { relicsCityCanOffer } from './legendary-content.mjs'
 import { legendaryOf, withRelic } from './legendary.mjs'
@@ -20,8 +21,12 @@ export const RELIC_OFFER_INDEX = STALL_OFFERS
  */
 export const stallRelicPrice = (level) => Math.max(1, Math.round(STALL_RELIC_PRICE_BASE * REWARD_GROWTH ** level))
 
-/** Whether a city's stall has a relic on a day: STALL_RELIC_CHANCE, by hash. */
-export const hasRelicOnDay = ({ worldId, cityId, day }) => chanceOf(`${worldId}|${cityId}|${day}|relic`) < STALL_RELIC_CHANCE
+/**
+ * Whether a city's stall has a relic on a day: STALL_RELIC_CHANCE, by hash, or more often in a city
+ * of a high rank (city-ranks.mjs).
+ */
+export const hasRelicOnDay = ({ worldId, cityId, day, rank = 1 }) =>
+  chanceOf(`${worldId}|${cityId}|${day}|relic`) < stallExtras(rank).relicChance
 
 /**
  * The relic a city's stall offers a room on a day, or null: none that day, or the room owns every
@@ -32,8 +37,8 @@ export const hasRelicOnDay = ({ worldId, cityId, day }) => chanceOf(`${worldId}|
  * @param {{ worldId: string, cityId: string, day: number, level: number, ownedIds: string[] }} where
  * @returns {{ index: number, kind: 'relic', entry: object, price: number } | null}
  */
-export function stallRelicOffer(index, { worldId, cityId, day, level, ownedIds }) {
-  if (!index || !hasRelicOnDay({ worldId, cityId, day })) return null
+export function stallRelicOffer(index, { worldId, cityId, day, level, ownedIds, rank = 1 }) {
+  if (!index || !hasRelicOnDay({ worldId, cityId, day, rank })) return null
   const offered = relicsCityCanOffer(index, { cityId, ownedIds })
   if (offered.length === 0) return null
   const entry = offered[hashOf(`${worldId}|${cityId}|${day}|relic-pick`) % offered.length]
@@ -59,7 +64,7 @@ export function buyStallRelic(world, { worldId, cities, index }, { cityId, entry
   const market = world.market ?? emptyMarket()
   const day = marketDay(market)
   const ownedIds = legendaryOf(project).relics
-  const offer = stallRelicOffer(index, { worldId, cityId, day, level, ownedIds })
+  const offer = stallRelicOffer(index, { worldId, cityId, day, level, ownedIds, rank: cityRankOf(world, cityId) })
   if (!offer || offer.entry.id !== entryId || soldOffers(market, cityId).includes(RELIC_OFFER_INDEX)) return world
   if (!((world.coins ?? 0) >= offer.price)) return world
   const sold = { ...market.sold, [cityId]: { day, offers: [...soldOffers(market, cityId), RELIC_OFFER_INDEX].sort() } }
@@ -81,11 +86,12 @@ export function buyStallRelic(world, { worldId, cities, index }, { cityId, entry
  *   index: import('./legendary-content.mjs').LegendaryIndex | null }} where
  */
 export function stallRelicView(world, { worldId, cityId, day, level, index }) {
-  if (!index || !hasRelicOnDay({ worldId, cityId, day })) return null
+  const rank = cityRankOf(world, cityId)
+  if (!index || !hasRelicOnDay({ worldId, cityId, day, rank })) return null
   const market = world.market ?? emptyMarket()
   const byRoom = Object.fromEntries(Object.keys(world.projects).sort().map((projectId) => {
     const ownedIds = legendaryOf(world.projects[projectId]).relics
-    return [projectId, stallRelicOffer(index, { worldId, cityId, day, level, ownedIds })?.entry.id ?? null]
+    return [projectId, stallRelicOffer(index, { worldId, cityId, day, level, ownedIds, rank })?.entry.id ?? null]
   }))
   const price = stallRelicPrice(level)
   return {

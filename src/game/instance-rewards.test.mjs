@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { killsOf } from './bestiary.mjs'
+import { BOSS_ITEM_CHANCE } from './constants.mjs'
 import { createEngine } from './engine.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { INSTANCE_BOSS_ITEM_MAX } from './instance-constants.mjs'
@@ -86,15 +87,19 @@ test('clearing an instance opens the next on the road; the last cleared leaves n
   const foundry = index.byId.get('emberdeep-foundry')
   assert.equal(openness(save.worlds.main, foundry, index).reason, INSTANCE_REFUSALS.closed)
   let from = START
-  for (const id of index.order) {
+  const firstRegion = index.regions[0].instanceIds
+  for (const id of firstRegion) {
     const ran = clear(save, id, { from })
     assert.equal(ran.end.kind, 'cleared', id)
     save = ran.save
     from += 12 * 3_600_000
   }
-  for (const entry of index.instances) assert.equal(openness(save.worlds.main, entry, index).open, true)
+  for (const id of firstRegion) assert.equal(openness(save.worlds.main, index.byId.get(id), index).open, true)
+  // The first road complete unlocks the next region: its first instance waits only for the world's level.
+  const next = index.byId.get(index.regions[1].instanceIds[0])
+  assert.notEqual(openness(save.worlds.main, next, index).reason, INSTANCE_REFUSALS.regionLocked)
   const relics = legendaryOf(project(save)).relics
-  for (const entry of index.instances) assert.ok(relics.includes(entry.relic), entry.relic)
+  for (const id of firstRegion) assert.ok(relics.includes(index.byId.get(id).relic), id)
 })
 
 test('a clear credits the instance\'s races with champions in the bestiary', () => {
@@ -107,7 +112,7 @@ test('a clear credits the instance\'s races with champions in the bestiary', () 
 })
 
 test('the boss\'s own item and the vault\'s are never a second copy, and come back more often at higher tiers', () => {
-  assert.ok(bossItemChance(1) > 0.05, 'better than a wave boss\'s')
+  assert.ok(INSTANCE_BOSS_ITEM_MAX < BOSS_ITEM_CHANCE.boss, 'rarer than a wave boss\'s: a run meets its boss far more often')
   assert.ok(bossItemChance(5) > bossItemChance(1))
   assert.equal(bossItemChance(1000), INSTANCE_BOSS_ITEM_MAX)
   assert.ok(vaultItemChance(4) > vaultItemChance(1))

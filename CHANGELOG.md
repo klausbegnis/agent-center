@@ -6,6 +6,56 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Game mode: traits. Every character is born with a trait, a small named perk rolled from its
+  session, and earns more trait slots at levels 10, 20 and 30. Trait scrolls drop now and then from
+  elites, champions and bosses, sit in the room's chest (the Chest tab's Trait scrolls card, which
+  sends them to another room), teach their trait into a free slot from the Party tab, and trade at
+  each open city's Trait broker in the Market tab, which also takes a trait back as a scroll in a
+  swap for a fee. 48 traits in four tiers, a few of them double-edged; the world keeps a collection.
+  Old saves keep everything and get every character's trait at once. A scroll found is told in its
+  room and kept in the journal's highlights, and a Traits group of seven achievements follows the
+  collection.
+
+- Game mode: weekly events. Each calendar week (ISO week, UTC) has one of twenty events, chosen
+  from the calendar alone so it is the same everywhere, never the same two weeks in a row: race
+  weeks (that race twice as often and worth more in the bestiary), city festivals, blooms, a boss hunt,
+  bounties, training weeks, a gold rush and season weeks. Each gives a small bonus within the usual
+  caps and a goal for the week that pays materials once. A calendar button in the header, beside
+  the summary and the settings, shows the week's event as a badge with a thin bar for the goal, and
+  opens a small calendar: this week's event (what it does, the time left, the goal and its reward)
+  and the next five weeks' events. Each room's header shows the event's icon. `EVENT=<id>` with `GAME=1` shows one in the demo.
+
+- Game mode: every market city grows through five ranks, I to V, each with a banner of its own.
+  Trading in a city earns standing there; with enough, the city's charter (coins and the
+  materials it wants) raises its rank: a lower fee in that city, a richer stall (a fourth piece,
+  gear a tier higher, relics more often and, at rank V, now and then legendary equipment) and a
+  small perk for every party of the world, kept under the existing caps. The city's page has a
+  rank card with its standing, the charter's price and what the next rank gives. New local-only
+  route `/api/game/buy-charter`. Saves from before load with every city at rank I. A city's
+  festival week lowers its fee by a point more; a broker at rank III offers a fourth scroll a day
+  and at rank V more epic ones. A rank-up is told in the world's rooms with the new banner and kept
+  in the day journal, and a City ranks group of four achievements follows it.
+
+- Game mode: boss rematches. A beaten instance's boss can be fought again in Rematch I to X, each
+  opened by the world's level, with a tougher boss, better odds at its own item and a reward on its
+  first win; the Roadmap shows the best one as a tier badge.
+- Game mode: a second region, the Gloaming Isles, opens once the Old Road is cleared: eight
+  instances with sixteen new named bosses, their relics and items, and its own sea-chart map.
+
+### Changed
+
+- Game mode: legendary items come much more slowly from instances, so the collection is a goal of
+  several years. A run's boss leaves its own item at 0.4% (plus 0.08% a tier, at most 1.2%) and no
+  longer uses or raises the waves' pity, a vault holds only equipment and rarely (0.3%, at most
+  1%), and the Seeker's Candle doubles the boss's chance. A boss's own relic now comes only from
+  that boss. Nothing already owned is taken away.
+
+- Game mode: the Roadmap is a tab of its own, with a dungeon-gate icon; the World tab keeps the
+  bestiary, and old `?tab=world&view=roadmap` links open the Roadmap. In a narrow panel the open
+  tab shows its name beside its icon.
+
 ## 0.3.0 - 2026-11-17
 
 ### Changed

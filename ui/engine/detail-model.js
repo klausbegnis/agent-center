@@ -1,6 +1,7 @@
 // What the selected agent's card says about its game character, worked out from the view state:
 // nothing (no game, a subagent, an agent with no character), a guest's note, or the class, level,
 // attributes, equipment and trade of a character. Never touches the DOM.
+import { partyTitleOf } from './achievement-model.js'
 import { slotIconId } from './game-icons.js'
 import { clampShare, formatShare } from './game-format.js'
 import {
@@ -82,6 +83,8 @@ export function agentCharacter(state, agent) {
       }
     }),
     relic: relicOf(state, agent),
+    // The title the agent's room's party wears, from its achievements.
+    title: partyTitleOf(state.game, roomIdOf(state, agent)),
     // A character gathers its trade while its agent is idle (done); otherwise it fights or waits.
     trade: character.state === 'idle' && character.trade ? gatheringTrade(character.trade) : null
   }

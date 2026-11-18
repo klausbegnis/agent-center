@@ -30,7 +30,7 @@ test('each boss has its fixed look, its epithet and its legendary item when it o
   assert.equal(skrix.epithet, 'the Lantern Thief')
   assert.equal(skrix.look.parts.held, 'torch')
   assert.equal(skrix.item, 'pilfered-lantern')
-  assert.equal(view.bosses.filter((boss) => boss.item).length, 24)
+  assert.equal(view.bosses.filter((boss) => boss.item).length, 32)
 })
 
 test('content without a bestiary shows none', () => {
@@ -41,7 +41,7 @@ test('content without a bestiary shows none', () => {
 
 test('a world that never killed has every race and boss undiscovered and no bonus', () => {
   const view = worldBestiaryView(world(), content)
-  assert.deepEqual([view.discovered, view.raceCount, view.beaten, view.bossCount], [0, 20, 0, 55])
+  assert.deepEqual([view.discovered, view.raceCount, view.beaten, view.bossCount], [0, 20, 0, 71])
   assert.deepEqual(view.races[0],
     { id: 'goblin', discovered: false, kills: 0, points: 0, level: 0, maxLevel: 25, prestige: 0, from: 0, to: 2 })
   assert.deepEqual(view.bonuses, [])

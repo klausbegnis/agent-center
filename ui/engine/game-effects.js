@@ -1,6 +1,8 @@
 // What the new events of a state look like over the rooms: a damage number or "Defeated!" by the
 // monster, "Level 9!" by a character, and short lines about loot, drops, retirements, arrivals
 // and purchases under the fight. Never touches the DOM.
+import { achievementEffects } from './achievement-model.js'
+import { CITY_RANK_EVENT } from './city-rank-labels.js'
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
@@ -8,6 +10,7 @@ import { BESTIARY_EVENT, prestigeTitle } from './bestiary-labels.js'
 import { instanceNews } from './instance-model.js'
 import { LEGENDARY_EVENT } from './legendary-labels.js'
 import { SETTLEMENT_EVENT } from './settlement-labels.js'
+import { SCROLLS } from './trait-labels.js'
 
 /** At most this many lines play in one room at once; the newest win. */
 export const MAX_ROOM_LINES = 3
@@ -19,7 +22,7 @@ export const MAX_ROOM_LINES = 3
  * @property {string} [agentId] for an effect on a character
  * @property {string} text
  * @property {'hit' | 'kill' | 'loot' | 'level' | 'retire' | 'arrive' | 'drop' | 'purchase' | 'legendary' |
- *   'bestiary' | 'settlement' | 'stage' | 'instance'} tone `stage` is a new stage of the settlement and
+ *   'bestiary' | 'settlement' | 'stage' | 'instance' | 'achievement'} tone `stage` is a new stage of the settlement and
  *   `legendary` a legendary drop or an instance entered or cleared, celebrated most
  * @property {string} [artId] a legendary entry whose picture plays with the line
  * @property {string} [settlementArt] a settlement picture (a path the view state gives) that plays with it
@@ -105,6 +108,11 @@ function lineEffects(events, game) {
       effects.push(...purchaseEffects(event, game))
     } else if (event.type === 'settlement') {
       effects.push(...settlementEffects(event, game))
+    } else if (event.type === 'city') {
+      // A city that rose a rank, with its new banner, in every room of the world (city-rank-labels.js).
+      const line = { text: CITY_RANK_EVENT.rose(event.name ?? nameFromId(event.cityId ?? ''), event.rank, event.title ?? ''),
+        tone: 'stage', ...(event.banner ? { settlementArt: event.banner } : {}) }
+      effects.push(...roomsOfWorld(game, event.worldId).map((roomId) => ({ roomId, target: 'room', ...line })))
     } else if (event.type === 'legendary' && room && event.item) {
       // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
       const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))
@@ -113,6 +121,10 @@ function lineEffects(events, game) {
       // Entering, a room cleared, the vault, a boon, the clear: the room tells its run (instance-model.js).
       const news = instanceNews(event, game)
       if (news) effects.push({ roomId: event.roomId, target: 'room', ...news })
+    } else if (event.type === 'kill' && room && typeof event.scroll === 'string') {
+      // A trait scroll a kill dropped (trait-labels.js).
+      const entry = game.traits?.entries?.find((trait) => trait.id === event.scroll)
+      effects.push({ roomId: event.roomId, target: 'room', text: SCROLLS.found(entry?.name ?? nameFromId(event.scroll)), tone: 'drop' })
     } else if (event.type === 'bestiary' && room) {
       const text = bestiaryText(event)
       if (text) effects.push({ roomId: event.roomId, target: 'room', text, tone: 'bestiary' })
@@ -200,6 +212,7 @@ export function gameEffects(changes, state) {
     ...killEffects(changes.events, game.rooms),
     ...levelEffects(changes.events, game.rooms),
     ...arrivalEffects(changes.arrivals, state),
-    ...lineEffects(changes.events, game)
+    ...lineEffects(changes.events, game),
+    ...achievementEffects(changes.events, game)
   ])
 }

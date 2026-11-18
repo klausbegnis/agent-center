@@ -1,11 +1,14 @@
 // The game's content files as `npm run check` enforces them: game/monsters.json, races.json,
 // bosses.json, cities.json, legendary.json and bestiary.json must exist and be valid, and
 // game/items.json must be valid once it exists, and so must game/settlement.json, whose art must
-// be there, and game/instances.json, whose art must be there too. The rules are in
-// src/game/content.mjs, content-races.mjs, content-cities.mjs, legendary-content.mjs,
-// bestiary-content.mjs, settlement-content.mjs and instance-content.mjs.
+// be there, and game/instances.json, whose art must be there too, and game/achievements.json and
+// game/traits.json must exist and be valid, and game/events.json with an icon for each kind of
+// weekly event. The rules are in src/game/content.mjs, content-races.mjs, content-cities.mjs,
+// legendary-content.mjs, bestiary-content.mjs, settlement-content.mjs, instance-content.mjs,
+// achievement-content.mjs, trait-content.mjs and weekly-content.mjs.
 import fs from 'node:fs'
 import path from 'node:path'
+import { validateAchievements } from '../src/game/achievement-content.mjs'
 import { validateBestiary } from '../src/game/bestiary-content.mjs'
 import { validateCities } from '../src/game/content-cities.mjs'
 import { validateItems, validateMonsters } from '../src/game/content.mjs'
@@ -15,6 +18,8 @@ import { validateInstances } from '../src/game/instance-content.mjs'
 import { validateLegendary } from '../src/game/legendary-content.mjs'
 import { validateSettlement } from '../src/game/settlement-content.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
+import { validateTraits } from '../src/game/trait-content.mjs'
+import { EVENT_KINDS, validateEvents } from '../src/game/weekly-content.mjs'
 
 /**
  * Reports every problem of the game's content files.
@@ -41,6 +46,60 @@ export function checkGameContent({ root, report, readJson }) {
   checkBestiary({ root, report, readJson })
   checkSettlement({ root, report, readJson })
   checkInstances({ root, report, readJson })
+  checkAchievements({ root, report, readJson })
+  checkTraits({ root, report, readJson })
+  checkEvents({ root, report, readJson })
+}
+
+/** game/events.json: the weekly events against the races and cities, and an icon for every kind. */
+function checkEvents({ root, report, readJson }) {
+  const eventsFile = path.join(root, 'game', 'events.json')
+  if (!fs.existsSync(eventsFile)) return report(eventsFile, 'is missing; the game needs its weekly events')
+  const events = readJson(eventsFile)
+  if (events === null) return
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  const others = { races: readIfThere('races.json'), cities: readIfThere('cities.json') }
+  for (const problem of validateEvents(events, others)) report(eventsFile, problem)
+  for (const kind of EVENT_KINDS) {
+    const icon = path.join('ui', 'art', 'events', `${kind}.png`)
+    if (!fs.existsSync(path.join(root, icon))) report(eventsFile, `the icon ${icon} is missing`)
+  }
+}
+
+/** game/achievements.json, its conditions' ids checked against the other content files. */
+function checkAchievements({ root, report, readJson }) {
+  const file = path.join(root, 'game', 'achievements.json')
+  if (!fs.existsSync(file)) return report(file, 'is missing; the game needs it for the achievements')
+  const achievements = readJson(file)
+  if (achievements === null) return
+  const read = (name) => {
+    const other = path.join(root, 'game', name)
+    return fs.existsSync(other) ? readJson(other) : null
+  }
+  const content = {
+    bestiary: read('bestiary.json'),
+    bosses: read('bosses.json'),
+    settlement: read('settlement.json'),
+    instances: read('instances.json')
+  }
+  for (const problem of validateAchievements(achievements, content)) report(file, problem)
+}
+
+/** game/traits.json, its cities checked against game/cities.json and its races against game/races.json. */
+function checkTraits({ root, report, readJson }) {
+  const traitsFile = path.join(root, 'game', 'traits.json')
+  if (!fs.existsSync(traitsFile)) return report(traitsFile, 'is missing; the game needs it for traits')
+  const traits = readJson(traitsFile)
+  if (traits === null) return
+  const readIfThere = (name) => {
+    const file = path.join(root, 'game', name)
+    return fs.existsSync(file) ? readJson(file) : null
+  }
+  const others = { cities: readIfThere('cities.json'), races: readIfThere('races.json') }
+  for (const problem of validateTraits(traits, others)) report(traitsFile, problem)
 }
 
 /** game/settlement.json: its buildings against the group upgrades, and that every picture it names is there. */
@@ -124,7 +183,7 @@ function checkCities({ root, report, readJson }) {
 /** game/instances.json: its races, bosses and loot against the other files, and that every picture it names is there. */
 function checkInstances({ root, report, readJson }) {
   const instancesFile = path.join(root, 'game', 'instances.json')
-  if (!fs.existsSync(instancesFile)) return report(instancesFile, 'is missing; the World tab needs it for the roadmap')
+  if (!fs.existsSync(instancesFile)) return report(instancesFile, 'is missing; the Roadmap tab needs it')
   const instances = readJson(instancesFile)
   const readIfThere = (name) => {
     const file = path.join(root, 'game', name)

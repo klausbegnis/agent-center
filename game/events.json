@@ -1,0 +1,172 @@
+{
+  "rewardKills": 30,
+  "events": [
+    {
+      "id": "howling-moon", "name": "The Howling Moon", "kind": "race", "race": "werewolf",
+      "flavour": "The moon hangs low and fat, and the packs run every night of it.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["werewolf"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["hides", "seals"]
+    },
+    {
+      "id": "bone-tide", "name": "Bone Tide", "kind": "race", "race": "skeleton",
+      "flavour": "The old barrows empty themselves and the dead march for the river.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["skeleton"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["runes", "pages"]
+    },
+    {
+      "id": "goblin-scramble", "name": "The Goblin Scramble", "kind": "race", "race": "goblin",
+      "flavour": "Every goblin in the hills has heard there is loot to be had. Mostly they are wrong.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["goblin"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["ore", "gears"]
+    },
+    {
+      "id": "swarming-season", "name": "Swarming Season", "kind": "race", "race": "insect",
+      "flavour": "Warm rain and fallen fruit: the hives burst at the seams.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["insect"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["crops", "crystals"]
+    },
+    {
+      "id": "cellar-thaw", "name": "The Cellar Thaw", "kind": "race", "race": "slime",
+      "flavour": "The deep cellars thaw, and something that glistens crawls up the stairs.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["slime"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["fish", "crystals"]
+    },
+    {
+      "id": "smoke-on-the-peaks", "name": "Smoke on the Peaks", "kind": "race", "race": "dragon",
+      "flavour": "Something large has woken in the mountains. Keep the water buckets full.",
+      "effects": [{ "effect": "raceDamage", "scope": "world", "amount": 0.03, "races": ["dragon"] }],
+      "goal": { "kind": "race", "count": 9 },
+      "reward": ["bars", "seals"]
+    },
+    {
+      "id": "harvest-fair", "name": "Goldmill Harvest Fair", "kind": "festival", "city": "goldmill",
+      "flavour": "Bunting on every barn, pies on every sill, and buyers for every basket.",
+      "effects": [
+        { "effect": "gatherYield", "scope": "world", "amount": 0.06, "materials": ["crops", "fish"] },
+        { "effect": "killMaterials", "scope": "world", "amount": 0.05, "materials": ["crops", "fish"] }
+      ],
+      "goal": { "kind": "kills", "count": 100 },
+      "reward": ["crops", "fish"]
+    },
+    {
+      "id": "founders-day", "name": "Deepforge Founders' Day", "kind": "festival", "city": "deepforge",
+      "flavour": "The great bellows roar all week in honour of the first smith, and every furnace is lit.",
+      "effects": [
+        { "effect": "gatherYield", "scope": "world", "amount": 0.06, "materials": ["ore"] },
+        { "effect": "killMaterials", "scope": "world", "amount": 0.05, "materials": ["ore", "bars", "gears"] }
+      ],
+      "goal": { "kind": "kills", "count": 100 },
+      "reward": ["ore", "bars"]
+    },
+    {
+      "id": "night-of-lanterns", "name": "Runespire Night of Lanterns", "kind": "festival", "city": "runespire",
+      "flavour": "A thousand paper lanterns rise from the spire, each one carrying a written wish.",
+      "effects": [
+        { "effect": "gatherYield", "scope": "world", "amount": 0.06, "materials": ["runes"] },
+        { "effect": "killMaterials", "scope": "world", "amount": 0.05, "materials": ["runes", "crystals", "pages", "seals"] }
+      ],
+      "goal": { "kind": "kills", "count": 100 },
+      "reward": ["runes", "pages"]
+    },
+    {
+      "id": "brinehaven-regatta", "name": "Brinehaven Regatta", "kind": "festival", "city": "brinehaven",
+      "flavour": "Sails of every colour race the harbour mouth, and the fish market never closes.",
+      "effects": [
+        { "effect": "gatherYield", "scope": "world", "amount": 0.06, "materials": ["fish", "hides"] },
+        { "effect": "killMaterials", "scope": "world", "amount": 0.05, "materials": ["fish", "hides"] }
+      ],
+      "goal": { "kind": "kills", "count": 100 },
+      "reward": ["fish", "hides"]
+    },
+    {
+      "id": "amberwood-sap", "name": "Amberwood Sap", "kind": "bloom",
+      "flavour": "The old trees weep amber and the timber is light as cork.",
+      "effects": [{ "effect": "gatherYield", "scope": "world", "amount": 0.075, "materials": ["logs"] }],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["logs", "hides"]
+    },
+    {
+      "id": "ironroot-spring", "name": "Ironroot Spring", "kind": "bloom",
+      "flavour": "Meltwater has washed the hillsides bare and left the ore lying in the open.",
+      "effects": [{ "effect": "gatherYield", "scope": "world", "amount": 0.075, "materials": ["ore"] }],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["ore", "logs"]
+    },
+    {
+      "id": "glowcap-bloom", "name": "Glowcap Bloom", "kind": "bloom",
+      "flavour": "The caves glow blue with mushrooms whose spores settle into rune dust.",
+      "effects": [{ "effect": "gatherYield", "scope": "world", "amount": 0.075, "materials": ["runes"] }],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["runes", "crops"]
+    },
+    {
+      "id": "hunt-of-crowns", "name": "The Hunt of Crowns", "kind": "bosses",
+      "flavour": "Heralds post bounties on every crowned head in the land. Bring proof.",
+      "effects": [
+        { "effect": "damage", "scope": "world", "amount": 0.05, "ranks": ["boss", "legendary"] },
+        { "effect": "legendaryPity", "scope": "world", "amount": 0.2 }
+      ],
+      "goal": { "kind": "bosses", "count": 1 },
+      "reward": ["bars", "crystals"]
+    },
+    {
+      "id": "red-banner-bounties", "name": "Red Banner Bounties", "kind": "bounty",
+      "flavour": "The guild hangs red banners at the gates: the toughest of every pack is wanted.",
+      "effects": [
+        { "effect": "damage", "scope": "world", "amount": 0.05, "ranks": ["elite", "champion"] },
+        { "effect": "itemDrop", "scope": "world", "amount": 0.05 }
+      ],
+      "goal": { "kind": "elites", "count": 10 },
+      "reward": ["gears", "seals"]
+    },
+    {
+      "id": "quiet-week", "name": "A Quiet Week", "kind": "training",
+      "flavour": "Nothing much stirs on the roads, so the old hands drill the young ones.",
+      "effects": [
+        { "effect": "characterXp", "scope": "world", "amount": 0.025 },
+        { "effect": "gatherXp", "scope": "world", "amount": 0.05 }
+      ],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["pages", "crops"]
+    },
+    {
+      "id": "scholars-week", "name": "The Scholars' Week", "kind": "training",
+      "flavour": "The libraries open their locked shelves for seven days, and the reading rooms are full.",
+      "effects": [
+        { "effect": "skillXp", "scope": "world", "amount": 0.04, "skill": "lore" },
+        { "effect": "skillXp", "scope": "world", "amount": 0.04, "skill": "arcana" }
+      ],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["pages", "crystals"]
+    },
+    {
+      "id": "gold-in-the-streams", "name": "Gold in the Streams", "kind": "gold",
+      "flavour": "A glint in every riverbed: half the valley has taken up a pan and a shovel.",
+      "effects": [{ "effect": "killMaterials", "scope": "world", "amount": 0.05 }],
+      "goal": { "kind": "kills", "count": 100 },
+      "reward": ["bars", "gears"]
+    },
+    {
+      "id": "long-evenings", "name": "Long Summer Evenings", "kind": "season",
+      "flavour": "The light lingers until late, and nobody wants to go in yet.",
+      "effects": [{ "effect": "gatherHours", "scope": "world", "amount": 0.5 }],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["fish", "logs"]
+    },
+    {
+      "id": "clear-skies", "name": "Clear Skies", "kind": "season",
+      "flavour": "Dry roads and cool nights: a party rests well and wakes early.",
+      "effects": [
+        { "effect": "restTime", "scope": "world", "amount": 3 },
+        { "effect": "staminaPool", "scope": "world", "amount": 0.02 }
+      ],
+      "goal": { "kind": "kills", "count": 80 },
+      "reward": ["hides", "bars"]
+    }
+  ]
+}

@@ -1,9 +1,10 @@
 // Instances as the save keeps them, read back: `migrate` repairs what the plugin's own storage
 // holds (instance*Normalized), `cleanSave` refuses a file whose parts are not what the engine writes
-// (check*). A world keeps `instances: { [id]: { runs, clears, bestTier } }`, a room in a run its
+// (check*). A world keeps `instances: { [id]: { runs, clears, bestTier, rematch? } }`, a room in a run its
 // `run`, and a room after a failed run its `instanceCooldowns`. Pure.
 import { BOON_TYPES, BOONS_OFFERED } from './instance-boons.mjs'
 import { INSTANCE_COOLDOWN_MS, INSTANCE_TRIES } from './instance-constants.mjs'
+import { REMATCH_TIERS, isRematch, rematchTier } from './instance-rematch.mjs'
 import { MATERIALS } from './skills.mjs'
 
 /** A tier no world will ever reach, so a file cannot keep an absurd one. */
@@ -28,7 +29,11 @@ const isNumber = (value) => typeof value === 'number' && Number.isFinite(value)
 export function normalizeWorldInstances(value) {
   if (!isPlainObject(value)) return null
   const kept = Object.entries(value).filter(([, entry]) => isPlainObject(entry) && isCount(entry.runs) && isCount(entry.clears) &&
-    isCount(entry.bestTier, MAX_TIER)).map(([id, entry]) => [id, { runs: entry.runs, clears: entry.clears, bestTier: entry.bestTier }])
+    isCount(entry.bestTier, MAX_TIER)).map(([id, entry]) => [id, {
+    runs: entry.runs, clears: entry.clears, bestTier: entry.bestTier,
+    // The best rematch cleared (instance-rematch.mjs), kept only with a clear.
+    ...(isRematch(entry.rematch) && entry.clears > 0 ? { rematch: entry.rematch } : {})
+  }])
   return kept.length ? Object.fromEntries(kept) : null
 }
 
@@ -37,8 +42,11 @@ function isRun(run) {
   return isPlainObject(run) && typeof run.instance === 'string' && isCount(run.tier, MAX_TIER) && run.tier >= 1 &&
     isCount(run.room, ROOMS - 1) && isCount(run.fight, MAX_FIGHTS) && isCount(run.tries) && isCount(run.tryTicks) &&
     isCount(run.waitTicks) && isCount(run.ticks) && isCount(run.attempt) && isPlainObject(run.found) &&
-    isPlainObject(run.frozen) && isNumber(run.frozen.wave) && isNumber(run.frozen.waveKills)
+    isPlainObject(run.frozen) && isNumber(run.frozen.wave) && isNumber(run.frozen.waveKills) && isRematchRun(run)
 }
+
+/** A rematch's run plays at its rematch's tier; a run without the field is a normal one. */
+const isRematchRun = (run) => run.rematch === undefined || (isRematch(run.rematch) && run.tier === rematchTier(run.rematch))
 
 /**
  * A room's instance state as stored, repaired: a run that cannot be played is dropped, the room
@@ -80,10 +88,13 @@ export function checkWorldInstances(value, index) {
   const checked = {}
   for (const [id, entry] of Object.entries(value)) {
     if (!index.byId.has(id)) return refuse(`instances.${id}`, 'is not an instance the game has')
-    const isProgress = isPlainObject(entry) && Object.keys(entry).length === 3 && isCount(entry.runs) &&
-      isCount(entry.clears, entry.runs) && isCount(entry.bestTier, MAX_TIER) && (entry.clears > 0) === (entry.bestTier > 0)
+    const keys = Object.keys(entry ?? {})
+    const hasRematch = keys.includes('rematch')
+    const isProgress = isPlainObject(entry) && keys.length === (hasRematch ? 4 : 3) && isCount(entry.runs) &&
+      isCount(entry.clears, entry.runs) && isCount(entry.bestTier, MAX_TIER) && (entry.clears > 0) === (entry.bestTier > 0) &&
+      (!hasRematch || (isCount(entry.rematch, REMATCH_TIERS) && entry.rematch >= 1 && entry.rematch <= entry.clears))
     if (!isProgress) return refuse(`instances.${id}`, 'is not progress the engine writes')
-    checked[id] = { runs: entry.runs, clears: entry.clears, bestTier: entry.bestTier }
+    checked[id] = { runs: entry.runs, clears: entry.clears, bestTier: entry.bestTier, ...(hasRematch ? { rematch: entry.rematch } : {}) }
   }
   return { ok: true, value: Object.keys(checked).length ? checked : null }
 }
@@ -133,7 +144,8 @@ export function checkRun(value, index, { legendaryIds, monster }) {
     return refuse('run.frozen', 'is not a wave the engine writes')
   }
   const run = {
-    instance: value.instance, tier: value.tier, attempt: value.attempt, room: value.room, fight: value.fight,
+    instance: value.instance, tier: value.tier, ...(value.rematch ? { rematch: value.rematch } : {}),
+    attempt: value.attempt, room: value.room, fight: value.fight,
     tries: value.tries, tryTicks: value.tryTicks, waitTicks: value.waitTicks, ticks: value.ticks,
     boon: value.boon, offered: value.offered ? [...value.offered] : null, found,
     frozen: {

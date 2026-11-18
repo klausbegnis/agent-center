@@ -1,11 +1,15 @@
 // The save file: worlds, the projects in them and which world each project belongs to. Every
 // function returns a new save; `migrate` turns whatever was read from disk into a valid one.
 import { normalizeBestiary } from './bestiary.mjs'
+import { migrateChronicle } from './chronicle-save.mjs'
+import { normalizeCityRanks } from './city-ranks-save.mjs'
 import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './constants.mjs'
 import { normalizeProjectInstance, normalizeWorldInstances } from './instance-save.mjs'
 import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
 import { GATHERING_SKILLS } from './skills.mjs'
+import { normalizeTraitRecord } from './trait-check.mjs'
+import { normalizeWeekly } from './weekly-save.mjs'
 
 export const SAVE_VERSION = 1
 /** The world a project plays in until it is assigned another one. */
@@ -256,11 +260,17 @@ function normalizeWorld(value) {
   const coins = isNumber(value.coins) ? Math.min(MARKET_MAX_COINS, Math.max(0, Math.floor(value.coins))) : 0
   const bestiary = normalizeBestiary(value.bestiary)
   const instances = normalizeWorldInstances(value.instances)
+  const weekly = normalizeWeekly(value.weekly)
+  const cityRanks = normalizeCityRanks(value.cityRanks)
   return {
     // Kept only once the world has killed; a save from before the bestiary has none.
     ...(bestiary ? { bestiary } : {}),
     // Kept only once a room has entered an instance (instance-save.mjs).
     ...(instances ? { instances } : {}),
+    // Kept from the first advance with weekly events (weekly-save.mjs).
+    ...(weekly ? { weekly } : {}),
+    // Kept only once the world has traded with a city (city-ranks-save.mjs).
+    ...(cityRanks ? { cityRanks } : {}),
     skills: keepEntries(value.skills, isPlainObject),
     materials: keepEntries(value.materials, isNumber),
     upgrades: keepEntries(value.upgrades, isNumber),
@@ -269,7 +279,9 @@ function normalizeWorld(value) {
     lastTokenAt: isNumber(value.lastTokenAt) ? value.lastTokenAt : null,
     // Saves from before the market have no coins.
     coins,
-    market: normalizeMarket(value.market)
+    market: normalizeMarket(value.market),
+    // Kept once the world has a trait collection or a broker sale (traits.mjs); checked on import.
+    ...(normalizeTraitRecord(value.traits) ? { traits: normalizeTraitRecord(value.traits) } : {})
   }
 }
 
@@ -302,6 +314,8 @@ export function migrate(value) {
     worlds: Object.fromEntries(Object.entries(keepEntries(save.worlds, isPlainObject))
       .map(([worldId, world]) => [worldId, normalizeWorld(world)])),
     projectWorld: keepEntries(save.projectWorld, isWorldIdOrNull),
-    settings: { keepTitles: objectOr(save.settings, {}).keepTitles === true }
+    settings: { keepTitles: objectOr(save.settings, {}).keepTitles === true },
+    // Achievements and the journal, only when the save has them (chronicle-save.mjs).
+    ...migrateChronicle(save)
   }
 }

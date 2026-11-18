@@ -116,15 +116,58 @@ The game tabs `game-rooms.png`, `game-chest.png`, `game-skills.png` and `game-ma
 500 × 900 window and scale 2; the Chest one adds `&room=local:/work/rumble-banana` and has its free
 Whittled Cudgel chosen, so the item detail and its **Send to** show. Look at each before committing it: `--screenshot` can fire before
 the city banners are painted, and then the Market shot shows empty cards. Taking the picture
-through Chrome's DevTools protocol once every image has loaded avoids that.
+through Chrome's DevTools protocol once every image has loaded avoids that; `scripts/capture.mjs`
+does it at scale 2 with reduced motion:
+
+```bash
+node scripts/capture.mjs shot "http://127.0.0.1:47700/?view=list&tab=market" docs/screenshots/game-market.png 500 900
+```
+
+The same goes for `game-settlement.png` (`tab=camp`), `game-bestiary.png` (`tab=world`),
+`game-roadmap.png` (`?tab=roadmap&room=local:/work/rumble-banana`), `game-party.png`
+(`tab=party&room=local:/work/rumble-banana`) and `game-achievements.png`
+(`?tab=world&view=achievements&room=local:/work/rumble-banana`, without `view=list`, which would
+take the place of the World tab's view). For the Chest, `--eval` clicks the cudgel first:
+`--eval "[...document.querySelectorAll('button')].find((b) => /Whittled Cudgel/.test(b.getAttribute('aria-label') ?? ''))?.click()"`.
+The demo for all of them is `GAME=1 FREEZE=1 node scripts/demo.mjs guild-hall`.
+
+### The game-mode GIF
+
+`docs/screenshots/game-mode.gif` is the live demo, not the frozen one, so fights play: start
+`GAME=1 node scripts/demo.mjs guild-hall`, wait about twenty seconds, then take frames of one
+lively room through Chrome's DevTools protocol, without reduced motion (`scripts/capture.mjs`,
+Node alone):
+
+```bash
+node scripts/capture.mjs frames "http://127.0.0.1:47700/?view=gallery&tab=rooms&only=sneaky" /tmp/ac-frames 720 640 45 10
+```
+
+Look through the frames for an 11-second stretch where a monster's health falls, it dies and the
+next one comes in (a contact sheet: `ffmpeg -i /tmp/ac-frames/frame-%04d.png -vf "select='not(mod(n\,20))',scale=360:-1,tile=4x6" -frames:v 1 sheet.png`),
+then assemble it at half size with nearest-neighbour scaling and a palette of its own, from its
+first frame (here 230):
+
+```bash
+ffmpeg -framerate 10 -start_number 230 -i /tmp/ac-frames/frame-%04d.png -frames:v 110 -vf "scale=720:-1:flags=neighbor,palettegen=max_colors=96:stats_mode=diff" palette.png
+```
+
+```bash
+ffmpeg -framerate 10 -start_number 230 -i /tmp/ac-frames/frame-%04d.png -i palette.png -frames:v 110 -lavfi "scale=720:-1:flags=neighbor[x];[x][1:v]paletteuse=dither=none:diff_mode=rectangle" -loop 0 docs/screenshots/game-mode.gif
+```
+
+Every file in the repository is part of the plugin Orca installs, `docs/` included, so keep the
+GIF under about 800 KB. Extract a few frames back (`ffmpeg -i docs/screenshots/game-mode.gif
+-vf "select='not(mod(n\,15))',tile=4x2" -frames:v 1 check.png`) and look at them before
+committing it.
 
 ## Retaking the listing images
 
 The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
 with `--window-size=1280,800` and `?view=gallery` for all rooms, or `?view=gallery&only=rumble`,
 `only=cosmic` and `only=turbo` for one room each. The cover is the game-mode gallery
-(`GAME=1 FREEZE=1`, `?view=gallery`) on Guild Hall at 1280×800, and `assets/screenshot-game.png`
-the settlement on the Camp tab (`?tab=camp`) at the same size, so the listing never shows one
+(`GAME=1 FREEZE=1`, `?view=gallery`) on Guild Hall at 1280×800 (`--scale 1`, and the README's
+`game-gallery.png` is the same picture), and `assets/screenshot-game.png` the settlement on the
+Camp tab (`?view=gallery&tab=camp`) at the same size, so the listing never shows one
 picture twice. The bestiary
 (`assets/screenshot-bestiary.png`, exactly 1280×800) and the README's `game-bosses.png` and
 `game-ranks.png` come from the contact sheet (`?part=bosses`, `?part=races`) with everything but

@@ -8,6 +8,7 @@ import { instanceEventsOf } from './domain/game-instance-view.mjs'
 import { buildReadings, mainAgents, sessionsToClose } from './domain/game-sessions.mjs'
 import { buildGameView, gameStatus, keepRecent, tokenSourceOf } from './domain/game-view.mjs'
 import { createGameActions } from './game-actions.mjs'
+import { chronicleChange, chronicleView } from './game-chronicle.mjs'
 import { emptyBridge } from './game-save.mjs'
 import { foldWorkTime, splitSourceOf, worldWorkMix } from './domain/skill-mix.mjs'
 import { attributeEstimate, readFromEstimate, readFromHistory } from './game-sources.mjs'
@@ -111,10 +112,14 @@ export function createGameMode(dependencies) {
    * settlement stage the change reached, by hand or by autoSpend, goes into `recent`; an imported
    * game is no news.
    */
-  function commit(next, { isNews = true } = {}) {
+  function commit(next, { isNews = true, events = [], midway } = {}) {
     const before = data().save
-    gameSave.set(next)
-    const news = isNews && before ? engine.settlementNews(before, next.save) : []
+    // What the change gained goes into the journal, and what it earned is granted (game-chronicle.mjs).
+    const told = chronicleChange(engine, { before, save: next.save, midway, events, at: now(), isNews })
+    gameSave.set({ ...next, save: told.save })
+    const news = isNews && before
+      ? [...engine.settlementNews(before, next.save), ...(engine.cityRankNews?.(before, next.save) ?? []), ...told.news]
+      : []
     if (news.length) recent = keepRecent(recent, stamp(news, now()))
     cachedView = null
     onChange()
@@ -367,7 +372,7 @@ export function createGameMode(dependencies) {
     if (source === 'estimated') meterBaselines = reading.baselines
     const baselines = source === 'history' ? reading.baselines : {}
     const workMix = read.workMix ?? bridge.workMix
-    commit({ save, bridge: { ...bridge, baselines, watchedUntil: at, workMix } })
+    commit({ save, bridge: { ...bridge, baselines, watchedUntil: at, workMix } }, { events, midway: closed.save })
   }
 
   /**
@@ -441,6 +446,8 @@ export function createGameMode(dependencies) {
         return scenes ? sceneThemeOf(roomId, scenes, kills) : null
       }
     })
+    // Achievements and the "While you worked" journal (game-chronicle.mjs).
+    if (running) cachedView = { ...cachedView, ...chronicleView(engine, save, now()) }
     return cachedView
   }
 
@@ -513,6 +520,10 @@ export function createUnavailableGame(status) {
     enterInstance: refuse,
     chooseBoon: refuse,
     recallParty: refuse,
+    setPartyTitle: refuse,
+    markSummarySeen: refuse,
+    traitAction: refuse,
+    buyCharter: refuse,
     sellMaterial: refuse,
     tradeMaterial: refuse,
     buyStallOffer: refuse

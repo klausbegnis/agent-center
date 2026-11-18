@@ -1,8 +1,9 @@
-// The World tab's Roadmap: the region's map for the world's progress with a live marker on each
+// The Roadmap tab: a switch between the road's regions, the region's map for the world's progress with a live marker on each
 // site (and on a party inside), the cooldowns of the room picked above the tabs, then one card per
 // instance: its banner with the name over it, its state, races, boss and relic, an Enter control
-// (room and tier, with the reason a room cannot) for an open one, and the run's card for one a room
-// is inside. Cards are made once and updated, so focus, choices and open questions survive redraws.
+// (room and tier, with the reason a room cannot) for an open one, a Rematch beside it once its boss
+// is beaten (with a tier badge on the banner and the map), and the run's card for one a room is
+// inside. Cards are made once and updated, so focus, choices and open questions survive redraws.
 import { button, el, select, setOptions } from './dom.js'
 import { INSTANCES } from './instance-labels.js'
 import { cooldownLines, roadmapModel, runCardModel } from './instance-model.js'
@@ -26,7 +27,8 @@ function createInstanceCard(model, { actions, choices }) {
   art.decoding = 'async'
   art.draggable = false
   const name = el('h3', 'ac-instance-name')
-  banner.append(art, name)
+  const badge = el('span', 'ac-instance-rematch-badge')
+  banner.append(art, name, badge)
   const stateLine = el('p', 'ac-instance-state')
   const cleared = el('p', 'ac-game-card-line ac-muted ac-instance-cleared')
   const races = el('p', 'ac-game-card-line ac-instance-races')
@@ -47,17 +49,25 @@ function createInstanceCard(model, { actions, choices }) {
     onClick: () => actions.enterInstance?.(roomPick.value, model.id, Number(tierPick.value))
   })
   go.dataset.key = `${model.key}:go`
+  // The rematch of a beaten boss goes beside Enter, with the same room.
+  const rematchGo = button('', 'ac-button ac-instance-rematch-go', {
+    onClick: () => current.rematch?.next && actions.enterInstance?.(roomPick.value, model.id, 1, current.rematch.next)
+  })
+  rematchGo.dataset.key = `${model.key}:rematch`
   const why = el('p', 'ac-game-card-line ac-muted ac-instance-why')
   why.setAttribute('aria-live', 'polite')
+  const rematchWhy = el('p', 'ac-game-card-line ac-muted ac-instance-why')
+  rematchWhy.setAttribute('aria-live', 'polite')
+  const rematchLines = el('div', 'ac-instance-rematch')
   const roomLabel = el('label', 'ac-instance-field')
   roomLabel.append(el('span', 'ac-instance-field-name', INSTANCES.room), roomPick)
   const tierLabel = el('label', 'ac-instance-field')
   tierLabel.append(el('span', 'ac-instance-field-name', INSTANCES.tier), tierPick)
   const fields = el('div', 'ac-instance-fields')
-  fields.append(roomLabel, tierLabel, go)
-  enter.append(fields, why)
+  fields.append(roomLabel, tierLabel, go, rematchGo)
+  enter.append(fields, why, rematchWhy)
   const run = createRunCard({ actions })
-  element.append(banner, stateLine, cleared, races, boss, relic, enter, run.element)
+  element.append(banner, stateLine, cleared, races, boss, relic, rematchLines, enter, run.element)
   let current = model
   /** Re-reads the choice: the reason of the room picked, and whether Enter can go. */
   function sync() {
@@ -67,6 +77,15 @@ function createInstanceCard(model, { actions, choices }) {
     why.textContent = reason ? INSTANCES.why(reason) : ''
     go.setAttribute('aria-label', INSTANCES.enterLabel(current.name, chosen?.name ?? '', Number(tierPick.value)))
     choices.set(current.id, { roomId: roomPick.value, tier: Number(tierPick.value) })
+    const rematch = current.rematch
+    const rematchRoom = rematch?.rooms.find((room) => room.id === roomPick.value)
+    rematchGo.hidden = !rematch?.next
+    rematchGo.textContent = rematch?.buttonText ?? ''
+    const rematchReason = rematchRoom?.reason ?? null
+    rematchGo.disabled = !rematchRoom || rematchReason !== null
+    // A reason Enter already gives is said once.
+    rematchWhy.textContent = rematch?.next && rematchReason && rematchReason !== reason ? INSTANCES.rematchWhy(rematchReason) : ''
+    if (rematch?.next) rematchGo.setAttribute('aria-label', INSTANCES.rematchLabel(current.name, rematchRoom?.name ?? '', rematch.next))
   }
   roomPick.addEventListener('change', sync)
   tierPick.addEventListener('change', sync)
@@ -92,6 +111,13 @@ function createInstanceCard(model, { actions, choices }) {
       if (art.getAttribute('src') !== model.banner) art.src = model.banner
       art.alt = model.alt
       name.textContent = model.name
+      badge.textContent = model.rematchBadge ?? ''
+      badge.hidden = !model.rematchBadge
+      if (model.rematchBadge) badge.title = INSTANCES.rematchBest(model.rematch.best)
+      rematchLines.hidden = !model.rematch
+      rematchLines.replaceChildren(...(model.rematch
+        ? [el('p', 'ac-game-card-line', model.rematch.bestText), el('p', 'ac-game-card-line ac-muted', model.rematch.nextText)]
+        : []))
       stateLine.textContent = model.stateText
       cleared.textContent = model.clearedText
       cleared.hidden = !model.clearedText
@@ -124,6 +150,11 @@ function createInstanceCard(model, { actions, choices }) {
 export function createRoadmapView({ actions, base }) {
   const element = el('div', 'ac-roadmap')
   const head = el('section', 'ac-game-card ac-roadmap-head')
+  // The switch between regions, shown once there is more than one.
+  const regionSwitch = el('div', 'ac-bestiary-switch ac-roadmap-regions')
+  regionSwitch.setAttribute('role', 'group')
+  regionSwitch.setAttribute('aria-label', INSTANCES.regionsName)
+  const locked = el('p', 'ac-game-card-line ac-roadmap-locked')
   const title = el('h2', 'ac-game-card-title')
   const summary = el('p', 'ac-game-card-line ac-roadmap-summary')
   const complete = el('p', 'ac-game-card-line ac-roadmap-complete')
@@ -134,7 +165,7 @@ export function createRoadmapView({ actions, base }) {
   const markers = el('div', 'ac-roadmap-markers')
   figure.append(map, markers)
   const cooldowns = el('div', 'ac-roadmap-cooldowns')
-  head.append(title, summary, complete, figure, el('p', 'ac-game-card-line ac-muted', INSTANCES.mapNote), cooldowns)
+  head.append(regionSwitch, title, summary, locked, complete, figure, el('p', 'ac-game-card-line ac-muted', INSTANCES.mapNote), cooldowns)
   const list = el('div', 'ac-instance-list')
   const empty = el('p', 'ac-game-card-line', INSTANCES.noWorld)
   element.append(head, list, empty)
@@ -142,12 +173,37 @@ export function createRoadmapView({ actions, base }) {
   /** The room and tier chosen on each card, kept across redraws and across worlds. */
   const choices = new Map()
   let markersDrawn = ''
+  /** The region picked on the switch, and what was last drawn, to draw again on a pick. */
+  let regionId = null
+  let lastShown = null
+  let regionsDrawn = ''
+
+  function drawRegions(model) {
+    regionSwitch.hidden = model.regions.length === 0
+    const signature = JSON.stringify(model.regions)
+    if (signature === regionsDrawn) return
+    regionsDrawn = signature
+    regionSwitch.replaceChildren(...model.regions.map((region) => {
+      const node = el('button', 'ac-button ac-bestiary-switch-button ac-roadmap-region', region.text)
+      node.type = 'button'
+      node.dataset.key = `region:${region.id}`
+      node.dataset.locked = String(region.locked)
+      node.setAttribute('aria-pressed', String(region.pressed))
+      node.setAttribute('aria-label', region.label)
+      node.title = region.label
+      node.addEventListener('click', () => {
+        regionId = region.id
+        if (lastShown) view.update(lastShown)
+      })
+      return node
+    }))
+  }
 
   function drawMarkers(model) {
     const signature = JSON.stringify(model.markers)
     if (signature === markersDrawn) return
     markersDrawn = signature
-    markers.replaceChildren(...model.markers.map((marker) => {
+    markers.replaceChildren(...model.markers.flatMap((marker) => {
       const node = el('img', `ac-roadmap-marker ac-roadmap-marker-${marker.state}`)
       node.src = marker.icon
       node.width = MARKER_SIZE
@@ -156,26 +212,38 @@ export function createRoadmapView({ actions, base }) {
       node.title = marker.label
       node.style.left = `${marker.left}%`
       node.style.top = `${marker.top}%`
-      return node
+      if (!marker.badge) return [node]
+      // The best rematch cleared, a small tier badge beside the site's marker.
+      const badge = el('span', 'ac-roadmap-badge', marker.badge)
+      badge.setAttribute('aria-hidden', 'true')
+      badge.style.left = `${marker.left}%`
+      badge.style.top = `${marker.top}%`
+      return [node, badge]
     }))
   }
 
-  return {
+  const view = {
     element,
     /**
      * @param {{ state: object, world: object | null, roomId: string | null }} shown the view state,
      *   the world picked above the tabs and its picked room
      */
-    update({ state, world, roomId }) {
+    update(shown) {
+      lastShown = shown
+      const { state, world, roomId } = shown
       const game = state.game
       const shownRooms = new Map(state.rooms.map((room) => [room.id, roomTitle(room)]))
       const names = (id) => shownRooms.get(id) ?? id.split('/').at(-1)
       const roomIds = (world?.roomIds ?? []).filter((id) => shownRooms.has(id))
-      const model = roadmapModel(game, world, { base, roomIds, roomId, names })
+      const model = roadmapModel(game, world, { base, roomIds, roomId, names, regionId })
       head.hidden = !model
       list.hidden = !model
       empty.hidden = Boolean(model)
       if (!model) return
+      drawRegions(model)
+      locked.hidden = !model.locked
+      locked.textContent = model.locked ?? ''
+      figure.dataset.locked = String(Boolean(model.locked))
       title.textContent = model.title
       summary.textContent = model.summary
       complete.hidden = !model.complete
@@ -196,4 +264,5 @@ export function createRoadmapView({ actions, base }) {
       if (list.childElementCount !== nodes.length || nodes.some((node, at) => list.children[at] !== node)) list.replaceChildren(...nodes)
     }
   }
+  return view
 }

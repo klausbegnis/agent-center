@@ -1,11 +1,11 @@
 // A project's fight over some ticks of working time: the party its working members make, the
 // monster it meets, kills, rests, rewards and drops. Pure; works on copies and returns them.
 import { bestiaryIndexOf } from './bestiary-content.mjs'
-import { noteKill } from './bestiary.mjs'
 import { findItem } from './chest.mjs'
 import { fightTick, referenceStamina, rewardFor } from './combat.mjs'
 import { GEAR_GROWTH, OUTFIT_STAMINA_WEIGHT, REST_SECONDS, TICK_SECONDS } from './constants.mjs'
 import { addDrop, droppedEntry } from './drops.mjs'
+import { waveRosterOf } from './instance-regions.mjs'
 import { rollLegendaryDrops } from './legendary-drops.mjs'
 import { itemFactor, referenceGearLevel } from './items.mjs'
 import {
@@ -21,6 +21,10 @@ import { killsToPass, monsterFor, rankOf } from './monsters.mjs'
 import { characterHit, engineeringSpeed, partyHits, referenceAttributes } from './power.mjs'
 import { inScene } from './scenes.mjs'
 import { campfireShare, groupLevel, runeCircleShare } from './spending.mjs'
+import { traitIndexOf } from './trait-content.mjs'
+import { traitPartyBonuses, withTraitEffects } from './trait-effects.mjs'
+import { settleScrollDrop } from './traits.mjs'
+import { featuredRaceOf, noteWeeklyKill } from './weekly.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { addMaterials } from './worlds.mjs'
 
@@ -78,7 +82,8 @@ export function partyOf(members, world, project, content) {
   const index = legendaryIndexOf(content)
   // The world's bestiary acts on the party as the relic does, and adds to it under the same caps.
   const relic = [...relicEffects(project, index), ...worldEffectsOf(world, content)]
-  const held = members.map(({ character }) => heldEffects(project, character, index))
+  // A member's traits act on it as its equipment does (trait-effects.mjs).
+  const held = members.map(({ character }) => withTraitEffects(heldEffects(project, character, index), project, character, content))
   const bonuses = held.map((own) => memberBonuses(relic, own))
   const hitters = members.map(({ character, tokensPerMinute }, at) => {
     const weaponFactor = itemFactor(itemOf(character.equipment?.weapon))
@@ -101,7 +106,8 @@ export function partyOf(members, world, project, content) {
     defenders: ofClass('defense', 'resilience'),
     supporters: ofClass('support', 'medicine'),
     size: members.length,
-    legendary: partyBonuses(relic, held)
+    legendary: partyBonuses(relic, held),
+    traits: traitPartyBonuses(project, members.map(({ character }) => character), content)
   }
 }
 
@@ -146,9 +152,11 @@ export function spawnMonster({ worldId, projectId, project, world, content, refe
     themeId: project.themeId,
     content: content.monsters,
     races: content.races,
-    bosses: content.bosses,
+    // The bosses of later regions are met only in their instances (instance-regions.mjs).
+    bosses: waveRosterOf(content),
     referencePartyHit,
-    partySize
+    partySize,
+    featuredRace: featuredRaceOf(world, content)
   })
   const runeFactor = runeCircleFactorOf(project, legendaryIndexOf(content), worldEffectsOf(world, content))
   const runeCut = runeCircleShare(groupLevel(world.upgrades, 'runeCircle')) * runeFactor
@@ -178,7 +186,8 @@ function settleKill(state, context) {
   const { monster } = state
   const seed = `${worldId}|${projectId}|${monster.level}|${state.waveKills}`
   const loot = party.legendary
-  const reward = rewardFor(monster, { luck: party.luck, seed, dropBonus: loot?.itemDrop ?? 0 })
+  const dropBonus = (loot?.itemDrop ?? 0) + (party.traits?.raceDrop(monster.race ?? null) ?? 0)
+  const reward = rewardFor(monster, { luck: party.luck, seed, dropBonus })
   const killMaterials = withKillMaterials(reward.materials, loot?.killMaterials ?? [])
   state.materials = addMaterials(state.materials, killMaterials)
   const roll = { level: monster.level, themeId: state.themeId, seed }
@@ -192,13 +201,17 @@ function settleKill(state, context) {
   }
   const pityFactor = 1 + (loot?.legendaryPity ?? 0)
   const legendary = settleLegendaryDrops(state, { monster, seed, content, pityFactor })
-  const noted = noteKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content) })
+  const scroll = settleScrollDrop(state, { monster, seed, scrollFind: party.traits?.scrollFind ?? 0 }, traitIndexOf(content))
+  // A race week counts its race once more half the time (weekly.mjs).
+  const featuredRace = featuredRaceOf(world, content)
+  const noted = noteWeeklyKill(context.tally.bestiary, monster, { day: context.day, index: bestiaryIndexOf(content), featuredRace, seed })
   context.tally.bestiary = noted.bestiary
   events.push({
-    type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster),
+    type: 'kill', projectId, wave: state.wave, kind: monster.kind, rank: rankOf(monster), race: monster.race ?? null,
     affix: monster.affix, ticks: state.fightTicks, rested: state.fightRested,
     materials: addMaterials(killMaterials, salvage), item: entry?.id ?? null,
     ...(legendary.length ? { legendary } : {}),
+    ...(scroll ? { scroll } : {}),
     ...(noted.news.length ? { bestiary: noted.news } : {})
   })
   state.stamina += (1 - state.stamina) * campfireShare(groupLevel(world.upgrades, 'campfire'))

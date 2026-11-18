@@ -1,5 +1,6 @@
 // The one set of operations every surface uses. The Orca panel reaches it through panel
 // requests and the external view through HTTP, but both end up here, so they cannot drift apart.
+import { traitInputOf } from './game-trait-actions.mjs'
 
 /**
  * @typedef {object} Controller
@@ -40,8 +41,10 @@
  *   holds only with confirmHeld; says what was salvaged and what each holder took instead
  * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
  *   sends a relic that is not active to another room of the world
- * @property {(roomId: string, instanceId: string, tier: number) => Promise<GameResult>} gameEnterInstance
- *   sends a room's party into an open instance at a tier
+ * @property {(input: object) => Promise<GameResult>} gameTraitAction teaches, swaps, buys, sells or
+ *   sends a trait scroll, as `input.action` names (game-trait-actions.mjs)
+ * @property {(roomId: string, instanceId: string, tier: number, rematch?: number) => Promise<GameResult>} gameEnterInstance
+ *   sends a room's party into an open instance at a tier, or into a rematch of its boss
  * @property {(roomId: string, boonId: string) => Promise<GameResult>} gameChooseBoon takes a boon
  *   the vault of a room's run offers
  * @property {(roomId: string) => Promise<GameResult>} gameRecallParty ends a room's run by hand
@@ -241,15 +244,27 @@ export function createController({
       entryId: requireText(entryId, 'offer'),
       roomId: requireText(roomId, 'room')
     })),
-    gameEnterInstance: (roomId, instanceId, tier) => playAction(() => game.enterInstance({
+    gameEnterInstance: (roomId, instanceId, tier, rematch) => playAction(() => game.enterInstance({
       roomId: requireText(roomId, 'room'),
       instanceId: requireText(instanceId, 'instance'),
-      tier: requireWhole(tier, 'tier')
+      tier: requireWhole(tier, 'tier'),
+      // A rematch (Rematch I to X) plays at its own tier.
+      ...(rematch === undefined || rematch === null ? {} : { rematch: requireWhole(rematch, 'rematch') })
     })),
     gameChooseBoon: (roomId, boonId) => playAction(() => game.chooseBoon({
       roomId: requireText(roomId, 'room'),
       boonId: requireText(boonId, 'boon')
     })),
-    gameRecallParty: (roomId) => playAction(() => game.recallParty({ roomId: requireText(roomId, 'room') }))
+    gameRecallParty: (roomId) => playAction(() => game.recallParty({ roomId: requireText(roomId, 'room') })),
+    gameSetPartyTitle: (roomId, achievementId) => playAction(() => game.setPartyTitle({
+      roomId: requireText(roomId, 'room'),
+      achievementId: achievementId === null ? null : requireText(achievementId, 'achievement')
+    })),
+    gameMarkSummarySeen: () => playAction(() => game.markSummarySeen()),
+    gameTraitAction: (input) => playAction(() => game.traitAction(traitInputOf(input))),
+    gameBuyCharter: (worldId, cityId) => playAction(() => game.buyCharter({
+      worldId: requireText(worldId, 'world'),
+      cityId: requireText(cityId, 'city')
+    }))
   }
 }

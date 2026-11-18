@@ -3,6 +3,10 @@
 // clock and no randomness: the same save and the same calls always give the same result.
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
+import { chronicleActions } from './chronicle.mjs'
+import { citiesOfWeek } from './city-festival.mjs'
+import { withCityRanks } from './city-rank-actions.mjs'
+import { cityRankIndexOf } from './city-ranks-content.mjs'
 import { upgradeCost } from './items.mjs'
 import { legendaryIndexOf, upgradeDiscountOf } from './legendary-effects.mjs'
 import { withActiveRelic } from './legendary.mjs'
@@ -22,9 +26,12 @@ import { applyPurchase, groupLevel, spendWorld } from './spending.mjs'
 import { buyStallOffer } from './stall.mjs'
 import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
+import { traitIndexOf } from './trait-content.mjs'
+import { closeSessionKeepingTraits, moveKeepingTraits, traitActions } from './trait-engine.mjs'
 import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
+import { advanceWeek } from './weekly.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { withWorld, worldIdOf } from './worlds.mjs'
 
@@ -148,11 +155,13 @@ function inWorld(save, worldId, change) {
  */
 function marketActions(content) {
   const cities = content.cities?.cities ?? []
+  // A festival's city trades at its festival fee (city-festival.mjs).
+  const ofWeek = (world) => citiesOfWeek(cities, world, content)
   return {
-    sellMaterial: (save, { worldId, ...sale }) => inWorld(save, worldId, (world) => sellMaterial(world, cities, sale)),
+    sellMaterial: (save, { worldId, ...sale }) => inWorld(save, worldId, (world) => sellMaterial(world, ofWeek(world), sale)),
     buyMaterial: (save, { worldId, ...purchase }) =>
-      inWorld(save, worldId, (world) => buyMaterial(world, cities, purchase)),
-    tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, cities, trade)),
+      inWorld(save, worldId, (world) => buyMaterial(world, ofWeek(world), purchase)),
+    tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, ofWeek(world), trade)),
     // The relic's offer follows the gear's (stall-relic.mjs).
     buyStallOffer: (save, { worldId, ...purchase }) => inWorld(save, worldId, (world) =>
       (purchase.offerIndex === RELIC_OFFER_INDEX
@@ -180,12 +189,19 @@ export function createEngine({ content }) {
     return references.get(level)
   }
   const context = { content, referencePartyHit }
+  // Traits (trait-engine.mjs): each advance brings the worlds' collections up to date.
+  const traits = traitActions(content)
+  const advanceNoting = (save, interval) => {
+    const moved = advanceWithEvents(save, interval, context)
+    return { ...moved, save: traits.noteKnownTraits(moved.save) }
+  }
   return {
     applyTokens: (save, reading) => applyTokens(save, reading, content),
-    advance: (save, interval) => advanceWithEvents(save, interval, context).save,
-    advanceWithEvents: (save, interval) => advanceWithEvents(save, interval, context),
+    // The weekly event is checked against the advance's end first and its goal counted after (weekly.mjs).
+    advance: (save, interval) => advanceWeek(save, interval, content, (dated) => advanceNoting(dated, interval)).save,
+    advanceWithEvents: (save, interval) => advanceWeek(save, interval, content, (dated) => advanceNoting(dated, interval)),
     prepareFights: (save, readings) => prepareFights(save, readings, context),
-    closeSession,
+    closeSession: closeSessionKeepingTraits(closeSession, traitIndexOf(content)),
     prestige,
     upgradeItem: (save, which) => upgradeItem(save, which, content),
     buyGroupUpgrade: (save, which) => buyGroupUpgrade(save, which, settlementIndexOf(content)),
@@ -206,13 +222,17 @@ export function createEngine({ content }) {
     view: (save) => viewOf(save, content),
     cleanSave: (save) => cleanSave(save, {
       cityIds: (content.cities?.cities ?? []).map((city) => city.id),
+      rankedCityIds: [...(cityRankIndexOf(content)?.byCity.keys() ?? [])],
       legendary: content.legendary,
       bestiary: content.bestiary,
       bosses: content.bosses,
       settlement: content.settlement,
-      instances: content.instances
+      instances: content.instances,
+      achievements: content.achievements,
+      traits: content.traits,
+      events: content.events
     }),
-    moveProjectItems,
+    moveProjectItems: moveKeepingTraits(moveProjectItems, traitIndexOf(content)),
     // Sending to another room of the world (transfer.mjs): the item's answer says what was salvaged.
     // An item a character holds is taken from it, and the slot re-picked under the legendary rules.
     sendItem: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)).save,
@@ -220,7 +240,8 @@ export function createEngine({ content }) {
     sendItemProblem,
     sendRelic,
     sendRelicProblem,
-    ...marketActions(content),
+    // Every deal counts towards the city's rank; charters raise it (city-rank-actions.mjs).
+    ...withCityRanks(marketActions(content), content),
     /** The name of an item's entry, plain or legendary, as the view gives it; the id when unknown. */
     itemName: (entryId) => itemNameOf(content, entryId),
     // Instances (instance-run.mjs): entering one, choosing the vault's boon, recalling the party;
@@ -230,6 +251,9 @@ export function createEngine({ content }) {
     chooseBoon: (save, choice) => chooseBoon(save, choice, instanceIndexOf(content)),
     boonProblem: (save, choice) => boonProblem(save, choice, instanceIndexOf(content)),
     recallParty,
+    // Achievements and the journal (chronicle.mjs): granted and counted after every change kept.
+    ...chronicleActions(content),
+    ...traits,
     /** The ids of the market's cities, for the bridge to check an action's city against. */
     cityIds: (content.cities?.cities ?? []).map((city) => city.id)
   }

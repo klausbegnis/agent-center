@@ -42,7 +42,8 @@ const seedOf = (context, run, fight = run.fight) =>
 
 /** An event of the run, with what the bridge needs to tell it. */
 function tell(context, run, fields) {
-  context.events.push({ type: 'instance', projectId: context.projectId, instance: run.instance, tier: run.tier, room: run.room, ...fields })
+  const rematch = run.rematch ? { rematch: run.rematch } : {}
+  context.events.push({ type: 'instance', projectId: context.projectId, instance: run.instance, tier: run.tier, ...rematch, room: run.room, ...fields })
 }
 
 /**

@@ -1,4 +1,4 @@
-"""Render the six instance banners (192 x 72), their fade variants and the contact sheet.
+"""Render the instance banners of both regions (192 x 72), their fade variants and the contact sheet.
 Deterministic: every random source is seeded. Run: python3 banners.py [module ...]"""
 import os, sys, importlib
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +10,16 @@ BANNERS = [('bn_crypt', 'sunken-crypt', 'The Sunken Crypt'),
            ('bn_hive', 'hollow-hive', 'The Hollow Hive'),
            ('bn_frost', 'frostwatch-keep', 'Frostwatch Keep'),
            ('bn_library', 'drowned-library', 'The Drowned Library'),
-           ('bn_spire', 'wyrmrest-spire', 'Wyrmrest Spire')]
+           ('bn_spire', 'wyrmrest-spire', 'Wyrmrest Spire'),
+           # the second region, the Gloaming Isles
+           ('bn_isle_lighthouse', 'saltreach-lighthouse', 'Saltreach Lighthouse'),
+           ('bn_isle_coral', 'coral-labyrinth', 'The Coral Labyrinth'),
+           ('bn_isle_warren', 'smugglers-warren', "The Smugglers' Warren"),
+           ('bn_isle_grove', 'gloomroot-grove', 'Gloomroot Grove'),
+           ('bn_isle_leviathan', 'brass-leviathan', 'The Brass Leviathan'),
+           ('bn_isle_abbey', 'moonwake-abbey', 'Moonwake Abbey'),
+           ('bn_isle_anvil', 'storm-anvil', 'The Storm Anvil'),
+           ('bn_isle_gate', 'abyssal-gate', 'The Abyssal Gate')]
 BG = hexc('#12151B')
 OUT = os.path.join(HERE, 'png')
 X1 = os.path.join(OUT, 'x1')

@@ -1,7 +1,8 @@
-// The game's tab list: Rooms, Party, Chest, Camp, Skills, Market, World. Real tabs, reachable with the
-// arrow keys. Each has a pixel icon beside its name; when the bar is too narrow for the names
-// (a container query in game.css), only the icons show and the name stays the accessible name
-// and the tooltip.
+// The game's tab list: Rooms, Party, Chest, Camp, Skills, Market, World, Roadmap. Real tabs, reachable
+// with the arrow keys. Each has a pixel icon beside its name; when the bar is too narrow for the
+// names (a container query in game.css), only the icons show, the open tab keeps its name beside its
+// icon (as a material's name shows on the strip above), and the others' names stay the accessible
+// name and the tooltip.
 import { el } from './dom.js'
 import { GAME_TABS, tabAfterKey } from './game-model.js'
 import { gameIcon } from './icon-view.js'
@@ -51,6 +52,8 @@ export function createGameTabs({ onSelect }) {
         const isSelected = tab === selected
         node.setAttribute('aria-selected', String(isSelected))
         node.tabIndex = isSelected ? 0 : -1
+        // The row scrolls when narrow: the open tab, now wider with its name, stays in view.
+        if (isSelected) node.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
       }
     }
   }

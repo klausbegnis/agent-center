@@ -115,7 +115,7 @@ function resistancesFor(kind, affix) {
  * and any other wave a generated monster. Without races (older content) every entry shows as
  * itself. The entry's loot is kept either way.
  */
-function appearanceFor({ where, entry, kind, rank, themeId, races, bosses }) {
+function appearanceFor({ where, entry, kind, rank, themeId, races, bosses, featuredRace }) {
   const handmade = { id: entry.id, name: entry.name, sprite: { ...entry.sprite } }
   if (!races) return handmade
   if (entry.themes && chanceOf(rollText(where, 'handmade')) < HANDMADE_SHARE) return handmade
@@ -125,7 +125,7 @@ function appearanceFor({ where, entry, kind, rank, themeId, races, bosses }) {
     const boss = bossFor(bosses, races, { worldId: where.worldId, projectId: where.projectId, bossNumber })
     return { id: boss.id, name: boss.name, race: boss.race, look: boss.look }
   }
-  const generated = generateMonster(races, { seed: rollText(where, 'look'), themeId, rank })
+  const generated = generateMonster(races, { seed: rollText(where, 'look'), themeId, rank, featuredRace })
   return { id: generated.race, name: generated.name, race: generated.race, look: generated.look }
 }
 
@@ -145,6 +145,7 @@ function appearanceFor({ where, entry, kind, rank, themeId, races, bosses }) {
  *   every monster is a hand-made entry
  * @param {{ bosses: object[] }} [options.bosses] a valid bosses file
  * @param {(level: number) => { physical: number, magical: number, total: number }} options.referencePartyHit
+ * @param {string | null} [options.featuredRace] a race the week's event brings more often (weekly.mjs)
  * @returns {{ id: string, name: string, kind: string, rank: string, affix: string | null,
  *   level: number, maxHp: number, hp: number, physical: number, magical: number, attack: number,
  *   reward: number, dropFactor: number, loot: Record<string, number>, race?: string,
@@ -152,7 +153,7 @@ function appearanceFor({ where, entry, kind, rank, themeId, races, bosses }) {
  *   a hand-made entry has `sprite`, a generated monster or a boss of the roster `race` and `look`
  */
 export function monsterFor(options) {
-  const { worldId, projectId, wave, kill = 0, themeId, content, races, bosses, referencePartyHit } = options
+  const { worldId, projectId, wave, kill = 0, themeId, content, races, bosses, referencePartyHit, featuredRace = null } = options
   const partySize = Math.min(options.partySize ?? REFERENCE_PARTY_SIZE, REFERENCE_PARTY_SIZE)
   const partyShare = partySize / REFERENCE_PARTY_SIZE
   const where = { worldId, projectId, wave, kill }
@@ -165,7 +166,7 @@ export function monsterFor(options) {
   const factors = MONSTER_KINDS[kind]
   const maxHp = HITS_TO_KILL * referencePartyHit(wave).total * partyShare * factors.hp * ranked.hp
   return {
-    ...appearanceFor({ where, entry, kind, rank, themeId, races, bosses }),
+    ...appearanceFor({ where, entry, kind, rank, themeId, races, bosses, featuredRace }),
     kind,
     rank,
     affix,

@@ -13,7 +13,8 @@ the parsed `game/monsters.json`, `game/items.json`, `game/races.json`, `game/bos
 `game/bestiary.json` (optional: without it nothing is counted and no bestiary bonus is given) and
 `game/settlement.json` (optional: without it there are no stages and only the campfire, the
 workbench and the rune circle can be built; see "Settlement") and `game/instances.json` (optional:
-without it there are no instances; see "Instances") and returns
+without it there are no instances; see "Instances") and `game/traits.json` (optional: without it
+there are no traits; see "Traits") and returns
 functions that each take a save and return a new one. None of
 them mutates its input, reads the clock or draws a random number; `now`, `from` and `to` are
 milliseconds the caller passes.
@@ -38,7 +39,7 @@ milliseconds the caller passes.
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
 | `moveProjectItems(save, { fromProjectId, toProjectId, now? })` | Moves a project's chest and retirees into another project of the same world, then removes the first from the world and from `projectWorld`. Its characters retire first (dated `now`, or when last seen), so no item stays held. Every item goes into the target's chest, free, through the chest's own numbering of copies, but an entry never ends above `COPIES_PER_ITEM` copies there: items the target's characters hold always stay, the best of the rest fill the copies left, and the lowest are salvaged into the world's materials as a drop would be (one upgrade of a fresh copy at the world level). Its retirees, kept records and folded ones alike, are added to the target's `retiredCount`. The same save when the two are not projects of one world. |
 | `sendItem(save, { fromProjectId, toProjectId, itemId \| itemIds, confirmHeld? })` | Sends items of a project's chest to another project of the same world, one a character holds only with `confirmHeld` (see "Sending to another room"); `sendItemWithSalvage` answers `{ save, salvaged, sentSalvaged, repicks }`: the copies the target's cap salvaged, which of them were sent ones, and what each holder took instead. The same save when refused; `sendItemProblem(save, sending)` says why, or null. `itemName(entryId)` names an item's entry. |
-| `enterInstance(save, { projectId, instanceId, tier })` | Sends a room's party into an open instance at a tier, freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
+| `enterInstance(save, { projectId, instanceId, tier, rematch? })` | Sends a room's party into an open instance at a tier, or into a rematch of its boss (see "Rematches"), freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
 | `chooseBoon(save, { projectId, boonId })` | Takes one of the two boons a room's run is offered in the vault; the same save when refused, and `boonProblem(save, choice)` says why. |
 | `recallParty(save, { projectId })` | Ends a room's run by hand, as a failed run ends: what it found is kept, its wave comes back, and the instance waits on a cooldown for that room. |
 | `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
@@ -46,13 +47,16 @@ milliseconds the caller passes.
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
 | `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
 | `buyMaterial(save, { worldId, cityId, materialId, amount })` | Buys a material an open city produces with the world's coins. The engine's own (the simulator uses it); no surface offers it in this version. |
-| `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall"). |
+| `buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId })` | Buys an offer of a city's stall into a project's chest; unchanged when it cannot (see "The stall" and "City ranks"). Every sale, purchase, trade and stall purchase adds to the world's standing in that city. |
+| `teachTrait(save, { projectId, sessionId, traitId })` / `swapTrait(save, { projectId, sessionId, oldTraitId, traitId })` | Teaches a scroll's trait into a free slot, or swaps a carried trait for a scroll (the old one back as a scroll, for a fee); `teachProblem` / `swapProblem` say why one is refused. See "Traits". |
+| `buyTraitScroll(save, { worldId, cityId, offerIndex, traitId, projectId })` / `sellTraitScroll(save, { worldId, cityId, projectId, traitId })` / `sendScroll(save, { fromProjectId, toProjectId, traitId })` | The trait broker and sending a scroll to another room; each has its `…Problem`. |
+| `buyCharter(save, { worldId, cityId })` | Buys a city's next charter: its rank rises by one (see "City ranks"); unchanged when it cannot, and `charterProblem(save, which)` says why. |
 | `view(save)` | A plain summary for a UI: per world the level, the attack speed from Engineering, work and gathering skills with level, stars, effective level and progress, materials and group upgrades with their next cost, coins and the market (see "View state"); per project the wave, kills on it and kills it takes, the monster with its health share, stamina, the party with class, level, attributes, equipment, trade and state, the chest, retirees and retiree bonus. |
 
 The engine lives in `engine.mjs` (composition and purchases), `sessions.mjs` (tokens and
 retirement), `advance.mjs` (time), `fight.mjs` (a project's fight), `spending.mjs` (group
 upgrades and `autoSpend`), `drops.mjs` (item drops), `market.mjs`, `market-prices.mjs` and
-`stall.mjs` (the market), `transfer.mjs` (sending to another room), `settlement*.mjs` and
+`stall.mjs` (the market), `city-ranks*.mjs` and `city-stall-legendary.mjs` (its cities' ranks), `transfer.mjs` (sending to another room), `settlement*.mjs` and
 `buildings.mjs` (the settlement), `world-effects.mjs` (what a world gives every party in it), and
 `view.mjs` with `market-view.mjs` and `settlement-view.mjs`, over the rule modules described
 below.
@@ -394,14 +398,14 @@ name, a flavour line, a colour and a picture in `ui/art/legendary/`:
   (`city`, checked). They drop from bosses, and a city's stall sells one now and then (see "The
   stall"); `relicsCityCanOffer(index, { cityId, ownedIds })` gives that city's relics a room does
   not own.
-- **Boss relics** (`boss-relic`, twelve): relics too, but each is the signature of one named boss
+- **Boss relics** (`boss-relic`, seventeen): relics too, but each is the signature of one named boss
   of `game/bosses.json` (`boss`, its id), drops only from that boss and is never sold.
-- **Legendary equipment** (`equipment`, twelve): a weapon, outfit or tool dropped only by its boss,
+- **Legendary equipment** (`equipment`, fifteen): a weapon, outfit or tool dropped only by its boss,
   made for a class (`class`) or, for a tool, a trade (`trade`), with a recipe. It lives in the
   chest like other gear (`legendary: true` on the item, its id its entry's id), is upgraded the
   same way, goes back to the chest on retirement and moves with a chest left behind. It is never
   salvaged or capped away, and a room never holds two of one.
-- **Instance relics** (`instance-relic`, six): relics too, each the reward of an instance's first
+- **Instance relics** (`instance-relic`, fourteen): relics too, each the reward of an instance's first
   clear (`instance`, its id; see "Instances"), never sold and never dropped.
 
 ### Effects
@@ -588,7 +592,7 @@ for that boss. The first boss already gives a level.
 | 2 | 5 | `legendaryPity` +15% |
 | 3 | 15 | `damage` +0.5% against bosses and legendary bosses |
 | 4 | 30 | `legendaryPity` +15% |
-| 5 | 55 (all) | `damage` +0.5% against bosses and legendary bosses, `legendaryPity` +20% |
+| 5 | 55 | `damage` +0.5% against bosses and legendary bosses, `legendaryPity` +20% |
 
 ### As effects
 
@@ -603,7 +607,7 @@ caps. A level reached during an advance counts from the next one, as a relic tha
 A world keeps `bestiary: { races, bosses, others?, filled? }` from its first advance: a race's (and
 the others') counter is `[normal, veteran, elite, champion, boss, legendary, firstDay]`, a boss's
 `[beaten, legendary, firstDay]`, `filled` the kills given by the back-fill. Points, levels and ranks
-are worked out from them and never stored. Twenty races and 55 bosses fit in under 2 KB. `migrate`
+are worked out from them and never stored. Twenty races and 71 bosses fit in under 2 KB. `migrate`
 drops counters of another shape and keeps `filled`; `cleanSave` refuses a race or boss the content
 does not have, a list of the wrong length or with a number that is not a whole count, a counter
 with no kill (or no win), more legendary wins than wins, a `filled` that is not a whole count, an
@@ -622,8 +626,8 @@ The bridge turns each into a `bestiary` event of `recent` (see "View state").
 
 ## Instances
 
-A road of six dungeons (`game/instances.json`, checked by `src/game/instance-content.mjs` and
-`instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
+A road of dungeons, six in its first region and eight in the second (`game/instances.json`, checked
+by `src/game/instance-content.mjs`, `instance-regions.mjs` and `instance-boons.mjs`; the run is `instance-run.mjs`, `instance-fight.mjs`, `instance-monsters.mjs`
 and `instance-rewards.mjs`, its numbers `instance-constants.mjs`). A room sends its party into an
 open instance at a tier; while inside, its wave, wave kills and standing monster are frozen, and its
 working time, in the same rounds and ticks as the waves, plays the instance's six rooms. The other
@@ -647,8 +651,12 @@ one room at a time.
   the region's title (**Roadwarden**) and leaves the map complete.
 - Bosses and elites come from the existing roster, of the instance's races, each in at most one
   instance; all twelve guard an item of their own (`game/legendary.json`), which is what a clear
-  rolls for. The vault's pool lists other bosses' items (its elite's among them), never an
-  instance boss's.
+  rolls for. The vault's pool lists other bosses' equipment (its elite's among them), never an
+  instance boss's item and never a relic: a boss's own relic comes only from that boss.
+- Each instance has a room-size scene (`scene`, a 200×125 PNG under `ui/instances/`, drawn at the
+  room's size): while a room is inside, the UI hides its theme's scenery and draws that scene behind
+  its characters and monster, and a travelling room keeps the theme it entered in until it leaves
+  (its kills inside do not move it on).
 - The site of each instance on the 256×144 roadmap is `map: { x, y }`; the three roadmap pictures
   (0, 3 and 6 cleared) are enough because the UI places live markers over them.
 
@@ -714,7 +722,7 @@ never a capped legendary effect type, so they cannot push those sums past their 
 | Whetted Blades | +15% damage against the boss | `bossDamage` 0.15 |
 | Second Wind | stamina back to full now | `staminaNow` 1 |
 | Gambler's Coin | a second roll at the boss's own item | `rewardRoll` 1 |
-| Seeker's Candle | +20% chance the boss leaves its own item | `bossItem` 0.2 |
+| Seeker's Candle | the boss is twice as likely to leave its own item | `bossItem` 1 |
 | Hoarder's Map | the boss's purse holds 50% more | `purse` 0.5 |
 | Spare Torch | one more try in every room left | `tries` 1 |
 | Sand Glass | 30% more time in every room left | `timeLimit` 0.3 |
@@ -752,16 +760,109 @@ boss's away.
 |---|---|---|
 | every kill | the waves' materials and item drop | as on waves, at the run's level |
 | a check passed | materials | two plain kills of the run's level |
-| the vault | materials, and sometimes an item of its pool the room lacks | three plain kills; `INSTANCE_VAULT_ITEM_CHANCE` 1% + 0.25% a tier, at most 4% |
+| the vault | materials, and rarely a piece of its pool the room lacks | three plain kills; `INSTANCE_VAULT_ITEM_CHANCE` 0.3% + 0.05% a tier, at most 1% |
 | every clear | the purse: materials of the instance's loot table and coins | `INSTANCE_PURSE_KILLS` 16 plain kills and `INSTANCE_PURSE_COINS` 40 × `REWARD_GROWTH ** level` coins, × (1 + 5% a tier) × (1 + the Hoarder's Map) |
 | every clear | each of the instance's races counted as `tier` champion kills | 10 bestiary points each |
-| every clear | the boss's own item, when the room lacks it | `INSTANCE_BOSS_ITEM_CHANCE` 10% + 1% a tier, at most 30%, plus the waves' boss pity (5% a miss, × the boss hunter's pity bonus); the Seeker's Candle adds, the Gambler's Coin rolls again |
+| every clear | the boss's own item, when the room lacks it | `INSTANCE_BOSS_ITEM_CHANCE` 0.4% + 0.08% a tier, at most 1.2%, without the waves' pity (neither read nor raised); the Seeker's Candle doubles it, the Gambler's Coin rolls again |
 | the world's first clear | the instance's relic, to the clearing room (active when it is its first) | a room that owns it already gets `INSTANCE_RELIC_COINS` 3000 × `REWARD_GROWTH ** level` coins, a city relic's price |
 
 A clear's boss does not roll for a city's relic as a wave's boss does: a run meets its boss about once
 a working day, and with the waves' pity that roll handed a light user every city relic within weeks.
 No roll ever gives a second copy (`rollBossItem` and the vault pick only what the room lacks).
 Materials and coins go to the world as they are found, so a run that fails keeps them.
+
+### Regions
+
+The road goes on past the first region (`src/game/instance-regions.mjs`). `region` in
+`game/instances.json` is the first one, the Old Road, and holds the instances without a `region` key;
+each entry of `regions` comes `after` a region before it and holds the instances that name it, listed
+together after the region before. A region has its own name, title, map size and pictures, and may
+raise its rooms' plain monsters by `rankStep` ranks (normal to veteran, veteran to elite; the elite's
+chamber and the boss keep theirs). A third region is only data and art: a `regions` entry, its
+instances, its bosses in `game/bosses.json`, its relics and items in `game/legendary.json` and its
+pictures.
+
+- **Unlock.** A later region opens when every instance of the region it comes after has been cleared
+  once; until then its instances are under fog and refuse a room (`its region is not open yet`).
+  Inside, its instances open one after another as on the first road, each at its World Lv.
+- **The Roadmap** is a tab of its own (`roadmap`, with a dungeon-gate icon), beside World, which keeps
+  the bestiary; an old link to `?tab=world&view=roadmap` opens it. It has a switch between regions
+  above the map. It opens on the furthest open region;
+  a locked one shows its map dimmed with what opens it ("It opens when The Old Road is complete: 4 of 6
+  cleared there"). Clearing a whole region gives its title.
+
+The second region, **The Gloaming Isles** (title **Islewarden**, `rankStep` 1), a night sea chart:
+
+| | Instance | Races | Opens at World Lv | Boss | Elite | Third room | Relic |
+|---|---|---|---|---|---|---|---|
+| 7 | Saltreach Lighthouse | skeletons, ghosts, lizardfolk | 60 | Keeper Ondrel, the Drowned Lamp | Grisk Saltjaw, the Wrecker | trap, resilience | Lens of the Last Keeper |
+| 8 | The Coral Labyrinth | minotaurs, slimes, elementals | 72 | Hathra, the Coral Horn | Murkle, the Tidepool Glutton | puzzle, Lore | The Coral Compass |
+| 9 | The Smugglers' Warren | goblins, humans, orcs | 86 | Corvina Vale, the Tide Broker | Snatchgut, the Bilge King | trap, luck | The Smugglers' Doubloon |
+| 10 | Gloomroot Grove | treants, spiders, insects | 100 | Old Brackenmere, the Drowned Oak | Lacewire, the Reed Weaver | trap, medicine | Seed of the Drowned Oak |
+| 11 | The Brass Leviathan | golems, elementals | 116 | Hullgrind, the Boiler Heart | Sparkwhirl, the Steam Wraith | puzzle, Engineering | The Boiler-Heart Governor |
+| 12 | Moonwake Abbey | werewolves, vampires, ghosts | 134 | Abbess Morwen, the Silver Fang | Cantor Lisle, the Night Choir | puzzle, Arcana | The Silver Moon Rosary |
+| 13 | The Storm Anvil | ogres, orcs, trolls | 154 | Thundergut, the Storm Smith | Varka Ironjaw, the Spark Bearer | trap, strength | The Thunderhead Ingot |
+| 14 | The Abyssal Gate | dragons, demons, lizardfolk | 176 | Nhalazor, the Deep Tide | Vashtiel, the Gate Warden | puzzle, Command | Tidecrown of the Deep |
+
+Its sixteen bosses and elites are new named bosses with fixed looks. Each instance has its relic
+(first clear), and each boss guards an item of its own that drops only from it, in its instance, at the
+usual instance odds (10% + 1% a tier, plus pity and rematches):
+
+| Item | Kind | Boss | Effect |
+|---|---|---|---|
+| Lens of the Last Keeper | instance relic | (Saltreach Lighthouse) | `runeCircle` +8% |
+| The Coral Compass | instance relic | (The Coral Labyrinth) | `restTime` 8 s |
+| The Smugglers' Doubloon | instance relic | (The Smugglers' Warren) | `killMaterials` +5% |
+| Seed of the Drowned Oak | instance relic | (Gloomroot Grove) | `gatherXp` +5% |
+| The Boiler-Heart Governor | instance relic | (The Brass Leviathan) | `skillXp` +5% Engineering, every character |
+| The Silver Moon Rosary | instance relic | (Moonwake Abbey) | `raceDamage` +5% against werewolves, vampires and ghosts |
+| The Thunderhead Ingot | instance relic | (The Storm Anvil) | `critDamage` +20% |
+| Tidecrown of the Deep | instance relic | (The Abyssal Gate) | `damage` +6% against bosses and legendary bosses |
+| Ondrel's Storm Lantern | boss relic | Keeper Ondrel | `gatherHours` +15 min |
+| The Coralhorn | boss relic | Hathra | `affixWeakening` 15% |
+| The Tide Broker's Ledger | boss relic | Corvina Vale | `upgradeCost` 4% |
+| Brackenmere's Bough-Axe | tool, woodcutting | Old Brackenmere | `gatherYield` +12% logs |
+| The Boiler-Rune Chisel | tool, runecraft | Hullgrind | `gatherYield` +12% runes |
+| Morwen's Moon-Bell | boss relic | Abbess Morwen | `staminaPerKill` 3% |
+| The Stormsmith's Hammer | weapon, physical | Thundergut | `skillXp` +10% Forge, the holder's |
+| The Abyssal Pearl | boss relic | Nhalazor | `itemDrop` +12% |
+
+Every relic stays at or under the strongest relic of its type that was already there, so the caps
+tests hold as they were; the three pieces of equipment follow the first tools (12% of one material)
+and the Moonwane Scepter (10% of one work skill's experience), in work skills and materials nothing
+else held.
+
+### Rematches
+
+Once a world has beaten an instance's boss, it may go back for **Rematch I** to **X**
+(`src/game/instance-rematch.mjs`), entered beside the normal run with `rematch` on the entry. A
+rematch is a run of the same instance with the same rooms, rules, boons and cooldown; only its numbers
+change.
+
+| | Rule | Numbers |
+|---|---|---|
+| Tier | rematch n plays at a fixed tier: its levels, check and tier modifier as that tier's | `REMATCH_FIRST_TIER` 3 + `REMATCH_TIER_STEP` 2 × (n − 1): I at tier 3, X at tier 21 |
+| Boss | the boss has more health (its room's time does not grow with it) | × (1 + `REMATCH_BOSS_HP_STEP` 0.1 × n): X's boss twice as much |
+| Opens | the boss beaten once, rematch n − 1 cleared, and the world's level | World Lv ≥ the instance's level × (1 + `REMATCH_LEVEL_SHARE` 0.3 × n): the crypt's X at 20, the spire's at 184 |
+| Every clear | the purse of its tier, and the boss's own item at better odds | the tier's chance (0.4% + 0.08% a tier, at most 1.2%) × (1 + `REMATCH_ITEM_STEP` 0.15 × n), at most `REMATCH_ITEM_MAX` 3%: Rematch I rolls about 0.6%, X 3%; no pity, as for any run |
+| First clear of rematch n | a tier-clear reward, once per world | materials worth `REMATCH_FIRST_KILLS` 12 × n plain kills, `REMATCH_FIRST_COINS` 300 × n × `REWARD_GROWTH ** level` coins and `REMATCH_CHAMPIONS` 2 × n champions of each of its races for the bestiary |
+
+- **Gated by real progress.** Only tokens raise the world's level, so the ladder opens as the world
+  grows; repeating a rematch opens nothing and pays only the purse after its first clear. A loss costs
+  time only: the run ends as any failed run, keeps what it found, and the room waits the usual
+  cooldown.
+- **Within the caps.** A rematch pays materials, coins, bestiary points and the boss's own item at
+  better odds: kinds the game already has, under the same caps. It never gives a second copy.
+- A rematch's clear counts as a clear (`clears`) and records the best rematch (`rematch`), not a best
+  tier. The Roadmap shows the best one as a roman tier badge on the instance's card and beside its
+  marker, and the next one as **Rematch IV** beside **Enter**, with the level it opens at and why a
+  room cannot go.
+
+Achievements follow both (metrics `bestRematch`, `regionsOpened`, `regionsComplete` in
+`achievement-metrics.mjs`): Old Grudges (a first rematch won), Grudge Match (Rematch V, title "the
+Unforgiving"), Undisputed (Rematch X, title "the Undisputed"), Beyond the Old Road (the second region
+opened) and Islewarden (every instance of the Gloaming Isles cleared, title "Islewarden"). The day
+journal keeps a rematch won (`rematch`, with its number) and a region opened (`region`) as highlights.
 
 ### The relics
 
@@ -784,15 +885,17 @@ stay within every cap, now checked per work skill for `skillXp` as for races and
 
 ### In the save
 
-A world keeps `instances: { [instanceId]: { runs, clears, bestTier } }` once a room entered one; a
-room inside keeps `run: { instance, tier, attempt, room, fight, tries, tryTicks, waitTicks, ticks,
+A world keeps `instances: { [instanceId]: { runs, clears, bestTier, rematch? } }` once a room entered
+one (`rematch`, the best rematch cleared, only once one is); a room inside keeps `run: { instance,
+tier, rematch?, attempt, room, fight, tries, tryTicks, waitTicks, ticks,
 boon, offered, found: { materials, coins, legendary, kills }, frozen: { wave, waveKills, monster,
 fightTicks, fightRested } }` (about 700 bytes with its frozen monster), and a room after a failed
 run `instanceCooldowns: { [instanceId]: ms }`. None of them exists in a save from before, which loads
 unchanged. `migrate` drops a run it cannot play (the room back on the monster it left) and
 cooldowns without time left; `cleanSave` refuses an instance or boon the content does not have, a
 room index, tier or count out of range, found loot that is not content, progress with more clears
-than runs or a best tier without a clear, a cooldown longer than a whole one, two rooms inside one
+than runs or a best tier without a clear, a best rematch out of I to X or above the clears, a
+rematch run whose tier is not its rematch's, a cooldown longer than a whole one, two rooms inside one
 instance, and any of it when the content has no instances. A world reset forgets it all; a chest
 left behind moves as before, and a room left behind inside an instance frees it when its chest
 moves (or can be recalled).
@@ -893,9 +996,281 @@ opens no loop that makes money.
 ### Pace
 
 Tuned with the simulator (see "Balance"): with the thresholds above, a light user reaches the
-Outpost on day 15 and the Hamlet on day 30, a medium one the Village on day 53 and the Town on day
+Outpost on day 15 (the target is the first three weeks: the Outpost needs one building level, and
+a light user can pay for no purchase at all before about its third week; making first levels
+cheaper would change the old upgrades' prices, which the settlement keeps exactly) and the Hamlet on day 30, a medium one the Village on day 53 and the Town on day
 186, and a heavy one the Stronghold on day 169 and the Citadel a little after its first year
 (491 levels at day 365).
+
+## Achievements
+
+Long-term goals over every part of the game (`game/achievements.json`, checked by
+`src/game/achievement-content.mjs`; granted by `achievements.mjs`, measured by
+`achievement-metrics.mjs`, bound to the content in `chronicle.mjs`). 144 achievements in thirteen
+groups (Battle, Bosses, Bestiary, Growth, Legacy, Treasure, Market, Settlement, Instances, Journal,
+Collector, Traits, Weekly events), most of them ladders (defeat 1, 100, 1,000, 10,000, 100,000 and 1,000,000 monsters).
+Each has a name, a description, points (1 to 100) and a condition; some are `hidden` until earned,
+and 37 grant a `title`.
+
+### Conditions
+
+A condition is data: `{ "metric": "kills", "atLeast": 1000 }`, with the metric's one parameter when
+it takes one (`{ "metric": "raceKills", "race": "troll", "atLeast": 500 }`), or
+`{ "all": [conditions] }`, met when every part is. A metric is one number read from the save over
+every world: a sum (`kills`, `bossWins`, `rankKills` by rank, `raceKills` by race, `retirements`,
+`instanceClears`), a count of distinct things (`distinctBosses`, `racesDiscovered`, `relics`,
+`legendaryItems`, `instancesCleared`), or the best of the worlds (`wave`, `worldLevel`,
+`skillLevel` by skill, `bestWorkSkill`, `prestigeStars`, `characterLevel`, `hunterRank`,
+`bestMastery`, `itemTier`, `itemLevel`, `coins`, `citiesOpen`, `buildingLevels`, `stage`,
+`buildingTier` by building, `renovationStars`, `instanceTier`, and for traits `traitsCollected`,
+`mythicTraits` and `traitsCarried`, the most traits one living character carries), and `traitSwaps`
+counts the swaps at the trait brokers (see "Traits"), and `weeklyGoals` the weeks whose goal a world
+reached (see "Weekly events"). `coinsEarned`, `materialsEarned`,
+`notableLoot` and `activeDays` read the journal's lifetime totals (see "The day's journal"), and
+`achievements` and `achievementPoints` the achievements themselves. The content check refuses a
+metric that does not exist and a parameter the content does not have, so an achievement for a new
+feature is a metric in `achievement-metrics.mjs` and a line of data.
+
+### Granting
+
+After every change the bridge keeps (a round, an action, an import), `chronicle` grants every
+achievement whose condition the save now meets, with the time. One earned is kept for good, through
+a world reset too. An achievement for earning achievements is checked again in the same change.
+Each one earned becomes an `achievement` event of `recent`, which every room that plays celebrates
+in gold.
+
+### Back-fill
+
+A save from before achievements has none. The first time it is checked (its first round, or an
+import), everything it already meets is granted quietly and counted as `filled`; the bridge then
+adds one `achievement` event of kind `backfill` with the count, which plays as one line in the first
+room, not one per achievement. A brand-new save is back-filled with nothing, so its first
+achievements are news.
+
+### Titles
+
+An achievement with a `title` lets a room's party wear it: one title per room, chosen in the World
+tab's Achievements view. It shows beside each character's name in the Party tab and on the agent
+card. It is cosmetic only. A title must be earned; a room that leaves the save takes its title
+along.
+
+### In the save
+
+`achievements: { earned: { [id]: ms }, titles: { [projectId]: id }, filled }`, present once the save
+was first checked. `migrate` keeps the entries that are well formed; `cleanSave` refuses an
+achievement the content does not have, a time that is not one, a title for a room that does not
+play or that was not earned, and a `filled` larger than what was earned.
+
+## The day's journal
+
+A rolling log for the "While you worked" summary (`src/game/journal.mjs`, counted by
+`journal-gains.mjs`). Each change the bridge keeps adds what it gained to the local calendar day
+(the bridge passes `localDayOf(now)`, so a day rolls over at the person's midnight):
+
+| Counter | From |
+|---|---|
+| `kills`, `bosses` | kill events; a boss is a kill of rank `boss` or `legendary` |
+| `levels` | character `level` events |
+| `skillLevels` | the effective levels the world's skills gained |
+| `loot` | legendary finds, and a drop of a higher tier than its room held |
+| `coins` | the coins the worlds gained |
+| `materials` | the materials a round gained before anything was spent |
+| `achievements` | achievements earned |
+| `buildings` | building levels the settlements gained |
+| `cleared`, `failed` | instance results |
+
+A short list of highlights names what was notable: legendary finds, new best gear, a boss's first
+win, achievements, a building's new tier, a new stage, an instance cleared, a trait scroll a kill
+dropped (`scroll`) and a week's goal reached (`weekly`, the event), each as a content id.
+An imported game is no news and adds nothing.
+
+`journal: { days: [[day, ...counts]], totals, since, seenAt, activeDays, highlights }`: at most
+14 days (oldest first, a day going backwards is added to the newest), the same counters over all
+time and since the summary was last opened (`seenAt`), the number of days with something counted,
+and at most 24 highlights `{ at, kind, ref, value? }`. Nothing in it names a session or a room.
+`cleanSave` refuses more days or highlights than that, days out of order, a row of the wrong length,
+a count that is not whole and a highlight of a kind it does not know. Opening the summary on this
+computer marks it read (`markSummarySeen`), which clears `since`.
+
+The summary is a card behind the scroll button beside the settings cog, which carries a gold dot
+while a highlight is newer than `seenAt`. It shows Today, Since you last looked (as it was when the
+card opened), a strip of the last 14 days (monsters defeated, today in gold) and the days played.
+A page on another machine shows it but never marks it read.
+
+## Traits
+
+A trait is a small named perk a character carries (`src/game/trait*.mjs`), from the catalogue in
+`game/traits.json` (checked by `src/game/trait-content.mjs`; `npm run check` and the worker refuse
+a file with problems): 48 traits in four tiers (common, rare, epic, mythic), each with a name, a
+flavour line, a family (for its icon) and one effect, and for four double-edged ones a small
+drawback. Every number lives in `src/game/trait-constants.mjs`.
+
+### Slots
+
+- A character is born with one trait: a tier by `BORN_TIER_WEIGHTS` (common 88, rare 11, epic 1,
+  never mythic), then a trait of it, both by hash of the session id (`bornTrait`). The same session
+  always has the same one.
+- It earns a slot at each of `TRAIT_SLOT_LEVELS` (levels 10, 20 and 30), four in all. Retired
+  characters reach level 26 to 45 in the simulator, so most end with three.
+- `character.traits` is kept only once a person changed what it carries. Without it the character
+  carries its born trait, and its slots follow its level, so a save from before traits needs no
+  migration and every character in it has its trait at once.
+
+### Effects
+
+A trait's effect uses the effect types of legendary loot (see "Effects" under "Legendary loot")
+and acts on the character carrying it as its legendary equipment does (`withTraitEffects` joins
+them wherever the held effects are read: the fight, gathering and tokens). The types a trait may
+have are `damage`, `attackSpeed`, `critChance`, `staminaDrain`, `outfitStamina`, `healing`,
+`supportAura`, `gatherYield`, `skillXp`, and two the holder now reads as well, `characterXp` and
+`raceDamage`; and three of its own: `raceDrop` (items drop more often against some races, for the
+party while the character fights), `scrollFind` (trait scrolls drop more often, the same way) and
+`brokerDiscount` (the world's trait brokers charge less, while the character lives).
+
+Stacking: one character's traits are summed by type and the positive sum is brought down to
+`TRAIT_EFFECT_CAPS` (about a third to a half of each `LEGENDARY_EFFECT_CAPS`; `damage` 5%,
+`critChance` 2%), every bonus of that type shrunk by the same share. Then they join the relic,
+the equipment, the bestiary and the settlement under `LEGENDARY_EFFECT_CAPS` as before. A
+drawback (`staminaDrain`, `gatherYield`, `attackSpeed` ... below 0, at most half a cap) is not
+capped and simply takes its share away. A guest carries no trait.
+
+### Scrolls
+
+- A room keeps scrolls in its chest (`project.scrolls`, by trait), at most `SCROLL_COPIES` (5) of
+  one trait. A scroll teaches its trait into a free slot (`teachTrait`) and is used up; a trait
+  carried already is refused.
+- Elites, champions and bosses drop one now and then (`rollScrollDrop`, from the kill's seed):
+  chance `SCROLL_DROP_CHANCE` by rank (elite 0.4%, champion 1%, boss 5%, legendary 15%) times
+  (1 + `scrollFind`), a tier by `SCROLL_TIER_WEIGHTS` (bosses are the source of mythic ones), and a
+  trait of that tier the room does not keep five of. A kill event carries `scroll` when one dropped.
+- A scroll goes to another room of the same world (`sendScroll`), as an item does.
+- A retiring character gives the traits a person taught it back to the chest as scrolls, as its
+  items go back; its born trait stays its own, and a session that comes back is born with it again.
+  A room left behind that is moved brings its scrolls and its characters' taught traits along. A
+  scroll that finds no room is sold at the broker's price.
+
+### The trait broker
+
+Every open city has one (`src/game/trait-broker.mjs`):
+
+- **Buy**: `BROKER_OFFERS` (3) scrolls a game day of the city's own traits (each trait names its
+  `city`; mythic ones none, and are never sold), a tier by `BROKER_TIER_WEIGHTS`, by hash of world,
+  city and day. A scroll costs `BROKER_PRICES[tier] × REWARD_GROWTH ** worldLevel × (1 −
+  brokerDiscount)` coins and goes into a room's chest; each offer sells once a day. A city of a higher rank
+  offers a fourth scroll and, at rank V, more epic ones (see "City ranks").
+- **Sell**: any open city buys a scroll back for `BROKER_SELL_SHARE` (a quarter) of its price. The
+  tier prices (150, 700, 3,000 and 14,000) are set so a scroll always sells for more than a scroll of
+  the tier below costs, so the two never read as the same number on the broker's card (a test checks it).
+- **Swap**: a character swaps a trait it carries for a scroll of its room's chest in the same slot
+  (`swapTrait`); the old trait goes back to the chest as a scroll, for a fee of `SWAP_FEE_SHARE`
+  (a quarter) of its price. The design left open whether a swapped trait is lost; it comes back.
+
+### In the save
+
+- `Character.traits` (optional): distinct traits of the catalogue, no more than the level's slots.
+- `Project.scrolls` (optional): whole counts from 1 to 5, by trait of the catalogue.
+- `World.traits` (optional): `{ known, sold?, swaps? }`, the traits the world ever had (its
+  collection; written after every advance and trait action, and worked out for a save from before
+  traits from its characters, kept retirees and scrolls), the brokers' sales of the day by city, and
+  the swaps the world ever made.
+- `migrate` keeps a world's record and repairs a broken one; `cleanSave` refuses a trait or a city
+  the content does not have, a trait twice, more traits than slots, a count out of range, an offer
+  the broker never has, and any trait field when the content has no traits. A save from before
+  traits loads unchanged.
+
+### View and actions
+
+The engine's view gives `traits` (the catalogue: tiers with their colours, every trait, the slot
+levels), each world's `traits` (`known`, `discount`, `brokers` by open city with the day's offers,
+`salePrices` and `swapFees` by tier), each project's `scrolls` and each party member's `traits`
+(`carried`, `slots`, `nextSlotAt`, `born`). The view state passes them to rooms and characters. One
+action, `traitAction({ action, ... })` (`/api/game/trait`, local only like every game route, and
+the panel request `game.trait`), teaches, swaps, buys, sells or sends (`src/game-trait-actions.mjs`).
+
+A kill that drops a scroll carries `scroll` on its `kill` event; its room shows "Trait scroll: Name!"
+and the journal keeps it as a highlight. Seven achievements of the Traits group follow the
+collection (5, 15, 30 and 45 traits), a first mythic trait, a character with four traits and a
+first swap.
+
+### Pace
+
+Tuned with the simulator (`npm run simulate`, its "Traits" table; `scripts/trait-balance.mjs`). The
+world's collection, of 48, at day 30 / 90 / 180 / 365:
+
+| User | Day 30 | 90 | 180 | 365 | With a daily broker visit, 365 | Sessions | Scroll drops a year |
+|---|---|---|---|---|---|---|---|
+| light | 3 | 8 | 15 | 21 | 25 | 35 | 2 |
+| medium | 23 | 32 | 37 | 39 | 39 | 413 | 19 |
+| heavy | 35 | 39 | 41 | 42 | 42 | 2,420 | 45 |
+
+Commons come with new sessions; the epics and the five mythic traits, which only bosses drop, keep
+the whole catalogue a goal past the first year for every user. Traits move no other balance check:
+the four that fail fail as before them.
+
+## Weekly events
+
+Each calendar week the whole game has one event (`game/events.json`, checked by
+`src/game/weekly-content.mjs`; the rules are `weekly*.mjs`). It is a nudge so the routine varies,
+not a multiplier: it needs no network and no server, and is the same on every machine.
+
+- **The week.** An ISO week in UTC, Monday 00:00 to Monday 00:00 (`weekly-calendar.mjs`): 2026 has
+  a week 53, and 2027-W01 starts on the 4th of January.
+- **Which event.** Weeks are numbered from the one of 1970-01-01, so a year's end changes nothing.
+  Each run of as many weeks as there are events (20) plays every event once, in an order of
+  `hashOf` the run's number; when a run would open with the event the last one closed on, its first
+  two swap. So the same event never comes two weeks in a row, and next week's event is known.
+- **When it changes.** Every advance first checks its end time against the week each world keeps
+  (`withWeek`): a new week switches the event and starts its goal over, in the round that crosses
+  midnight, with no reload.
+- **What it does.** Its `effects` are effects of the closed set legendary loot uses, scope `world`
+  (`raceDamage`, `damage` against ranks, `legendaryPity`, `itemDrop`, `killMaterials`, `gatherYield`
+  of materials, `gatherHours`, `gatherXp`, `characterXp`, `skillXp`, `restTime`, `staminaPool`).
+  They join the bestiary's and the settlement's in `worldEffectsOf`, so they act wherever those do
+  and are summed under the same `LEGENDARY_EFFECT_CAPS`; no cap was raised. Each effect is at most
+  half its cap (the content check refuses more), so a world far from a cap gets the whole nudge and
+  one at a cap gets nothing past it.
+- **Kinds.** A **race week** (six: werewolves, skeletons, goblins, insects, slimes, dragons) brings
+  its race twice as often (`FEATURED_RACE_WEIGHT`, in the race pick of `races.mjs`; bosses and
+  instances are unchanged), counts a kill of it once more in the bestiary half the time (by hash of
+  the kill: every kill twice took a medium user's bestiary to +12.6% kills per hour at a year, past
+  its 10% target), and adds 3% damage against it. A **festival** (Goldmill, Deepforge, Runespire, Brinehaven) gives more of its city's goods from
+  gathering (+6%) and kills (+5%); it does not touch market prices. A **bloom** gives 7.5% more of
+  one gathered material. The **boss hunt** gives 5% damage against bosses and legendary bosses and
+  20% faster legendary pity on the waves; the **bounties** 5% damage against elites and champions
+  and 5% more item drops. The **training** weeks give experience (+2.5% characters and +5%
+  gathering, or +4% Lore and Arcana), the **gold rush** 5% more materials from kills, and the
+  **season** weeks gatherers' half hour or shorter rests and a slightly larger stamina pool.
+- **The goal.** Each event has one: defeat 9 of its race, 80 or 100 monsters, a boss, or 10 elites
+  or champions, counted per world from the advance's kill events (a kill event now carries the
+  monster's `race`). Reached, it pays at once, once a week, materials worth `rewardKills` (30) plain
+  kills at the world's level split over the event's two reward materials. Sized with the simulator
+  (`npm run simulate` prints the share of weeks whose goal was reached): a light user reaches 51%
+  of them (a third of the boss hunts: it meets a boss every few weeks), a medium and a heavy one 98%
+  (one boss hunt missed). With the events in play every balance target that passed still passes; kills per hour
+  and the other numbers move by a few percent at most.
+- **In the save.** A world keeps `weekly: { week, event, progress, done, seenAt, goals? }` from its
+  first advance with events: the ISO key, the event's id (a changed catalogue starts the week over),
+  the goal's count so far, whether it paid, the last advance's time, so the time left is told on the
+  game's own clock, and how many weeks' goals it ever reached (kept from week to week). A save from before has none and loads unchanged. `migrate` drops a malformed
+  one (the next advance starts the week again); `cleanSave` refuses an unknown event, a week a year
+  does not have, a `seenAt` outside its week, progress past the goal, `done` that disagrees with the
+  progress, and any of it when the content has no events.
+- **View and UI.** `worlds[].weekly` (see "View state"), with the next `UPCOMING_WEEKS` (5) weeks in
+  short: the choice is the calendar's, so they are known now. The header has a calendar button
+  beside the summary's scroll and the settings cog (`ui/engine/event-calendar.js`): a pixel calendar
+  with the event's kind as a badge and a thin bar for the goal (gold in progress, teal reached), the
+  event's name beside it on a wide window, and a label such as "This week: Bone Tide, goal 2 of 9, 4
+  days 9 hours left". It opens a card in the panels' place, as the summary does (Escape or Close
+  bring the focus back; a page on another machine may open it too): this week's event in full (its
+  dates, kind, time left, what it does, the goal with its bar, the reward and its flavour) and the
+  coming weeks, each with its event's icon, name, kind and dates, next week's with what it does.
+  Each room's header shows the event's icon with the same in its label. Nothing of it takes a row
+  above the tabs. The icons are drawn by
+  `scripts/event-art/events.py` into `ui/art/events/<kind>.png`.
+- **Achievements and journal.** The `weeklyGoals` metric counts goals reached over every world; the
+  Weekly events group has three (1, 10 and 52 goals, the last with a title). A goal reached is a
+  `weekly` highlight in the day's journal ("Weekly goal reached: The Howling Moon").
+- **Demo.** `EVENT=<id>` with `GAME=1` plays that event every week (`pinned` in the events data).
 
 ## Scenes
 
@@ -982,7 +1357,10 @@ its race's rig, its extras, and all eight colours, boss-only parts allowed) that
 shown as "Morvash, the Bog Tyrant". Each project meets the roster in an order of its own (the
 bosses sorted by a hash of world, project and boss id); the boss of a boss wave is the
 `wave / BOSS_EVERY`-th of that order, wrapping round. Waves never go down, so a project meets
-every boss once before any comes back: with 55 bosses, after 550 waves.
+every boss once before any comes back: with 55 bosses, after 550 waves. The sixteen bosses and
+elites of the second region (see "Regions") are in the roster too, so the bestiary counts them, but
+the waves never bring them (`waveRosterOf` in `instance-regions.mjs`): they and their items are met
+only in their instances.
 
 ### Which look a monster gets
 
@@ -1136,25 +1514,111 @@ player that is three a year for a light user and twelve for a medium one, a burs
 month while the world is young and its stock of starter surplus sells, then one every three to
 five weeks; a heavy user buys every relic its cities have as soon as each is offered.
 
+### City ranks
+
+Each city grows through five ranks, I to V, per world (`src/game/city-ranks*.mjs`,
+`city-rank-constants.mjs`, `city-stall-legendary.mjs`), the way the settlement grows: a long axis
+to invest in, with a banner of its own at every rank. A world earns **standing** with a city by
+trading there, and once it has enough it buys the city's **charter** for the next rank, which
+raises the rank by one.
+
+- **Standing.** Every sale, purchase and trade made in a city adds the base value of every unit it
+  moved (a trade counts both sides); a stall piece, relic or legendary piece adds its price. Each
+  is divided by `REWARD_GROWTH ** worldLevel` at the time, so standing grows at the same pace at
+  every level, as prices do. It only grows, and buying a charter does not spend it.
+- **Charters.** The charter for rank r needs `CITY_STANDING[r - 1]` standing in all (3,000,
+  25,000, 120,000 and 500,000 for ranks II to V) and costs `CHARTER_COINS[r - 1]` coins (500,
+  2,000, 6,000, 15,000) and `CHARTER_UNITS[r - 1]` units (100, 400, 1,200, 3,000) of each material
+  the city wants, both times `REWARD_GROWTH ** worldLevel`, rounded. It is bought in the city, from
+  the rank card on its page; `charterProblem` says why it cannot be (the city closed, its last rank,
+  too little standing, coins or materials). The charters' names are flavour in `game/cities.json`.
+
+| Rank | Title | The city's fee | Its stall | Its perk (one per city) |
+|---|---|---|---|---|
+| I | Hamlet | the world's | as before | none |
+| II | Town | 0.5 points lower | a fourth piece of gear a day (offer index 4) | the first charter's |
+| III | City | 1 point lower | its gear one tier higher | the second's |
+| IV | Capital | 1.5 points lower | a relic on 40% of days instead of 25% | the third's |
+| V | Golden age | 2 points lower | on 20% of days, one of the city's two legendary pieces (offer index 5) | the fourth's |
+
+- **The fee** in a city is the world's (`MARKET_FEE` less the Storehouse's cut) less
+  `CITY_RANK_FEE_CUT` (0.005) a rank above the first: 4% at its lowest, with a Storehouse far up and
+  a city at rank V. It is still above 0, so every sale pays less than base value and every
+  purchase costs more, and no trade can make money (`city-ranks.test.mjs` checks it with the fee
+  at its lowest). The view gives each open city its own `fee`; the UI quotes with it.
+- **A festival week.** When the world's weekly event is a city's festival (see "Weekly events"),
+  that city takes `FESTIVAL_FEE_CUT` (0.01) less fee for the week, on top of its rank's cut
+  (`city-festival.mjs` marks the city `festival: true` in the list the market functions and the view
+  get). At its lowest, rank V, a festival and a Storehouse far up, the fee is 3%: still above 0, and
+  `city-ranks-week.test.mjs` checks that no city then pays more for a material than any city asks.
+  The city's card and banner say "Festival this week".
+- **The trait broker** (see "Traits") of a city at rank III or above offers a fourth scroll a day
+  (index 3); at rank V it draws its tiers by `RANKED_BROKER_TIER_WEIGHTS` (common 64, rare 27, epic
+  9 instead of 70, 27, 3), so an epic scroll comes three times as often. A broker never sells a
+  mythic one.
+- **News.** A charter bought is told in every room of the world, with the city's new banner
+  (`{ type: 'city', worldId, cityId, rank, name, title, banner }` in `recent`, from
+  `cityRankNews`), and kept as a highlight of the day journal (`kind: 'city'`, `ref` the city,
+  `value` the rank). Four achievements of the City ranks group follow it: a first charter
+  (metric `charters`), a city at rank III and at rank V (`cityRank`, the best rank), and every city
+  of a world at rank V (`citiesAtTopRank`), which gives the title "Patron of the Five Cities".
+- **The legendary piece** is one of the city's own list (`ranks.legendary`, two pieces of legendary
+  equipment each, ten in all, none sold by two cities) that the room it would go to lacks, at
+  `STALL_LEGENDARY_PRICE_BASE` (6,000) × `REWARD_GROWTH ** worldLevel` coins, twice a stall relic.
+  It arrives as a boss would drop it, at the reference gear of the world. It adds no power the
+  boss's drop could not give, since every piece already counts towards the caps.
+- **The perks** are effects of the world (scope `world`), summed with the relics, the equipment,
+  the bestiary and the settlement under `LEGENDARY_EFFECT_CAPS`. They are kept small so that, with
+  every city at rank V and every other source at its top, no type passes its cap
+  (`city-ranks-save.test.mjs` checks it, and `npm run check` refuses a file whose perks add up past
+  a cap):
+
+| City | II | III | IV | V |
+|---|---|---|---|---|
+| Goldmill | Millers' Bread: `gatherHours` +0.15 | Harvest Lore: `gatherXp` +0.5% | Full Granaries: `staminaPool` +0.5% | Golden Sheaf: `killMaterials` +0.2% |
+| Deepforge | Dwarven Whetstones: `upgradeCost` −0.5% | Foundry Edges: `critDamage` +0.5% | Spiked Plate: `thorns` 1.5% | Kings' Anvil: `upgradeCost` −0.5% |
+| Brinehaven | Tide Tables: `gatherHours` +0.15 | Salvage Rights: `itemDrop` +0.5% | Ship's Biscuit: `staminaPool` +0.5% | Merchant Fleet: `itemDrop` +0.5% |
+| Tallwood | Hunters' Lodge: `gatherHours` +0.15 | Woodcraft Lessons: `gatherXp` +0.5% | Long Summer Days: `gatherHours` +0.15 | Canopy Wardens: `thorns` 1.5% |
+| Runespire | Scribed Wards: `runeCircle` +0.5% | Lamplight Archive: `gatherHours` +0.15 | Seers' Insight: `critDamage` +0.5% | Spire Light: `runeCircle` +0.5% |
+
+- **Content.** A city of `game/cities.json` may have `ranks: { banners, charters, legendary }`: five
+  `{ banner, alt }` (PNGs under `ui/cities/`, `<city>-<rank>.png`), four `{ name, perk, effect }`
+  for ranks II to V, and the legendary equipment its last rank sells; the file's `rankTitles` names
+  the five ranks. A city without `ranks` stays at rank I. The banners are drawn by
+  `scripts/city-art/ranks.py` (see its README).
+- **In the save.** A world keeps `cityRanks: { [cityId]: { rank, standing } }` once it has traded
+  with a city. A save from before has none: every city is at rank I with no standing, and nothing
+  else changes. `migrate` drops an entry that is not a rank from 1 to 5 and a standing from 0 to
+  1e15; `cleanSave` refuses one, a city without ranks in the content, and a sold offer past index 5.
+  A world reset forgets the ranks with the world.
+- **Pace.** Tuned with the simulator's trading player, which buys every charter it can on its daily
+  visit and keeps the next charter's coins aside from buildings paid in coins (see "Market" under
+  "Balance"): a light user reaches rank II in a first city on day 17 and holds three cities at II
+  after a year; a medium one has a city at II on day 3, III on day 113 and IV on day 239, and no
+  city at V after a year (ten charters); a heavy one has every city at II within ten days and four
+  at III by day 113, coins being what holds it back. Rank V of every city is a goal of years, not months.
+
 ## Save shape
 
 One JSON value:
 
 ```
 Save      { version, worlds: { [worldId]: World }, projectWorld: { [projectId]: worldId | null },
-            settings: { keepTitles } }
+            settings: { keepTitles }, achievements?, journal? }
 World     { skills: { [skillId]: { level, xp, banked, stars } }, materials: { [id]: number },
             upgrades: { [id]: level }, projects: { [projectId]: Project }, lastTokenAt,
-            coins, market: Market, bestiary?, instances? }
+            coins, market: Market, bestiary?, instances?, traits?: TraitRecord, weekly?, cityRanks? }
 Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number } },
             sold: { [cityId]: { day, offers: number[] } } }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
-            retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns? }
+            retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns?,
+            scrolls?: { [traitId]: count } }
 Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
-            pinned? }
+            pinned?, traits?: string[] }
+TraitRecord { known: string[], sold?: { [cityId]: { day, offers: number[] } }, swaps? }
 Item      { id, entryId, slot, damageType?, tier, recipe, level, heldBy, legendary?: true }
 Monster   { id, name, kind, rank, affix, level, maxHp, hp, physical, magical, attack, reward,
             dropFactor, loot, race?, look?: { rig, parts, colours }, sprite? }
@@ -1514,16 +1978,19 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
-| `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier }`: a room that plays, an instance of `game/instances.json` and a whole tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
+| `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier, rematch? }`: a room that plays, an instance of `game/instances.json` and a whole tier, or a rematch (1 to 10) of a beaten boss, which plays at its own tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
 | `game.chooseBoon` | `/api/game/choose-boon` | `{ roomId, boonId }`: a room whose run is at the vault and one of the two boons it offers |
 | `game.recallParty` | `/api/game/recall-party` | `{ roomId }`: a room inside an instance (one left behind too, so it frees its instance) |
+| `game.partyTitle` | `/api/game/party-title` | `{ roomId, achievementId }`: a room that plays and an achievement it earned that grants a title, or null for none |
+| `game.summarySeen` | `/api/game/summary-seen` | none: marks the "While you worked" summary read |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
+| `game.buyCharter` | `/api/game/buy-charter` | `{ worldId, cityId }`: a world of the save and a city of `game/cities.json`; a charter the rules refuse says why (see "City ranks") |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
 `sendItem`, which add what they changed. Ids must name something that exists: a world of the save, a room on
 screen or in the save, an item of that room's chest, a skill, a group upgrade, a living
 character of the room, a gathering skill, a city of `game/cities.json`, a material, an offer
-index from 0 to `STALL_OFFERS` (the last is the relic's); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
+index from 0 to 5 (the gear's, the relic's at 3, a ranked city's extra piece at 4 and legendary piece at 5); an amount is a whole number from 1 to `MARKET_MAX_AMOUNT`. A sale, a
 trade or a purchase the market cannot make (a city not open yet, more than the world holds, an
 offer sold or changed) answers `{ changed: false }`. A new world is a
 kebab-case name of at most 32 characters, and there are at most eight worlds. Anything else is
@@ -1620,15 +2087,39 @@ by the usual closing rules.
         stall: [{ index: 0, kind: 'item', entryId, name, slot, damageType, tier, power, price,
           sold: false, affordable: true, fullIn: [] }],  // open cities only
         relic: { index: 3, kind: 'relic', price: 4814, sold: false, affordable: true,
-          byRoom: { 'local:/work/sneaky-pancake': 'millwind-vane' } }  // or null: none today;
+          byRoom: { 'local:/work/sneaky-pancake': 'millwind-vane' } },  // or null: none today;
                                     // a room's relic is null once it owns the city's two
+        legendary: null,            // at rank V now and then, shaped as `relic`, at index 5
+        fee: 0.095,                 // the fee in this city (lower at a higher rank); open cities only
+        rank: { rank: 2, max: 5, title: 'Town', banner, bannerAlt, standing: 4120.5, fee: 0.095,
+          perks: [{ name, perk, effect }], legendary: [{ id, name }],
+          next: { rank: 3, title: 'City', standing: 25000, coins, materials: { ore, bars },
+            charter: { name, perk, effect }, feeCut: 0.005, extraOffer, tierBonus, relicMoreOften,
+            legendary, block: 'standing' } }   // block: standing | coins | materials | null;
+                                    // next: null at rank V; rank: null for a city without ranks,
+                                    // and banner is the rank's banner
       }, { id: 'runespire', ..., opensAt: 25, open: false }]
+    },
+    weekly: {                       // this week's event (see "Weekly events"), null before the first round
+      week: '2026-W47', startsAt, endsAt, msLeft,  // msLeft from the last round, on the game's clock
+      id: 'howling-moon', name, kind: 'race', flavour, race: 'werewolf', raceName: 'Werewolves',
+      city: null, cityName: null, effects: [{ effect, scope: 'world', amount, ...qualifiers }],
+      goal: { kind: 'race', count: 9, progress: 4, done: false },
+      reward: { hides: 155, seals: 154 },  // what the goal pays at the world's level now
+      next: { week: '2026-W48', id, name, kind, flavour, race, raceName, city, cityName, effects, goal },
+      upcoming: [{ week: '2026-W48', startsAt, id, name, kind }, ...]  // the next five weeks, for the calendar
     },
     instances: {                    // the world's road; under 2 KB
       map: { cleared: 0, art: 'ui/instances/roadmap-1.png', alt },  // the picture for its progress
-      cleared: 1, total: 6, complete: false,
-      list: [{ id: 'sunken-crypt', state: 'open',  // hidden | locked | open | inside
+      cleared: 1, total: 6, complete: false,   // the first region's, as before regions
+      regions: [{ id: 'old-road', unlocked: true, map, cleared: 1, total: 6, complete: false },
+        { id: 'gloaming-isles', unlocked: false, map, cleared: 0, total: 8, complete: false }],
+      list: [{ id: 'sunken-crypt', region: 'old-road', state: 'open',  // hidden | locked | open | inside;
+                                    // a hidden one sends only { id, region, state, clears }
         runs: 3, clears: 2, bestTier: 1, highestTier: 2, relic: 'tidewake-bell', relicFound: true,
+        rematch: 1,                 // the best rematch cleared, 0 for none
+        nextRematch: { rematch: 2, tier: 5, opensAt: 8,  // null before its boss is beaten or past X
+          entry: { 'local:/work/sneaky-pancake': null } },  // why each room cannot go, or null
         roomInside: null, roomIndex: null,          // the room inside and the room of the run it is in
         entry: { 'local:/work/sneaky-pancake': null, 'local:/work/rumble-banana': 'the room is already inside an instance' } }]
     },
@@ -1693,9 +2184,28 @@ by the usual closing rules.
     points: { normal: 1, veteran: 2, elite: 5, champion: 10, boss: 25, legendary: 60 },
     levels: 25, perkEvery: 5, hunterThresholds: [1, 5, 15, 30, 55]
   },
-  instances: {                      // the content's, the same for every world; about 6 KB
-    region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144 },
-    instances: [{ id: 'sunken-crypt', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
+  achievements: {                   // about 19 KB; the same for every world
+    points: 125, totalPoints: 3845, earned: 14, total: 134, filled: 8,
+    groups: [{ id: 'battle', name: 'Battle', earned: 1, list: [
+      { id: 'monsters-2', points: 10, name, description, title: 'the Eager', share: 0.45, value: 45, target: 100 },
+      { id: 'monsters-1', points: 5, name, description, earnedAt: 1767600000000, share: 1 },
+      { id: 'monsters-6', points: 100, hidden: true, share: 0 }]}],   // hidden and not earned: nothing more
+    titles: [{ id: 'relics-1', title: 'the Curious' }],              // the titles earned
+    partyTitles: { 'local:/work/rumble-banana': { id: 'relics-1', title: 'the Curious' } }
+  },
+  journal: {                        // about 3 KB
+    today: { day: 20458, kills, bosses, levels, skillLevels, loot, coins, materials, achievements,
+      buildings, cleared, failed },
+    since: { seenAt, ...the same counters, highlights: [...] },     // since the summary was opened
+    days: [{ day, ...counters }],     // the last 14 days, today last, an empty day all zeros
+    highlights: [{ at, kind, ref, value?, name }], activeDays: 41,
+    unread: true                      // a highlight came after seenAt
+  },
+  instances: {                      // the content's, the same for every world; about 14 KB
+    region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144, after: null },
+    regions: [{ id: 'old-road', ... }, { id: 'gloaming-isles', name: 'The Gloaming Isles', title: 'Islewarden',
+      width: 256, height: 144, after: 'old-road' }],
+    instances: [{ id: 'sunken-crypt', region: 'old-road', scene, name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
       alt, route?: { start, mid, boss, alt }, relic: 'tidewake-bell', boss: 'ossric', elite: 'old-mattock',
       rooms: [{ kind: 'entrance', name }, ..., { kind: 'trap', name, check: { attribute: 'agility' } }, ...],
       rotation: ['regenerating-boss', ...] }],
@@ -1717,6 +2227,9 @@ by the usual closing rules.
   with the stance from `wants` and `produces`, and its pressure is `pressure[m]` or 0. A stall
   offer's `fullIn` lists the rooms whose chest already keeps `COPIES_PER_ITEM` copies of it.
   Nothing in it names a session, so a page on another machine gets it unchanged.
+- `achievements` and `journal` name no session and no conversation, so a page on another machine
+  gets them unchanged; it shows them but offers neither the title picker nor marking the summary
+  read.
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
 - `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw
@@ -1754,6 +2267,8 @@ by the usual closing rules.
   (person, auto or wait), `found` and `ticks`, `drops`: a step of a room's run, which its room
   tells; entering and the clear are celebrated like a legendary drop; a kill inside an instance
   carries `instance` too),
+  `achievement` (`kind` earned, with `achievement`, its `name`, `points` and `title`, or backfill,
+  with the `count` granted quietly: see "Achievements"; a UI celebrates one earned in every room),
   `level` (agentId, level), `retire` (sessionId,
   nameId, level) and `purchase` (worldId, kind and what was bought, with `roomId` for an item
   upgrade and null for a group upgrade, the item's `name`, and the `level` it reached). A
@@ -1856,12 +2371,8 @@ three scenarios (agents run commands less than they write or read), so their par
 at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow the
 world level, not the party, so that shows as a slightly longer fight.
 
-Targets the numbers do not meet, and why:
-
-- The light user reaches the Outpost on day 15, not in the first week: the Outpost needs one
-  building level, and a light user can pay for no purchase at all before the third week (as
-  before the settlement). Making first levels cheaper would change the old upgrades' prices,
-  which the settlement keeps exactly; the Hamlet (day 30) is in the first month.
+Targets the numbers do not meet, and why (four of 63: the light and heavy hit split, and the light
+and heavy upgrade pace):
 
 - The hit split is right only in the middle. A character's own share is bounded (seasoning
   and its own attribute points, the "three quarters" rule), while the world's grows without
@@ -2065,26 +2576,66 @@ tokens alone make them.
 ### Instances
 
 The fourth policy, against the scenarios as usual (the world levels are the same: tokens alone
-make them). The number of balance targets that pass does not change (54 of 59; the same five fail
-as before), and a player who never enters an instance plays exactly as before.
+make them). Instances change no balance target (59 of 63 pass; the four that fail are the
+hit splits and the upgrade pace under "Balance"), and a player who never enters an instance plays exactly as before.
+The best tiers and best rematches below are the first region's instances; the runs, time inside and
+what it pays count every run, the second region's included.
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
 |---|---|---|---|---|---|---|
-| First clear: light | day 5 | 15 | 39 | 88 | 180 | 318 |
-| medium | day 1 | 2 | 4 | 12 | 26 | 51 |
+| First clear: light | day 5 | 15 | 38 | 87 | 180 | 319 |
+| medium | day 1 | 2 | 4 | 12 | 25 | 47 |
 | heavy | day 1 | 1 | 2 | 3 | 5 | 10 |
 
 | | runs a year | clears | failed | best tiers | time inside | materials/h inside | on waves (plain) | coins/h inside |
 |---|---|---|---|---|---|---|---|---|
-| light | 279 | 158 | 43% | 14/8/13/11/8/7 | 86% | 711 | 805 | 86 |
-| medium | 1,263 | 657 | 48% | 16/7/17/15/11/10 | 90% | 12.3 k | 10.6 k | 1.5 k |
-| heavy | 2,717 | 1,388 | 49% | 18/7/18/17/14/11 | 89% | 41.0 T | 41.8 T | 5.4 T |
+| light | 255 | 144 | 44% | 13/7/12/12/8/9 | 87% | 664 | 809 | 117 |
+| medium | 1,189 | 629 | 47% | 13/8/14/13/11/10 | 93% | 12.7 k | 10.9 k | 3.6 k |
+| heavy | 2,736 | 1,323 | 52% | 17/5/17/15/12/10 | 94% | 44.4 T | 43.9 T | 6.8 T |
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
-| light | 30, 90, 365 | 3, 3, 4 | 5, 11, 20 | 11.0, 9.8, 12.7 | 4.4, 3.5, 4.1 |
-| medium | 30, 90, 365 | 3/3, 4/3, 9/7 | 9/7, 13/14, 25/23 | 8.1, 9.0, 11.4 | 3.1, 3.7, 3.9 |
-| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 9/14/11, 17/22/18, 33/32/30 | 12.0, 13.9, 17.4 | 3.6, 4.2, 4.9 |
+| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 11 | 11.2, 9.6, 12.8 | 4.7, 4.1, 3.9 |
+| medium | 30, 90, 365 | 3/3, 5/3, 9/7 | 6/4, 8/7, 25/19 | 8.2, 9.4, 11.5 | 2.7, 3.2, 3.3 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 4/8/7, 13/17/14, 25/26/26 | 12.2, 13.6, 17.4 | 3.1, 3.3, 3.8 |
+
+The policy also goes for the next rematch of a beaten boss (after any road instance not cleared yet,
+before climbing tiers), and tries a lost one again once the world's level is a tenth higher:
+
+| | rematches won | lost | best rematch, road order | first I won | first V | first X |
+|---|---|---|---|---|---|---|
+| light | 10 | 23 | 4/1/3/2/-/- | day 10 | - | - |
+| medium | 50 | 85 | 8/3/7/6/3/4 | day 2 | day 53 | - |
+| heavy | 79 | 267 | 8/3/8/8/6/5 | day 1 | day 11 | - |
+
+- **Rematches are the long ladder.** Nobody reaches Rematch X in a year: the world's level opens the
+  ladder quickly for a heavy user, but a rematch's fixed tier and tougher boss make each step above V
+  a wall the party's own gear and relics must climb. The policy's best tiers and the tables above moved
+  a little because rematch runs share the time inside; the balance targets that pass are unchanged.
+- **The surest way to one boss's item, not a faucet.** A rematch makes the run's own odds at its
+  boss's item larger by 15% a rematch, at most 3% (Rematch X at tier 21, where the plain run's
+  chance stops at 1.2%). The first tuning, +2% a rematch up to 45%, was set against the old 10%
+  base; against the retuned base (0.4% + 0.08% a tier) it gave the heavy world 21 boss items a
+  year from runs. Now it gives 10, and the whole collection stays a goal of years.
+
+The second region, with the same policy (a road instance not cleared yet comes first, so it pushes
+into the Gloaming Isles as soon as each opens):
+
+| | opens | lighthouse | labyrinth | warren | grove | leviathan | abbey | anvil | gate | cleared in the year |
+|---|---|---|---|---|---|---|---|---|---|---|
+| light | day 319 | - | - | - | - | - | - | - | - | 0 of 8 |
+| medium | day 47 | day 82 | 121 | 166 | 185 | 222 | 262 | 310 | 340 | 8 of 8 |
+| heavy | day 10 | day 17 | 24 | 33 | 38 | 46 | 54 | 64 | 73 | 8 of 8 |
+
+- **A long-term goal.** A medium user reaches the second region in its third month and finishes it in
+  the last weeks of the year; a light user completes the first road near the end of the year and,
+  at World Lv 49, waits for the Saltreach Lighthouse's 60 in its second; a heavy one crosses it in two
+  months. Its levels (60 to 176) were set against the simulator's world levels: a medium world is at
+  62 on day 90 and 191 on day 365.
+- **Collection.** With the second region's sixteen items (56 in all), a medium room owns 25 and 19
+  after a year (17 and 9 with the first region alone), mostly the region's eight relics; a heavy one
+  25 to 26 (22 to 25 before); a light one 11, as it never reaches the region in its first year. Its
+  bosses never come on the waves, so a heavy user cannot collect their items before it gets there.
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
@@ -2097,13 +2648,25 @@ as before), and a player who never enters an instance plays exactly as before.
 - **Failures** are 43 to 49% of runs because the policy climbs a tier after every clear until it
   fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
   it found and costs two hours of working time on the waves before that room may try again.
-- **Collection** is the reward the owner asked for, and the one to watch: a light user owns 20 of
-  40 legendary items after a year instead of 4 (the six instance relics, the six instance bosses'
-  items, and the vaults'). The first tuning gave 36: the instance's boss also rolled for a city's
-  relic with the waves' pity (a run meets its boss about once a working day), the boss's own item
-  came at 25% + 5% a tier and the vault's at 10% + 4% a tier. The city relic roll is gone, and the
-  boss item (10% + 1% a tier, at most 30%) and the vault (1% + 0.25% a tier, at most 4%) are now
-  rare enough that a light room's collection still grows all year.
+- **Collection** is a goal of several years. With instances (and the weekly events and traits) a
+  light room owns 11 of 56 legendary items after a year, a medium one 25 and 19, a heavy one 25 to 26
+  (with the first region alone, of 40: 12, 17 and 9, and 22 to 25); before
+  the events, 28 to 32 after two years for a heavy room (a one-off run with 730 days), while the
+  first still comes on day 5. In a year the light world gains 3 from the waves' bosses, 6 instance
+  relics (each instance's first clear), 2 from a run's boss and 1 from a vault; the heavy world 46,
+  6, 13 and 6 (with the second region, medium 15, 14, 9 and 6, heavy 47, 14, 10 and 6). The
+  simulator prints that split and checks the pace for 56 items (light 8 to 12, medium a mean of 14
+  to 22 per room, heavy holding at most three fifths of the collection at a year, so not complete
+  before about two years, the first item within three weeks): light 11.0, medium 22.0, heavy 25.7
+  with its best room at 26 of 56, the first item on day 5.
+  Before this tuning a light room owned 18 and a heavy one 31 to 33 in a year: the run's boss rolled
+  at 10% + 1% a tier (at most 30%) with the waves' pity on top, which every miss raised by 5%, so a
+  daily run soon made its item and every wave boss's item near certain; the vault rolled at 1% +
+  0.25% a tier and could hold boss relics. Now a run's boss rolls at 0.4% + 0.08% a tier (at most
+  1.2%, under a wave boss's 5%: a run meets its boss about once a working day, a light room meets a
+  wave boss a few times a year) and leaves the waves' pity alone, and a vault holds only
+  equipment (0.3% + 0.05% a tier, at most 1%), so a boss's own relic comes only from that boss.
+  The first tuning, 36 items, also rolled for a city's relic in every clear; that roll is gone.
 - **The caps.** The six relics' buffs are summed with the strongest relic of each type, all the
   legendary equipment, a whole bestiary and a whole settlement in the caps tests, and stay within
   every cap (the Tidewake Bell and the Fang reach theirs exactly). Boons and tier modifiers use types

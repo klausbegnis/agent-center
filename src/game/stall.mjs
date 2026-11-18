@@ -3,6 +3,8 @@
 // piece's tier and the world's level. A bought piece goes into a room's chest like a drop would,
 // never past the copies a chest keeps. Pure.
 import { addToChest } from './chest.mjs'
+import { EXTRA_OFFER_INDEX } from './city-rank-constants.mjs'
+import { cityRankOf, stallExtras } from './city-ranks.mjs'
 import { COPIES_PER_ITEM, ITEM_MAX_TIER, MATERIAL_BASE_VALUES, STALL_MARKUP, STALL_OFFERS } from './constants.mjs'
 import { dropTier } from './drops.mjs'
 import { hashOf } from './hash.mjs'
@@ -58,22 +60,26 @@ function kindsOfTheDay(seed) {
 /**
  * The day's offers of a city's stall: up to STALL_OFFERS pieces of generic gear at the stall's
  * tier, each a different kind. Each offer is `{ index, kind: 'item', entry, price }`.
+ * A city of a higher rank (city-ranks.mjs) offers one more piece, at EXTRA_OFFER_INDEX, and later
+ * one tier higher.
  *
  * @param {{ items: object[] }} itemContent a valid items file
- * @param {{ worldId: string, cityId: string, day: number, level: number }} where
+ * @param {{ worldId: string, cityId: string, day: number, level: number, rank?: number }} where
  * @returns {{ index: number, kind: 'item', entry: object, price: number }[]}
  */
-export function stallOffers(itemContent, { worldId, cityId, day, level }) {
-  const tier = stallTier(level)
+export function stallOffers(itemContent, { worldId, cityId, day, level, rank = 1 }) {
+  const { extraOffers, tierBonus } = stallExtras(rank)
+  const tier = Math.min(ITEM_MAX_TIER, stallTier(level) + tierBonus)
   const seed = `${worldId}|${cityId}|${day}`
   const offers = []
   for (const kind of kindsOfTheDay(seed)) {
-    if (offers.length >= STALL_OFFERS) break
+    if (offers.length >= STALL_OFFERS + extraOffers) break
     const fitting = itemContent.items.filter((entry) => entry.themes === undefined && entry.tier === tier &&
       entry.slot === kind.slot && entry.damageType === kind.damageType)
     if (fitting.length === 0) continue
     const entry = fitting[hashOf(`${seed}|${kind.slot}|${kind.damageType ?? ''}`) % fitting.length]
-    offers.push({ index: offers.length, kind: 'item', entry, price: stallPrice(entry, level) })
+    const index = offers.length < STALL_OFFERS ? offers.length : EXTRA_OFFER_INDEX
+    offers.push({ index, kind: 'item', entry, price: stallPrice(entry, level) })
   }
   return offers
 }
@@ -112,7 +118,8 @@ export function buyStallOffer(world, { worldId, cities, items }, { cityId, offer
   if (!city || !isCityOpen(city, level) || !project) return world
   const market = world.market ?? emptyMarket()
   const day = marketDay(market)
-  const offer = stallOffers(items, { worldId, cityId, day, level }).find((entry) => entry.index === offerIndex)
+  const rank = cityRankOf(world, cityId)
+  const offer = stallOffers(items, { worldId, cityId, day, level, rank }).find((entry) => entry.index === offerIndex)
   if (!offer || offer.entry.id !== entryId || soldOffers(market, cityId).includes(offerIndex)) return world
   if (!((world.coins ?? 0) >= offer.price) || isChestFullOf(project.chest, entryId)) return world
   const chest = addToChest(project.chest, createItem(offer.entry))

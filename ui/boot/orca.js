@@ -41,9 +41,13 @@ const transport = {
   sendItem: (roomId, toRoomId, itemIds, confirmHeld) =>
     orca.plugin.request('game.sendItem', { roomId, toRoomId, itemIds, confirmHeld }),
   sendRelic: (roomId, toRoomId, relicId) => orca.plugin.request('game.sendRelic', { roomId, toRoomId, relicId }),
-  enterInstance: (roomId, instanceId, tier) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier }),
+  enterInstance: (roomId, instanceId, tier, rematch) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier, rematch }),
   chooseBoon: (roomId, boonId) => orca.plugin.request('game.chooseBoon', { roomId, boonId }),
   recallParty: (roomId) => orca.plugin.request('game.recallParty', { roomId }),
+  setPartyTitle: (roomId, achievementId) => orca.plugin.request('game.partyTitle', { roomId, achievementId }),
+  markSummarySeen: () => orca.plugin.request('game.summarySeen'),
+  traitAction: (input) => orca.plugin.request('game.trait', input),
+  buyCharter: (worldId, cityId) => orca.plugin.request('game.buyCharter', { worldId, cityId }),
   sellMaterial: (worldId, cityId, materialId, amount) =>
     orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) =>

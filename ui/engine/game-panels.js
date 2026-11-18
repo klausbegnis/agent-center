@@ -1,7 +1,8 @@
 // The game's tabs other than Rooms, as panels: Party, Chest (with the room's relics and the chests
-// rooms left behind), Camp, Skills, Market and World (the bestiary and the roadmap of instances). Each draws the room or the world picked above the
-// tabs; only the open one is drawn, the others when they are opened. Says which materials the
-// prices on screen lack, for the strip above the tabs.
+// rooms left behind), Camp, Skills, Market, World (the bestiary) and Roadmap (the regions and their
+// instances). Each draws the room or the world picked above the tabs; only the open one is drawn,
+// the others when they are opened. Says which materials the prices on screen lack, for the strip
+// above the tabs.
 import { costsOnScreen, shortMaterials } from './arsenal-model.js'
 import { createCampView } from './camp-view.js'
 import { createChestView } from './chest-view.js'
@@ -12,9 +13,11 @@ import { createOrphansCard } from './orphans-view.js'
 import { createPartyView } from './party-view.js'
 import { createRelicsCard } from './relics-view.js'
 import { portraitOf } from './portraits.js'
+import { createRoadmapView } from './roadmap-view.js'
 import { roomThemeIds } from './room-themes.js'
 import { campCosts } from './settlement-model.js'
 import { createSkillsView } from './skills-view.js'
+import { createScrollsCard } from './trait-view.js'
 import { createWorldView } from './world-view.js'
 
 /**
@@ -55,7 +58,9 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   const chest = createChestView({ actions, onChosenChange: onChosenItem, base })
   const relics = createRelicsCard({ actions, base })
   const orphans = createOrphansCard({ actions })
+  const scrolls = createScrollsCard({ actions })
   const camp = createCampView({ actions, base })
+  const roadmap = createRoadmapView({ actions, base })
   /** A tab's views in one block that spans the panel and lays itself out by its own width. */
   const block = (...elements) => {
     const node = el('div', 'ac-game-tab-section')
@@ -63,8 +68,9 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
     return node
   }
   contents.party.append(block(party.element))
-  contents.chest.append(block(chest.element, relics.element, orphans.element))
+  contents.chest.append(block(chest.element, relics.element, scrolls.element, orphans.element))
   contents.camp.append(block(camp.element))
+  contents.roadmap.append(block(roadmap.element))
   const skills = createSkillsView({ panel: contents.skills, actions })
   const market = createMarketView({ panel: contents.market, actions, base })
   const worldView = createWorldView({ panel: contents.world, base, actions, prefs })
@@ -84,11 +90,13 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
       if (tab === 'skills') skills.update(state, world?.id ?? null)
       if (tab === 'market') market.update(state, { worldId: world?.id ?? null, roomId })
       if (tab === 'world') worldView.update({ state, world, roomId })
+      if (tab === 'roadmap') roadmap.update({ state, world, roomId })
       if (!room || !world) return new Map()
       if (tab === 'party') party.update({ state, game, roomId, room, world, portraitFor: portraitsFor(state, roomId) })
       if (tab === 'chest') {
         chest.update({ state, game, roomId, room, world })
         relics.update({ game, roomId, state })
+        scrolls.update({ state, roomId, world })
         const shown = state.rooms.find((entry) => entry.id === roomId)
         orphans.update({ roomId, roomName: shown ? roomTitle(shown) : roomId, world })
       }

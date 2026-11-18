@@ -54,7 +54,8 @@ export function pricePoint(market, city, materialId) {
     usual: base * market.cityFactors[cityStance(city, materialId)],
     pressure: city.pressure?.[materialId] ?? 0,
     depth: market.depth,
-    fee: market.fee,
+    // A city of a higher rank has a lower fee of its own.
+    fee: city.fee ?? market.fee,
     min: market.pressureRange[0],
     max: market.pressureRange[1]
   }

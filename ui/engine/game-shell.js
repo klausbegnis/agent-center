@@ -2,6 +2,7 @@
 // materials; the tabs (Rooms, Party, Chest, Camp, Skills, Market, Bestiary); their panels; and a line for
 // short messages. While the game is off it shows nothing and the panel is as it always was.
 import { button, el, svgIcon } from './dom.js'
+import { createEventCalendar } from './event-calendar.js'
 import { createGameActions } from './game-actions.js'
 import { ALL_ROOMS, createGameContext } from './game-context.js'
 import { card } from './game-controls.js'
@@ -22,6 +23,7 @@ import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
 import { isTypingKey, roomAfterShortcut, savedRoomOf } from './room-chips.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
+import { createSummaryView } from './summary-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
 const NOTICE_MS = 6000
@@ -107,6 +109,17 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   settingsButton.setAttribute('aria-label', SETTINGS.open)
   settingsButton.title = SETTINGS.open
   const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
+  // "While you worked" (summary-view.js): its button sits beside the cog, its card in the panels' place.
+  const summary = createSummaryView({ actions, root, onOpen: () => {
+    calendar.close()
+    if (isSettingsOpen) setSettingsOpen(false)
+  } })
+  // The weekly events' calendar (event-calendar.js): its button beside the summary's, its card in the
+  // panels' place, for the world shown above the tabs.
+  const calendar = createEventCalendar({ base: transport.base ?? '', root, onOpen: () => {
+    summary.close()
+    if (isSettingsOpen) setSettingsOpen(false)
+  } })
 
   /** What draws each panel while the game runs. */
   const base = transport.base ?? ''
@@ -161,6 +174,10 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   }
 
   function setSettingsOpen(isOpen, returnFocus = false) {
+    if (isOpen) {
+      summary.close()
+      calendar.close()
+    }
     isSettingsOpen = isOpen
     show()
     onTabChange()
@@ -183,6 +200,8 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
 
   function select(next) {
     isSettingsOpen = false
+    summary.close()
+    calendar.close()
     const wasRooms = tab === 'rooms'
     // Scrolled far enough that the tabs stick to the top: the next tab opens at its own top, with
     // the tabs where they are. Otherwise nothing above the tabs moves.
@@ -201,6 +220,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     if (!state) return
     const isRunning = mode === 'running'
     context.element.hidden = !isRunning
+    calendar.update(state, isRunning ? worldById(state.game, state.game.rooms?.[chosenRoomId(state, wantedRoomId)]?.worldId) : null)
     if (!isRunning) {
       if (!panels[tab]) return
       contents[tab].hidden = true
@@ -248,6 +268,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
       roomsElement.removeAttribute('aria-labelledby')
     }
     for (const [name, panel] of Object.entries(panels)) panel.hidden = !isShown || name !== tab
+    summary.update(state)
     drawPanel()
   }
 
@@ -259,16 +280,19 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     /** The picker, the strip and the tab bar go above the rooms; the panels and messages below. */
     top,
     notice,
-    panels: [...Object.values(panels), settings.element],
+    panels: [...Object.values(panels), settings.element, summary.element, calendar.element],
     settingsButton,
+    summaryButton: summary.button,
+    calendarButton: calendar.button,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {
       const read = (key) => Promise.resolve(transport.prefs?.get(key)).catch(() => null)
-      const [saved, section, room, arsenalRoom] =
-        await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom')])
-      // Saved before the Arsenal became Party, Chest and Camp: its section names the tab.
-      tab = tabOrDefault(saved, section)
+      const [saved, section, room, arsenalRoom, view] =
+        await Promise.all([read('tab'), read('section'), read('room'), read('arsenalRoom'), read('view')])
+      // Saved before the Arsenal became Party, Chest and Camp: its section names the tab. A link to
+      // the World tab's old Roadmap view opens the Roadmap tab.
+      tab = tabOrDefault(saved, section, view)
       const savedRoom = savedRoomOf(room, arsenalRoom)
       if (savedRoom && wantedRoomId === null) wantedRoomId = savedRoom
     },

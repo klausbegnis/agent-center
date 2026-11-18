@@ -1,8 +1,9 @@
 // Checks game/cities.json, the market's cities: what each produces and wants, the world level it
 // opens at and its banner. Pure: problems come back as text, nothing is thrown.
+import { cityRankProblems, rankTotalProblems } from './city-ranks-content.mjs'
 import { MATERIALS } from './skills.mjs'
 
-const CITY_KEYS = ['id', 'name', 'tagline', 'opensAt', 'produces', 'wants', 'banner', 'bannerAlt']
+const CITY_KEYS = ['id', 'name', 'tagline', 'opensAt', 'produces', 'wants', 'banner', 'bannerAlt', 'ranks']
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 /** Banners are served with the UI, so the panel, the tab and the external view all reach them. */
 const BANNER_PATH = /^ui\/cities\/[a-z0-9]+(-[a-z0-9]+)*\.png$/
@@ -43,7 +44,7 @@ function checkCity(entry, index, seenIds) {
     problems.push(`${name}: "banner" must be a PNG under ui/cities/`)
   }
   if (!isShortText(entry.bannerAlt, 200)) problems.push(`${name}: "bannerAlt" must describe the banner`)
-  return problems
+  return [...problems, ...cityRankProblems(name, entry.ranks)]
 }
 
 /**
@@ -54,9 +55,10 @@ function checkCity(entry, index, seenIds) {
  */
 export function validateCities(data) {
   if (!isObject(data) || !Array.isArray(data.cities)) return ['must be an object with a "cities" list']
-  const problems = Object.keys(data).filter((key) => key !== 'cities').map((key) => `"${key}" is not a known key`)
+  const problems = Object.keys(data).filter((key) => key !== 'cities' && key !== 'rankTitles').map((key) => `"${key}" is not a known key`)
   const seenIds = new Set()
   data.cities.forEach((entry, index) => problems.push(...checkCity(entry, index, seenIds)))
+  problems.push(...rankTotalProblems(data))
   if (!data.cities.some((entry) => isObject(entry) && entry.opensAt === 1)) {
     problems.push('needs a city that opens at world level 1, so every world has a market')
   }

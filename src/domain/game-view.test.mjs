@@ -87,6 +87,15 @@ test('a room carries its kill count, and a scene only when it travels', () => {
   assert.deepEqual(asked, [[BANANA, 7]])
 })
 
+test('a travelling room inside an instance keeps the scene it entered in, whatever it kills there', () => {
+  const view = engineView()
+  view.worlds[0].projects[0].kills = 12
+  view.worlds[0].projects[0].run = { instance: 'sunken-crypt', found: { kills: 5 } }
+  const asked = []
+  buildGameView(input(view, { travel: true, sceneThemeOf: (roomId, kills) => asked.push(kills) && 'guild-hall' }))
+  assert.deepEqual(asked, [7])
+})
+
 test('a room that has not joined has no scene even while rooms travel', () => {
   const room = buildGameView(input(engineView(), { roomIds: [BANANA, 'local:/work/cosmic-llama'],
     travel: true, sceneThemeOf: () => 'guild-hall' })).rooms['local:/work/cosmic-llama']

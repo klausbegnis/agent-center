@@ -2,16 +2,19 @@
 // from the fields the engine writes, so nothing made up can be stored. `migrate` repairs what the
 // plugin's own storage holds; a file is refused instead as soon as one part is not what the engine
 // would have written. Pure.
+import { achievementIndexOf } from './achievement-content.mjs'
 import { indexBestiary } from './bestiary-content.mjs'
+import { checkChronicle } from './chronicle-save.mjs'
 import { checkWorldBestiary } from './bestiary-check.mjs'
+import { LAST_OFFER_INDEX } from './city-rank-constants.mjs'
+import { checkCityRanks } from './city-ranks-save.mjs'
 import {
   ITEM_MAX_TIER,
   MARKET_MAX_COINS,
   MARKET_PRESSURE_MAX,
   MARKET_PRESSURE_MIN,
   MONSTER_KINDS,
-  MONSTER_RANKS,
-  STALL_OFFERS
+  MONSTER_RANKS
 } from './constants.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { checkCooldowns, checkRun, checkWorldInstances, sharedInstance } from './instance-save.mjs'
@@ -23,6 +26,9 @@ import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
 import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { indexSettlement } from './settlement-content.mjs'
 import { GROUP_UPGRADE_IDS, isUpgradeOpen } from './spending.mjs'
+import { checkCharacterTraits, checkRoomScrolls, checkWorldTraits } from './trait-check.mjs'
+import { traitIndexOf } from './trait-content.mjs'
+import { checkWeekly } from './weekly-save.mjs'
 import { SAVE_VERSION } from './worlds.mjs'
 
 /** Ids and titles the engine keeps are short; a longer one did not come from it. */
@@ -130,7 +136,13 @@ function item(value, path) {
   }
 }
 
-function character(value, path, sessionId) {
+/** A part the traits keep (trait-check.mjs), as a field to spread: nothing when it is absent. */
+function traitPart(key, checked, path) {
+  if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
+  return checked.value === undefined ? {} : { [key]: checked.value }
+}
+
+function character(value, path, sessionId, traitIndex = null) {
   const source = record(value, path)
   if (source.sessionId !== sessionId) fail(`${path}.sessionId`, 'does not match its key')
   const equipment = record(source.equipment, `${path}.equipment`)
@@ -156,7 +168,9 @@ function character(value, path, sessionId) {
     title: textOrNull(source.title, `${path}.title`),
     state: oneOf(source.state ?? 'idle', CHARACTER_STATES, `${path}.state`),
     // Slots chosen by hand; a save from before they existed has none, and the field is left out.
-    ...(source.pinned === undefined ? {} : { pinned: pins(source.pinned, `${path}.pinned`) })
+    ...(source.pinned === undefined ? {} : { pinned: pins(source.pinned, `${path}.pinned`) }),
+    // The traits a person taught it; a character nobody taught has its born trait worked out.
+    ...traitPart('traits', checkCharacterTraits(source.traits, { level: source.level, index: traitIndex }), path)
   }
 }
 
@@ -291,9 +305,12 @@ function roomInstance(source, path, { legendaryIndex, instanceIndex }) {
   return { ...(run.value ? { run: run.value } : {}), ...(cooldowns.value ? { instanceCooldowns: cooldowns.value } : {}) }
 }
 
-function project(value, path, legendaryIndex, instanceIndex) {
+function project(value, path, legendaryIndex, instanceIndex, traitIndex = null) {
   const source = record(value, path)
-  const characters = entries(source.characters, `${path}.characters`, { key: text, entry: character })
+  const characters = entries(source.characters, `${path}.characters`, {
+    key: text,
+    entry: (item, at, id) => character(item, at, id, traitIndex)
+  })
   const chest = list(source.chest, `${path}.chest`).map((owned, index) => item(owned, `${path}.chest.${index}`))
   checkHolders(chest, characters, path)
   const loot = checkRoomLegendary(source.legendary, chest, legendaryIndex)
@@ -315,15 +332,16 @@ function project(value, path, legendaryIndex, instanceIndex) {
     characters,
     retirees: list(source.retirees, `${path}.retirees`).map((entry, index) => retiree(entry, `${path}.retirees.${index}`)),
     retiredCount: whole(source.retiredCount, `${path}.retiredCount`),
-    ...roomInstance(source, path, { legendaryIndex, instanceIndex })
+    ...roomInstance(source, path, { legendaryIndex, instanceIndex }),
+    ...traitPart('scrolls', checkRoomScrolls(source.scrolls, traitIndex), path)
   }
 }
 
-/** The day's offers bought in a city: each offer once, by its index (the relic's is STALL_OFFERS). */
+/** The day's offers bought in a city: each offer once, by its index (city-rank-constants.mjs). */
 function soldToday(value, path) {
   const source = record(value, path)
   const offers = list(source.offers, `${path}.offers`)
-    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: STALL_OFFERS }))
+    .map((index, at) => whole(index, `${path}.offers.${at}`, { max: LAST_OFFER_INDEX }))
   if (new Set(offers).size !== offers.length) fail(`${path}.offers`, 'names an offer twice')
   return { day: whole(source.day, `${path}.day`), offers }
 }
@@ -363,15 +381,20 @@ function buildingLevels(value, path, settlementIndex) {
   return upgrades
 }
 
-function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex }) {
+function world(value, path, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex,
+  events }) {
   const source = record(value, path)
+  const cityRanks = checkCityRanks(source.cityRanks, rankedCityIds)
+  if (!cityRanks.ok) fail(`${path}.${cityRanks.problem[0]}`, cityRanks.problem[1])
   const checked = checkWorldBestiary(source.bestiary, bestiaryIndex)
   if (!checked.ok) fail(`${path}.${checked.problem[0]}`, checked.problem[1])
   const instances = checkWorldInstances(source.instances, instanceIndex)
   if (!instances.ok) fail(`${path}.${instances.problem[0]}`, instances.problem[1])
+  const weekly = checkWeekly(source.weekly, events)
+  if (!weekly.ok) fail(`${path}.${weekly.problem[0]}`, weekly.problem[1])
   const projects = entries(source.projects, `${path}.projects`, {
     key: text,
-    entry: (item, at) => project(item, at, legendaryIndex, instanceIndex)
+    entry: (item, at) => project(item, at, legendaryIndex, instanceIndex, traitIndex)
   })
   const shared = sharedInstance(projects)
   if (shared) fail(`${path}.projects`, `has two rooms inside ${shared}`)
@@ -380,6 +403,10 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
     ...(checked.bestiary ? { bestiary: checked.bestiary } : {}),
     // A world that never entered an instance has no progress in one.
     ...(instances.value ? { instances: instances.value } : {}),
+    // A save from before the weekly events, or a world not yet advanced, has none.
+    ...(weekly.value ? { weekly: weekly.value } : {}),
+    // A world that never traded, or a save from before city ranks, has none.
+    ...(cityRanks.value ? { cityRanks: cityRanks.value } : {}),
     skills: entries(source.skills, `${path}.skills`, { key: (id, at) => oneOf(id, SKILL_IDS, at), entry: skill }),
     materials: amounts(source.materials, `${path}.materials`, MATERIALS),
     upgrades: buildingLevels(source.upgrades, `${path}.upgrades`, settlementIndex),
@@ -387,7 +414,9 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
     lastTokenAt: numberOrNull(source.lastTokenAt, `${path}.lastTokenAt`),
     // A save from before the market has neither coins nor market.
     coins: whole(source.coins ?? 0, `${path}.coins`, { max: MARKET_MAX_COINS }),
-    market: market(source.market, `${path}.market`, cityIds)
+    market: market(source.market, `${path}.market`, cityIds),
+    // The traits the world ever had and its brokers' sales; a world from before traits has none.
+    ...traitPart('traits', checkWorldTraits(source.traits, { index: traitIndex, cityIds }), path)
   }
 }
 
@@ -402,11 +431,15 @@ function world(value, path, { cityIds, legendaryIndex, bestiaryIndex, settlement
  *   game/bestiary.json and game/bosses.json, whose races and bosses a bestiary may count, and
  *   without which a save that keeps one is refused; the parsed game/settlement.json, whose stages
  *   open the buildings a world may have levels of; the parsed game/instances.json, whose instances
- *   and boons a world's progress and a room's run may name
+ *   and boons a world's progress and a room's run may name; the parsed game/traits.json, whose
+ *   traits a character, a room's scrolls and a world's collection may name; the parsed
+ *   game/events.json, whose events a world's week may name; `rankedCityIds`, the cities with ranks,
+ *   which a world's city ranks may name
  * @returns {{ ok: true, save: object } | { ok: false, problem: string }}
  */
-export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, settlement, instances } = {}) {
+export function cleanSave(value, { cityIds = [], rankedCityIds = [], legendary, bestiary, bosses, settlement, instances, achievements, traits, events } = {}) {
   const legendaryIndex = legendaryIndexOf({ legendary })
+  const traitIndex = traitIndexOf({ traits })
   const instanceIndex = instanceIndexOf({ instances })
   const bestiaryIndex = indexBestiary(bestiary, bosses)
   const settlementIndex = indexSettlement(settlement)
@@ -415,14 +448,18 @@ export function cleanSave(value, { cityIds = [], legendary, bestiary, bosses, se
     if (source.version !== SAVE_VERSION) fail('the save version', 'is not this plugin\'s')
     const worlds = entries(source.worlds, 'worlds', {
       key: text,
-      entry: (item, at) => world(item, at, { cityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex })
+      entry: (item, at) => world(item, at, { cityIds, rankedCityIds, legendaryIndex, bestiaryIndex, settlementIndex, instanceIndex, traitIndex, events })
     })
     const projectWorld = entries(source.projectWorld, 'projectWorld', { key: text, entry: textOrNull })
     // A project in two worlds, or in one it does not belong to, would be played twice.
     const layoutProblem = worldLayoutProblem(worlds, projectWorld)
     if (layoutProblem) fail(...layoutProblem)
     const settings = record(source.settings, 'settings')
-    const save = { version: SAVE_VERSION, worlds, projectWorld, settings: { keepTitles: boolean(settings.keepTitles, 'settings.keepTitles') } }
+    // Achievements and the journal (chronicle-save.mjs), when the save has them.
+    const chronicle = checkChronicle(source, { index: achievementIndexOf({ achievements }), worlds })
+    if (!chronicle.ok) fail(...chronicle.problem)
+    const save = { version: SAVE_VERSION, worlds, projectWorld, settings: { keepTitles: boolean(settings.keepTitles, 'settings.keepTitles') },
+      ...chronicle.value }
     return { ok: true, save }
   } catch (error) {
     if (error instanceof SaveProblem) return { ok: false, problem: error.message }

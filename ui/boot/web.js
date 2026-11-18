@@ -10,10 +10,10 @@ const listeners = new Set()
 //   ?view=gallery|list   start in that view
 //   ?only=<text>         show only the rooms whose name or host contains the text
 //   ?emotes=fast|off     characters emote every few seconds (to preview a theme's emotes), or never
-//   ?tab=rooms|party|chest|camp|skills|market|world   open that tab of game mode; the old
+//   ?tab=rooms|party|chest|camp|skills|market|world|roadmap   open that tab of game mode; the old
 //                ?tab=arsenal&section=items|party|camp opens Chest, Party or Camp, ?tab=bestiary
-//                the World tab
-//   ?view=creatures|bosses|roadmap   with ?tab=world, the World tab's view to open
+//                the World tab, and ?tab=world&view=roadmap the Roadmap tab
+//   ?view=creatures|bosses   with ?tab=world, the World tab's view to open
 //   ?room=<room id>      the room game mode's tabs show first
 const params = new URLSearchParams(location.search)
 const only = (params.get('only') ?? '').toLowerCase()
@@ -61,9 +61,13 @@ const transport = {
   moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
   sendItem: (roomId, toRoomId, itemIds, confirmHeld) => postGame('send-item', { roomId, toRoomId, itemIds, confirmHeld }),
   sendRelic: (roomId, toRoomId, relicId) => postGame('send-relic', { roomId, toRoomId, relicId }),
-  enterInstance: (roomId, instanceId, tier) => postGame('enter-instance', { roomId, instanceId, tier }),
+  enterInstance: (roomId, instanceId, tier, rematch) => postGame('enter-instance', { roomId, instanceId, tier, rematch }),
   chooseBoon: (roomId, boonId) => postGame('choose-boon', { roomId, boonId }),
   recallParty: (roomId) => postGame('recall-party', { roomId }),
+  setPartyTitle: (roomId, achievementId) => postGame('party-title', { roomId, achievementId }),
+  markSummarySeen: () => postGame('summary-seen', {}),
+  traitAction: (input) => postGame('trait', input),
+  buyCharter: (worldId, cityId) => postGame('buy-charter', { worldId, cityId }),
   sellMaterial: (worldId, cityId, materialId, amount) => postGame('sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) => postGame('trade', { worldId, cityId, fromId, toId, amount }),
   buyStallOffer: (worldId, cityId, offerIndex, entryId, roomId) =>

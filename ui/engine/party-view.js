@@ -3,6 +3,7 @@
 // level, progress, trade picker, the seven attributes and the
 // three equipment slots, each opening a picker of the chest's items (equip-view.js), then the
 // retirees and the bonus they leave the project.
+import { partyTitleOf } from './achievement-model.js'
 import { button, el } from './dom.js'
 import { meter, replaceKeepingFocus, section } from './game-controls.js'
 import { clampShare, formatShare } from './game-format.js'
@@ -23,6 +24,7 @@ import {
   skillLabel
 } from './labels.js'
 import { TRADES_TEXT } from './trade-labels.js'
+import { createTraitSlots } from './trait-view.js'
 import { canChooseTrades, characterTradeOptions, pickerValue, roomTradeOptions } from './trade-model.js'
 import { tradePicker } from './trade-picker.js'
 
@@ -50,8 +52,10 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   const portrait = createPortrait({ onShow: () => agentId && onShowAgent(agentId) })
   const who = el('div', 'ac-game-hero-who')
   const nameText = el('strong', 'ac-game-entry-name')
+  // The title the room's party wears (achievements-view.js), beside the name.
+  const titleText = el('span', 'ac-party-title')
   const facts = el('span', 'ac-muted')
-  who.append(nameText, facts)
+  who.append(nameText, titleText, facts)
   let classIcon = el('span')
   // Holds the picker, or on a page that cannot choose, the trade as text.
   const tradeSlot = el('span', 'ac-game-trade-slot')
@@ -65,8 +69,10 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   const details = el('div', 'ac-game-hero-details')
   const attributes = el('div', 'ac-game-hero-attributes')
   const equip = createEquipSlots({ roomId: () => roomId, sessionId, name, actions, open: openSlot, base })
+  // The character's traits: a free slot teaches a scroll, a trait can be swapped (trait-view.js).
+  const traits = createTraitSlots({ getRoomId: () => roomId, sessionId, name, actions })
   details.append(attributes, equip.element)
-  node.append(top, progress.element, details)
+  node.append(top, progress.element, details, traits.element)
   let drawnDetails = null
   return {
     element: node,
@@ -74,6 +80,8 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
     update({ agent, character }, { roomChoice, canChoose, canEquip, state, room, portraitFor }) {
       agentId = agent.id
       nameText.textContent = agent.name
+      titleText.textContent = partyTitleOf(state.game, roomId) ?? ''
+      titleText.hidden = !titleText.textContent
       if (portraitFor) portrait.set(...portraitFor(agent))
       portrait.element.hidden = !portraitFor
       facts.textContent = characterFacts(character)
@@ -99,6 +107,7 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
       const shown = canChoose ? picker.element : tradeText
       if (tradeSlot.firstChild !== shown) tradeSlot.replaceChildren(shown)
       equip.update({ state, room, character, canChoose: canEquip })
+      traits.update({ state, character, canChoose: canEquip })
       const shownDetails = JSON.stringify([agent.name, character.attributes])
       if (shownDetails === drawnDetails) return
       drawnDetails = shownDetails

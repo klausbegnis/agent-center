@@ -63,10 +63,10 @@ async function setup({ settings = { gameMode: true, gameAutoSpend: false } } = {
 test('the view state shows the roadmap: the content once, and each world\'s progress', async () => {
   const { game } = await setup()
   const view = game.getView()
-  assert.equal(view.instances.instances.length, 6)
+  assert.equal(view.instances.instances.length, 14)
   assert.equal(view.instances.region.title, 'Roadwarden')
   const road = view.worlds[0].instances
-  assert.deepEqual(road.list.map((entry) => entry.state), ['open', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden'])
+  assert.deepEqual(road.list.map((entry) => entry.state), ['open', ...Array(13).fill('hidden')])
   assert.equal(road.map.art, 'ui/instances/roadmap-1.png')
   assert.equal(road.list[0].entry[BANANA], null)
   assert.equal(view.rooms[BANANA].run, null)

@@ -5,7 +5,8 @@ import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from engine import *
-import banners, roadmap, route, icons, rewards, sprite
+import banners, roadmap, isles_map, route, icons, rewards, sprite
+import scenes_road, scenes_isles_a, scenes_isles_b
 
 OUT = os.path.join(HERE, 'png')
 X1 = os.path.join(OUT, 'x1')
@@ -110,9 +111,22 @@ def main():
     variants(roadmap, 3, 'sheet-roadmap.png',
              ['ROADMAP 1  FIRST SITE REACHED', 'ROADMAP 3  THREE CLEARED, FOURTH IN PROGRESS',
               'ROADMAP 6  ALL CLEARED'], report)
+    variants(isles_map, 3, 'sheet-isles-map.png',
+             ['ISLES MAP 1  FIRST SITE REACHED', 'ISLES MAP 4  FOUR CLEARED, FIFTH REACHED',
+              'ISLES MAP 8  ALL CLEARED'], report)
     variants(route, 3, 'sheet-route.png',
              ['ROUTE START', 'ROUTE MID  THREE ROOMS CLEARED', 'ROUTE BOSS'], report)
     icons_rewards(report)
+    # The instances' room-size scenes, drawn instead of a theme's scenery while a room is inside.
+    scenes = []
+    for mod in (scenes_road, scenes_isles_a, scenes_isles_b):
+        for fid, fn in mod.SCENES:
+            cv = fn()
+            save(cv.px, os.path.join(X1, fid + '-scene.png'))
+            save(scale(cv.px, 4), os.path.join(OUT, fid + '-scene.png'))
+            report.append('%-20s scene, %d colours' % (fid, len(cv.colors())))
+            scenes.append((cv.px, fid))
+    save(stack([px for px, _ in scenes], [fid.upper() for _, fid in scenes], 2), os.path.join(HERE, 'sheet-scenes.png'))
     big = []
     for d in (HERE, OUT, X1):
         for f in sorted(os.listdir(d)):

@@ -140,7 +140,9 @@ function roomView(project, worldId, readings, keepTitles, sceneTheme) {
     relics: project.relics ?? { owned: [], active: null },
     // Inside an instance: where its run is (docs/GAME.md, "Instances"); null on the waves.
     run: project.run ?? null,
-    instanceCooldowns: project.instanceCooldowns ?? null
+    instanceCooldowns: project.instanceCooldowns ?? null,
+    // The trait scrolls in its chest (docs/GAME.md, "Traits").
+    scrolls: project.scrolls ?? []
   }
 }
 
@@ -162,6 +164,8 @@ function characterView(member, link, state) {
     tradeChoice: member.tradeChoice ?? null,
     autoTrade: member.autoTrade ?? null,
     pinned: member.pinned ?? {},
+    // What it carries, its slots and its next one; null without traits in the content.
+    traits: member.traits ?? null,
     state
   }
 }
@@ -308,7 +312,9 @@ export function buildGameView(input) {
       rooms[roomId] = { worldId, joined: false }
       continue
     }
-    const sceneTheme = sceneThemeOf(roomId, found.project.kills ?? 0)
+    // Inside an instance the room keeps the theme it entered in: its kills there do not travel.
+    const kills = (found.project.kills ?? 0) - (found.project.run?.found?.kills ?? 0)
+    const sceneTheme = sceneThemeOf(roomId, kills)
     rooms[roomId] = roomView(found.project, worldId, statesByRoom[roomId] ?? [], keepTitles, sceneTheme)
   }
   const characters = {}
@@ -339,6 +345,8 @@ export function buildGameView(input) {
     // The races' and bosses' names and looks, the same for every world; each world has its counts.
     ...(engineView.bestiary ? { bestiary: engineView.bestiary } : {}),
     // The instances' names, art and rooms, the same for every world; each world has its progress.
-    ...(engineView.instances ? { instances: engineView.instances } : {})
+    ...(engineView.instances ? { instances: engineView.instances } : {}),
+    // The trait catalogue, the same for every world; each world has its collection and brokers.
+    ...(engineView.traits ? { traits: engineView.traits } : {})
   }
 }

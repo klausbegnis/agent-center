@@ -25,7 +25,7 @@ const BOON_TEXT = {
   tries: (amount) => `${amount} more ${amount === 1 ? 'try' : 'tries'} in every room left`,
   timeLimit: (amount) => `${percent(amount)} more time in every room left`,
   purse: (amount) => `The boss's purse holds ${percent(amount)} more`,
-  bossItem: (amount) => `+${percent(amount)} chance the boss leaves its own item`,
+  bossItem: (amount) => `the boss is ${percent(amount)} more likely to leave its own item`,
   rewardRoll: (amount) => (amount === 1 ? 'A second roll at the boss\'s own item' : `${amount} more rolls at the boss's own item`),
   noBossAffix: () => 'The boss comes without an affix'
 }
@@ -82,9 +82,13 @@ const CHECK_WORD = { strength: 'strength', arcane: 'arcane', agility: 'agility',
 export const checkText = (check, skillLabel = {}) =>
   (check?.skill ? `the world's ${skillLabel[check.skill] ?? check.skill}` : `the party's best ${CHECK_WORD[check?.attribute] ?? check?.attribute}`)
 
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+/** A rematch's number as the roadmap writes it: 3 is "III". */
+export const romanOf = (rematch) => ROMAN[rematch - 1] ?? String(rematch)
+
 /** The World tab's Roadmap view, an instance's card, a run's card and their controls. */
 export const INSTANCES = {
-  views: { creatures: 'Creatures', bosses: 'Bosses', roadmap: 'Roadmap' },
+  views: { creatures: 'Creatures', bosses: 'Bosses', achievements: 'Achievements' },
   viewsName: 'Show',
   title: (region) => region.name,
   cleared: (cleared, total) => `${cleared} of ${total} instances cleared`,
@@ -114,7 +118,7 @@ export const INSTANCES = {
   noWorld: 'Pick a room that plays to see its world\'s road.',
   noInstances: 'This game has no instances.',
   // A run's card.
-  runTitle: (name, tier) => `${name} · tier ${tier}`,
+  runTitle: (name, tier, rematch) => (rematch ? `${name} · Rematch ${romanOf(rematch)} (tier ${tier})` : `${name} · tier ${tier}`),
   roomLine: (room, name) => `Room ${room + 1} of 6: ${name}`,
   roomsName: 'Rooms of the run',
   roomIcon: (index, label, name, stage) => `Room ${index + 1}, ${label}: ${name}, ${stage}`,
@@ -147,10 +151,28 @@ export const INSTANCES = {
     vault: 'The vault!',
     boon: (name) => `Boon: ${name}`,
     cleared: (name) => `${name} cleared!`,
+    rematchCleared: (name, rematch) => `${name}: Rematch ${romanOf(rematch)} won!`,
     failed: (name) => `Driven out of ${name}`,
     recalled: (name) => `Back from ${name}`
   },
   band: (name, room, roomName) => `${name} · room ${room + 1} of 6 · ${roomName}`,
   bandShort: (name, room) => `${name} · ${room + 1}/6`,
-  chip: 'Inside an instance'
+  chip: 'Inside an instance',
+  // Regions of the road.
+  regionsName: 'Region',
+  regionOpen: (name, cleared, total) => `${name}: ${cleared} of ${total} cleared`,
+  regionLockedLabel: (name) => `${name}: locked`,
+  regionLockedText: (name) => `${name} (locked)`,
+  regionLocked: (before, cleared, total) => `Locked. It opens when ${before} is complete: ${cleared} of ${total} cleared there.`,
+  // Rematches of a beaten boss.
+  rematch: (rematch) => `Rematch ${romanOf(rematch)}`,
+  rematchBadge: (rematch) => romanOf(rematch),
+  rematchBest: (rematch) => `Best rematch cleared: ${romanOf(rematch)} of X`,
+  rematchNone: 'No rematch cleared yet',
+  rematchNext: (rematch, tier) => `Next: Rematch ${romanOf(rematch)}, at tier ${tier}, its boss tougher and its own item likelier`,
+  rematchOpens: (level) => `Opens at World Lv ${level}`,
+  rematchDone: 'Every rematch cleared: the boss is mastered.',
+  rematchLabel: (name, roomName, rematch) => `Send ${roomName}'s party into a rematch of ${name}: Rematch ${romanOf(rematch)}`,
+  rematchWhy: (reason) => `No rematch: ${reason}.`,
+  rematchMarker: (rematch) => `best rematch ${romanOf(rematch)}`
 }

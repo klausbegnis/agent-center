@@ -1,6 +1,7 @@
 // The instances' actions, checked before they reach the engine like the others in game-actions.mjs:
 // entering an instance, choosing the vault's boon and recalling the party. Each answers whether it
 // changed anything; a choice the rules refuse says why.
+import { rematchTier } from './game/instance-rematch.mjs'
 
 /** An error whose message names what was refused, cut so a long input cannot flood the log. */
 const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)}`)
@@ -20,23 +21,28 @@ const MAX_TIER = 10_000
 export function createInstanceActions({ engine, change, joinedProject, tell }) {
   return {
     /**
-     * Sends a room's party into an open instance at a tier.
+     * Sends a room's party into an open instance at a tier, or, with `rematch`, into that rematch
+     * of its boss (it plays at its own tier).
      *
-     * @param {{ roomId: string, instanceId: string, tier: number }} input
+     * @param {{ roomId: string, instanceId: string, tier: number, rematch?: number }} input
      */
-    async enterInstance({ roomId, instanceId, tier }) {
+    async enterInstance({ roomId, instanceId, tier, rematch }) {
       let entered = null
       const answer = change((save) => {
         joinedProject(save, roomId)
         if (typeof instanceId !== 'string') throw refuse('unknown instance', instanceId)
         if (!Number.isInteger(tier) || tier < 1 || tier > MAX_TIER) throw refuse('not a tier', tier)
-        const entry = { projectId: roomId, instanceId, tier }
+        if (rematch !== undefined && (!Number.isInteger(rematch) || rematch < 1 || rematch > MAX_TIER)) throw refuse('not a rematch', rematch)
+        const entry = rematch === undefined ? { projectId: roomId, instanceId, tier } : { projectId: roomId, instanceId, tier, rematch }
         const problem = engine.enterProblem(save, entry)
         if (problem) throw new Error(problem)
         entered = entry
         return engine.enterInstance(save, entry)
       })
-      if (answer.changed && entered) tell([{ type: 'instance', kind: 'enter', roomId, instance: instanceId, tier, room: 0 }])
+      if (answer.changed && entered) {
+        const played = rematch === undefined ? { tier } : { tier: rematchTier(rematch), rematch }
+        tell([{ type: 'instance', kind: 'enter', roomId, instance: instanceId, ...played, room: 0 }])
+      }
       return answer
     },
 

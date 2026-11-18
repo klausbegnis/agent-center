@@ -15,8 +15,12 @@ import { MARKET_DAY_MS } from '../src/game/constants.mjs'
 import { hashOf } from '../src/game/hash.mjs'
 import { hasRelicOnDay } from '../src/game/stall-relic.mjs'
 import { DEFAULT_WORLD, SAVE_VERSION, emptyProject, emptySave, emptyWorld, migrate } from '../src/game/worlds.mjs'
+import { showDemoChronicle } from './demo-achievements.mjs'
+import { demoCityRanks, showDemoCityRanks } from './demo-city-ranks.mjs'
 import { showDemoInstances } from './demo-instances.mjs'
+import { showDemoRoad } from './demo-regions.mjs'
 import { DEMO_VILLAGE, showDemoSettlement } from './demo-settlement.mjs'
+import { showDemoTraits } from './demo-traits.mjs'
 
 /** Game time runs this many times faster than real time, so fights move on screen. */
 const SPEED = 10
@@ -281,15 +285,15 @@ function relicDaysAhead() {
  *
  * @param {{ engine: object, store: object, preferences: object, onChange: () => void, frozen: boolean,
  *   estimated?: boolean, travel?: boolean, listThemeIds?: () => string[],
- *   settlementLevels?: Record<string, number> | null }} options `estimated` plays without a session
+ *   settlementLevels?: Record<string, number> | null, cityRank?: number | null }} options `estimated` plays without a session
  *   history, on the estimate; `travel` turns on "new scene after each monster" over the themes
  *   `listThemeIds` lists; `settlementLevels` gives the world those building levels (the frozen demo
- *   has a Village otherwise)
+ *   has a Village otherwise); `cityRank` puts every city at that rank (the frozen demo has a mix otherwise)
  * @returns {Promise<ReturnType<typeof createGameMode>>}
  */
 export async function createDemoGame(options) {
   const { engine, preferences, onChange, frozen, estimated = false, travel = false, listThemeIds } = options
-  const { settlementLevels = null, instanceVault = false } = options
+  const { settlementLevels = null, instanceVault = false, cityRank = null, instanceRoad = null } = options
   let { store } = options
   const startedAt = Date.now()
   let frozenClock = frozen ? EPOCH + relicDaysAhead() * MARKET_DAY_MS : EPOCH
@@ -357,11 +361,19 @@ export async function createDemoGame(options) {
     await showDemoBestiary(game, frozenClock)
     await showDemoSettlement(game, settlementLevels ?? DEMO_VILLAGE)
     await showDemoInstances(game, { vault: instanceVault })
+    await showDemoCityRanks(game, demoCityRanks(cityRank))
+    await showDemoTraits(game)
+    await showDemoChronicle(game, { now: frozenClock, titleRoom: LEGENDARY_ROOM })
+    if (instanceRoad) await showDemoRoad(game, instanceRoad)
     return game
   }
   await game.round()
   if (settlementLevels) await showDemoSettlement(game, settlementLevels)
   if (instanceVault) await showDemoInstances(game, { vault: true })
+  if (cityRank !== null) await showDemoCityRanks(game, demoCityRanks(cityRank))
+  await showDemoTraits(game)
+  await showDemoChronicle(game, { now: now(), titleRoom: LEGENDARY_ROOM })
+  if (instanceRoad) await showDemoRoad(game, instanceRoad)
   setInterval(() => game.round(), ROUND_MS)
   return game
 }

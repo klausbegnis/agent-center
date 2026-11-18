@@ -16,8 +16,8 @@ const STATE_ICON = { hidden: 'icon-locked', locked: 'icon-locked', open: 'icon-f
 /** Which picture of a route goes with the room the party is in: the start, the middle, the boss. */
 const ROUTE_STAGE = ['start', 'start', 'mid', 'mid', 'mid', 'boss']
 
-/** The World tab's views, in the order of its switch. */
-export const WORLD_VIEWS = Object.freeze(['creatures', 'bosses', 'roadmap'])
+/** The World tab's views, in the order of its switch; the Roadmap is a tab of its own. */
+export const WORLD_VIEWS = Object.freeze(['creatures', 'bosses', 'achievements'])
 
 /** A saved or asked-for view of the World tab, or the creatures. */
 export const worldViewOrDefault = (value) => (WORLD_VIEWS.includes(value) ? value : 'creatures')
@@ -70,6 +70,25 @@ function enterModel(game, entry, content, { roomIds, roomId, names }) {
 }
 
 /**
+ * The rematch control of a beaten instance: the next rematch, the reason of each room on screen, and
+ * the lines that say the best one and what the next asks. Null before the boss is beaten.
+ */
+function rematchModel(entry, { roomIds, names }) {
+  const best = entry.rematch ?? 0
+  const next = entry.nextRematch ?? null
+  if (!next && best === 0) return null
+  const rooms = next ? roomIds.filter((id) => Object.hasOwn(next.entry, id)).map((id) => ({ id, name: names(id), reason: next.entry[id] })) : []
+  return {
+    best,
+    bestText: best ? INSTANCES.rematchBest(best) : INSTANCES.rematchNone,
+    next: next?.rematch ?? null,
+    nextText: next ? `${INSTANCES.rematchNext(next.rematch, next.tier)}. ${INSTANCES.rematchOpens(next.opensAt)}.` : INSTANCES.rematchDone,
+    buttonText: next ? INSTANCES.rematch(next.rematch) : '',
+    rooms
+  }
+}
+
+/**
  * A card of the roadmap.
  *
  * @param {object} game
@@ -103,43 +122,73 @@ export function instanceCard(game, entry, context) {
       foundText: entry.relicFound ? INSTANCES.relicFound : INSTANCES.relicNotFound
     } : null,
     roomInside: entry.roomInside,
+    rematchBadge: entry.rematch ? INSTANCES.rematchBadge(entry.rematch) : null,
+    rematch: hidden ? null : rematchModel(entry, context),
     enter: hidden ? null : enterModel(game, entry, content, context)
   }
 }
 
 /**
- * The Roadmap view of a world: the picture for its progress, a marker on each site and on the
- * party of a run, and a card per instance. Null without instances or a world.
+ * The Roadmap view of a world's region: the switch between regions, the picture for the region's
+ * progress, a marker on each site and on the party of a run, and a card per instance; a locked
+ * region says what opens it. Null without instances or a world.
  *
  * @param {object | undefined} game the view state's game
  * @param {object | null} world the world picked above the tabs
- * @param {{ base: string, roomIds: string[], roomId: string | null, names: (id: string) => string }} context
- *   `roomIds` the rooms on screen in that world, `names` a room's name as shown
+ * @param {{ base: string, roomIds: string[], roomId: string | null, names: (id: string) => string,
+ *   regionId?: string | null }} context `roomIds` the rooms on screen in that world, `names` a room's
+ *   name as shown, `regionId` the region picked (the furthest open one otherwise)
  */
 export function roadmapModel(game, world, context) {
-  const region = game?.instances?.region
+  const content = game?.instances
   const road = world?.instances
-  if (!region || !road) return null
-  const markers = road.list.map((entry) => {
-    const content = instanceContent(game, entry.id)
-    const name = entry.state === 'hidden' ? INSTANCES.hidden : content?.name ?? entry.id
+  if (!content?.region || !road) return null
+  const first = content.region.id
+  const regions = content.regions ?? [{ ...content.region, after: null }]
+  const places = road.regions ?? [{ id: first, unlocked: true, map: road.map, cleared: road.cleared, total: road.total, complete: road.complete }]
+  const placeOf = (id) => places.find((place) => place.id === id) ?? places[0]
+  const unlocked = regions.filter((region) => placeOf(region.id).unlocked)
+  // The region picked, or the furthest one open: where the world's road goes on.
+  const region = regions.find((each) => each.id === context.regionId) ?? unlocked.at(-1) ?? regions[0]
+  const place = placeOf(region.id)
+  const list = road.list.filter((entry) => (entry.region ?? first) === region.id)
+  const before = regions.find((each) => each.id === region.after)
+  const markers = list.map((entry) => {
+    const entryContent = instanceContent(game, entry.id)
+    const name = entry.state === 'hidden' ? INSTANCES.hidden : entryContent?.name ?? entry.id
     const isCleared = entry.clears > 0 && entry.state !== 'inside'
     return {
       id: entry.id,
-      left: (100 * (content?.map.x ?? 0)) / region.width,
-      top: (100 * (content?.map.y ?? 0)) / region.height,
+      left: (100 * (entryContent?.map.x ?? 0)) / region.width,
+      top: (100 * (entryContent?.map.y ?? 0)) / region.height,
       state: isCleared ? 'cleared' : entry.state,
       icon: roomIconUrl(context.base, isCleared ? 'icon-cleared' : STATE_ICON[entry.state] ?? 'icon-locked'),
-      label: INSTANCES.marker(name, content ? stateText(entry, content, context.names) : '')
+      badge: entry.rematch ? INSTANCES.rematchBadge(entry.rematch) : null,
+      label: INSTANCES.marker(name, entryContent ? stateText(entry, entryContent, context.names) : '') +
+        (entry.rematch ? `, ${INSTANCES.rematchMarker(entry.rematch)}` : '')
     }
   })
   return {
+    regionId: region.id,
+    // The region switch: one button per region, a locked one saying what opens it.
+    regions: regions.length > 1 ? regions.map((each) => {
+      const eachPlace = placeOf(each.id)
+      return {
+        id: each.id,
+        name: each.name,
+        text: eachPlace.unlocked ? each.name : INSTANCES.regionLockedText(each.name),
+        locked: !eachPlace.unlocked,
+        pressed: each.id === region.id,
+        label: eachPlace.unlocked ? INSTANCES.regionOpen(each.name, eachPlace.cleared, eachPlace.total) : INSTANCES.regionLockedLabel(each.name)
+      }
+    }) : [],
+    locked: place.unlocked ? null : INSTANCES.regionLocked(before?.name ?? '', placeOf(before?.id).cleared, placeOf(before?.id).total),
     title: INSTANCES.title(region),
-    summary: INSTANCES.cleared(road.cleared, road.total),
-    complete: road.complete ? INSTANCES.complete(region.title) : null,
-    map: { src: instanceArtUrl(context.base, road.map.art), alt: road.map.alt, width: region.width, height: region.height },
-    markers,
-    cards: road.list.map((entry) => instanceCard(game, entry, context)).filter(Boolean)
+    summary: INSTANCES.cleared(place.cleared, place.total),
+    complete: place.complete ? INSTANCES.complete(region.title) : null,
+    map: { src: instanceArtUrl(context.base, place.map.art), alt: place.map.alt, width: region.width, height: region.height },
+    markers: place.unlocked ? markers : [],
+    cards: list.map((entry) => instanceCard(game, entry, context)).filter(Boolean)
   }
 }
 
@@ -172,7 +221,7 @@ export function runCardModel(game, roomId, { base }) {
   const route = content.route
   return {
     roomId,
-    title: INSTANCES.runTitle(run.name, run.tier),
+    title: INSTANCES.runTitle(run.name, run.tier, run.rematch),
     roomLine: `${INSTANCES.roomLine(run.room, run.roomName)}${run.fights > 1 ? ` · ${INSTANCES.fights(run.fight, run.fights)}` : ''}`,
     icons: roomIcons(run, content, base),
     route: route ? { src: instanceArtUrl(base, route[ROUTE_STAGE[run.room] ?? 'mid']), alt: route.alt } : null,
@@ -218,7 +267,9 @@ export function instanceBand(game, roomId, base) {
     text: INSTANCES.band(run.name, run.room, run.roomName),
     short: INSTANCES.bandShort(run.name, run.room),
     icon: roomIconUrl(base, ROOM_ICON[run.roomKind] ?? 'icon-fight'),
-    backdrop: instanceArtUrl(base, content.banner),
+    // The instance's room-size scene, drawn instead of the theme's scenery; its banner when it has none.
+    scene: instanceArtUrl(base, content.scene ?? content.banner),
+    fullScene: Boolean(content.scene),
     alt: content.alt
   }
 }
@@ -247,7 +298,10 @@ export function instanceNews(event, game) {
       const boon = game?.rooms?.[event.roomId]?.run?.boon
       return { text: INSTANCES.news.boon(boon?.id === event.boon ? boon.name : event.boon), tone: 'instance' }
     }
-    case 'cleared': return { text: INSTANCES.news.cleared(name), tone: 'legendary', ...(relic ? { artId: relic.id } : {}) }
+    case 'cleared': {
+      const text = event.rematch ? INSTANCES.news.rematchCleared(name, event.rematch) : INSTANCES.news.cleared(name)
+      return { text, tone: 'legendary', ...(relic ? { artId: relic.id } : {}) }
+    }
     case 'failed': return { text: INSTANCES.news.failed(name), tone: 'instance' }
     case 'recalled': return { text: INSTANCES.news.recalled(name), tone: 'instance' }
     default: return null

@@ -33,9 +33,9 @@ test('a relic names a city of the market', () => {
   assert.match(problems.join(), /a city in game\/cities.json/)
 })
 
-test('the shipped file holds ten city relics, twelve boss relics and twelve pieces of equipment', () => {
+test('the shipped file holds ten city relics, seventeen boss relics, fifteen pieces of equipment and fourteen instance relics', () => {
   const count = (kind) => shipped.legendary.filter((entry) => entry.kind === kind).length
-  assert.deepEqual([count('relic'), count('boss-relic'), count('equipment')], [10, 12, 12])
+  assert.deepEqual([count('relic'), count('boss-relic'), count('equipment'), count('instance-relic')], [10, 17, 15, 14])
 })
 
 test('every shipped entry has its picture and its picture with a glow', () => {
@@ -108,8 +108,8 @@ test('the index lists the pool relics in the file\'s order and each boss\'s own 
   assert.equal(index.poolRelicIds.length, 10)
   assert.equal(index.poolRelicIds[0], 'sheaf-of-the-long-summer')
   assert.equal(index.byBoss.get('gorrath').id, 'labyrinth-cleaver')
-  assert.equal(index.relicCount, 28)
-  assert.equal(index.equipmentCount, 12)
+  assert.equal(index.relicCount, 41)
+  assert.equal(index.equipmentCount, 15)
 })
 
 test('an instance relic names its instance and is never in the pool a city sells', () => {

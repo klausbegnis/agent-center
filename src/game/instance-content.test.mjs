@@ -12,10 +12,11 @@ const problemsWith = (change) => {
 }
 const mentions = (problems, text) => assert.ok(problems.some((problem) => problem.includes(text)), problems.join('\n'))
 
-test('the shipped instances are valid, six along the road', () => {
+test('the shipped instances are valid, six along the first road and eight in the second region', () => {
   const data = readJson('instances.json')
   assert.deepEqual(validateInstances(data, others), [])
-  assert.equal(data.instances.length, 6)
+  assert.equal(data.instances.filter((entry) => !entry.region).length, 6)
+  assert.equal(data.instances.filter((entry) => entry.region === 'gloaming-isles').length, 8)
 })
 
 test('every picture the instances name is shipped with the UI', () => {
@@ -45,10 +46,11 @@ test('its boss and elite are bosses of the roster, of its races, and belong to n
   }), 'already belongs to an instance')
 })
 
-test('a vault holds bosses\' own items, never an instance boss\'s or a city\'s relic', () => {
+test('a vault holds bosses\' own equipment, never an instance boss\'s item or any relic', () => {
   mentions(problemsWith((data) => { data.instances[0].vault = ['sheaf-of-the-long-summer'] }), 'not a boss\'s item')
-  mentions(problemsWith((data) => { data.instances[0].vault = ['crown-of-the-ossuary'] }), 'item of an instance\'s boss')
-  mentions(problemsWith((data) => { data.instances[0].vault = ['the-seventeenth-key'] }), 'another instance\'s elite')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['jawbone-lyre'] }), 'not a boss\'s item')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['stormwing-staff'] }), 'item of an instance\'s boss')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['bridgewardens-maul'] }), 'another instance\'s elite')
   mentions(problemsWith((data) => { data.instances[0].vault = [] }), 'each once')
 })
 

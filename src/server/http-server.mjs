@@ -157,9 +157,14 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
       controller.gameTradeMaterial(input.worldId, input.cityId, input.fromId, input.toId, input.amount),
     '/api/game/buy-offer': (input) =>
       controller.gameBuyStallOffer(input.worldId, input.cityId, input.offerIndex, input.entryId, input.roomId),
-    '/api/game/enter-instance': (input) => controller.gameEnterInstance(input.roomId, input.instanceId, input.tier),
+    '/api/game/enter-instance': (input) => controller.gameEnterInstance(input.roomId, input.instanceId, input.tier, input.rematch),
     '/api/game/choose-boon': (input) => controller.gameChooseBoon(input.roomId, input.boonId),
-    '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId)
+    '/api/game/recall-party': (input) => controller.gameRecallParty(input.roomId),
+    '/api/game/party-title': (input) => controller.gameSetPartyTitle(input.roomId, input.achievementId ?? null),
+    '/api/game/summary-seen': () => controller.gameMarkSummarySeen(),
+    // Teach, swap, buy, sell or send a trait scroll; `action` names which (game-trait-actions.mjs).
+    '/api/game/trait': (input) => controller.gameTraitAction(input),
+    '/api/game/buy-charter': (input) => controller.gameBuyCharter(input.worldId, input.cityId)
   }
 
   async function handlePost(pathname, request, response, isLocal) {

@@ -77,7 +77,8 @@ function recordingGame() {
     sendRelic: record('sendRelic'),
     enterInstance: record('enterInstance'),
     chooseBoon: record('chooseBoon'),
-    recallParty: record('recallParty')
+    recallParty: record('recallParty'),
+    buyCharter: record('buyCharter')
   }
   return { game, calls }
 }
@@ -98,6 +99,15 @@ test('the instance actions reach the game with their fields; a tier that is not 
     ['recallParty', { roomId: room }]
   ])
   assert.equal(changes(), 3)
+})
+
+test('buying a charter reaches the game with its world and city; a missing city is refused first', async () => {
+  const { game, calls } = recordingGame()
+  const { controller, changes } = setup({ game })
+  await controller.gameBuyCharter('main', 'goldmill')
+  await assert.rejects(controller.gameBuyCharter('main', null), /invalid city/)
+  assert.deepEqual(calls, [['buyCharter', { worldId: 'main', cityId: 'goldmill' }]])
+  assert.equal(changes(), 1)
 })
 
 test('the view state carries the game part', () => {

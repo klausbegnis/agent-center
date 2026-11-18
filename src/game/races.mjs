@@ -29,6 +29,8 @@ export const HUMANOID_BUILDS = ['small', 'medium', 'large']
 export const HANDMADE_SHARE = 0.3
 /** A race that prefers the room's theme is this many times as likely as any other. */
 export const PREFERRED_RACE_WEIGHT = 3
+/** The race of the week's event (weekly.mjs) comes up this many times as often as it would. */
+export const FEATURED_RACE_WEIGHT = 2
 /** A generated monster carries up to this many extras of its own choosing, besides `always`. */
 export const EXTRAS_MAX = 2
 /**
@@ -59,10 +61,14 @@ function mixed(text) {
 const pick = (list, seed, purpose) => list[mixed(`${seed}|${purpose}`) % list.length]
 const chance = (seed, purpose) => mixed(`${seed}|${purpose}`) / 4294967296
 
-/** The race of a generated monster: every race can come up, the room theme's own ones more often. */
-function raceFor(races, themeId, seed) {
+/**
+ * The race of a generated monster: every race can come up, the room theme's own ones more often,
+ * and the race of the week's event (weekly.mjs) FEATURED_RACE_WEIGHT times as often as it would.
+ */
+function raceFor(races, themeId, seed, featuredRace = null) {
   const weighted = races.flatMap((race) => {
-    const weight = themeId && race.themes?.includes(themeId) ? PREFERRED_RACE_WEIGHT : 1
+    const themed = themeId && race.themes?.includes(themeId) ? PREFERRED_RACE_WEIGHT : 1
+    const weight = race.id === featuredRace ? themed * FEATURED_RACE_WEIGHT : themed
     return Array(weight).fill(race)
   })
   return pick(weighted, seed, 'race')
@@ -121,11 +127,11 @@ function nameOf({ race, role, descriptor, rank, isChimera, seed }) {
  * A generated monster's race, name and look.
  *
  * @param {{ palettes: object, races: object[] }} data a valid races file
- * @param {{ seed: string, themeId?: string | null, rank?: string }} options
+ * @param {{ seed: string, themeId?: string | null, rank?: string, featuredRace?: string | null }} options
  * @returns {{ race: string, name: string, look: { rig: string, parts: object, colours: object } }}
  */
-export function generateMonster(data, { seed, themeId = null, rank = 'normal' }) {
-  const race = raceFor(data.races, themeId, seed)
+export function generateMonster(data, { seed, themeId = null, rank = 'normal', featuredRace = null }) {
+  const race = raceFor(data.races, themeId, seed, featuredRace)
   const role = pick(race.roles, seed, 'role')
   let parts = {}
   for (const slot of RIG_SLOTS[race.rig]) {

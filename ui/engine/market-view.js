@@ -3,6 +3,7 @@
 // the level it opens at) or the city opened, with its
 // Sell, Trade and Stall cards. The open city, the amounts chosen and the stall's room are kept
 // across redraws, and a redraw puts the keyboard back on the control that had it.
+import { rankBadge, rankCard } from './city-rank-view.js'
 import { button, el } from './dom.js'
 import { replaceKeepingFocus, section } from './game-controls.js'
 import { joinedRooms, worldById } from './game-model.js'
@@ -11,6 +12,7 @@ import { cityTrades, sellCard, stallCard } from './market-city-view.js'
 import { MARKET } from './market-labels.js'
 import { stallRoomId } from './market-model.js'
 import { tradeCard } from './market-trade-view.js'
+import { createBrokerCard } from './trait-broker-view.js'
 
 /** A city's banner, scaled up pixel for pixel, with its name on the lower left. */
 function banner(city, base) {
@@ -61,13 +63,20 @@ export function createMarketView({ panel, actions, base }) {
     }
   }
   /**
-   * Each city's banner, built once: the cards are rebuilt on every change of the world, and a
-   * new image would flash empty while it loads.
+   * Each city's banner, built once per picture: the cards are rebuilt on every change of the world,
+   * and a new image would flash empty while it loads. A city that rises a rank shows a new one.
    */
   const banners = new Map()
+  /** A city's trait broker, after its stall (trait-broker-view.js). */
+  const broker = createBrokerCard({ actions })
   const bannerOf = (city) => {
-    if (!banners.has(city.id)) banners.set(city.id, banner(city, base))
-    return banners.get(city.id)
+    const key = `${city.id}|${city.banner}`
+    if (!banners.has(key)) banners.set(key, banner(city, base))
+    const node = banners.get(key)
+    node.querySelector('.ac-city-rank-badges')?.remove()
+    const badge = rankBadge(city)
+    if (badge) node.append(badge)
+    return node
   }
 
   const viewOnly = el('p', 'ac-game-card-line ac-market-view-only', MARKET.viewOnly)
@@ -133,11 +142,14 @@ export function createMarketView({ panel, actions, base }) {
     }
     return [
       top,
+      // The city's rank, its charter and what the next rank gives (city-rank-view.js).
+      ...[rankCard({ world, city, actions })].filter(Boolean),
       sellCard({ world, city, chosen, open: openSell, actions }),
       tradeCard({ world, city, form: trade, actions }),
       stallCard({ world, city, rooms: rooms.map((room) => [room.id, roomTitle(room)]), roomId, onRoom,
-        actions, game: state.game, base })
-    ]
+        actions, game: state.game, base }),
+      broker.render({ world, city, roomId, game: state.game })
+    ].filter(Boolean)
   }
 
   function draw() {

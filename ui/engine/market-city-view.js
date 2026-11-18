@@ -3,6 +3,7 @@
 // here and its tags); "Sell…" opens its amount slider and the button that says the deal, one
 // row at a time. What was chosen is kept by the caller across redraws, and every control carries
 // a data-key so a redraw puts the keyboard back where it was.
+import { STALL_LEGENDARY } from './city-rank-labels.js'
 import { button, el, select, setOptions } from './dom.js'
 import { section } from './game-controls.js'
 import { gameIcon, iconLabel } from './icon-view.js'
@@ -206,6 +207,10 @@ export function stallCard({ world, city, rooms, roomId, onRoom, actions, game, b
   list.append(...(city.stall ?? []).map((offer) => offerRow({ world, city, offer, roomId, actions })))
   const relic = stallRelicRow({ game, world, city, roomId, actions, base })
   if (relic) list.append(relic)
+  // A city at its last rank now and then sells legendary equipment, drawn as its relic is.
+  const legendary = city.legendary ? stallRelicRow({ game, world, city: { ...city, relic: city.legendary }, roomId, actions, base,
+    labels: STALL_LEGENDARY }) : null
+  if (legendary) list.append(legendary)
   children.push(list)
   return section(MARKET.stall, children, 'ac-market-stall')
 }

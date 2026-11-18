@@ -56,17 +56,20 @@ function rollPoolRelic(project, { rank, seed, index, pityFactor }) {
 
 /**
  * The named boss's own item roll: its relic or equipment when the room lacks it, or pity.
- * `chance` replaces the rank's (an instance's boss gives its item more often, instance-rewards.mjs).
+ * `chance` replaces the rank's (an instance's boss, instance-rewards.mjs), and `withPity: false`
+ * leaves the waves' pity out: neither read nor raised.
  *
  * @returns {{ project: object, drop: LegendaryDrop | null }}
  */
-export function rollBossItem(project, { rank, seed, index, bossId, level, pityFactor = 1, chance: own }) {
+export function rollBossItem(project, { rank, seed, index, bossId, level, pityFactor = 1, chance: own, withPity = true }) {
   const entry = index.byBoss.get(bossId)
   if (!entry || ownsLegendary(project, entry.id)) return { project, drop: null }
   const legendary = legendaryOf(project)
   const base = own ?? BOSS_ITEM_CHANCE[rank]
-  const chance = ownsBossItem(project, index) ? base + BOSS_ITEM_PITY_STEP * pityFactor * legendary.bossPity : 1
+  const pity = withPity ? BOSS_ITEM_PITY_STEP * pityFactor * legendary.bossPity : 0
+  const chance = ownsBossItem(project, index) ? base + pity : 1
   if (chanceOf(`${seed}|boss-item`) >= chance) {
+    if (!withPity) return { project, drop: null }
     return { project: withLegendary(project, { ...legendary, bossPity: bumpPity(legendary.bossPity) }), drop: null }
   }
   const gained = entry.kind === 'equipment'

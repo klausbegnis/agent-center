@@ -125,11 +125,12 @@ test('a run\'s card checks the rooms behind, marks the current one and dims the 
   assert.equal(runCardModel(game({ run: false }), ROOM, { base: '/' }), null)
 })
 
-test('a room inside an instance has a band with the instance, its room and the backdrop', () => {
+test('a room inside an instance has a band with the instance, its room and its room-size scene', () => {
   const state = game()
   const band = instanceBand(state, ROOM, '/')
   assert.match(band.text, /Emberdeep Foundry · room 5 of 6 · The Ingot Store/)
-  assert.equal(band.backdrop, '/ui/instances/emberdeep-foundry.png')
+  assert.equal(band.scene, '/ui/instances/emberdeep-foundry-scene.png')
+  assert.equal(band.fullScene, true)
   assert.equal(instanceBand(state, OTHER, '/'), null)
 })
 
@@ -138,7 +139,8 @@ test('a room\'s cooldowns are worded with the working time left', () => {
 })
 
 test('the World tab opens on a known view, the creatures otherwise', () => {
-  assert.equal(worldViewOrDefault('roadmap'), 'roadmap')
+  assert.equal(worldViewOrDefault('bosses'), 'bosses')
+  assert.equal(worldViewOrDefault('roadmap'), 'creatures', 'the Roadmap is a tab of its own')
   assert.equal(worldViewOrDefault('gallery'), 'creatures')
 })
 
@@ -151,4 +153,58 @@ test('a run\'s news is told in its room: entering and the clear celebrated, with
   assert.deepEqual(at({ kind: 'cleared', drops: [{ id: 'tidewake-bell', kind: 'instance-relic' }] }),
     { text: 'The Sunken Crypt cleared!', tone: 'legendary', artId: 'tidewake-bell' })
   assert.equal(at({ kind: 'retry' }), null)
+})
+
+test('a beaten instance offers its next rematch beside Enter, and shows its best one as a badge', () => {
+  const state = game()
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  const crypt = model.cards[0]
+  assert.equal(crypt.rematchBadge, null, 'no badge before a rematch is cleared')
+  assert.equal(crypt.rematch.next, 1)
+  assert.equal(crypt.rematch.buttonText, 'Rematch I')
+  assert.match(crypt.rematch.nextText, /Rematch I, at tier 3/)
+  assert.equal(model.cards[1].rematch, null, 'no rematch before the boss is beaten')
+  assert.equal(model.markers[0].badge, null)
+})
+
+test('a rematch cleared shows as a roman tier badge on the card and beside the marker', () => {
+  const state = game()
+  const entry = state.worlds[0].instances.list[0]
+  entry.rematch = 3
+  entry.nextRematch = { rematch: 4, tier: 9, opensAt: 11, entry: { [ROOM]: null, [OTHER]: 'the room has no characters' } }
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  assert.equal(model.cards[0].rematchBadge, 'III')
+  assert.equal(model.markers[0].badge, 'III')
+  assert.match(model.markers[0].label, /best rematch III/)
+  assert.match(model.cards[0].rematch.bestText, /III of X/)
+  assert.deepEqual(model.cards[0].rematch.rooms.map((room) => room.reason), [null, 'the room has no characters'])
+  assert.equal(instanceNews({ kind: 'cleared', instance: 'sunken-crypt', room: 5, rematch: 3 }, state).text,
+    'The Sunken Crypt: Rematch III won!')
+})
+
+test('the roadmap switches between regions; a locked one says what opens it and shows no markers', () => {
+  const state = game()
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  assert.equal(model.regionId, 'old-road', 'the furthest open region by default')
+  assert.deepEqual(model.regions.map((region) => [region.id, region.locked, region.pressed]),
+    [['old-road', false, true], ['gloaming-isles', true, false]])
+  assert.equal(model.regions[1].text, 'The Gloaming Isles (locked)')
+  assert.equal(model.locked, null)
+  const isles = roadmapModel(state, state.worlds[0], { ...context(state), regionId: 'gloaming-isles' })
+  assert.equal(isles.title, 'The Gloaming Isles')
+  assert.equal(isles.map.src, '/ui/instances/isles-map-1.png')
+  assert.match(isles.locked, /opens when The Old Road is complete: 1 of 6 cleared/)
+  assert.deepEqual(isles.markers, [])
+  assert.equal(isles.cards.length, 8)
+  assert.ok(isles.cards.every((card) => card.hidden))
+})
+
+test('an unlocked second region is where the roadmap opens, with its own sites', () => {
+  const state = game()
+  const road = state.worlds[0].instances
+  road.regions[1].unlocked = true
+  const model = roadmapModel(state, state.worlds[0], context(state))
+  assert.equal(model.regionId, 'gloaming-isles')
+  assert.equal(model.markers.length, 8)
+  assert.ok(Math.abs(model.markers[0].left - (100 * 58) / 256) < 1e-9)
 })

@@ -19,6 +19,7 @@ import { retireeBonus } from './retirement.mjs'
 import { inScene, scenesOf } from './scenes.mjs'
 import { materialOfSkill } from './skills.mjs'
 import { effectiveTrade } from './trades.mjs'
+import { withTraitEffects } from './trait-effects.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 import { addMaterials, withCharacter, withProjectIn, worldIdOf } from './worlds.mjs'
 
@@ -73,7 +74,7 @@ function settleCharacters(world, projectId, readings, { from, to, content }) {
     character = { ...character, state: reading.state }
     const trade = effectiveTrade(character, project)
     if (reading.state === 'idle' && hours > 0 && trade) {
-      const held = heldEffects(project, character, index)
+      const held = withTraitEffects(heldEffects(project, character, index), project, character, content)
       const bonuses = gatherBonuses(relic, held, materialOfSkill(trade))
       const gathered = gatherFor(current, project, character, hours, bonuses)
       current = gathered.world

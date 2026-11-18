@@ -115,7 +115,7 @@ test('market actions naming something that does not exist are refused', async ()
     /unknown material/)
   const [offer] = cityOf(game, 'goldmill').stall
   const purchase = { worldId: 'main', cityId: 'goldmill', offerIndex: offer.index, entryId: offer.entryId, roomId: BANANA }
-  await assert.rejects(game.buyStallOffer({ ...purchase, offerIndex: 4 }), /unknown offer/)
+  await assert.rejects(game.buyStallOffer({ ...purchase, offerIndex: 6 }), /unknown offer/)
   await assert.rejects(game.buyStallOffer({ ...purchase, roomId: 'local:/made-up' }), /unknown room/)
   await game.assignRoom({ roomId: BANANA, worldId: 'side-projects' })
   await assert.rejects(game.buyStallOffer(purchase), /not a room that plays in this world/)
@@ -157,4 +157,15 @@ test('market actions are refused while the game is off', async () => {
   })
   await off.round()
   await assert.rejects(off.sellMaterial({ worldId: 'main', cityId: 'goldmill', materialId: 'ore', amount: 1 }), /not running/)
+})
+
+test('a charter is refused with its reason until the city has the standing, and then for what is short', async () => {
+  const { game } = await marketGame()
+  const charter = { worldId: 'main', cityId: 'goldmill' }
+  await assert.rejects(game.buyCharter(charter), /not traded enough/)
+  await assert.rejects(game.buyCharter({ ...charter, cityId: 'atlantis' }), /unknown city/)
+  await assert.rejects(game.buyCharter({ ...charter, worldId: 'nowhere' }), /unknown world/)
+  await game.sellMaterial({ worldId: 'main', cityId: 'goldmill', materialId: 'ore', amount: 4_000 })
+  assert.ok(cityOf(game, 'goldmill').rank.standing > 0)
+  await assert.rejects(game.buyCharter(charter), /not enough of the materials/)
 })

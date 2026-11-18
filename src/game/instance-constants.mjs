@@ -69,20 +69,21 @@ export const INSTANCE_PURSE_COINS = 40
 export const INSTANCE_VAULT_KILLS = 3
 /**
  * The instance's boss leaves its own item with this chance, plus this much for each tier above
- * the first, up to the most, plus the usual pity: twice a wave boss's 5% at tier 1. A run meets
- * its boss about once a working day, so with the waves' pity a cleared instance gives its boss's
- * item within a few weeks; higher odds made a light user own half the legendary loot in a year.
+ * the first, up to the most, with no pity: a run meets its boss about once a working day, so with
+ * the waves' pity (5% a miss) and 10% + 1% a tier a light user owned 18 of 40 legendary items in a
+ * year and a heavy one 33. At these odds the collection is a goal of several years (docs/GAME.md,
+ * "Instances"), and a run's boss is a rarer source than a wave's boss (BOSS_ITEM_CHANCE).
  */
-export const INSTANCE_BOSS_ITEM_CHANCE = 0.1
-export const INSTANCE_BOSS_ITEM_TIER_STEP = 0.01
-export const INSTANCE_BOSS_ITEM_MAX = 0.3
+export const INSTANCE_BOSS_ITEM_CHANCE = 0.004
+export const INSTANCE_BOSS_ITEM_TIER_STEP = 0.0008
+export const INSTANCE_BOSS_ITEM_MAX = 0.012
 /**
  * The vault holds a legendary item of its pool with this chance, more at higher tiers, up to the
- * most: now and then, so a run that pays one is news (about one in fifty runs).
+ * most: rare, so a run that pays one is news (about one run in two hundred).
  */
-export const INSTANCE_VAULT_ITEM_CHANCE = 0.01
-export const INSTANCE_VAULT_ITEM_TIER_STEP = 0.0025
-export const INSTANCE_VAULT_ITEM_MAX = 0.04
+export const INSTANCE_VAULT_ITEM_CHANCE = 0.003
+export const INSTANCE_VAULT_ITEM_TIER_STEP = 0.0005
+export const INSTANCE_VAULT_ITEM_MAX = 0.01
 /** A clear credits each of the instance's races with this many champion kills per tier. */
 export const INSTANCE_BESTIARY_CHAMPIONS = 1
 /**

@@ -2,12 +2,16 @@
 // something that exists (or, for a new world, be a well-formed name), so nothing made up is
 // stored. Each action answers whether it changed anything.
 import { worldWorkMix } from './domain/skill-mix.mjs'
+import { createChronicleActions } from './game-chronicle.mjs'
+import { createCityActions } from './game-city-actions.mjs'
 import { createInstanceActions } from './game-instance-actions.mjs'
 import { emptyBridge } from './game-save.mjs'
+import { createTraitActions } from './game-trait-actions.mjs'
 import { buildSaveFile, readSaveFile } from './game-transfer.mjs'
 import { findItem } from './game/chest.mjs'
 import { EQUIPMENT_SLOTS, changedSlots } from './game/equip.mjs'
-import { MARKET_MAX_AMOUNT, STALL_OFFERS } from './game/constants.mjs'
+import { LAST_OFFER_INDEX } from './game/city-rank-constants.mjs'
+import { MARKET_MAX_AMOUNT } from './game/constants.mjs'
 import { legendaryOf } from './game/legendary.mjs'
 import { rebalanceWorkSkills } from './game/rebalance.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
@@ -379,8 +383,8 @@ export function createGameActions(dependencies) {
       return change((save) => {
         requireWorld(save, worldId)
         requireCity(cityId)
-        // The gear's offers, then the relic's at STALL_OFFERS (stall-relic.mjs).
-        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex > STALL_OFFERS) throw refuse('unknown offer', offerIndex)
+        // The gear's offers, the relic's, then a ranked city's (city-rank-constants.mjs).
+        if (!Number.isInteger(offerIndex) || offerIndex < 0 || offerIndex > LAST_OFFER_INDEX) throw refuse('unknown offer', offerIndex)
         if (typeof entryId !== 'string') throw refuse('unknown offer', entryId)
         requireRoomOf(save, worldId, roomId)
         return engine.buyStallOffer(save, { worldId, cityId, offerIndex, entryId, projectId: roomId })
@@ -455,6 +459,11 @@ export function createGameActions(dependencies) {
     },
 
     // Entering an instance, choosing the vault's boon, recalling the party (game-instance-actions.mjs).
-    ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) })
+    ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) }),
+    ...createChronicleActions({ engine, change, joinedProject, now }),
+    // Teaching, swapping, the trait broker and sending scrolls (game-trait-actions.mjs).
+    ...createTraitActions({ engine, change, joinedProject, requireSending, requireWorld, requireCity }),
+    // Buying a city's charter (game-city-actions.mjs).
+    ...createCityActions({ engine, change, requireWorld, requireCity })
   }
 }

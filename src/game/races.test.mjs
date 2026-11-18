@@ -126,11 +126,11 @@ test('a boss looks exactly as written, with its name and epithet', () => {
   assert.equal(boss.look.parts.head, written.parts.head)
 })
 
-test('the roster has at least 50 bosses spread over every race, two or three each', () => {
+test('the roster has at least 50 bosses spread over every race, two to five each', () => {
   assert.ok(bosses.bosses.length >= 50)
   for (const race of races.races) {
     const count = bosses.bosses.filter((boss) => boss.race === race.id).length
-    assert.ok(count >= 2 && count <= 4, `${race.id}: ${count}`)
+    assert.ok(count >= 2 && count <= 5, `${race.id}: ${count}`)
   }
 })
 

@@ -202,6 +202,12 @@ export const ICONS = {
     rows: ['..........', '.aaa..aaa.', 'aaaaaaaaba', 'aaaaaaabab', 'aaaaaababa', 'aaaaaaabab', 'aaaaaaaaba',
       'aaaaaaaaaa', '.aaa..aaa.', '..........']
   },
+  // A dungeon gate: a crenellated stone arch with its portcullis down.
+  'tab-dungeon': {
+    colors: { a: '#9AA3B2', b: '#1B1E26' },
+    rows: ['a.aa..aa.a', 'aaaaaaaaaa', 'aaabbbbaaa', 'aababbabaa', 'aababbabaa', 'aaaaaaaaaa', 'aababbabaa',
+      'aababbabaa', 'aababbabaa', 'aaaaaaaaaa']
+  },
   'tab-chest': {
     colors: { a: '#B9773A', b: '#F2C14E' },
     rows: ['..........', '.aaaaaaaa.', 'aaaaaaaaaa', 'aaaaaaaaaa', 'bbbbbbbbbb', 'aaaabbaaaa', 'aaaabbaaaa',

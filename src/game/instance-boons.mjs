@@ -24,8 +24,8 @@ export const BOON_TYPES = Object.freeze({
   timeLimit: { max: 1 },
   // The clear's purse (materials and coins) × (1 + a).
   purse: { max: 1 },
-  // + a to the chance the boss leaves its own item.
-  bossItem: { max: 0.5 },
+  // The chance the boss leaves its own item × (1 + a).
+  bossItem: { max: 1 },
   // a more rolls at the boss's own item when the first gives nothing.
   rewardRoll: { max: 2, whole: true },
   // The boss comes without an affix, whatever the tier's modifier says.

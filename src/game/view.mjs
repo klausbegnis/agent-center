@@ -2,6 +2,8 @@
 // progress, materials, upgrades with their next cost, and each project's fight and party.
 import { bestiaryContentView, worldBestiaryView } from './bestiary-view.mjs'
 import { seasoning } from './characters.mjs'
+import { citiesOfWeek } from './city-festival.mjs'
+import { cityRankIndexOf } from './city-ranks-content.mjs'
 import { findItem } from './chest.mjs'
 import { TICK_SECONDS } from './constants.mjs'
 import { canAfford, effectiveGearLevel, itemFactor, upgradeCost } from './items.mjs'
@@ -19,6 +21,8 @@ import { groupEffect, settlementView } from './settlement-view.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS, groupLevel, groupUpgradeCost, isUpgradeOpen } from './spending.mjs'
 import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
+import { withTraitsView } from './trait-view.mjs'
+import { weeklyView } from './weekly-view.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
 
 /** A skill as a UI shows it: level, stars, effective level and progress to the next level. */
@@ -144,10 +148,13 @@ function worldView(worldId, world, names, content, index) {
     projects: Object.keys(world.projects).sort()
       .map((projectId) => projectView(projectId, world.projects[projectId], world, names, index, content, worldId)),
     coins: world.coins ?? 0,
-    market: marketView(worldId, world, { cities: content.cities?.cities ?? [], items: content.items, legendary: content.legendary }),
+    market: marketView(worldId, world, { cities: citiesOfWeek(content.cities?.cities ?? [], world, content), items: content.items, legendary: content.legendary,
+      cityRanks: cityRankIndexOf(content) }),
     bestiary: worldBestiaryView(world, content),
     settlement: settlementView(world, content),
-    instances: worldInstancesView(worldId, world, content)
+    instances: worldInstancesView(worldId, world, content),
+    // This week's event, its goal and next week's (weekly-view.mjs); null before the first advance.
+    weekly: weeklyView(world, content)
   }
 }
 
@@ -167,7 +174,8 @@ export function viewOf(save, content) {
   const names = new Map(content.items.items.map((entry) => [entry.id, entry.name]))
   const index = legendaryIndexOf(content)
   for (const [id, entry] of index?.byId ?? []) names.set(id, entry.name)
-  return {
+  // Traits add their parts to the worlds, rooms and characters (trait-view.mjs).
+  return withTraitsView({
     worlds: Object.keys(save.worlds).sort().map((worldId) => worldView(worldId, save.worlds[worldId], names, content, index)),
     projectWorld: { ...save.projectWorld },
     keepTitles: save.settings.keepTitles,
@@ -177,5 +185,5 @@ export function viewOf(save, content) {
     legendary: legendaryView(index, content.bosses, content.instances),
     bestiary: bestiaryContentView(content),
     instances: instancesContentView(content)
-  }
+  }, save, content)
 }

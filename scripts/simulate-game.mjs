@@ -12,10 +12,12 @@ import { settlementIndexOf } from '../src/game/settlement-content.mjs'
 import { stageIndexOf, totalLevels } from '../src/game/settlement.mjs'
 import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
+import { noteWeek, printWeekly } from './event-balance.mjs'
 import { funnelGear } from './funnel-policy.mjs'
 import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
-import { newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
+import { collectionChecks, newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
 import { visitMarket } from './market-policy.mjs'
+import { printCityRanks, trackCityRanks } from './city-rank-balance.mjs'
 import {
   fixed,
   hitShares,
@@ -28,6 +30,7 @@ import {
 } from './game-balance.mjs'
 import { bestiaryGain, bestiaryProgress, levelUpsIn } from './bestiary-balance.mjs'
 import { legendaryGain } from './legendary-balance.mjs'
+import { printTraits, traitProgress, visitBroker } from './trait-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
 const content = {
@@ -39,7 +42,9 @@ const content = {
   legendary: readJson('../game/legendary.json'),
   bestiary: readJson('../game/bestiary.json'),
   settlement: readJson('../game/settlement.json'),
-  instances: readJson('../game/instances.json')
+  instances: readJson('../game/instances.json'),
+  traits: readJson('../game/traits.json'),
+  events: readJson('../game/events.json')
 }
 const engine = createEngine({ content })
 /**
@@ -271,6 +276,7 @@ function playWorkday(run, day) {
   run.save = spent.save
   run.period.purchases += spent.purchases.length
   if (run.trades) tradeAtMarket(run)
+  if (run.traitBroker) run.save = visitBroker(run.engine, run.save, run.traitBroker, content)
   if (run.funnel) {
     const funnelled = funnelGear(run.engine, run.save)
     run.save = funnelled.save
@@ -367,7 +373,8 @@ function snapshot(run, day) {
     gatherShare: income > 0 ? run.period.gathered / income : 0,
     shares: sharesOf(world, projects, level),
     legendary: projects.map((project) => legendaryCounts(project).total),
-    bestiary: bestiaryProgress(world, content)
+    bestiary: bestiaryProgress(world, content),
+    traits: traitProgress(world, content)
   }
 }
 
@@ -382,15 +389,17 @@ function closePeriod(run, day) {
 
 /**
  * @param {object} scenario
- * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, withEngine?: object }} [policy]
+ * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, traits?: boolean, withEngine?: object }} [policy]
  *   `trades` adds a visit to the market every working day; `funnel` sends every spare piece of gear
  *   into one room every working day; `instances` runs the highest open instance whenever one is
- *   available; `withEngine` plays on another engine than the full one
+ *   available; `traits` adds a visit to the trait brokers (trait-balance.mjs); `withEngine` plays on
+ *   another engine than the full one
  */
-function simulate(scenario, { trades = false, funnel = false, instances = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, withEngine = engine } = {}) {
   const run = {
+    traitBroker: traits ? { bought: 0, spent: 0, taught: 0 } : null,
     scenario,
-    instances: instances ? newInstanceStats(content.instances) : null,
+    instances: instances ? newInstanceStats(content.instances, content.legendary) : null,
     trades,
     funnel,
     funnelled: { items: 0, relics: 0 },
@@ -420,6 +429,8 @@ function simulate(scenario, { trades = false, funnel = false, instances = false,
     trackLegendary(run, day)
     trackLastPowered(run, day)
     trackStages(run, day)
+    noteWeek(run)
+    if (trades) trackCityRanks(run, day, content.cities.cities)
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -598,7 +609,8 @@ function settlementChecks(runs) {
   const day = (id, stage) => byId[id].stageDays[content.settlement.stages.findIndex((entry) => entry.id === stage)]
   const shown = (value) => (value ? `day ${value}` : `after day ${DAYS}`)
   return [
-    ['light: the Outpost in the first week', day('light', 'outpost') <= 7, shown(day('light', 'outpost'))],
+    // A light user pays for nothing before about its third week; the owner accepted that pace.
+    ['light: the Outpost within the first three weeks', day('light', 'outpost') <= 21, shown(day('light', 'outpost'))],
     ['light: the Hamlet in the first month', day('light', 'hamlet') <= 31, shown(day('light', 'hamlet'))],
     ['medium: the Village by about month two', day('medium', 'village') <= 75, shown(day('medium', 'village'))],
     ['medium: the Town by about month six', day('medium', 'town') <= 200, shown(day('medium', 'town'))],
@@ -619,14 +631,18 @@ const legendary = {
     return gain
   }
 }
-printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary,
-  () => [...bestiaryChecks(runs, plainRuns, bestRelics), ...settlementChecks(runs)])
+const instanceRuns = SCENARIOS.map((scenario) => simulate(scenario, { instances: true }))
+printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => [...bestiaryChecks(runs, plainRuns, bestRelics),
+  ...settlementChecks(runs), ...collectionChecks(instanceRuns, content.legendary.legendary.length)])
 const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: true }))
 printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
+printWeekly(runs, content.events)
+printCityRanks(tradingRuns, content.cities.cities)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
-printInstances(runs, SCENARIOS.map((scenario) => simulate(scenario, { instances: true })), { content, legendaryKind })
+printInstances(runs, instanceRuns, { content, legendaryKind })
+printTraits(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true, traits: true })), content)
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +

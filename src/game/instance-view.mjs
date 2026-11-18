@@ -7,7 +7,9 @@ import { TICK_SECONDS } from './constants.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { roomTimeLimit } from './instance-fight.mjs'
 import { fightsIn, runLevel } from './instance-monsters.mjs'
-import { cooldownOf, enterProblem, highestTier, openness, progressOf, roomInside, runContext } from './instance-run.mjs'
+import { isRegionComplete, isRegionUnlocked, regionOfInstance } from './instance-regions.mjs'
+import { REMATCH_TIERS, bestRematch, rematchOpensAt, rematchTier } from './instance-rematch.mjs'
+import { INSTANCE_REFUSALS, cooldownOf, enterProblem, highestTier, openness, progressOf, roomInside, runContext } from './instance-run.mjs'
 import { worldLevel } from './progression.mjs'
 
 const MS_PER_TICK = TICK_SECONDS * 1000
@@ -21,26 +23,53 @@ function stateOf(world, instance, index) {
   const open = openness(world, instance, index)
   if (roomInside(world, instance.id)) return 'inside'
   if (open.open) return 'open'
-  return open.reason === 'the road to it is not cleared yet' ? 'hidden' : 'locked'
+  return open.reason === INSTANCE_REFUSALS.closed || open.reason === INSTANCE_REFUSALS.regionLocked ? 'hidden' : 'locked'
 }
 
-/** Why each room of the world cannot enter the instance at its first tier, or null when it can. */
-function entriesOf(worldId, world, instance, index) {
+/**
+ * Why each room of the world cannot enter the instance at its first tier (or, with `rematch`, go for
+ * that rematch), or null when it can.
+ */
+function entriesOf(worldId, world, instance, index, rematch) {
   const save = { worlds: { [worldId]: world }, projectWorld: Object.fromEntries(Object.keys(world.projects).map((id) => [id, worldId])) }
+  const entry = rematch ? { instanceId: instance.id, tier: 1, rematch } : { instanceId: instance.id, tier: 1 }
   return Object.fromEntries(Object.keys(world.projects).sort()
-    .map((projectId) => [projectId, enterProblem(save, { projectId, instanceId: instance.id, tier: 1 }, index)]))
+    .map((projectId) => [projectId, enterProblem(save, { ...entry, projectId }, index)]))
+}
+
+/**
+ * The next rematch of a beaten instance (instance-rematch.mjs): its number, tier, the world level it
+ * opens at and why each room cannot go; null before the boss is beaten or past Rematch X.
+ */
+function nextRematchOf(worldId, world, instance, index, progress) {
+  const rematch = bestRematch(progress) + 1
+  if (progress.clears === 0 || rematch > REMATCH_TIERS) return null
+  return {
+    rematch,
+    tier: rematchTier(rematch),
+    opensAt: rematchOpensAt(instance, rematch),
+    entry: entriesOf(worldId, world, instance, index, rematch)
+  }
 }
 
 function instanceView(worldId, world, instance, { index, owned }) {
   const progress = progressOf(world, instance.id)
   const inside = roomInside(world, instance.id)
+  const state = stateOf(world, instance, index)
+  const region = regionOfInstance(index, instance.id)?.id ?? null
+  // Under fog an instance shows nothing but its place: it sends no progress and no entries, so the
+  // view stays small with a whole region locked.
+  if (state === 'hidden') return { id: instance.id, region, state, clears: progress.clears }
   return {
     id: instance.id,
-    state: stateOf(world, instance, index),
+    region,
+    state,
     runs: progress.runs,
     clears: progress.clears,
     bestTier: progress.bestTier,
     highestTier: highestTier(world, instance.id),
+    rematch: bestRematch(progress),
+    nextRematch: nextRematchOf(worldId, world, instance, index, progress),
     relic: instance.relic,
     relicFound: owned.has(instance.relic),
     roomInside: inside,
@@ -62,9 +91,24 @@ export function worldInstancesView(worldId, world, content) {
   if (!index) return null
   const owned = new Set(Object.values(world.projects).flatMap((project) => project.legendary?.relics ?? []))
   const list = index.instances.map((instance) => instanceView(worldId, world, instance, { index, owned }))
-  const cleared = list.filter((entry) => entry.clears > 0).length
-  const map = [...index.region.maps].reverse().find((each) => each.cleared <= cleared) ?? index.region.maps[0]
-  return { map: { ...map }, cleared, total: list.length, complete: cleared === list.length, list }
+  const regions = index.regions.map((region) => regionView(world, region, index, list))
+  // The first region's place stays at the top, as before regions.
+  const { map, cleared, total, complete } = regions[0]
+  return { map, cleared, total, complete, list, regions }
+}
+
+/** A region's place on the road: open or not, the picture for its progress, its cleared count. */
+function regionView(world, region, index, list) {
+  const cleared = list.filter((entry) => region.instanceIds.includes(entry.id) && entry.clears > 0).length
+  const map = [...region.maps].reverse().find((each) => each.cleared <= cleared) ?? region.maps[0]
+  return {
+    id: region.id,
+    unlocked: isRegionUnlocked(world, region, index),
+    map: { ...map },
+    cleared,
+    total: region.instanceIds.length,
+    complete: isRegionComplete(world, region)
+  }
 }
 
 /**
@@ -77,17 +121,23 @@ export function worldInstancesView(worldId, world, content) {
 export function instancesContentView(content) {
   const index = instanceIndexOf(content)
   if (!index) return null
-  const { region } = index
+  const regionOf = (region) => ({
+    id: region.id, name: region.name, title: region.title, width: region.map.width, height: region.map.height, after: region.after
+  })
   return {
-    region: { id: region.id, name: region.name, title: region.title, width: region.map.width, height: region.map.height },
+    region: regionOf(index.regions[0]),
+    // Every region in road order, the first included; `after` names the region that unlocks it.
+    regions: index.regions.map(regionOf),
     instances: index.instances.map((instance) => ({
       id: instance.id,
+      region: regionOfInstance(index, instance.id).id,
       name: instance.name,
       races: [...instance.races],
       opensAt: instance.opensAt,
       map: { ...instance.map },
       banner: instance.banner,
       card: instance.card,
+      ...(instance.scene ? { scene: instance.scene } : {}),
       alt: instance.alt,
       ...(instance.route ? { route: { ...instance.route } } : {}),
       relic: instance.relic,
@@ -122,6 +172,7 @@ export function runView(worldId, projectId, project, world, content) {
     instance: instance.id,
     name: instance.name,
     tier: run.tier,
+    rematch: run.rematch ?? null,
     level: runLevel(worldLevel(world.skills), run.tier),
     room: run.room,
     roomName: room.name,
