@@ -35,8 +35,9 @@ async function openChrome() {
   const pending = new Map()
   socket.addEventListener('message', (event) => {
     const message = JSON.parse(event.data)
-    pending.get(message.id)?.(message.result)
+    const resolve = pending.get(message.id)
     pending.delete(message.id)
+    if (typeof resolve === 'function') resolve(message.result)
   })
   const send = (method, params = {}) => new Promise((resolve) => {
     lastId += 1
