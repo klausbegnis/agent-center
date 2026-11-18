@@ -1,0 +1,46 @@
+/* A city's rank on the Market tab: the badge on its banner, and the rank card on its page with the
+   standing bar, the charters held, what the next rank gives and the charter's price. */
+
+/* The badge on the banner's upper right, legible on every banner: its own dark plate. */
+.ac-city-rank-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border: 1px solid rgba(242, 193, 78, 0.55);
+  border-radius: 3px;
+  background: rgba(18, 21, 27, 0.82);
+  color: #f4f1e8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.ac-city-rank-badge.ac-city-rank-4,
+.ac-city-rank-badge.ac-city-rank-5 { border-color: var(--ac-game-gold, #f2c14e); color: var(--ac-game-gold, #f2c14e); }
+
+.ac-city-rank { grid-column: 1 / -1; gap: 6px; }
+.ac-city-rank-meter { width: 100%; }
+.ac-city-rank-meter .ac-game-meter-fill { background: var(--ac-game-gold, #f2c14e); }
+.ac-city-rank-meter .ac-game-meter-text { flex: 0 1 auto; min-width: 0; font-size: 11px; overflow-wrap: anywhere; }
+.ac-city-rank-fee { font-weight: 600; }
+.ac-city-rank-next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--orca-border, #2a2f3a);
+}
+.ac-city-rank-next-title { margin: 0; font-size: 12px; font-weight: 700; }
+.ac-city-rank-gains,
+.ac-city-rank-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-left: 16px;
+}
+.ac-city-rank-gains li,
+.ac-city-rank-perks li { overflow-wrap: anywhere; }
+.ac-city-rank-buy { flex-wrap: wrap; }

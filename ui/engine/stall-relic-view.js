@@ -9,10 +9,12 @@ import { stallRelic } from './legendary-model.js'
 import { MARKET, coinsText, offerBlockText } from './market-labels.js'
 
 /**
- * @param {{ game: object, world: object, city: object, roomId: string | null, actions: object, base: string }} options
+ * @param {{ game: object, world: object, city: object, roomId: string | null, actions: object, base: string,
+ *   labels?: typeof STALL_RELIC }} options `labels` word the kind of offer (a city's legendary piece uses
+ *   this row too)
  * @returns {HTMLElement | null} null when the stall has no relic today
  */
-export function stallRelicRow({ game, world, city, roomId, actions, base }) {
+export function stallRelicRow({ game, world, city, roomId, actions, base, labels = STALL_RELIC }) {
   const offer = stallRelic(game, city, { roomId, coins: world.coins, canBuy: Boolean(actions.buyStallOffer) })
   if (!offer) return null
   const row = el('article', 'ac-market-row ac-market-offer ac-legendary-offer')
@@ -20,11 +22,11 @@ export function stallRelicRow({ game, world, city, roomId, actions, base }) {
   const facts = el('div', 'ac-market-offer-facts')
   if (offer.entry) {
     head.append(framedPicture(base, offer.entry.id, { frame: 'slot', alt: offer.entry.name, className: 'ac-legendary-offer-picture' }))
-    facts.append(el('span', 'ac-legendary-kicker', STALL_RELIC.kicker), el('strong', 'ac-legendary-name', offer.entry.name),
+    facts.append(el('span', 'ac-legendary-kicker', labels.kicker), el('strong', 'ac-legendary-name', offer.entry.name),
       el('span', 'ac-legendary-buff', offer.entry.text), el('span', 'ac-legendary-flavour', offer.entry.flavour))
   } else {
-    const why = offer.block === 'sold' ? STALL_RELIC.soldToday : STALL_RELIC.ownsAll
-    facts.append(el('span', 'ac-legendary-kicker', STALL_RELIC.kicker), el('span', 'ac-game-card-line', why))
+    const why = offer.block === 'sold' ? labels.soldToday : labels.ownsAll
+    facts.append(el('span', 'ac-legendary-kicker', labels.kicker), el('span', 'ac-game-card-line', why))
   }
   head.append(facts)
   const price = el('span', 'ac-market-offer-price')
@@ -36,7 +38,7 @@ export function stallRelicRow({ game, world, city, roomId, actions, base }) {
       onClick: () => actions.buyStallOffer(world.id, city.id, offer.index, offer.entry.id, roomId)
     })
     buy.dataset.key = `buy:${city.id}:${offer.index}`
-    buy.setAttribute('aria-label', STALL_RELIC.buyLabel(offer.entry.name, coinsText(offer.price)))
+    buy.setAttribute('aria-label', labels.buyLabel(offer.entry.name, coinsText(offer.price)))
     buy.disabled = offer.block !== null
     controls.append(buy)
     const why = offerBlockText(offer.block, { price: offer.price, coins: world.coins })

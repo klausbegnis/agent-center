@@ -47,6 +47,7 @@ const transport = {
   setPartyTitle: (roomId, achievementId) => orca.plugin.request('game.partyTitle', { roomId, achievementId }),
   markSummarySeen: () => orca.plugin.request('game.summarySeen'),
   traitAction: (input) => orca.plugin.request('game.trait', input),
+  buyCharter: (worldId, cityId) => orca.plugin.request('game.buyCharter', { worldId, cityId }),
   sellMaterial: (worldId, cityId, materialId, amount) =>
     orca.plugin.request('game.sell', { worldId, cityId, materialId, amount }),
   tradeMaterial: (worldId, cityId, fromId, toId, amount) =>
