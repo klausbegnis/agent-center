@@ -85,18 +85,18 @@ export function vaultLoot(state, context, seed) {
 }
 
 /**
- * The boss's own item, rolled again with a boon. A wave boss's roll for a city's relic is left out:
- * a run meets its boss far more often than the waves do, and those relics are the stalls' to sell.
+ * The boss's own item, rolled again with a boon. A wave boss's roll for a city's relic is left out,
+ * and so is the waves' pity: a run meets its boss far more often than the waves do, and those
+ * relics are the stalls' to sell. The Seeker's Candle makes the chance larger by its share.
  */
 function bossLoot(state, context, { monster, seed, bonuses, tier }) {
   const index = legendaryIndexOf(context.content)
   if (!index) return []
-  const pityFactor = 1 + (context.party.legendary?.legendaryPity ?? 0)
   const drops = []
-  const chance = Math.min(1, bossItemChance(tier) + bonuses.bossItem)
+  const chance = Math.min(1, bossItemChance(tier) * (1 + bonuses.bossItem))
   for (let roll = 0; roll <= bonuses.rewardRolls; roll++) {
     const own = rollBossItem(state, {
-      rank: 'boss', seed: roll ? `again-${roll}|${seed}` : seed, index, bossId: monster.id, level: monster.level, pityFactor, chance
+      rank: 'boss', seed: roll ? `again-${roll}|${seed}` : seed, index, bossId: monster.id, level: monster.level, chance, withPity: false
     })
     Object.assign(state, own.project)
     if (own.drop) {

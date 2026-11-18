@@ -14,7 +14,7 @@
     { "id": "whetted-blades", "name": "Whetted Blades", "effect": { "effect": "bossDamage", "amount": 0.15 } },
     { "id": "second-wind", "name": "Second Wind", "effect": { "effect": "staminaNow", "amount": 1 } },
     { "id": "gamblers-coin", "name": "Gambler's Coin", "effect": { "effect": "rewardRoll", "amount": 1 } },
-    { "id": "seekers-candle", "name": "Seeker's Candle", "effect": { "effect": "bossItem", "amount": 0.2 } },
+    { "id": "seekers-candle", "name": "Seeker's Candle", "effect": { "effect": "bossItem", "amount": 1 } },
     { "id": "hoarders-map", "name": "Hoarder's Map", "effect": { "effect": "purse", "amount": 0.5 } },
     { "id": "spare-torch", "name": "Spare Torch", "effect": { "effect": "tries", "amount": 1 } },
     { "id": "sand-glass", "name": "Sand Glass", "effect": { "effect": "timeLimit", "amount": 0.3 } },
@@ -78,7 +78,7 @@
       "elite": "warden-seventeen",
       "relic": "heart-of-the-last-pour",
       "loot": { "bars": 2, "gears": 2, "ore": 1 },
-      "vault": ["the-seventeenth-key", "labyrinth-cleaver", "oathbreaker"],
+      "vault": ["labyrinth-cleaver", "oathbreaker"],
       "modifiers": ["armored-boss", "long-rests", "crowded-hall"],
       "rooms": [
         { "kind": "entrance", "name": "The Slag Gate" },
@@ -102,7 +102,7 @@
       "elite": "mother-skein",
       "relic": "amber-of-the-sleeping-queen",
       "loot": { "crops": 2, "hides": 2, "logs": 1 },
-      "vault": ["silk-widows-spindle", "blightmoon-sickle", "pilfered-lantern"],
+      "vault": ["blightmoon-sickle"],
       "modifiers": ["swift-hall", "thorny-elite", "cunning-checks"],
       "rooms": [
         { "kind": "entrance", "name": "The Knothole" },
@@ -126,7 +126,7 @@
       "elite": "grumlaw",
       "relic": "rimebitten-horn",
       "loot": { "hides": 2, "ore": 2, "fish": 1 },
-      "vault": ["bridgewardens-maul", "jawbone-lyre"],
+      "vault": ["bridgewardens-maul"],
       "modifiers": ["enraged-rooms", "armored-boss", "long-rests"],
       "rooms": [
         { "kind": "entrance", "name": "The Snowed Gate" },
@@ -150,7 +150,7 @@
       "elite": "brother-hollis",
       "relic": "drowned-concordance",
       "loot": { "pages": 2, "crystals": 2, "seals": 1 },
-      "vault": ["vigil-censer", "moonwane-scepter", "unquenched-candle"],
+      "vault": ["vigil-censer", "moonwane-scepter"],
       "modifiers": ["ethereal-boss", "cunning-checks", "no-campfire"],
       "rooms": [
         { "kind": "entrance", "name": "The Flooded Porch" },
@@ -174,7 +174,7 @@
       "elite": "tethra",
       "relic": "fang-of-the-coiled-wyrm",
       "loot": { "crystals": 2, "runes": 2, "bars": 1 },
-      "vault": ["coldscale-hauberk", "hoard-sleepers-egg"],
+      "vault": ["coldscale-hauberk"],
       "modifiers": ["swift-hall", "regenerating-boss", "crowded-hall", "thorny-elite"],
       "rooms": [
         { "kind": "entrance", "name": "The Bone Stair" },

@@ -45,10 +45,11 @@ test('its boss and elite are bosses of the roster, of its races, and belong to n
   }), 'already belongs to an instance')
 })
 
-test('a vault holds bosses\' own items, never an instance boss\'s or a city\'s relic', () => {
+test('a vault holds bosses\' own equipment, never an instance boss\'s item or any relic', () => {
   mentions(problemsWith((data) => { data.instances[0].vault = ['sheaf-of-the-long-summer'] }), 'not a boss\'s item')
-  mentions(problemsWith((data) => { data.instances[0].vault = ['crown-of-the-ossuary'] }), 'item of an instance\'s boss')
-  mentions(problemsWith((data) => { data.instances[0].vault = ['the-seventeenth-key'] }), 'another instance\'s elite')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['jawbone-lyre'] }), 'not a boss\'s item')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['stormwing-staff'] }), 'item of an instance\'s boss')
+  mentions(problemsWith((data) => { data.instances[0].vault = ['bridgewardens-maul'] }), 'another instance\'s elite')
   mentions(problemsWith((data) => { data.instances[0].vault = [] }), 'each once')
 })
 

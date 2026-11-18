@@ -14,7 +14,7 @@ import { GROUP_UPGRADE_IDS } from '../src/game/spending.mjs'
 import { emptySave } from '../src/game/worlds.mjs'
 import { funnelGear } from './funnel-policy.mjs'
 import { enterHighestInstance, rememberRun } from './instance-policy.mjs'
-import { newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
+import { collectionChecks, newInstanceStats, noteInstanceEvents, printInstances } from './instance-balance.mjs'
 import { visitMarket } from './market-policy.mjs'
 import {
   fixed,
@@ -396,7 +396,7 @@ function simulate(scenario, { trades = false, funnel = false, instances = false,
   const run = {
     traitBroker: traits ? { bought: 0, spent: 0, taught: 0 } : null,
     scenario,
-    instances: instances ? newInstanceStats(content.instances) : null,
+    instances: instances ? newInstanceStats(content.instances, content.legendary) : null,
     trades,
     funnel,
     funnelled: { items: 0, relics: 0 },
@@ -626,14 +626,15 @@ const legendary = {
     return gain
   }
 }
-printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary,
-  () => [...bestiaryChecks(runs, plainRuns, bestRelics), ...settlementChecks(runs)])
+const instanceRuns = SCENARIOS.map((scenario) => simulate(scenario, { instances: true }))
+printBalanceCheck(runs, plainEngine, tokensPerWorkingHour, legendary, () => [...bestiaryChecks(runs, plainRuns, bestRelics),
+  ...settlementChecks(runs), ...collectionChecks(instanceRuns, content.legendary.legendary.length)])
 const tradingRuns = SCENARIOS.map((scenario) => simulate(scenario, { trades: true }))
 printMarketComparison(runs, tradingRuns)
 printSettlement(runs, tradingRuns)
 const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
-printInstances(runs, SCENARIOS.map((scenario) => simulate(scenario, { instances: true })), { content, legendaryKind })
+printInstances(runs, instanceRuns, { content, legendaryKind })
 printTraits(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true, traits: true })), content)
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)

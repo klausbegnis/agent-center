@@ -24,8 +24,11 @@ const TEXT_LIMIT = 60
 const ALT_LIMIT = 200
 /** A world level an instance could ever open at; past it an instance is a mistake, not a goal. */
 const MAX_OPENS_AT = 1000
-/** Legendary kinds a vault may hold: a boss's own item, never a relic a city sells. */
-const VAULT_KINDS = ['boss-relic', 'equipment']
+/**
+ * Legendary kinds a vault may hold: a boss's own equipment. Never a relic: a city's is the stalls'
+ * to sell, and a boss's own relic comes only from that boss.
+ */
+const VAULT_KINDS = ['equipment']
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isShortText = (value, limit = TEXT_LIMIT) => typeof value === 'string' && value.trim() !== '' && value.length <= limit
@@ -105,8 +108,8 @@ function checkBosses(name, entry, context) {
 }
 
 /**
- * A vault holds bosses' own items, each at most once: its elite's, and others of the roster, never
- * one an instance's boss guards or another instance's elite carries.
+ * A vault holds bosses' own equipment, each at most once: its elite's, and others of the roster,
+ * never a relic, nor one an instance's boss guards or another instance's elite carries.
  */
 function checkVault(name, { vault, elite }, context) {
   if (!Array.isArray(vault) || vault.length === 0 || new Set(vault).size !== vault.length) {

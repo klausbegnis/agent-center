@@ -10,10 +10,15 @@ const materialTotal = (materials) => sumOf(Object.values(materials ?? {}))
 /**
  * What the instance policy keeps and counts during a run of the simulator.
  *
- * @param {{ instances: { id: string }[] }} data the parsed game/instances.json
+ * @param {{ instances: { id: string, boss: string, elite: string }[] }} data the parsed game/instances.json
+ * @param {{ legendary: { id: string, kind: string, boss?: string }[] }} [legendary] the parsed
+ *   game/legendary.json, to tell where each item a run finds came from
  */
-export function newInstanceStats(data) {
+export function newInstanceStats(data, legendary = { legendary: [] }) {
+  const guardians = new Set(data.instances.flatMap((entry) => [entry.boss, entry.elite]))
   return {
+    kinds: new Map(legendary.legendary.map((entry) => [entry.id, entry.kind])),
+    guardianItems: new Set(legendary.legendary.filter((entry) => guardians.has(entry.boss)).map((entry) => entry.id)),
     memory: { order: data.instances.map((entry) => entry.id), tiers: {} },
     names: Object.fromEntries(data.instances.map((entry) => [entry.id, entry.name])),
     cleared: 0,
@@ -25,7 +30,9 @@ export function newInstanceStats(data) {
     insideMaterials: 0,
     insideKillMaterials: 0,
     insideCoins: 0,
-    rewards: []
+    rewards: [],
+    /** Legendary items gained in a year, by where they came from: waves' bosses, or a run's relic, boss and vault. */
+    sources: { waves: 0, relic: 0, boss: 0, vault: 0 }
   }
 }
 
@@ -40,6 +47,10 @@ export function noteInstanceEvents(run, events, { day, remember }) {
   const stats = run.instances
   for (const event of events) {
     if (event.type === 'kill' && event.instance) stats.insideKillMaterials += materialTotal(event.materials)
+    if (event.type === 'kill' && !event.instance) stats.sources.waves += event.legendary?.length ?? 0
+    if (event.type === 'instance' && (event.kind === 'cleared' || event.kind === 'failed')) {
+      for (const id of event.found.legendary) stats.sources[sourceOf(id, stats)] += 1
+    }
     if (event.type !== 'instance' || (event.kind !== 'cleared' && event.kind !== 'failed')) continue
     stats.ticksInside += event.ticks
     stats.insideMaterials += materialTotal(event.found.materials)
@@ -55,6 +66,12 @@ export function noteInstanceEvents(run, events, { day, remember }) {
     }
     remember(stats.memory, event)
   }
+}
+
+/** Where an item a run found came from: the instance's relic, an instance boss's own item, or the vault. */
+function sourceOf(id, stats) {
+  if (stats.kinds.get(id) === 'instance-relic') return 'relic'
+  return stats.guardianItems.has(id) ? 'boss' : 'vault'
 }
 
 const hoursOfTicks = (ticks) => (ticks * TICK_SECONDS * 1000) / HOUR_MS
@@ -118,4 +135,36 @@ export function printInstances(plainRuns, instanceRuns, { content }) {
   printTable(['scenario', 'day', 'world', 'with', 'legendary', 'with', 'kills/h', 'with'], pace)
   console.log('Legendary: items owned per room (of all the content has). Kills/h: kills per hour of fighting ' +
     'in the period up to that day, runs included.')
+  const sources = instanceRuns.map((run) => `${run.scenario.id} ${Object.entries(run.instances.sources)
+    .map(([source, count]) => `${count} ${source}`).join(', ')}`)
+  console.log(`Legendary items gained in a year by source (all rooms): ${sources.join('; ')}. Waves: a wave boss's ` +
+    'drop; relic: an instance\'s first clear; boss: a run\'s boss or elite item; vault: the vault.')
+}
+
+/** The mean of a room's legendary items at a day of a run. */
+const ownedAt = (run, day) => {
+  const owned = run.rows.find((row) => row.day === day)?.legendary ?? []
+  return owned.reduce((sum, count) => sum + count, 0) / Math.max(1, owned.length)
+}
+
+/**
+ * The collection's pace targets, from the instance policy's runs (the player who collects most
+ * without trading): a goal of several years, whose first piece still comes within weeks.
+ *
+ * @param {object[]} instanceRuns light, medium and heavy, in that order
+ * @param {number} total the legendary items the content has
+ * @returns {[string, boolean, string][]}
+ */
+export function collectionChecks(instanceRuns, total) {
+  const byId = Object.fromEntries(instanceRuns.map((run) => [run.scenario.id, run]))
+  const year = (id) => ownedAt(byId[id], 365)
+  const firstDay = Math.min(...Object.values(byId.light.legendaryFirsts).flatMap((first) => [first.relic ?? Infinity, first.bossItem ?? Infinity]))
+  const shown = (id) => `${fixed(year(id))} of ${total} per room`
+  const most = Math.max(...byId.heavy.rows.at(-1).legendary)
+  return [
+    ['light: the first legendary item within the first three weeks', firstDay <= 21, `day ${firstDay}`],
+    ['light: about 8 to 12 legendary items in a year', year('light') >= 8 && year('light') <= 12, shown('light')],
+    ['medium: about 14 to 20 legendary items in a year', year('medium') >= 12 && year('medium') <= 20, shown('medium')],
+    ['heavy: the collection is far from complete at a year', most <= total - 10, `${fixed(year('heavy'))}, at most ${most}, of ${total}`]
+  ]
 }

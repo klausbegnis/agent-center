@@ -25,7 +25,7 @@ const BOON_TEXT = {
   tries: (amount) => `${amount} more ${amount === 1 ? 'try' : 'tries'} in every room left`,
   timeLimit: (amount) => `${percent(amount)} more time in every room left`,
   purse: (amount) => `The boss's purse holds ${percent(amount)} more`,
-  bossItem: (amount) => `+${percent(amount)} chance the boss leaves its own item`,
+  bossItem: (amount) => `the boss is ${percent(amount)} more likely to leave its own item`,
   rewardRoll: (amount) => (amount === 1 ? 'A second roll at the boss\'s own item' : `${amount} more rolls at the boss's own item`),
   noBossAffix: () => 'The boss comes without an affix'
 }

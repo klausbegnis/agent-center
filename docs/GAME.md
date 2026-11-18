@@ -650,8 +650,8 @@ one room at a time.
   the region's title (**Roadwarden**) and leaves the map complete.
 - Bosses and elites come from the existing roster, of the instance's races, each in at most one
   instance; all twelve guard an item of their own (`game/legendary.json`), which is what a clear
-  rolls for. The vault's pool lists other bosses' items (its elite's among them), never an
-  instance boss's.
+  rolls for. The vault's pool lists other bosses' equipment (its elite's among them), never an
+  instance boss's item and never a relic: a boss's own relic comes only from that boss.
 - The site of each instance on the 256×144 roadmap is `map: { x, y }`; the three roadmap pictures
   (0, 3 and 6 cleared) are enough because the UI places live markers over them.
 
@@ -717,7 +717,7 @@ never a capped legendary effect type, so they cannot push those sums past their 
 | Whetted Blades | +15% damage against the boss | `bossDamage` 0.15 |
 | Second Wind | stamina back to full now | `staminaNow` 1 |
 | Gambler's Coin | a second roll at the boss's own item | `rewardRoll` 1 |
-| Seeker's Candle | +20% chance the boss leaves its own item | `bossItem` 0.2 |
+| Seeker's Candle | the boss is twice as likely to leave its own item | `bossItem` 1 |
 | Hoarder's Map | the boss's purse holds 50% more | `purse` 0.5 |
 | Spare Torch | one more try in every room left | `tries` 1 |
 | Sand Glass | 30% more time in every room left | `timeLimit` 0.3 |
@@ -755,10 +755,10 @@ boss's away.
 |---|---|---|
 | every kill | the waves' materials and item drop | as on waves, at the run's level |
 | a check passed | materials | two plain kills of the run's level |
-| the vault | materials, and sometimes an item of its pool the room lacks | three plain kills; `INSTANCE_VAULT_ITEM_CHANCE` 1% + 0.25% a tier, at most 4% |
+| the vault | materials, and rarely a piece of its pool the room lacks | three plain kills; `INSTANCE_VAULT_ITEM_CHANCE` 0.3% + 0.05% a tier, at most 1% |
 | every clear | the purse: materials of the instance's loot table and coins | `INSTANCE_PURSE_KILLS` 16 plain kills and `INSTANCE_PURSE_COINS` 40 × `REWARD_GROWTH ** level` coins, × (1 + 5% a tier) × (1 + the Hoarder's Map) |
 | every clear | each of the instance's races counted as `tier` champion kills | 10 bestiary points each |
-| every clear | the boss's own item, when the room lacks it | `INSTANCE_BOSS_ITEM_CHANCE` 10% + 1% a tier, at most 30%, plus the waves' boss pity (5% a miss, × the boss hunter's pity bonus); the Seeker's Candle adds, the Gambler's Coin rolls again |
+| every clear | the boss's own item, when the room lacks it | `INSTANCE_BOSS_ITEM_CHANCE` 0.4% + 0.08% a tier, at most 1.2%, without the waves' pity (neither read nor raised); the Seeker's Candle doubles it, the Gambler's Coin rolls again |
 | the world's first clear | the instance's relic, to the clearing room (active when it is its first) | a room that owns it already gets `INSTANCE_RELIC_COINS` 3000 × `REWARD_GROWTH ** level` coins, a city relic's price |
 
 A clear's boss does not roll for a city's relic as a wave's boss does: a run meets its boss about once
@@ -2312,9 +2312,9 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 
 | | day | legendary owned per room, plain | with instances | kills/h plain | with instances |
 |---|---|---|---|---|---|
-| light | 30, 90, 365 | 3, 3, 4 | 5, 11, 20 | 11.0, 9.8, 12.7 | 4.4, 3.5, 4.1 |
-| medium | 30, 90, 365 | 3/3, 4/3, 9/7 | 9/7, 13/14, 25/23 | 8.1, 9.0, 11.4 | 3.1, 3.7, 3.9 |
-| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 9/14/11, 17/22/18, 33/32/30 | 12.0, 13.9, 17.4 | 3.6, 4.2, 4.9 |
+| light | 30, 90, 365 | 3, 3, 4 | 4, 7, 11 | 11.0, 9.8, 12.7 | 4.4, 3.5, 4.3 |
+| medium | 30, 90, 365 | 3/3, 4/3, 9/7 | 7/3, 9/5, 16/11 | 8.1, 9.0, 11.4 | 2.8, 3.1, 4.0 |
+| heavy | 30, 90, 365 | 2/5/5, 8/11/10, 16/18/20 | 3/8/8, 8/15/14, 23/24/24 | 12.0, 13.9, 17.4 | 3.8, 4.2, 5.0 |
 
 - **A light user gets there in the first week**: the Sunken Crypt opens at World Lv 5 and its first
   clear comes on day 5; the road is complete near the end of the first year (heavy: in two weeks).
@@ -2327,13 +2327,21 @@ hit splits and the upgrade pace under "Balance"), and a player who never enters 
 - **Failures** are 43 to 49% of runs because the policy climbs a tier after every clear until it
   fails, then steps back: it lives at the edge of what its party can do. A run that fails keeps what
   it found and costs two hours of working time on the waves before that room may try again.
-- **Collection** is the reward the owner asked for, and the one to watch: a light user owns 20 of
-  40 legendary items after a year instead of 4 (the six instance relics, the six instance bosses'
-  items, and the vaults'). The first tuning gave 36: the instance's boss also rolled for a city's
-  relic with the waves' pity (a run meets its boss about once a working day), the boss's own item
-  came at 25% + 5% a tier and the vault's at 10% + 4% a tier. The city relic roll is gone, and the
-  boss item (10% + 1% a tier, at most 30%) and the vault (1% + 0.25% a tier, at most 4%) are now
-  rare enough that a light room's collection still grows all year.
+- **Collection** is a goal of several years. With instances a light room owns 11 of 40 legendary
+  items after a year, a medium one 16 and 11, a heavy one 23 to 24, and 28 to 32 after two years
+  (measured with `DAYS=730`), while the first still comes on day 5. In a year the light world gains
+  3 from the waves' bosses, 6 instance relics (each instance's first clear), 1 from a run's boss and
+  1 from a vault; the heavy world 45, 6, 14 and 6. The simulator prints that split and checks the
+  pace (light 8 to 12, medium about 14 to 20 per room, heavy at least ten short at a year, the first
+  item within three weeks); medium sits a little low at 13.5 a room, its second room entering less.
+  Before this tuning a light room owned 18 and a heavy one 31 to 33 in a year: the run's boss rolled
+  at 10% + 1% a tier (at most 30%) with the waves' pity on top, which every miss raised by 5%, so a
+  daily run soon made its item and every wave boss's item near certain; the vault rolled at 1% +
+  0.25% a tier and could hold boss relics. Now a run's boss rolls at 0.4% + 0.08% a tier (at most
+  1.2%, under a wave boss's 5%: a run meets its boss about once a working day, a light room meets a
+  wave boss a few times a year) and leaves the waves' pity alone, and a vault holds only
+  equipment (0.3% + 0.05% a tier, at most 1%), so a boss's own relic comes only from that boss.
+  The first tuning, 36 items, also rolled for a city's relic in every clear; that roll is gone.
 - **The caps.** The six relics' buffs are summed with the strongest relic of each type, all the
   legendary equipment, a whole bestiary and a whole settlement in the caps tests, and stay within
   every cap (the Tidewake Bell and the Fang reach theirs exactly). Boons and tier modifiers use types

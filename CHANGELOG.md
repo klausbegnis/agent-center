@@ -18,6 +18,14 @@ All notable changes to this project are recorded here. The format follows
   room and kept in the journal's highlights, and a Traits group of seven achievements follows the
   collection.
 
+### Changed
+
+- Game mode: legendary items come much more slowly from instances, so the collection is a goal of
+  several years. A run's boss leaves its own item at 0.4% (plus 0.08% a tier, at most 1.2%) and no
+  longer uses or raises the waves' pity, a vault holds only equipment and rarely (0.3%, at most
+  1%), and the Seeker's Candle doubles the boss's chance. A boss's own relic now comes only from
+  that boss. Nothing already owned is taken away.
+
 ## 0.3.0 - 2026-11-17
 
 ### Changed

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { killsOf } from './bestiary.mjs'
+import { BOSS_ITEM_CHANCE } from './constants.mjs'
 import { createEngine } from './engine.mjs'
 import { instanceIndexOf } from './instance-content.mjs'
 import { INSTANCE_BOSS_ITEM_MAX } from './instance-constants.mjs'
@@ -107,7 +108,7 @@ test('a clear credits the instance\'s races with champions in the bestiary', () 
 })
 
 test('the boss\'s own item and the vault\'s are never a second copy, and come back more often at higher tiers', () => {
-  assert.ok(bossItemChance(1) > 0.05, 'better than a wave boss\'s')
+  assert.ok(INSTANCE_BOSS_ITEM_MAX < BOSS_ITEM_CHANCE.boss, 'rarer than a wave boss\'s: a run meets its boss far more often')
   assert.ok(bossItemChance(5) > bossItemChance(1))
   assert.equal(bossItemChance(1000), INSTANCE_BOSS_ITEM_MAX)
   assert.ok(vaultItemChance(4) > vaultItemChance(1))
