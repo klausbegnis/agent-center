@@ -4,7 +4,7 @@
 // way the journal counts it, pay their reward the moment they are done, and all three done pay the
 // day's bonus, larger with a streak of such days. The caller passes the day (the bridge's
 // `localDayOf`, the journal's) and the time; nothing here reads the clock. Pure.
-import { killsOf } from './bestiary.mjs'
+import { RACE_FIRST_DAY, killsOf } from './bestiary.mjs'
 import { REWARD_BASE, REWARD_GROWTH } from './constants.mjs'
 import { rewardFor } from './combat.mjs'
 import { chanceOf, hashOf } from './hash.mjs'
@@ -23,8 +23,16 @@ import { addMaterials } from './worlds.mjs'
 
 /** Played days of the journal a world's pace is read from, the newest first. */
 const PACE_DAYS = 7
-/** Fewer played days than this, and the pace is the content's defaults instead. */
-const PACE_MIN_DAYS = 2
+/**
+ * A journal younger than PACE_DAYS played days is blended with the world's history (its lifetime
+ * kills over its age), the fewer its days the more: a journal that began yesterday, or with a short
+ * day, does not size a long-played world's quests.
+ */
+const HISTORY_FROM_KILLS = 100
+/** A week has five working days: a calendar day's share of the kills, made a played day's. */
+const PLAYED_DAYS_A_WEEK = 5
+/** The fewest a kill, race, elite or supply quest asks: a target of 1 reads as broken. */
+const LEAST_TARGET = { kills: 10, race: 3, elites: 3, collect: 10 }
 /** A kill of one race among the twenty, and of an elite or champion (MONSTER_RANKS' shares). */
 const RACE_SHARE = 1 / 20
 const FEATURED_SHARE = 2 / 21
@@ -39,10 +47,23 @@ const BOSSES_FOR_QUEST = 5
 const COINS_FOR_QUEST = 10
 /** Coins come in bursts (a run's purse, a sale): a coin quest needs them on most played days. */
 const COIN_DAYS_SHARE = 1
+const COIN_DAYS_MIN = 3
 /** A race's share of a world's kills is read from its bestiary once it counts this many. */
 const RACE_SHARE_FROM = 200
-/** The least a quest may pay, in plain kills of the world's level. */
-const LEAST_REWARD_KILLS = 0.5
+/**
+ * What a quest and the day's bonus pay, measured against the weekly goal's reward (`rewardKills`
+ * plain kills of the world's level, game/events.json): a quest a fifth of it and the bonus half,
+ * so both grow with the world's level as the weekly reward does. A world whose days bring few kills
+ * gets less, down to a floor, so the quests stay a nudge on its income (the simulator checks it).
+ */
+const QUEST_OF_WEEKLY = 0.2
+const BONUS_OF_WEEKLY = 0.5
+const QUEST_FLOOR_OF_WEEKLY = 0.045
+const BONUS_FLOOR_OF_WEEKLY = 0.1
+/** The weekly goal's reward without weekly events in the content. */
+const WEEKLY_REWARD_KILLS = 30
+/** The sizing the day's quests were rolled with: a day rolled by an older one rolls again once. */
+export const QUEST_SIZING = 2
 
 const plainKill = (level) => REWARD_BASE * REWARD_GROWTH ** level
 
@@ -58,20 +79,46 @@ export function paceOf(save, world, day, defaults) {
   const at = (name) => JOURNAL_COUNTERS.indexOf(name) + 1
   const rows = (save.journal?.days ?? []).filter((row) => row[0] < day && row[at('kills')] > 0).slice(-PACE_DAYS)
   const level = worldLevel(world.skills)
-  if (rows.length < PACE_MIN_DAYS) {
-    return { kills: defaults.kills, bosses: 0, levels: defaults.levels, skillLevels: defaults.skillLevels, coins: 0,
-      materials: defaults.kills * plainKill(level) }
-  }
+  const history = historyOf(world, day, defaults, level)
+  if (rows.length === 0) return history
   const mean = (name) => rows.reduce((sum, row) => sum + (row[at(name)] ?? 0), 0) / rows.length
-  const coinDays = rows.filter((row) => row[at('coins')] > 0).length / rows.length
-  return { kills: mean('kills'), bosses: mean('bosses'), levels: mean('levels'), skillLevels: mean('skillLevels'),
+  // Coins come in bursts: a few played days must all have brought some.
+  const coinDays = rows.length >= COIN_DAYS_MIN ? rows.filter((row) => row[at('coins')] > 0).length / rows.length : 0
+  const journal = { kills: mean('kills'), bosses: mean('bosses'), levels: mean('levels'), skillLevels: mean('skillLevels'),
     coins: coinDays >= COIN_DAYS_SHARE ? mean('coins') : 0, materials: mean('materials') }
+  const weight = rows.length / PACE_DAYS
+  if (weight >= 1) return journal
+  const blend = (name) => weight * journal[name] + (1 - weight) * history[name]
+  // Coins and bosses only from the journal's own days: the history cannot say how many there were.
+  return { kills: blend('kills'), bosses: journal.bosses, levels: blend('levels'), skillLevels: blend('skillLevels'),
+    coins: journal.coins, materials: blend('materials') }
 }
 
-/** A target from a pace and a share: whole, at least 1, or null when the day brings too little. */
-const sized = (pace, share) => {
-  const target = Math.round(pace * share)
-  return target >= 1 ? target : null
+/**
+ * A world's pace from what it knew before the journal: the kills its bestiary counted since its
+ * first one, over a played day of that time (five a week), or the content's defaults for a young
+ * world, which grow a little with its level. Materials are those kills at the world's level.
+ */
+function historyOf(world, day, defaults, level) {
+  const counters = [...Object.values(world.bestiary?.races ?? {}), ...(world.bestiary?.others ? [world.bestiary.others] : [])]
+  const kills = counters.reduce((sum, counter) => sum + killsOf(counter), 0)
+  const firstDays = counters.map((counter) => counter[RACE_FIRST_DAY]).filter((first) => Number.isInteger(first) && first > 0)
+  const ageDays = firstDays.length ? Math.max(1, day - Math.min(...firstDays) + 1) : 0
+  const youngKills = defaults.kills * (1 + level / 20)
+  const perPlayedDay = kills >= HISTORY_FROM_KILLS && ageDays > 0
+    ? Math.max(youngKills, (kills / ageDays) * (7 / PLAYED_DAYS_A_WEEK))
+    : youngKills
+  return { kills: perPlayedDay, bosses: 0, levels: defaults.levels, skillLevels: defaults.skillLevels, coins: 0,
+    materials: perPlayedDay * plainKill(level) }
+}
+
+/**
+ * A target from a pace and a share: whole, at least 1 (or the kind's least), or null when the day
+ * brings too little: a day must bring twice the kind's least for it to be asked at all.
+ */
+const sized = (pace, share, least = 1) => {
+  if (pace < 2 * least) return null
+  return Math.max(least, Math.round(pace * share))
 }
 
 /**
@@ -119,15 +166,18 @@ function canRun(save, worldId, content, isRematchRun) {
  * finish it today.
  */
 const OFFERS = {
-  kills: ({ pace, share }) => (pace.kills >= 5 ? { target: sized(pace.kills, share) } : null),
+  kills: ({ pace, share }) => {
+    const target = sized(pace.kills, share, LEAST_TARGET.kills)
+    return target ? { target } : null
+  },
   race: ({ pace, share, world, content, seed }) => {
     const picked = cullingRace(world, content, seed)
     if (!picked) return null
-    const target = sized(pace.kills * picked.share, share)
+    const target = sized(pace.kills * picked.share, share, LEAST_TARGET.race)
     return target ? { target, race: picked.race } : null
   },
   elites: ({ pace, share }) => {
-    const target = sized(pace.kills * ELITE_SHARE, share)
+    const target = sized(pace.kills * ELITE_SHARE, share, LEAST_TARGET.elites)
     return target ? { target } : null
   },
   boss: ({ pace }) => (pace.bosses >= BOSSES_FOR_QUEST ? { target: 1 } : null),
@@ -138,10 +188,10 @@ const OFFERS = {
     // The world's stock says what it gets most of; the pick leans to a plentiful one.
     const plentiful = held.filter((id) => world.materials[id] >= total / held.length)
     const material = plentiful[hashOf(`${seed}|material`) % plentiful.length]
-    const target = sized(pace.materials * (world.materials[material] / total), share)
+    const target = sized(pace.materials * (world.materials[material] / total), share, LEAST_TARGET.collect)
     return target ? { target, material } : null
   },
-  coins: ({ pace, share }) => (pace.coins >= COINS_FOR_QUEST ? { target: sized(pace.coins, share) } : null),
+  coins: ({ pace, share }) => (pace.coins >= COINS_FOR_QUEST ? { target: sized(pace.coins, share, COINS_FOR_QUEST / 2) } : null),
   trade: ({ world, content }) => {
     const level = worldLevel(world.skills)
     const open = (content.cities?.cities ?? []).some((city) => isCityOpen(city, level))
@@ -177,7 +227,7 @@ function rewardMaterials(world, kills, { seed, material }) {
   const level = worldLevel(world.skills)
   const least = [...MATERIALS].sort((a, b) => (world.materials[a] ?? 0) - (world.materials[b] ?? 0) || a.localeCompare(b)).slice(0, 2)
   const loot = Object.fromEntries((material ? [material] : least).map((id) => [id, 1]))
-  return rewardFor({ level, reward: Math.max(LEAST_REWARD_KILLS, kills), loot, dropFactor: 0 }, { luck: 0, seed }).materials
+  return rewardFor({ level, reward: kills, loot, dropFactor: 0 }, { luck: 0, seed }).materials
 }
 
 /**
@@ -202,7 +252,7 @@ export function rollQuests(save, worldId, day, content) {
       .map((kind) => ({ kind: kind.id, offer: OFFERS[kind.id]({ pace, share: kind.slots[slot], world, worldId, save, content, seed }) }))
       .filter((entry) => entry.offer?.target >= 1)
     const picked = offers.length ? offers[hashOf(`${seed}|kind`) % offers.length] : fallback(quests, pace, slot)
-    const reward = rewardMaterials(world, pace.kills * index.rewards.quest, { seed, material: picked.offer.material })
+    const reward = rewardMaterials(world, questRewardKills(pace, content), { seed, material: picked.offer.material })
     quests.push({ kind: picked.kind, slot, ...picked.offer, progress: 0, done: false, reward })
   }
   return quests
@@ -213,8 +263,24 @@ function dailyBonus(save, world, worldId, day, content, streak) {
   const index = questIndexOf(content)
   const { bonus, streakStep, streakCap } = index.rewards
   const pace = paceOf(save, world, day, index.defaults)
-  const kills = pace.kills * bonus * (1 + streakStep * Math.min(streak, streakCap))
+  const weekly = weeklyRewardKills(content)
+  const base = clamp(pace.kills * bonus, weekly * BONUS_FLOOR_OF_WEEKLY, weekly * BONUS_OF_WEEKLY)
+  const kills = base * (1 + streakStep * Math.min(streak, streakCap))
   return rewardMaterials(world, kills, { seed: `${worldId}|${day}|bonus` })
+}
+
+const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
+/** The weekly goal's reward in plain kills (game/events.json's `rewardKills`). */
+const weeklyRewardKills = (content) => content.events?.rewardKills ?? WEEKLY_REWARD_KILLS
+
+/**
+ * What a quest pays, in plain kills of the world's level: a fifth of the weekly goal's reward, less
+ * for a world whose days bring few kills (the file's `quest` share of a day's kills), never under
+ * the floor.
+ */
+export function questRewardKills(pace, content) {
+  const weekly = weeklyRewardKills(content)
+  return clamp(pace.kills * questIndexOf(content).rewards.quest, weekly * QUEST_FLOOR_OF_WEEKLY, weekly * QUEST_OF_WEEKLY)
 }
 
 /**
@@ -232,8 +298,19 @@ function newDay(save, worldId, day, content) {
     bonus: false,
     streak,
     best: was?.best ?? 0,
-    totals: was?.totals ?? [0, 0]
+    totals: was?.totals ?? [0, 0],
+    sizing: QUEST_SIZING
   }
+}
+
+/**
+ * Today's record as this sizing rolls it: a day rolled by an older sizing rolls again once, unless
+ * a quest of it has moved already (then it stays, marked as seen).
+ */
+function resized(save, worldId, daily, content) {
+  if ((daily.sizing ?? 1) >= QUEST_SIZING) return daily
+  if (daily.quests.some((quest) => quest.progress > 0)) return { ...daily, sizing: QUEST_SIZING }
+  return { ...daily, quests: rollQuests(save, worldId, daily.day, content), sizing: QUEST_SIZING }
 }
 
 /** Whether the journal saw a day with work: kills or levels. */
@@ -327,7 +404,7 @@ export function noteQuests(save, { before, midway, events = [], day, isNews = tr
   for (const [worldId, world] of Object.entries(save.worlds)) {
     if (Object.keys(world.projects).length === 0) continue
     const isNewDay = world.daily?.day !== day
-    let daily = isNewDay ? newDay(save, worldId, day, content) : world.daily
+    let daily = isNewDay ? newDay(save, worldId, day, content) : resized(save, worldId, world.daily, content)
     let current = world
     if (isNews) {
       const inWorld = (event) => Object.hasOwn(world.projects, event.projectId ?? event.roomId ?? '')

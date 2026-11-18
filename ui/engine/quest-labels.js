@@ -38,8 +38,9 @@ export function questText(quest) {
   switch (quest.kind) {
     case 'kills': return `Defeat ${count} ${plural('monster', 'monsters')}`
     case 'race': {
-      const race = (quest.raceName ?? quest.race ?? 'monsters of a race').toLowerCase()
-      return quest.target === 1 ? `Defeat one of the ${race}` : `Defeat ${count} ${race}`
+      // A race's name is plural ("Skeletons"); its id is the singular ("skeleton", "lizardfolk").
+      const race = quest.target === 1 ? (quest.race ?? quest.raceName ?? 'monster') : (quest.raceName ?? quest.race ?? 'monsters')
+      return `Defeat ${count} ${race.toLowerCase()}`
     }
     case 'elites': return `Defeat ${count} ${plural('elite or champion', 'elites or champions')}`
     case 'boss': return `Defeat ${count} ${plural('boss', 'bosses')}`

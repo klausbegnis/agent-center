@@ -10,7 +10,9 @@ const DAY_MAX = 1_000_000
 /** The most a count of quests or days, or a streak, may hold. */
 const COUNT_MAX = 10_000_000
 const QUEST_KEYS = ['kind', 'slot', 'target', 'progress', 'done', 'race', 'material', 'reward']
-const KEYS = ['day', 'quests', 'bonus', 'bonusReward', 'streak', 'best', 'totals']
+const KEYS = ['day', 'quests', 'bonus', 'bonusReward', 'streak', 'best', 'totals', 'sizing']
+/** The most a record's sizing (quests.mjs's QUEST_SIZING) may say. */
+const SIZING_MAX = 100
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isWhole = (value, max) => Number.isInteger(value) && value >= 0 && value <= max
@@ -58,6 +60,9 @@ function shapeProblem(value) {
   }
   if (!Array.isArray(value.totals) || value.totals.length !== 2 || !value.totals.every((count) => isWhole(count, COUNT_MAX))) {
     return ['daily.totals', 'is not the quests and days done']
+  }
+  if (value.sizing !== undefined && (!Number.isInteger(value.sizing) || value.sizing < 1 || value.sizing > SIZING_MAX)) {
+    return ['daily.sizing', 'is not a sizing']
   }
   return null
 }

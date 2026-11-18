@@ -27,7 +27,9 @@ function game(extra = {}) {
 test('each kind of quest in words', () => {
   assert.equal(questText({ kind: 'kills', target: 40 }), 'Defeat 40 monsters')
   assert.equal(questText({ kind: 'race', target: 6, raceName: 'Goblins' }), 'Defeat 6 goblins')
-  assert.equal(questText({ kind: 'race', target: 1, raceName: 'Slimes' }), 'Defeat one of the slimes')
+  assert.equal(questText({ kind: 'race', target: 1, race: 'skeleton', raceName: 'Skeletons' }), 'Defeat 1 skeleton')
+  assert.equal(questText({ kind: 'race', target: 40, race: 'skeleton', raceName: 'Skeletons' }), 'Defeat 40 skeletons')
+  assert.equal(questText({ kind: 'levels', target: 3 }), 'Level up characters 3 times')
   assert.equal(questText({ kind: 'boss', target: 1 }), 'Defeat 1 boss')
   assert.equal(questText({ kind: 'collect', target: 1200, material: 'ore' }), 'Collect 1,200 ore')
   assert.equal(questText({ kind: 'trade', target: 1 }), 'Sell or trade at a market city')

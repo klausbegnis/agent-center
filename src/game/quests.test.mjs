@@ -6,7 +6,7 @@ import { chronicleActions } from './chronicle.mjs'
 import { createEngine } from './engine.mjs'
 import { JOURNAL_COUNTERS } from './journal.mjs'
 import { QUEST_SLOTS, questIndexOf, validateQuests } from './quest-content.mjs'
-import { noteQuests, paceOf, rollQuests } from './quests.mjs'
+import { bonusPreview, noteQuests, paceOf, rollQuests } from './quests.mjs'
 import { emptySave } from './worlds.mjs'
 
 const readJson = (name) => JSON.parse(readFileSync(new URL(`../../game/${name}`, import.meta.url), 'utf8'))
@@ -58,7 +58,8 @@ test('a day\'s three quests come from the world and the day alone: a reload show
   assert.deepEqual(rollQuests(structuredClone(save), 'main', DAY, content), first)
   assert.deepEqual(first.map((quest) => quest.slot), QUEST_SLOTS)
   assert.equal(new Set(first.map((quest) => quest.kind)).size, 3)
-  const days = new Set(Array.from({ length: 30 }, (_, at) => rollQuests(save, 'main', DAY + at, content).map((quest) => quest.kind).join()))
+  const busy = withJournal(save, { kills: 300, levels: 6, skillLevels: 3, materials: 20_000 }, 7)
+  const days = new Set(Array.from({ length: 30 }, (_, at) => rollQuests(busy, 'main', DAY + at, content).map((quest) => quest.kind).join()))
   assert.ok(days.size > 3, 'the days differ')
 })
 
@@ -75,10 +76,10 @@ test('a quest is never one the world cannot finish today', () => {
 
 test('the amounts follow the world\'s own pace from the journal', () => {
   const save = party()
-  const light = withJournal(save, { kills: 60, levels: 4, skillLevels: 2, materials: 2000 })
-  const heavy = withJournal(save, { kills: 1200, bosses: 8, levels: 40, skillLevels: 9, materials: 90_000, coins: 5000 })
+  const light = withJournal(save, { kills: 60, levels: 4, skillLevels: 2, materials: 2000 }, 7)
+  const heavy = withJournal(save, { kills: 1200, bosses: 8, levels: 40, skillLevels: 9, materials: 90_000, coins: 5000 }, 7)
   assert.equal(paceOf(light, light.worlds.main, DAY, content.quests.defaults).kills, 60)
-  assert.equal(paceOf(save, save.worlds.main, DAY, content.quests.defaults).kills, content.quests.defaults.kills, 'no journal: the defaults')
+  assert.ok(paceOf(save, save.worlds.main, DAY, content.quests.defaults).kills >= content.quests.defaults.kills, 'no journal: the defaults')
   const killTarget = (quests) => quests.find((quest) => quest.kind === 'kills')?.target
   let found = false
   for (let day = DAY; day < DAY + 40 && !found; day++) {
@@ -93,7 +94,7 @@ test('the amounts follow the world\'s own pace from the journal', () => {
 })
 
 test('a boss quest needs a world that meets bosses every day, and a coin quest one that earns coins every day', () => {
-  const save = withJournal(party(), { kills: 1200, bosses: 8, coins: 5000, materials: 90_000 })
+  const save = withJournal(party(), { kills: 1200, bosses: 8, coins: 5000, materials: 90_000 }, 7)
   const kinds = new Set(Array.from({ length: 60 }, (_, at) => rollQuests(save, 'main', DAY + at, content)).flat().map((quest) => quest.kind))
   assert.ok(kinds.has('boss'))
   assert.ok(kinds.has('coins'))
@@ -186,3 +187,86 @@ test('the chronicle rolls the day, counts it, tells it, and keeps quests in the 
   assert.equal(view.quests.main.quests[0].done, true)
   assert.deepEqual(chronicleView(counted.save, { day: DAY + 1 }).quests, {}, 'yesterday\'s quests are not shown')
 })
+
+const WORK = ['forge', 'lore', 'engineering', 'arcana', 'command']
+const RACES = ['goblin', 'orc', 'skeleton', 'zombie', 'spider', 'slime', 'troll', 'ghost']
+/** A long-played world at a level, its bestiary counting `kills` over `days`, its journal begun yesterday. */
+function veteran(level, { kills = 6000, days = 40, journalDays = 0, journalKills = 3 } = {}) {
+  const save = party()
+  const world = save.worlds.main
+  const skills = { ...world.skills }
+  for (const id of WORK) skills[id] = { level, xp: 0, banked: 0, stars: 0 }
+  const races = Object.fromEntries(RACES.map((race) => [race, [Math.round(kills / RACES.length), 0, 0, 0, 0, 0, DAY - days]]))
+  const materials = Object.fromEntries(['ore', 'crops', 'crystals', 'fish', 'logs', 'bars'].map((id) => [id, 5000]))
+  let next = { ...save, worlds: { main: { ...world, skills, materials, bestiary: { races, bosses: {} } } } }
+  if (journalDays) next = withJournal(next, { kills: journalKills, materials: 10 }, journalDays)
+  return next
+}
+const weeklyTotal = (level) => Math.round(30 * 10 * 1.03 ** level)
+const sumOf = (materials) => Object.values(materials).reduce((sum, amount) => sum + amount, 0)
+
+test('a long-played world whose journal is new gets quests sized from its history, never a target of 1 for kills', () => {
+  for (const journalDays of [0, 1]) {
+    const save = veteran(19, { journalDays })
+    for (let day = DAY; day < DAY + 20; day++) {
+      for (const quest of rollQuests(save, 'main', day, content)) {
+        if (quest.kind === 'kills') assert.ok(quest.target >= 30, `kills ${quest.target}`)
+        if (quest.kind === 'race') assert.ok(quest.target >= 5, `race ${quest.target}`)
+        if (['elites', 'collect'].includes(quest.kind)) assert.ok(quest.target >= 3, `${quest.kind} ${quest.target}`)
+      }
+    }
+  }
+  // A journal of one short day does not shrink it to that day.
+  const pace = paceOf(veteran(19, { journalDays: 1, journalKills: 2 }), veteran(19).worlds.main, DAY, content.quests.defaults)
+  assert.ok(pace.kills > 150, `${pace.kills}`)
+})
+
+test('a quest pays a fifth of the weekly goal\'s reward at most, the bonus half, and they grow with the level', () => {
+  for (const level of [5, 19, 60, 150]) {
+    const save = veteran(level)
+    const [quest] = rollQuests(save, 'main', DAY, content)
+    const share = sumOf(quest.reward) / weeklyTotal(level)
+    assert.ok(share >= 0.04 && share <= 0.21, `level ${level}: a quest pays ${share} of the weekly reward`)
+    const daily = noteQuests(save, { before: null, day: DAY, isNews: false }, content).save
+    const bonus = sumOf(bonusPreviewOf(daily)) / weeklyTotal(level)
+    assert.ok(bonus >= 0.09 && bonus <= 0.51, `level ${level}: the bonus pays ${bonus}`)
+  }
+  const low = sumOf(rollQuests(veteran(5), 'main', DAY, content)[0].reward)
+  const high = sumOf(rollQuests(veteran(60), 'main', DAY, content)[0].reward)
+  assert.ok(high > low * 4)
+})
+
+test('a busy world gets the full share of the weekly reward, a slow one less but never a token amount', () => {
+  const busy = withJournal(veteran(19), { kills: 1500, materials: 50_000 }, 7)
+  const slow = withJournal(veteran(19), { kills: 30, materials: 500 }, 7)
+  const share = (save) => sumOf(rollQuests(save, 'main', DAY, content)[0].reward) / weeklyTotal(19)
+  assert.ok(share(busy) > 0.18)
+  assert.ok(share(slow) >= 0.04 && share(slow) < share(busy))
+})
+
+test('a day rolled by the old sizing rolls again once if nothing moved, and is kept if something did', () => {
+  const save = veteran(19)
+  const old = { day: DAY, quests: [
+    { kind: 'levels', slot: 'easy', target: 1, progress: 0, done: false, reward: { crops: 5 } },
+    { kind: 'race', slot: 'medium', target: 1, progress: 0, done: false, race: 'skeleton', reward: { crops: 5 } },
+    { kind: 'instance', slot: 'hard', target: 1, progress: 0, done: false, reward: { crops: 5 } }
+  ], bonus: false, streak: 2, best: 4, totals: [5, 1] }
+  const withOld = (daily) => ({ ...save, worlds: { main: { ...save.worlds.main, daily } } })
+  const rerolled = noteQuests(withOld(old), { before: null, day: DAY, isNews: false }, content).save.worlds.main.daily
+  assert.equal(rerolled.sizing, 2)
+  assert.notDeepEqual(rerolled.quests, old.quests)
+  assert.equal(rerolled.streak, 2)
+  assert.deepEqual(rerolled.totals, [5, 1])
+  const moved = { ...old, quests: [{ ...old.quests[0], progress: 1, done: true }, ...old.quests.slice(1)] }
+  const kept = noteQuests(withOld(moved), { before: null, day: DAY, isNews: false }, content).save.worlds.main.daily
+  assert.deepEqual(kept.quests, moved.quests)
+  assert.equal(kept.sizing, 2)
+  const again = noteQuests(withOld(rerolled), { before: null, day: DAY, isNews: false }, content).save.worlds.main.daily
+  assert.deepEqual(again, rerolled, 'only once')
+})
+
+/** The bonus a save's main world's day would pay now. */
+function bonusPreviewOf(save) {
+  return bonusPreview(save, 'main', content)
+}
+

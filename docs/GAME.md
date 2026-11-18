@@ -1304,25 +1304,36 @@ Each local day every world that plays gets three quests, one easy, one medium an
   | `skills` | gain N skill levels | the world's skills gain a level a day |
 
   A slot no kind can fill falls back to defeating monsters (or levelling, or elites, whichever the day
-  has not used). The pace is the mean of the journal's last seven played days (days with kills), or
-  the file's defaults (`kills` 40, `levels` 3, `skillLevels` 1) before two of them; the journal counts
-  every world together, and most saves have one.
+  has not used). The pace is the mean of the journal's last seven played days (days with kills). A
+  journal with fewer is blended with the world's history in proportion (one day counts a seventh): the
+  kills its bestiary counted since its first, over a played day of that time (five a week), or for a
+  young world the file's defaults (`kills` 40, growing a twentieth with each level, `levels` 3,
+  `skillLevels` 1); materials are those kills at the world's level. So a long-played world whose journal
+  began yesterday, or had one short day, gets quests of its real size. Coins and bosses are read from
+  the journal alone, three played days at least. Kills ask at least 10, a race and elites 3, a supply
+  run 10, and a kind is asked only when a day brings twice its least; the journal counts every world
+  together, and most saves have one.
 - **Counting.** After every change the bridge keeps, `noteQuests` (from `chronicle`) moves each quest
   by what the change gained: kill events by rank and race (`roomId` in the world), the material up to
   the change's `midway` (before spending, so a trade is not counted as collecting), coins the world
   gained, a market pressure pushed away from rest (a trade: the market only eases back by itself),
   instance runs cleared (a rematch's for `rematch`), the weekly goal's progress, the living characters'
   levels and the world's effective skill levels.
-- **Rewards.** A quest done pays at once, once: materials worth `quest` (0.8%) of a day's kills in
-  plain kills of the world's level, at least half a kill, in its material for a supply run, else the
-  two materials the world holds least of. All three done pay the day's bonus, `bonus` (1.5%) times
-  1 + `streakStep` (0.1) for each day of the streak, up to `streakCap` (7) days, and `scrollChance`
-  (10%) a common trait scroll into the world's first room. No claim is needed; the card shows them
-  paid.
+- **Rewards.** Measured against the weekly goal's reward (`rewardKills`, 30 plain kills of the
+  world's level, so they grow with it): a quest done pays at once, once, a fifth of it, and the day's
+  bonus half of it, times 1 + `streakStep` (0.1) for each day of the streak up to `streakCap` (7). A
+  world whose days bring few kills gets less, `quest` (2.5%) and `bonus` (5%) of a day's kills, but
+  never under 4.5% and 10% of the weekly reward. At World Lv 19 a busy world's quest pays about 90
+  materials and its bonus about 180 (the weekly reward 526); a slow one's 24 and 53. A quest pays in
+  its material for a supply run, else in the two materials the world holds least of, and the bonus
+  `scrollChance` (10%) a common trait scroll into the world's first room. No claim is needed; the card
+  shows them paid.
+- **Resizing.** A record keeps the sizing it was rolled with (`sizing`, 2 now): a day rolled before
+  this sizing rolls again once, at the next change, unless one of its quests has moved.
 - **Streak.** A day with all three done adds one. A played day left unfinished (the journal saw kills
   or levels on it) breaks it; a day nobody worked, or days the game did not run, do not.
 - **In the save.** A world keeps `daily: { day, quests: [{ kind, slot, target, progress, done, race?,
-  material?, reward }], bonus, bonusReward?, streak, best, totals: [quests, days] }` from its first
+  material?, reward }], bonus, bonusReward?, streak, best, totals: [quests, days], sizing? }` from its first
   change of a day; a save from before has none and loads unchanged. `migrate` drops a malformed one;
   `cleanSave` refuses a kind the content does not have, a progress past its target, `done` that
   disagrees with it, a kind twice, a bonus before all three are done, a streak past the best, and any
@@ -1340,9 +1351,12 @@ Each local day every world that plays gets three quests, one easy, one medium an
   seven-day streak with the title "the Dependable".
 - **Pace.** `npm run simulate` plays the scenarios once more with a player who also does the errands
   quests ask (a sale of a tenth of its most plentiful material, a run into an open instance at tier 1
-  or the next rematch; `scripts/quest-balance.mjs`). All three quests are done on 72% of the light
-  user's working days, 94% of the medium's and 98% of the heavy's (89%, 98% and 99% of the quests),
-  the best streaks 11, 23 and 30 days, and they pay 2% of the materials each world earns.
+  or the next rematch; `scripts/quest-balance.mjs`). All three quests are done on 69% of the light
+  user's working days, 94% of the medium's and 96% of the heavy's (88%, 98% and 99% of the quests),
+  the best streaks 16, 24 and 24 days, and they pay 6%, 5% and 4% of the materials each world earns
+  (the check's bound is 6%). The light user's rewards sit on their floors: a fifth of the weekly
+  reward a quest would be about a quarter of its daily income. Its coin quests are seldom done (10 of
+  38): the simulated player earns coins only from the runs other quests send it on.
 - **Demo.** The frozen demo shows the first quest done, the second half way and the third not begun;
   the live one plays them from the made-up day. `QUESTS=done` with `GAME=1` shows all three done with
   the bonus paid and a four-day streak.

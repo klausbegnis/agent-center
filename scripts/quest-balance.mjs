@@ -128,7 +128,7 @@ export function questChecks(runs) {
     const share = stats.completed / Math.max(1, stats.days)
     const income = run.totals.killMaterials + run.totals.gathered
     const paid = stats.paid / Math.max(1, income)
-    const checks = [[`${run.scenario.id}: daily quests pay a few percent of income`, paid <= 0.08, percent(paid)]]
+    const checks = [[`${run.scenario.id}: daily quests pay a few percent of income`, paid <= 0.06, percent(paid)]]
     if (run.scenario.id === 'light') checks.push(['light: all daily quests done on most played days', share >= 0.6, percent(share)])
     else checks.push([`${run.scenario.id}: all daily quests done on most played days`, share >= 0.6, percent(share)])
     return checks
