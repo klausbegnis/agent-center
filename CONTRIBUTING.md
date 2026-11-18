@@ -118,6 +118,35 @@ Whittled Cudgel chosen, so the item detail and its **Send to** show. Look at eac
 the city banners are painted, and then the Market shot shows empty cards. Taking the picture
 through Chrome's DevTools protocol once every image has loaded avoids that.
 
+### The game-mode GIF
+
+`docs/screenshots/game-mode.gif` is the live demo, not the frozen one, so fights play: start
+`GAME=1 node scripts/demo.mjs guild-hall`, wait about twenty seconds, then take frames of one
+lively room through Chrome's DevTools protocol, without reduced motion (`scripts/capture.mjs`,
+Node alone):
+
+```bash
+node scripts/capture.mjs frames "http://127.0.0.1:47700/?view=gallery&tab=rooms&only=sneaky" /tmp/ac-frames 720 640 45 10
+```
+
+Look through the frames for an 11-second stretch where a monster's health falls, it dies and the
+next one comes in (a contact sheet: `ffmpeg -i /tmp/ac-frames/frame-%04d.png -vf "select='not(mod(n\,20))',scale=360:-1,tile=4x6" -frames:v 1 sheet.png`),
+then assemble it at half size with nearest-neighbour scaling and a palette of its own, from its
+first frame (here 230):
+
+```bash
+ffmpeg -framerate 10 -start_number 230 -i /tmp/ac-frames/frame-%04d.png -frames:v 110 -vf "scale=720:-1:flags=neighbor,palettegen=max_colors=96:stats_mode=diff" palette.png
+```
+
+```bash
+ffmpeg -framerate 10 -start_number 230 -i /tmp/ac-frames/frame-%04d.png -i palette.png -frames:v 110 -lavfi "scale=720:-1:flags=neighbor[x];[x][1:v]paletteuse=dither=none:diff_mode=rectangle" -loop 0 docs/screenshots/game-mode.gif
+```
+
+Every file in the repository is part of the plugin Orca installs, `docs/` included, so keep the
+GIF under about 800 KB. Extract a few frames back (`ffmpeg -i docs/screenshots/game-mode.gif
+-vf "select='not(mod(n\,15))',tile=4x2" -frames:v 1 check.png`) and look at them before
+committing it.
+
 ## Retaking the listing images
 
 The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
