@@ -20,6 +20,8 @@
 //                 shows the roadmap with one instance cleared and a room facing a boss otherwise)
 //   EVENT=<id>    with GAME, play that weekly event of game/events.json every week, to review its
 //                 banner and marker (the calendar's event of the week otherwise)
+//   CITY_RANK=n  with GAME, every city of the market at rank n (1 to 5); the frozen game shows
+//                 cities at mixed ranks otherwise
 //   LAN=1         open the demo to the local network, as the "Open to the local network" setting
 //                 does: open it from another machine, or from this one by its network address, to
 //                 see the game as view only
@@ -197,7 +199,9 @@ const game = engine
     // SETTLEMENT=n shows the settlement at stage n (1 to 7), to review its picture.
     settlementLevels: process.env.SETTLEMENT ? levelsForStage(Number(process.env.SETTLEMENT), settlementContent()) : null,
     // INSTANCE_VAULT=1 puts a room in the Sunken Crypt's vault, to see the boon choice.
-    instanceVault: process.env.INSTANCE_VAULT === '1'
+    instanceVault: process.env.INSTANCE_VAULT === '1',
+    // CITY_RANK=n puts every city at rank n (1 to 5), to review its banner and rank card.
+    cityRank: process.env.CITY_RANK ? Number(process.env.CITY_RANK) : null
   })
   : createUnavailableGame('off')
 controller = createController({
