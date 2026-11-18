@@ -457,6 +457,6 @@ export function createGameActions(dependencies) {
 
     // Entering an instance, choosing the vault's boon, recalling the party (game-instance-actions.mjs).
     ...createInstanceActions({ engine, change, joinedProject, tell: dependencies.tell ?? (() => {}) }),
-    ...createChronicleActions({ engine, change, joinedProject })
+    ...createChronicleActions({ engine, change, joinedProject, now })
   }
 }

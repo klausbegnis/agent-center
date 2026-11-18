@@ -4,7 +4,7 @@
 import { achievementIndexOf } from './achievement-content.mjs'
 import { achievementsView, grantAchievements, setPartyTitle, titleProblem } from './achievements.mjs'
 import { journalGains } from './journal-gains.mjs'
-import { journalView, recordJournal } from './journal.mjs'
+import { journalView, markJournalSeen, recordJournal } from './journal.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { settlementIndexOf } from './settlement-content.mjs'
 
@@ -90,6 +90,7 @@ export function chronicleActions(content) {
       journal: journalView(save.journal, { day, nameOf })
     }),
     setPartyTitle: (save, choice) => setPartyTitle(save, choice, index()),
-    titleProblem: (save, choice) => titleProblem(save, choice, index())
+    titleProblem: (save, choice) => titleProblem(save, choice, index()),
+    markJournalSeen: (save, at) => ({ ...save, journal: markJournalSeen(save.journal, at) })
   }
 }

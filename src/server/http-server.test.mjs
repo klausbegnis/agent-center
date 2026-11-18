@@ -71,6 +71,10 @@ async function setup(t, { lan = false, state = { rooms: [] } } = {}) {
       calls.push(['partyTitle', ...input])
       return { changed: true }
     },
+    gameMarkSummarySeen: async () => {
+      calls.push(['summarySeen'])
+      return { changed: true }
+    },
     gameSellMaterial: async (...input) => {
       calls.push(['sell', ...input])
       return { changed: true }
@@ -262,13 +266,14 @@ test('the instance routes reach the controller with their fields', async (t) => 
   ])
 })
 
-test('the title route reaches the controller with their fields', async (t) => {
+test('the title and summary routes reach the controller with their fields', async (t) => {
   const { server, calls } = await setup(t)
   const post = (target, body) => request(server, target, { method: 'POST', body: JSON.stringify(body) })
   const room = 'local:/work/rumble-banana'
   assert.equal((await post('/api/game/party-title', { roomId: room, achievementId: 'monsters-4' })).status, 200)
   assert.equal((await post('/api/game/party-title', { roomId: room })).status, 200)
-  assert.deepEqual(calls, [['partyTitle', room, 'monsters-4'], ['partyTitle', room, null]])
+  assert.equal((await post('/api/game/summary-seen', {})).status, 200)
+  assert.deepEqual(calls, [['partyTitle', room, 'monsters-4'], ['partyTitle', room, null], ['summarySeen']])
 })
 
 test('a save file far larger than other bodies can be imported, and a refusal says why', async (t) => {
@@ -292,7 +297,7 @@ const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', '
   'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
   'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
-  'choose-boon', 'recall-party', 'party-title']
+  'choose-boon', 'recall-party', 'party-title', 'summary-seen']
 
 const gameState = {
   rooms: [],

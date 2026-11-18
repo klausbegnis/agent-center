@@ -519,6 +519,7 @@ export function createUnavailableGame(status) {
     chooseBoon: refuse,
     recallParty: refuse,
     setPartyTitle: refuse,
+    markSummarySeen: refuse,
     sellMaterial: refuse,
     tradeMaterial: refuse,
     buyStallOffer: refuse

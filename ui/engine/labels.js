@@ -198,7 +198,8 @@ const ACTION_NAMES = {
   sellMaterial: 'The sale',
   tradeMaterial: 'The trade',
   buyStallOffer: 'The purchase',
-  setPartyTitle: 'Changing the title'
+  setPartyTitle: 'Changing the title',
+  markSummarySeen: 'Marking the summary read'
 }
 
 /**

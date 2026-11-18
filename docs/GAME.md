@@ -980,7 +980,13 @@ An imported game is no news and adds nothing.
 time and since the summary was last opened (`seenAt`), the number of days with something counted,
 and at most 24 highlights `{ at, kind, ref, value? }`. Nothing in it names a session or a room.
 `cleanSave` refuses more days or highlights than that, days out of order, a row of the wrong length,
-a count that is not whole and a highlight of a kind it does not know.
+a count that is not whole and a highlight of a kind it does not know. Opening the summary on this
+computer marks it read (`markSummarySeen`), which clears `since`.
+
+The summary is a card behind the scroll button beside the settings cog, which carries a gold dot
+while a highlight is newer than `seenAt`. It shows Today, Since you last looked (as it was when the
+card opened), a strip of the last 14 days (monsters defeated, today in gold) and the days played.
+A page on another machine shows it but never marks it read.
 
 ## Scenes
 
@@ -1603,6 +1609,7 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.chooseBoon` | `/api/game/choose-boon` | `{ roomId, boonId }`: a room whose run is at the vault and one of the two boons it offers |
 | `game.recallParty` | `/api/game/recall-party` | `{ roomId }`: a room inside an instance (one left behind too, so it frees its instance) |
 | `game.partyTitle` | `/api/game/party-title` | `{ roomId, achievementId }`: a room that plays and an achievement it earned that grants a title, or null for none |
+| `game.summarySeen` | `/api/game/summary-seen` | none: marks the "While you worked" summary read |
 | `game.buyOffer` | `/api/game/buy-offer` | `{ worldId, cityId, offerIndex, entryId, roomId }`: `entryId` is the piece the person saw; `roomId` a room that plays in that world |
 
 Each answers `{ changed }`, except `exportSave`, which answers the save file, and `bestGear` and
@@ -1821,7 +1828,8 @@ by the usual closing rules.
   offer's `fullIn` lists the rooms whose chest already keeps `COPIES_PER_ITEM` copies of it.
   Nothing in it names a session, so a page on another machine gets it unchanged.
 - `achievements` and `journal` name no session and no conversation, so a page on another machine
-  gets them unchanged; it shows them but offers no title picker.
+  gets them unchanged; it shows them but offers neither the title picker nor marking the summary
+  read.
 - `rooms` has every room the store shows (except "No project"); `worldId` is null for a room
   out of the game, and `joined` is false until its first tokens.
 - `sceneTheme` is there only for a joined room that travels (see "A round"). The surfaces draw

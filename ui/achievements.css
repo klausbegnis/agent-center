@@ -1,4 +1,5 @@
-/* Game mode's achievements (the World tab's Achievements view, a party's title). Colours come from Orca's theme (--orca-*) and the game's own (--ac-game-*), with
+/* Game mode's achievements (the World tab's Achievements view, a party's title) and the "While you
+   worked" summary. Colours come from Orca's theme (--orca-*) and the game's own (--ac-game-*), with
    dark defaults. */
 
 /* Four views on the World tab: the switch wraps at narrow widths instead of overflowing. */
@@ -116,6 +117,71 @@
   8% { opacity: 1; transform: translateY(0) scale(1.08); }
   14%, 85% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1); }
+}
+
+/* "While you worked": the button's unread dot, and the card in the panels' place. */
+.ac-summary-button { position: relative; }
+.ac-summary-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ac-game-gold, #f2c14e);
+  box-shadow: 0 0 0 2px var(--orca-background, #15181e);
+}
+.ac-summary-dot[hidden] { display: none; }
+.ac-root[data-game-summary] .ac-rooms,
+.ac-root[data-game-summary] .ac-shelf,
+.ac-root[data-game-summary] .ac-game-panel,
+.ac-root[data-game-summary] .ac-game-settings { display: none !important; }
+.ac-root.ac-gallery[data-game-summary] { overflow: auto; }
+.ac-summary { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ac-summary[hidden] { display: none; }
+.ac-summary-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.ac-summary-body > .ac-game-settings-note,
+.ac-summary-strip-card,
+.ac-summary-days { grid-column: 1 / -1; }
+.ac-summary-days { margin: 0; }
+.ac-summary-lines { display: flex; flex-direction: column; gap: 3px; margin: 0; padding-left: 1.1em; font-size: 12px; }
+.ac-summary-highlight { color: var(--ac-game-gold, #f2c14e); }
+.ac-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ac-summary-day { display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; }
+.ac-summary-bar {
+  display: flex;
+  align-items: flex-end;
+  height: 56px;
+  border-radius: 2px;
+  background: var(--ac-game-track, rgba(232, 234, 240, 0.14));
+}
+.ac-summary-bar-fill { display: block; width: 100%; border-radius: 2px; background: var(--ac-game-good, #6fe0d2); }
+.ac-summary-bar-empty { background: transparent; }
+.ac-summary-day:last-child .ac-summary-bar-fill { background: var(--ac-game-gold, #f2c14e); }
+.ac-summary-day-label {
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: clip;
+  color: var(--orca-muted-foreground, #9aa3b2);
+}
+/* Too narrow for a day's name under every bar: every other one goes. */
+@media (max-width: 420px) {
+  .ac-summary-day:nth-child(even) .ac-summary-day-label { visibility: hidden; }
 }
 
 @media (prefers-reduced-motion: reduce) {

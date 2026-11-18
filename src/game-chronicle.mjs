@@ -1,7 +1,7 @@
 // The bridge's side of achievements and the journal: after every change it keeps, the engine counts
 // what the change gained into the journal, on the local calendar day, and grants what is now
 // earned; new achievements become `achievement` events of `recent`, and a back-fill one notice.
-// The action is a party's title.
+// The actions are a party's title and "the summary was seen".
 
 /** A calendar day in milliseconds. */
 const DAY_MS = 24 * 60 * 60_000
@@ -56,11 +56,12 @@ const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)
  * @param {{
  *   engine: object,
  *   change: (update: (save: object) => object) => { changed: boolean },
- *   joinedProject: (save: object, roomId: string) => object
+ *   joinedProject: (save: object, roomId: string) => object,
+ *   now: () => number
  * }} dependencies `change` applies an update to the save, `joinedProject` refuses a room that
  *   does not play
  */
-export function createChronicleActions({ engine, change, joinedProject }) {
+export function createChronicleActions({ engine, change, joinedProject, now }) {
   return {
     /**
      * Puts a title earned by an achievement on a room's party, or takes it off with null.
@@ -76,6 +77,11 @@ export function createChronicleActions({ engine, change, joinedProject }) {
         if (problem) throw new Error(problem)
         return engine.setPartyTitle(save, choice)
       })
+    },
+
+    /** Marks the "While you worked" summary as read: what is new is counted from now. */
+    async markSummarySeen() {
+      return change((save) => engine.markJournalSeen(save, now()))
     }
   }
 }

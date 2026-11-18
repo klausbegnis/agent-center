@@ -1,7 +1,10 @@
-// What the Achievements view, the title picker and the rooms' celebrations show, worked out from
-// the view state. Never touches the DOM.
-import { ACHIEVEMENT_EVENT, ACHIEVEMENTS } from './achievement-labels.js'
+// What the Achievements view, the title picker and the "While you worked" summary show, worked out
+// from the view state. Never touches the DOM.
+import { ACHIEVEMENT_EVENT, ACHIEVEMENTS, HIGHLIGHT, SUMMARY, SUMMARY_LINES } from './achievement-labels.js'
 import { clampShare, formatAmount } from './game-format.js'
+
+/** A calendar day in milliseconds; a journal day is a local calendar day counted from 1970. */
+const DAY_MS = 24 * 60 * 60_000
 
 /**
  * The title a room's party wears, or null.
@@ -18,6 +21,17 @@ export function partyTitleOf(game, roomId) {
 /** "18 Nov 2026" for a time, in the person's own calendar. */
 export function dateText(ms) {
   return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/** When a journal day began, in the clock's milliseconds: its local midnight. */
+export function dayStartMs(day) {
+  const midnightUtc = day * DAY_MS
+  return midnightUtc + new Date(midnightUtc).getTimezoneOffset() * 60_000
+}
+
+/** "Mon 18" for a journal day: the local calendar day it counts, read back without moving it. */
+export function dayText(day) {
+  return new Date(day * DAY_MS).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 /**
@@ -72,6 +86,36 @@ export function titleOptions(achievements) {
   return [['', ACHIEVEMENTS.noTitle], ...(achievements?.titles ?? []).map(({ id, title }) => [id, title])]
 }
 
+/** The lines of a set of counters, a count of 0 left out. */
+export function summaryLines(counts) {
+  return SUMMARY_LINES.filter(([key]) => (counts?.[key] ?? 0) > 0)
+    .map(([key, line]) => ({ key, text: line(counts[key], formatAmount(counts[key])) }))
+}
+
+/** A highlight as a line, named by the view state (or by its id when the content lost it). */
+export function highlightText(highlight) {
+  const name = highlight.name ?? highlight.ref
+  const line = HIGHLIGHT[highlight.kind]
+  if (!line) return name
+  return line(name, highlight.value ?? 1)
+}
+
+/**
+ * The strip of the last days: each bar's height as a share of the busiest day.
+ *
+ * @param {object[]} days from the view state's `journal.days`, oldest first
+ */
+export function stripBars(days) {
+  const most = Math.max(1, ...(days ?? []).map((day) => day.kills ?? 0))
+  return (days ?? []).map((day) => ({
+    day: day.day,
+    label: dayText(day.day),
+    share: (day.kills ?? 0) / most,
+    kills: day.kills ?? 0,
+    text: SUMMARY.dayBar(dayText(day.day), formatAmount(day.kills ?? 0))
+  }))
+}
+
 /**
  * What a room line says about an achievement event, or null.
  *
@@ -83,6 +127,8 @@ export function achievementEventText(event) {
   return event.title ? ACHIEVEMENT_EVENT.earnedTitle(event.name, event.title) : ACHIEVEMENT_EVENT.earned(event.name)
 }
 
+/** Whether the summary has news the person has not looked at. */
+export const hasUnreadSummary = (game) => game?.journal?.unread === true
 
 /**
  * The lines achievement events play over the rooms: one earned is celebrated in every room that

@@ -5,7 +5,10 @@ import {
   achievementEffects,
   achievementGroups,
   achievementRow,
+  highlightText,
   partyTitleOf,
+  stripBars,
+  summaryLines,
   titleOptions
 } from './achievement-model.js'
 
@@ -53,6 +56,22 @@ test('a group counts its earned achievements and keeps the catalogue\'s order', 
 test('the title picker offers no title, then every title earned', () => {
   assert.deepEqual(titleOptions({ titles: [{ id: 'monsters-4', title: 'the Relentless' }] }),
     [['', 'No title'], ['monsters-4', 'the Relentless']])
+})
+
+test('the summary says only what happened, with a singular for one', () => {
+  const lines = summaryLines({ kills: 1, bosses: 0, coins: 12_500, cleared: 2 })
+  assert.deepEqual(lines.map((line) => line.text), ['1 monster defeated', '12 k coins earned', '2 instances cleared'])
+})
+
+test('a highlight is a line with its name, or its id when the content lost it', () => {
+  assert.equal(highlightText({ kind: 'instance', ref: 'sunken-crypt', name: 'The Sunken Crypt', value: 2 }),
+    'Cleared The Sunken Crypt at tier 2')
+  assert.equal(highlightText({ kind: 'boss', ref: 'skrix', name: null }), 'First win over skrix')
+})
+
+test('the strip\'s bars are shares of the busiest day, an empty day at zero', () => {
+  const bars = stripBars([{ day: 20_000, kills: 0 }, { day: 20_001, kills: 50 }, { day: 20_002, kills: 100 }])
+  assert.deepEqual(bars.map((bar) => bar.share), [0, 0.5, 1])
 })
 
 test('an achievement is celebrated in every room that plays; the back-fill once', () => {

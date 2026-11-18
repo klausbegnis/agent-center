@@ -254,6 +254,7 @@ export function createController({
     gameSetPartyTitle: (roomId, achievementId) => playAction(() => game.setPartyTitle({
       roomId: requireText(roomId, 'room'),
       achievementId: achievementId === null ? null : requireText(achievementId, 'achievement')
-    }))
+    })),
+    gameMarkSummarySeen: () => playAction(() => game.markSummarySeen())
   }
 }

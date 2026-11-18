@@ -22,6 +22,7 @@ import { pixelPath, SETTINGS_MARK } from './pixel-art.js'
 import { isTypingKey, roomAfterShortcut, savedRoomOf } from './room-chips.js'
 import { SETTINGS, VIEW_ONLY_MARKER, VIEW_ONLY_NOTE } from './settings-labels.js'
 import { createSettingsView } from './settings-view.js'
+import { createSummaryView } from './summary-view.js'
 
 /** How long a short message stays, so it can be read but does not linger. */
 const NOTICE_MS = 6000
@@ -107,6 +108,8 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   settingsButton.setAttribute('aria-label', SETTINGS.open)
   settingsButton.title = SETTINGS.open
   const settings = createSettingsView({ actions, onClose: () => setSettingsOpen(false, true) })
+  // "While you worked" (summary-view.js): its button sits beside the cog, its card in the panels' place.
+  const summary = createSummaryView({ actions, root, onOpen: () => isSettingsOpen && setSettingsOpen(false) })
 
   /** What draws each panel while the game runs. */
   const base = transport.base ?? ''
@@ -161,6 +164,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
   }
 
   function setSettingsOpen(isOpen, returnFocus = false) {
+    if (isOpen) summary.close()
     isSettingsOpen = isOpen
     show()
     onTabChange()
@@ -183,6 +187,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
 
   function select(next) {
     isSettingsOpen = false
+    summary.close()
     const wasRooms = tab === 'rooms'
     // Scrolled far enough that the tabs stick to the top: the next tab opens at its own top, with
     // the tabs where they are. Otherwise nothing above the tabs moves.
@@ -248,6 +253,7 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
       roomsElement.removeAttribute('aria-labelledby')
     }
     for (const [name, panel] of Object.entries(panels)) panel.hidden = !isShown || name !== tab
+    summary.update(state)
     drawPanel()
   }
 
@@ -259,8 +265,9 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     /** The picker, the strip and the tab bar go above the rooms; the panels and messages below. */
     top,
     notice,
-    panels: [...Object.values(panels), settings.element],
+    panels: [...Object.values(panels), settings.element, summary.element],
     settingsButton,
+    summaryButton: summary.button,
     showNotice,
     /** Opens the tab saved for this surface, or asked for in the address. */
     async restoreTab() {

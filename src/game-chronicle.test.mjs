@@ -102,3 +102,16 @@ test('a room\'s party wears a title it earned, and an unearned one is refused wi
   await assert.rejects(game.setPartyTitle({ roomId: 'local:/work/cosmic-llama', achievementId: null }), /unknown room/)
 })
 
+test('looking at the summary marks what was new as read', async () => {
+  const save = oldSave()
+  save.achievements = { earned: {}, titles: {}, filled: 0 }
+  const { game, tick } = setup({ stored: save })
+  await game.round()
+  assert.equal(game.getView().journal.unread, true)
+  tick(MINUTE)
+  await game.markSummarySeen()
+  const { journal } = game.getView()
+  assert.equal(journal.unread, false)
+  assert.equal(journal.since.achievements, 0)
+  assert.ok(journal.today.achievements >= 3)
+})

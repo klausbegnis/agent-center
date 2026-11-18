@@ -29,7 +29,8 @@ export const GAME_ACTION_METHODS = [
   'enterInstance',
   'chooseBoon',
   'recallParty',
-  'setPartyTitle'
+  'setPartyTitle',
+  'markSummarySeen'
 ]
 
 /** Actions that should change something; an answer of `{ changed: false }` is worth saying. */
