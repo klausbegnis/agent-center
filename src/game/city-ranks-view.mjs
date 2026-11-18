@@ -37,7 +37,9 @@ export function cityRankView(world, city, { level, index, legendaryNames }) {
     banner: banner.banner,
     bannerAlt: banner.alt,
     standing,
-    fee: cityFeeOf(world, city.id),
+    fee: cityFeeOf(world, city.id, city.festival === true),
+    // The city holds its festival this week: a lower fee (city-festival.mjs).
+    festival: city.festival === true,
     perks: ranks.charters.slice(0, rank - 1).map(charterView),
     // What the last rank's stall may sell, by name.
     legendary: ranks.legendary.map((id) => ({ id, name: legendaryNames(id) })),

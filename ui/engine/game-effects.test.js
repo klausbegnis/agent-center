@@ -137,3 +137,12 @@ test('the newest bestiary lines win when there are more than a room shows at onc
   assert.deepEqual(gameEffects({ ...none, events }, state()).map((effect) => effect.text),
     ['New in the bestiary: Orcs', 'Orcs: level 2!'])
 })
+
+test('a city that rose a rank is celebrated in every room of its world, with its new banner', () => {
+  const event = { type: 'city', worldId: 'main', cityId: 'goldmill', rank: 3, name: 'Goldmill', title: 'City',
+    banner: 'ui/cities/goldmill-3.png' }
+  const effects = gameEffects({ ...none, events: [event] }, state())
+  assert.deepEqual(effects.map((effect) => [effect.roomId, effect.tone, effect.text, effect.settlementArt]),
+    [['room', 'stage', 'Goldmill rose to rank III · City!', 'ui/cities/goldmill-3.png']])
+  assert.deepEqual(gameEffects({ ...none, events: [{ ...event, worldId: 'elsewhere' }] }, state()), [])
+})

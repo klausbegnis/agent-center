@@ -6,6 +6,11 @@ export const NUMERALS = Object.freeze(['I', 'II', 'III', 'IV', 'V'])
 /** "II", or the number itself past the numerals. */
 export const numeral = (rank) => NUMERALS[rank - 1] ?? String(rank)
 
+/** A city that rose a rank, told over the world's rooms. */
+export const CITY_RANK_EVENT = {
+  rose: (name, rank, title) => `${name} rose to rank ${numeral(rank)}${title ? ` · ${title}` : ''}!`
+}
+
 export const CITY_RANK = {
   rank: (rank, title) => `Rank ${numeral(rank)} · ${title}`,
   badge: (rank) => `Rank ${numeral(rank)}`,
@@ -18,6 +23,8 @@ export const CITY_RANK = {
   standingReady: (needed, rank) => `${formatAmount(needed)} reached: ready for rank ${numeral(rank)}`,
   standingTop: (standing) => `${formatAmount(standing)}: the city's last rank`,
   fee: (fee) => `Fee here: ${formatShare(fee)}`,
+  festival: 'Festival this week: the fee here is 1 point lower until the week ends',
+  festivalBadge: 'Festival',
   perks: 'Charters held',
   perk: (name, text) => `${name}: ${text}`,
   next: (rank, title) => `Next: rank ${numeral(rank)} · ${title}`,

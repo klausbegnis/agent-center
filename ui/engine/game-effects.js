@@ -2,6 +2,7 @@
 // monster, "Level 9!" by a character, and short lines about loot, drops, retirements, arrivals
 // and purchases under the fight. Never touches the DOM.
 import { achievementEffects } from './achievement-model.js'
+import { CITY_RANK_EVENT } from './city-rank-labels.js'
 import { formatAmount } from './game-format.js'
 import { retireeName } from './game-names.js'
 import { EFFECT, materialsText, nameFromId, UPGRADE_LABEL } from './labels.js'
@@ -107,6 +108,11 @@ function lineEffects(events, game) {
       effects.push(...purchaseEffects(event, game))
     } else if (event.type === 'settlement') {
       effects.push(...settlementEffects(event, game))
+    } else if (event.type === 'city') {
+      // A city that rose a rank, with its new banner, in every room of the world (city-rank-labels.js).
+      const line = { text: CITY_RANK_EVENT.rose(event.name ?? nameFromId(event.cityId ?? ''), event.rank, event.title ?? ''),
+        tone: 'stage', ...(event.banner ? { settlementArt: event.banner } : {}) }
+      effects.push(...roomsOfWorld(game, event.worldId).map((roomId) => ({ roomId, target: 'room', ...line })))
     } else if (event.type === 'legendary' && room && event.item) {
       // A legendary drop is celebrated: gold, its picture, and a moment longer on screen.
       const text = LEGENDARY_EVENT.found(event.name ?? nameFromId(event.item))

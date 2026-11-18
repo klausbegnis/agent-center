@@ -29,6 +29,19 @@ export const CHARTER_UNITS = [0, 100, 400, 1200, 3000]
  */
 export const CITY_RANK_FEE_CUT = 0.005
 
+/**
+ * A city holding its festival (a weekly event of game/events.json) takes this much less fee for the
+ * week, on top of its rank's cut. With both at their most the fee is 3%: still above 0, so no trade
+ * can make money.
+ */
+export const FESTIVAL_FEE_CUT = 0.01
+
+/** From this rank a city's trait broker (trait-broker.mjs) offers one more scroll a day. */
+export const BROKER_EXTRA_RANK = 3
+/** At this rank a city's trait broker offers its epic scrolls three times as often; never a mythic. */
+export const BROKER_EPIC_RANK = 5
+export const RANKED_BROKER_TIER_WEIGHTS = Object.freeze({ common: 64, rare: 27, epic: 9 })
+
 /** From this rank a city's stall offers one more piece of gear a day. */
 export const EXTRA_OFFER_RANK = 2
 /** From this rank a city's stall sells gear one tier higher. */

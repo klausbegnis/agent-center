@@ -15,6 +15,7 @@ function highlightNamer(content) {
   const items = new Map((content.items?.items ?? []).map((entry) => [entry.id, entry.name]))
   const bosses = new Map((content.bosses?.bosses ?? []).map((boss) => [boss.id, boss.name]))
   const instances = new Map((content.instances?.instances ?? []).map((instance) => [instance.id, instance.name]))
+  const cities = new Map((content.cities?.cities ?? []).map((city) => [city.id, city.name]))
   const stages = new Map((content.settlement?.stages ?? []).map((stage) => [stage.id, stage.name]))
   const buildings = new Map((content.settlement?.buildings ?? []).map((building) => [building.id, building]))
   return ({ kind, ref, value }) => {
@@ -27,6 +28,7 @@ function highlightNamer(content) {
       case 'instance': return instances.get(ref) ?? null
       case 'scroll': return traitIndexOf(content)?.byId.get(ref)?.name ?? null
       case 'weekly': return eventIndexOf(content)?.byId.get(ref)?.name ?? null
+      case 'city': return cities.get(ref) ?? null
       case 'building': return buildings.get(ref)?.tiers?.[(value ?? 1) - 1]?.name ?? buildings.get(ref)?.name ?? null
       default: return null
     }

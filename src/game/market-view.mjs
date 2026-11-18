@@ -46,6 +46,8 @@ function cityView(city, { worldId, world, level, day, items, index, cityRanks })
     bannerAlt: rank?.bannerAlt ?? city.bannerAlt,
     opensAt: city.opensAt,
     open,
+    // Holding its festival this week: a lower fee there (city-festival.mjs).
+    festival: city.festival === true,
     produces: [...city.produces],
     wants: [...city.wants]
   }

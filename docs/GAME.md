@@ -1057,7 +1057,8 @@ Every open city has one (`src/game/trait-broker.mjs`):
 - **Buy**: `BROKER_OFFERS` (3) scrolls a game day of the city's own traits (each trait names its
   `city`; mythic ones none, and are never sold), a tier by `BROKER_TIER_WEIGHTS`, by hash of world,
   city and day. A scroll costs `BROKER_PRICES[tier] × REWARD_GROWTH ** worldLevel × (1 −
-  brokerDiscount)` coins and goes into a room's chest; each offer sells once a day.
+  brokerDiscount)` coins and goes into a room's chest; each offer sells once a day. A city of a higher rank
+  offers a fourth scroll and, at rank V, more epic ones (see "City ranks").
 - **Sell**: any open city buys a scroll back for `BROKER_SELL_SHARE` (a quarter) of its price. The
   tier prices (150, 700, 3,000 and 14,000) are set so a scroll always sells for more than a scroll of
   the tier below costs, so the two never read as the same number on the broker's card (a test checks it).
@@ -1436,6 +1437,22 @@ raises the rank by one.
   a city at rank V. It is still above 0, so every sale pays less than base value and every
   purchase costs more, and no trade can make money (`city-ranks.test.mjs` checks it with the fee
   at its lowest). The view gives each open city its own `fee`; the UI quotes with it.
+- **A festival week.** When the world's weekly event is a city's festival (see "Weekly events"),
+  that city takes `FESTIVAL_FEE_CUT` (0.01) less fee for the week, on top of its rank's cut
+  (`city-festival.mjs` marks the city `festival: true` in the list the market functions and the view
+  get). At its lowest, rank V, a festival and a Storehouse far up, the fee is 3%: still above 0, and
+  `city-ranks-week.test.mjs` checks that no city then pays more for a material than any city asks.
+  The city's card and banner say "Festival this week".
+- **The trait broker** (see "Traits") of a city at rank III or above offers a fourth scroll a day
+  (index 3); at rank V it draws its tiers by `RANKED_BROKER_TIER_WEIGHTS` (common 64, rare 27, epic
+  9 instead of 70, 27, 3), so an epic scroll comes three times as often. A broker never sells a
+  mythic one.
+- **News.** A charter bought is told in every room of the world, with the city's new banner
+  (`{ type: 'city', worldId, cityId, rank, name, title, banner }` in `recent`, from
+  `cityRankNews`), and kept as a highlight of the day journal (`kind: 'city'`, `ref` the city,
+  `value` the rank). Four achievements of the City ranks group follow it: a first charter
+  (metric `charters`), a city at rank III and at rank V (`cityRank`, the best rank), and every city
+  of a world at rank V (`citiesAtTopRank`), which gives the title "Patron of the Five Cities".
 - **The legendary piece** is one of the city's own list (`ranks.legendary`, two pieces of legendary
   equipment each, ten in all, none sold by two cities) that the room it would go to lacks, at
   `STALL_LEGENDARY_PRICE_BASE` (6,000) × `REWARD_GROWTH ** worldLevel` coins, twice a stall relic.
@@ -1468,9 +1485,9 @@ raises the rank by one.
 - **Pace.** Tuned with the simulator's trading player, which buys every charter it can on its daily
   visit and keeps the next charter's coins aside from buildings paid in coins (see "Market" under
   "Balance"): a light user reaches rank II in a first city on day 17 and holds three cities at II
-  after a year; a medium one has a city at II on day 2, III on day 59 and IV on day 316, and no
-  city at V after a year; a heavy one has every city at II within a month and three at III by
-  day 136. Rank V of every city is a goal of years, not months.
+  after a year; a medium one has a city at II on day 3, III on day 113 and IV on day 239, and no
+  city at V after a year (ten charters); a heavy one has every city at II within ten days and four
+  at III by day 113, coins being what holds it back. Rank V of every city is a goal of years, not months.
 
 ## Save shape
 

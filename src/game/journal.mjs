@@ -14,7 +14,7 @@ export const JOURNAL_DAYS = 14
 export const JOURNAL_HIGHLIGHTS = 24
 /** What a highlight can be about; `ref` is a content id of that kind. */
 export const HIGHLIGHT_KINDS = Object.freeze(['legendary', 'loot', 'boss', 'achievement', 'building', 'stage', 'instance',
-  'scroll', 'weekly'])
+  'scroll', 'weekly', 'city'])
 
 /**
  * @typedef {{ at: number, kind: string, ref: string, value?: number }} Highlight

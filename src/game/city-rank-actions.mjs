@@ -3,7 +3,7 @@
 // city's rank. Wraps the engine's market actions; each answers the same save when it cannot act.
 import { LEGENDARY_OFFER_INDEX } from './city-rank-constants.mjs'
 import { cityRankIndexOf } from './city-ranks-content.mjs'
-import { buyCharter, charterProblem, noteTrade } from './city-ranks.mjs'
+import { buyCharter, charterProblem, cityRankNews, noteTrade } from './city-ranks.mjs'
 import { buyStallLegendary } from './city-stall-legendary.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 
@@ -49,6 +49,8 @@ export function withCityRanks(market, content) {
     charterProblem: (save, { worldId, cityId }) => {
       const world = Object.hasOwn(save.worlds, worldId) ? save.worlds[worldId] : null
       return world ? charterProblem(world, cities, cityRanks, cityId) : 'there is no such world'
-    }
+    },
+    /** The city ranks a change raised, for the rooms and the journal to celebrate (city-ranks.mjs). */
+    cityRankNews: (before, after) => cityRankNews(before, after, { cities, index: cityRanks })
   }
 }

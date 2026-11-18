@@ -5,6 +5,7 @@
 import { BESTIARY_RANKS, BOSS_BEATEN, BOSS_LEGENDARY, distinctBossesOf, hunterRankOf, killsOf, masteryOf, totalPointsOf }
   from './bestiary.mjs'
 import { bestiaryIndexOf } from './bestiary-content.mjs'
+import { CITY_RANK_MAX } from './city-rank-constants.mjs'
 import { effectiveLevel, worldLevel } from './progression.mjs'
 import { JOURNAL_COUNTERS } from './journal.mjs'
 import { renovationStars, stageIndexOf, tierOf, totalLevels } from './settlement.mjs'
@@ -208,6 +209,21 @@ export const METRICS = Object.freeze({
       .map((character) => (Array.isArray(character.traits) ? character.traits.length : 0))))
   },
   traitSwaps: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.traits?.swaps ?? 0)) },
+
+  // City ranks (city-ranks.mjs): charters bought over every world, the highest rank any city reached,
+  // and the most cities one world raised to the last rank.
+  charters: {
+    measure: (save) => sum(Object.values(save.worlds).flatMap((world) =>
+      Object.values(world.cityRanks ?? {}).map((entry) => entry.rank - 1)))
+  },
+  cityRank: {
+    measure: (save) => best(Object.values(save.worlds).flatMap((world) =>
+      Object.values(world.cityRanks ?? {}).map((entry) => entry.rank)))
+  },
+  citiesAtTopRank: {
+    measure: (save) => best(Object.values(save.worlds).map((world) =>
+      Object.values(world.cityRanks ?? {}).filter((entry) => entry.rank >= CITY_RANK_MAX).length))
+  },
 
   // Weekly events (weekly.mjs): the weeks whose goal a world reached, over every world.
   weeklyGoals: { measure: (save) => sum(Object.values(save.worlds).map((world) => world.weekly?.goals ?? 0)) },

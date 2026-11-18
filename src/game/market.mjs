@@ -57,8 +57,8 @@ export function pricePoint(world, city, materialId) {
     usual: usualPrice(base, cityStance(city, materialId)),
     pressure: marketOf(world).pressure[city.id]?.[materialId] ?? 0,
     depth: marketDepth(worldLevel(world.skills)),
-    // The world's fee, lower in a city of a higher rank (city-ranks.mjs).
-    fee: cityFeeOf(world, city.id)
+    // The world's fee, lower in a city of a higher rank or holding its festival (city-ranks.mjs).
+    fee: cityFeeOf(world, city.id, city.festival === true)
   }
 }
 

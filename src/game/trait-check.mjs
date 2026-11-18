@@ -56,11 +56,11 @@ export function checkRoomScrolls(value, index) {
   return { ok: true, value: { ...value } }
 }
 
-/** A broker's sales of a day: the day and each offer once, by index. */
+/** A broker's sales of a day: the day and each offer once, by index (a ranked city's has one more). */
 function soldDay(value, where) {
   if (!isPlainObject(value) || !isWhole(value.day, 0, Number.MAX_SAFE_INTEGER)) return refuse(where, 'has no day')
   const offers = value.offers
-  if (!Array.isArray(offers) || !offers.every((offer) => isWhole(offer, 0, BROKER_OFFERS - 1))) {
+  if (!Array.isArray(offers) || !offers.every((offer) => isWhole(offer, 0, BROKER_OFFERS))) {
     return refuse(`${where}.offers`, 'names an offer the broker does not have')
   }
   if (new Set(offers).size !== offers.length) return refuse(`${where}.offers`, 'names an offer twice')

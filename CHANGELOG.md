@@ -32,7 +32,10 @@ All notable changes to this project are recorded here. The format follows
   gear a tier higher, relics more often and, at rank V, now and then legendary equipment) and a
   small perk for every party of the world, kept under the existing caps. The city's page has a
   rank card with its standing, the charter's price and what the next rank gives. New local-only
-  route `/api/game/buy-charter`. Saves from before load with every city at rank I.
+  route `/api/game/buy-charter`. Saves from before load with every city at rank I. A city's
+  festival week lowers its fee by a point more; a broker at rank III offers a fourth scroll a day
+  and at rank V more epic ones. A rank-up is told in the world's rooms with the new banner and kept
+  in the day journal, and a City ranks group of four achievements follows it.
 
 ### Changed
 

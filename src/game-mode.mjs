@@ -117,7 +117,9 @@ export function createGameMode(dependencies) {
     // What the change gained goes into the journal, and what it earned is granted (game-chronicle.mjs).
     const told = chronicleChange(engine, { before, save: next.save, midway, events, at: now(), isNews })
     gameSave.set({ ...next, save: told.save })
-    const news = isNews && before ? [...engine.settlementNews(before, next.save), ...told.news] : []
+    const news = isNews && before
+      ? [...engine.settlementNews(before, next.save), ...(engine.cityRankNews?.(before, next.save) ?? []), ...told.news]
+      : []
     if (news.length) recent = keepRecent(recent, stamp(news, now()))
     cachedView = null
     onChange()

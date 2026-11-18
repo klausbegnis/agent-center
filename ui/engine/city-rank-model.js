@@ -34,6 +34,7 @@ export function cityRankModel(city, world) {
     rank: rank.rank,
     heading: CITY_RANK.rank(rank.rank, rank.title),
     feeText: CITY_RANK.fee(rank.fee),
+    festivalText: rank.festival ? CITY_RANK.festival : '',
     perks: rank.perks.map((perk) => ({ name: perk.name, text: CITY_RANK.perk(perk.perk, effectText(perk.effect)) })),
     progress: null,
     next: null

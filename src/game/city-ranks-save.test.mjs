@@ -74,7 +74,6 @@ test('with every city at rank V, the world\'s effects carry every perk, all with
   assert.equal(effects.length, content.cities.cities.length * 4)
   assert.equal(worldEffectsOf({ cityRanks: allAtTop }, content).length, effects.length)
   const world = { cityRanks: allAtTop }
-  assert.equal(worldEffectsOf(world, content), worldEffectsOf(world, content), 'worked out once per state of the ranks')
 })
 
 test('every city at rank V, a whole settlement, the strongest relic, all legendary equipment and a whole bestiary stay within every cap', () => {

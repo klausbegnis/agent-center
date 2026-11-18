@@ -66,3 +66,8 @@ test('at the last rank the card says so and names the legendary pieces the stall
   assert.equal(model.progress.share, 1)
   assert.match(model.topText, /Blightmoon Sickle/)
 })
+
+test('a city holding its festival says so on its card', () => {
+  assert.match(cityRankModel(city({ festival: true }), { coins: 0 }).festivalText, /^Festival this week/)
+  assert.equal(cityRankModel(city(), { coins: 0 }).festivalText, '')
+})

@@ -284,7 +284,8 @@ test('the view state of a busy save stays far below the panel post limit', async
   // same for every world) and each world's roadmap (under 2 KiB) took a busy save past 69 KiB, 80
   // KiB until the achievements (about 19 KiB, the same catalogue for every world) and the journal
   // (about 3 KiB), and 104 KiB until the trait catalogue (about 10 KiB) took it to 103.2 KiB. Each
-  // world's weekly event, with next week's (about 1.6 KiB), takes it to 104.8 KiB.
+  // world's weekly event, with next week's (about 1.6 KiB), takes it to 104.8 KiB, and the city
+  // ranks (each open city's rank card and next charter, and four achievements: about 2 KiB) to 106.8 KiB.
   assert.ok(size < 112 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
 })

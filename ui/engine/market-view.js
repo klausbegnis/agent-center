@@ -73,7 +73,7 @@ export function createMarketView({ panel, actions, base }) {
     const key = `${city.id}|${city.banner}`
     if (!banners.has(key)) banners.set(key, banner(city, base))
     const node = banners.get(key)
-    node.querySelector('.ac-city-rank-badge')?.remove()
+    node.querySelector('.ac-city-rank-badges')?.remove()
     const badge = rankBadge(city)
     if (badge) node.append(badge)
     return node

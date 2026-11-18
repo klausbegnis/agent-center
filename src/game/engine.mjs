@@ -4,6 +4,7 @@
 import { advanceWithEvents, prepareFights } from './advance.mjs'
 import { findItem } from './chest.mjs'
 import { chronicleActions } from './chronicle.mjs'
+import { citiesOfWeek } from './city-festival.mjs'
 import { withCityRanks } from './city-rank-actions.mjs'
 import { cityRankIndexOf } from './city-ranks-content.mjs'
 import { upgradeCost } from './items.mjs'
@@ -154,11 +155,13 @@ function inWorld(save, worldId, change) {
  */
 function marketActions(content) {
   const cities = content.cities?.cities ?? []
+  // A festival's city trades at its festival fee (city-festival.mjs).
+  const ofWeek = (world) => citiesOfWeek(cities, world, content)
   return {
-    sellMaterial: (save, { worldId, ...sale }) => inWorld(save, worldId, (world) => sellMaterial(world, cities, sale)),
+    sellMaterial: (save, { worldId, ...sale }) => inWorld(save, worldId, (world) => sellMaterial(world, ofWeek(world), sale)),
     buyMaterial: (save, { worldId, ...purchase }) =>
-      inWorld(save, worldId, (world) => buyMaterial(world, cities, purchase)),
-    tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, cities, trade)),
+      inWorld(save, worldId, (world) => buyMaterial(world, ofWeek(world), purchase)),
+    tradeMaterial: (save, { worldId, ...trade }) => inWorld(save, worldId, (world) => tradeMaterial(world, ofWeek(world), trade)),
     // The relic's offer follows the gear's (stall-relic.mjs).
     buyStallOffer: (save, { worldId, ...purchase }) => inWorld(save, worldId, (world) =>
       (purchase.offerIndex === RELIC_OFFER_INDEX

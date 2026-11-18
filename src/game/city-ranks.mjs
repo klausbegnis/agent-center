@@ -10,6 +10,7 @@ import {
   CITY_RANK_MAX,
   CITY_STANDING,
   EXTRA_OFFER_RANK,
+  FESTIVAL_FEE_CUT,
   RANKED_RELIC_CHANCE,
   RELIC_RANK,
   TIER_BONUS_RANK
@@ -71,15 +72,18 @@ export function noteTrade(before, after, cityId) {
 
 /**
  * The market's fee in a city: the world's (MARKET_FEE less the Storehouse's cut) less
- * CITY_RANK_FEE_CUT for each rank above the first, never below what the cuts can reach together.
+ * CITY_RANK_FEE_CUT for each rank above the first and FESTIVAL_FEE_CUT in its festival week, never
+ * below what the cuts can reach together.
  *
  * @param {object} world
  * @param {string} cityId
+ * @param {boolean} [festival] whether the city holds its festival this week (city-festival.mjs)
  * @returns {number}
  */
-export function cityFeeOf(world, cityId) {
-  const floor = MARKET_FEE_FLOOR - CITY_RANK_FEE_CUT * (CITY_RANK_MAX - 1)
-  return Math.max(floor, marketFeeOf(world) - CITY_RANK_FEE_CUT * (cityRankOf(world, cityId) - 1))
+export function cityFeeOf(world, cityId, festival = false) {
+  const floor = MARKET_FEE_FLOOR - CITY_RANK_FEE_CUT * (CITY_RANK_MAX - 1) - FESTIVAL_FEE_CUT
+  const cut = CITY_RANK_FEE_CUT * (cityRankOf(world, cityId) - 1) + (festival ? FESTIVAL_FEE_CUT : 0)
+  return Math.max(floor, marketFeeOf(world) - cut)
 }
 
 /**
@@ -204,3 +208,53 @@ export function cityRankEffects(world, index) {
   return effects
 }
 
+
+/**
+ * The ranks a change raised, per world and city, for the bridge to celebrate in the world's rooms
+ * and the journal to keep: `{ type: 'city', worldId, cityId, rank, name, title, banner }`.
+ *
+ * @param {object | null} before the save before the change
+ * @param {object} after
+ * @param {{ cities: object[], index: CityRankIndex | null }} content
+ * @returns {object[]}
+ */
+export function cityRankNews(before, after, { cities, index }) {
+  if (!index || !before || before === after) return []
+  const news = []
+  for (const worldId of Object.keys(after.worlds).sort()) {
+    const world = after.worlds[worldId]
+    const earlier = Object.hasOwn(before.worlds, worldId) ? before.worlds[worldId] : null
+    if (!earlier || earlier.cityRanks === world.cityRanks) continue
+    for (const city of cities) {
+      const rank = cityRankOf(world, city.id)
+      const ranks = index.byCity.get(city.id)
+      if (!ranks || rank <= cityRankOf(earlier, city.id)) continue
+      news.push({ type: 'city', worldId, cityId: city.id, rank, name: city.name, title: index.titles[rank - 1] ?? '',
+        banner: ranks.banners[rank - 1].banner })
+    }
+  }
+  return news
+}
+
+/**
+ * The day journal's highlights of a change: each city that rose a rank, `{ at, kind: 'city', ref:
+ * cityId, value: rank }`.
+ *
+ * @param {object | null} before
+ * @param {object} after
+ * @param {number} at
+ */
+export function cityRankHighlights(before, after, at) {
+  if (!before || before === after) return []
+  const highlights = []
+  for (const worldId of Object.keys(after.worlds ?? {}).sort()) {
+    const world = after.worlds[worldId]
+    const earlier = Object.hasOwn(before.worlds ?? {}, worldId) ? before.worlds[worldId] : null
+    if (!earlier || earlier.cityRanks === world.cityRanks) continue
+    for (const cityId of Object.keys(world.cityRanks ?? {}).sort()) {
+      const rank = cityRankOf(world, cityId)
+      if (rank > cityRankOf(earlier, cityId)) highlights.push({ at, kind: 'city', ref: cityId, value: rank })
+    }
+  }
+  return highlights
+}

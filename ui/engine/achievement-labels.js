@@ -1,5 +1,6 @@
 // The wording of achievements, titles and the "While you worked" summary. Never touches the DOM.
 
+import { numeral } from './city-rank-labels.js'
 export const ACHIEVEMENTS = {
   view: 'Achievements',
   heading: 'Achievements',
@@ -77,5 +78,6 @@ export const HIGHLIGHT = {
   stage: (name) => `The settlement became a ${name}`,
   instance: (name, tier) => `Cleared ${name} at tier ${tier}`,
   scroll: (name) => `Trait scroll found: ${name}`,
-  weekly: (name) => `Weekly goal reached: ${name}`
+  weekly: (name) => `Weekly goal reached: ${name}`,
+  city: (name, rank) => `${name} rose to rank ${numeral(rank)}`
 }

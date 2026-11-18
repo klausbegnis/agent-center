@@ -2,6 +2,8 @@
 // also buys back at a loss, and the swap of a trait a character carries for a scroll in its room's
 // chest, the old trait coming back as a scroll for a fee. Which scrolls are on offer is a hash of
 // world, city and game day; prices follow the tier and the world level. Pure.
+import { BROKER_EPIC_RANK, BROKER_EXTRA_RANK, RANKED_BROKER_TIER_WEIGHTS } from './city-rank-constants.mjs'
+import { cityRankOf } from './city-ranks.mjs'
 import { MARKET_MAX_COINS, REWARD_GROWTH } from './constants.mjs'
 import { emptyMarket, isCityOpen, marketDay } from './market.mjs'
 import { worldLevel } from './progression.mjs'
@@ -53,19 +55,23 @@ export const swapFee = (tier, level, discount = 0) => Math.max(1, Math.round(scr
 
 /**
  * The day's offers of a city's broker: BROKER_OFFERS different traits of the city, each a tier by
- * BROKER_TIER_WEIGHTS. Each offer is `{ index, traitId, tier, price }`.
+ * BROKER_TIER_WEIGHTS. Each offer is `{ index, traitId, tier, price }`. A city of a higher rank
+ * (city-ranks.mjs) offers one more scroll, and at its last rank its epic ones more often; never a
+ * mythic one.
  *
  * @param {TraitIndex} index
- * @param {{ worldId: string, cityId: string, day: number, level: number, discount?: number }} where
+ * @param {{ worldId: string, cityId: string, day: number, level: number, discount?: number, rank?: number }} where
  * @returns {{ index: number, traitId: string, tier: string, price: number }[]}
  */
-export function brokerOffers(index, { worldId, cityId, day, level, discount = 0 }) {
+export function brokerOffers(index, { worldId, cityId, day, level, discount = 0, rank = 1 }) {
   const seed = `${worldId}|${cityId}|${day}|broker`
+  const count = BROKER_OFFERS + (rank >= BROKER_EXTRA_RANK ? 1 : 0)
+  const weights = rank >= BROKER_EPIC_RANK ? RANKED_BROKER_TIER_WEIGHTS : BROKER_TIER_WEIGHTS
   const offers = []
-  for (let at = 0; at < BROKER_OFFERS; at += 1) {
-    const tier = pickTier(BROKER_TIER_WEIGHTS, `${seed}|${at}|tier`)
+  for (let at = 0; at < count; at += 1) {
+    const tier = pickTier(weights, `${seed}|${at}|tier`)
     const taken = new Set(offers.map((offer) => offer.traitId))
-    const sells = (entry) => entry.city === cityId && Object.hasOwn(BROKER_TIER_WEIGHTS, entry.tier) && !taken.has(entry.id)
+    const sells = (entry) => entry.city === cityId && Object.hasOwn(weights, entry.tier) && !taken.has(entry.id)
     const entry = pickTrait(index, tier, `${seed}|${at}|trait`, sells)
     if (!entry) break
     offers.push({ index: offers.length, traitId: entry.id, tier: entry.tier, price: scrollPrice(entry.tier, level, discount) })
@@ -94,7 +100,8 @@ function openCity(world, cities, cityId) {
 /** The day's offers of a city for a world, with the world's discount. */
 export function offersFor(world, { worldId, cityId, index }) {
   const day = marketDay(world.market ?? emptyMarket())
-  return brokerOffers(index, { worldId, cityId, day, level: worldLevel(world.skills), discount: brokerDiscountOf(world, index) })
+  const rank = cityRankOf(world, cityId)
+  return brokerOffers(index, { worldId, cityId, day, level: worldLevel(world.skills), discount: brokerDiscountOf(world, index), rank })
 }
 
 /**

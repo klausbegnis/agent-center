@@ -12,7 +12,8 @@
     {"id": "journal", "name": "Journal"},
     {"id": "collector", "name": "Collector"},
     {"id": "traits", "name": "Traits"},
-    {"id": "events", "name": "Weekly events"}
+    {"id": "events", "name": "Weekly events"},
+    {"id": "cities", "name": "City ranks"}
   ],
   "achievements": [
     {"id": "monsters-1", "group": "battle", "name": "First Blood", "description": "Defeat 1 monster.", "points": 5, "when": {"metric": "kills", "atLeast": 1}},
@@ -158,6 +159,10 @@
     {"id": "trait-swap-1", "group": "traits", "name": "Change of Heart", "description": "Swap a trait for a scroll.", "points": 5, "when": {"metric": "traitSwaps", "atLeast": 1}},
     {"id": "weekly-goals-1", "group": "events", "name": "Week's Work", "description": "Reach a weekly event's goal.", "points": 5, "when": {"metric": "weeklyGoals", "atLeast": 1}},
     {"id": "weekly-goals-2", "group": "events", "name": "Ten Good Weeks", "description": "Reach 10 weekly event goals.", "points": 20, "when": {"metric": "weeklyGoals", "atLeast": 10}},
-    {"id": "weekly-goals-3", "group": "events", "name": "A Year of Errands", "description": "Reach 52 weekly event goals.", "points": 50, "when": {"metric": "weeklyGoals", "atLeast": 52}, "title": "of the Long Calendar"}
+    {"id": "weekly-goals-3", "group": "events", "name": "A Year of Errands", "description": "Reach 52 weekly event goals.", "points": 50, "when": {"metric": "weeklyGoals", "atLeast": 52}, "title": "of the Long Calendar"},
+    {"id": "charter-1", "group": "cities", "name": "Signed and Sealed", "description": "Buy a city's charter.", "points": 5, "when": {"metric": "charters", "atLeast": 1}},
+    {"id": "city-rank-3", "group": "cities", "name": "Freedom of the City", "description": "Raise a city to rank III.", "points": 15, "when": {"metric": "cityRank", "atLeast": 3}},
+    {"id": "city-rank-5", "group": "cities", "name": "A Golden Age", "description": "Raise a city to rank V.", "points": 40, "when": {"metric": "cityRank", "atLeast": 5}, "title": "the City-Builder"},
+    {"id": "city-rank-all", "group": "cities", "name": "Patron of Every Gate", "description": "Raise every city of a world to rank V.", "points": 100, "when": {"metric": "citiesAtTopRank", "atLeast": 5}, "title": "Patron of the Five Cities", "hidden": true}
   ]
 }

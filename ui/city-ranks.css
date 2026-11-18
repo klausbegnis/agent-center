@@ -1,11 +1,16 @@
 /* A city's rank on the Market tab: the badge on its banner, and the rank card on its page with the
    standing bar, the charters held, what the next rank gives and the charter's price. */
 
-/* The badge on the banner's upper right, legible on every banner: its own dark plate. */
-.ac-city-rank-badge {
+/* The badges on the banner's upper right, legible on every banner: each its own dark plate. */
+.ac-city-rank-badges {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: flex;
+  gap: 4px;
+  line-height: 1.3;
+}
+.ac-city-rank-badge {
   padding: 2px 6px;
   border: 1px solid rgba(242, 193, 78, 0.55);
   border-radius: 3px;
@@ -25,6 +30,8 @@
 .ac-city-rank-meter .ac-game-meter-fill { background: var(--ac-game-gold, #f2c14e); }
 .ac-city-rank-meter .ac-game-meter-text { flex: 0 1 auto; min-width: 0; font-size: 11px; overflow-wrap: anywhere; }
 .ac-city-rank-fee { font-weight: 600; }
+.ac-city-festival-badge { border-color: #e98ad0; color: #f6c1ea; }
+.ac-city-festival { color: var(--ac-game-gold, #f2c14e); font-weight: 600; }
 .ac-city-rank-next {
   display: flex;
   flex-direction: column;

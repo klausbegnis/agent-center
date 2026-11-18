@@ -2,6 +2,7 @@
 // change told and from the save before and after it. Kills, bosses, character levels, notable loot
 // and instance results come from the events; skill levels, coins, materials and building levels
 // from the two saves, so a purchase by hand counts as well as one by autoSpend. Pure.
+import { cityRankHighlights } from './city-ranks.mjs'
 import { effectiveLevel } from './progression.mjs'
 import { settlementNews, totalLevels } from './settlement.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
@@ -113,7 +114,9 @@ export function journalGains({ before, after, midway, events = [], at, tierOf, s
     // A trait scroll a kill dropped (traits.mjs).
     ...kills.filter((event) => typeof event.scroll === 'string').map((event) => ({ at, kind: 'scroll', ref: event.scroll })),
     // A week's goal reached (weekly.mjs).
-    ...weeklyHighlights(before, after, at)
+    ...weeklyHighlights(before, after, at),
+    // A city that rose a rank (city-ranks.mjs).
+    ...cityRankHighlights(before, after, at)
   ]
   return {
     counts: {

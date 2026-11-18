@@ -15,10 +15,19 @@ import { priceList } from './price-view.js'
  * @param {object} city
  */
 export function rankBadge(city) {
-  if (!city.rank) return null
-  const badge = el('span', `ac-city-rank-badge ac-city-rank-${city.rank.rank}`, CITY_RANK.badge(city.rank.rank))
-  badge.title = CITY_RANK.rank(city.rank.rank, city.rank.title)
-  return badge
+  if (!city.rank && !city.festival) return null
+  const node = el('span', 'ac-city-rank-badges')
+  if (city.festival) {
+    const festival = el('span', 'ac-city-rank-badge ac-city-festival-badge', CITY_RANK.festivalBadge)
+    festival.title = CITY_RANK.festival
+    node.append(festival)
+  }
+  if (city.rank) {
+    const badge = el('span', `ac-city-rank-badge ac-city-rank-${city.rank.rank}`, CITY_RANK.badge(city.rank.rank))
+    badge.title = CITY_RANK.rank(city.rank.rank, city.rank.title)
+    node.append(badge)
+  }
+  return node
 }
 
 /** The charter's price: the materials the city wants and the coins, the short ones marked. */
@@ -71,6 +80,7 @@ export function rankCard({ world, city, actions }) {
   bar.set(model.progress.share, model.progress.text)
   const facts = el('p', 'ac-game-card-line ac-city-rank-fee', model.feeText)
   const children = [el('p', 'ac-game-card-line', CITY_RANK.note), bar.element, facts]
+  if (model.festivalText) children.push(el('p', 'ac-game-card-line ac-city-festival', model.festivalText))
   if (model.perks.length) {
     const perks = el('ul', 'ac-city-rank-perks')
     perks.setAttribute('aria-label', CITY_RANK.perks)
