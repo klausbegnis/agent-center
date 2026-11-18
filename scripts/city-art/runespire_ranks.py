@@ -142,6 +142,16 @@ def draw(rank):
                     cv.set(bx + dx, y, 'N4')
                 elif a == 5:
                     cv.set(bx + dx, y, 'C0' if k in ('N4', 'N3') else 'N4')
+        # rays fanning up from the crystal to the top edge, so the light reads as a beam although the
+        # crystal stands near the top: two pairs of faint shafts either side of the column
+        for spread, keep in ((9, 0.6), (18, 0.35), (28, 0.2)):
+            for side in (-1, 1):
+                for y in range(0, CRY[1] + 1):
+                    t = 1 - y / max(1, CRY[1])
+                    x = bx + side * (3 + spread * (1 - t))
+                    for w in (0, 1):
+                        if cv.get(x + w * side, y) in ('N0', 'N1', 'N2', 'N3', 'AV', 'A0', 'A1') and bay(int(x) + w, y) < keep:
+                            cv.set(x + w * side, y, 'C0' if w == 0 else 'N4')
         # rune circle in the sky around the crystal
         for i in range(120):
             a = i / 120 * 2 * math.pi

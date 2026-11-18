@@ -379,10 +379,12 @@ def draw(rank):
             cv.rect(x, 41, x + 2, 44, 'F2'); cv.set(x, 41, 'F3')
         cv.hline(14, 63, 46, 'R1')
         if T >= 4:
-            # an upper storey of lit windows and a great arched furnace mouth
+            # an upper storey of lit windows
             for x in range(16, 63, 4):
                 cv.set(x, 35, 'F3'); cv.set(x, 36, 'F1')
             cv.hline(14, 63, 38, 'R1'); cv.hline(14, 63, 39, 'R3')
+        if T >= 3:
+            # the great arched furnace mouth, roaring from rank III
             for y in range(39, 47):
                 hw = 5 if y > 40 else 4
                 for x in range(36 - hw, 37 + hw):
@@ -393,6 +395,7 @@ def draw(rank):
                     cv.set(x, y, k)
                 cv.set(36 - hw - 1, y, 'R4'); cv.set(37 + hw, y, 'R0')
             cv.hline(30, 42, 38, 'R4'); cv.hline(33, 39, 37, 'R4')
+        if T >= 4:
             # the great bellows on the roof, pumped by a beam
             cv.poly([(22, 32), (32, 30), (32, 33), (22, 33)], 'T')
             cv.hline(22, 32, 30 + 0, 'R0'); cv.hline(22, 32, 33, 'R0')
@@ -408,6 +411,9 @@ def draw(rank):
             cv.hline(14, 63, top - 1, 'R4')
             for x in (24, 40, 50):
                 fire_pot(cv, x, top - 4)
+            # red pennants over the parapet: the foundry flies the hold's colours from rank III
+            for x in (17, 31, 45, 59):
+                flag(cv, x, top - 13, 10, 'F1' if T < 5 else 'BL', 5, 'F0' if T < 5 else 'N2')
             # squat towers at both ends of the foundry wall
             tower(11, top - 9, 5, 46, T >= 4)
             tower(61, top - 9, 5, 46, T >= 4)
