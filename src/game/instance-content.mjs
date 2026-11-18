@@ -15,7 +15,7 @@ export const CHECK_ROOMS = Object.freeze(['trap', 'puzzle'])
 const TOP_KEYS = ['region', 'regions', 'instances', 'boons', 'modifiers']
 const INSTANCE_KEYS = [
   'id', 'name', 'races', 'opensAt', 'banner', 'card', 'alt', 'route', 'map', 'boss', 'elite', 'relic', 'loot',
-  'vault', 'rooms', 'modifiers', 'region'
+  'vault', 'rooms', 'modifiers', 'region', 'scene'
 ]
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 /** Art is served with the UI, so the panel, the tab and the external view all reach it. */
@@ -129,6 +129,8 @@ function checkVault(name, { vault, elite }, context) {
 function checkArt(name, entry) {
   const problems = []
   for (const key of ['banner', 'card']) if (!isArt(entry[key])) problems.push(`${name}: "${key}" must be a PNG under ui/instances/`)
+  // The room-size scene a room inside the instance is drawn in, instead of its theme's scenery.
+  if (entry.scene !== undefined && !isArt(entry.scene)) problems.push(`${name}: "scene" must be a PNG under ui/instances/`)
   if (!isShortText(entry.alt, ALT_LIMIT)) problems.push(`${name}: "alt" must describe the banner`)
   if (entry.route === undefined) return problems
   const route = entry.route

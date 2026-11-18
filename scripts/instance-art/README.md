@@ -8,6 +8,8 @@ like the rest of the repository. They are drawn by the Python scripts in this fo
 - `engine.py` is a small canvas with palettes, dithering, shapes, text and PNG output;
 - `banners.py` draws the banners, one module each: the Old Road's (`bn_crypt.py`, `bn_foundry.py`,
   `bn_hive.py`, `bn_frost.py`, `bn_library.py`, `bn_spire.py`) and the Gloaming Isles' (`bn_isle_*.py`);
+- `scenes_road.py`, `scenes_isles_a.py` and `scenes_isles_b.py` draw each instance's room-size scene
+  (200 x 125, shown at the room's size), which replaces a theme's scenery while a room is inside;
 - `isles_map.py` draws the second region's night sea chart (`SITES` there are its live markers'
   coordinates in `game/instances.json`);
 - `roadmap.py` draws the roadmap (`SITES` there are the coordinates `game/instances.json` places
@@ -40,7 +42,7 @@ cp scripts/instance-art/png/x1/{saltreach-lighthouse,coral-labyrinth,smugglers-w
 ```
 
 ```bash
-cp scripts/instance-art/png/x1/{roadmap,isles-map,route,icon}-*.png ui/instances/
+cp scripts/instance-art/png/x1/{roadmap,isles-map,route,icon}-*.png scripts/instance-art/png/x1/*-scene.png ui/instances/
 ```
 
 ```bash

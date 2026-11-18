@@ -99,14 +99,15 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
   instancePill.append(instanceIcon, instanceText)
   instancePill.hidden = true
   band.append(wave, instancePill, relicMark, foeInfo, party)
-  // The instance's banner behind the room's characters, the theme's floor shaded under them.
+  // The instance's room-size scene behind the room's characters, in place of the theme's scenery,
+  // which ui/instances.css hides while the room is inside.
   const backdrop = el('div', 'ac-instance-backdrop')
   backdrop.setAttribute('aria-hidden', 'true')
   const backdropArt = el('img', 'ac-instance-backdrop-art')
   backdropArt.alt = ''
   backdropArt.decoding = 'async'
   backdropArt.draggable = false
-  backdrop.append(backdropArt, el('div', 'ac-instance-backdrop-shade'))
+  backdrop.append(backdropArt)
 
   const foe = createMonsterView({ theme, spot: monsterSpot(theme), mirrored })
   foe.setPhase('gone')
@@ -158,7 +159,8 @@ export function createRoomGame({ scene, theme, roomId, mirrored, base = '' }) {
     instancePill.title = inside.text
     instancePill.setAttribute('aria-label', inside.text)
     if (instanceIcon.getAttribute('src') !== inside.icon) instanceIcon.src = inside.icon
-    if (backdropArt.getAttribute('src') !== inside.backdrop) backdropArt.src = inside.backdrop
+    if (backdropArt.getAttribute('src') !== inside.scene) backdropArt.src = inside.scene
+    backdrop.dataset.full = String(inside.fullScene)
     if (!backdrop.isConnected) {
       const scenery = scene.querySelector(':scope > .ac-bg')
       if (scenery) scenery.after(backdrop)

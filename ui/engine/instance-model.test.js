@@ -125,11 +125,12 @@ test('a run\'s card checks the rooms behind, marks the current one and dims the 
   assert.equal(runCardModel(game({ run: false }), ROOM, { base: '/' }), null)
 })
 
-test('a room inside an instance has a band with the instance, its room and the backdrop', () => {
+test('a room inside an instance has a band with the instance, its room and its room-size scene', () => {
   const state = game()
   const band = instanceBand(state, ROOM, '/')
   assert.match(band.text, /Emberdeep Foundry · room 5 of 6 · The Ingot Store/)
-  assert.equal(band.backdrop, '/ui/instances/emberdeep-foundry.png')
+  assert.equal(band.scene, '/ui/instances/emberdeep-foundry-scene.png')
+  assert.equal(band.fullScene, true)
   assert.equal(instanceBand(state, OTHER, '/'), null)
 })
 

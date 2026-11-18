@@ -312,7 +312,9 @@ export function buildGameView(input) {
       rooms[roomId] = { worldId, joined: false }
       continue
     }
-    const sceneTheme = sceneThemeOf(roomId, found.project.kills ?? 0)
+    // Inside an instance the room keeps the theme it entered in: its kills there do not travel.
+    const kills = (found.project.kills ?? 0) - (found.project.run?.found?.kills ?? 0)
+    const sceneTheme = sceneThemeOf(roomId, kills)
     rooms[roomId] = roomView(found.project, worldId, statesByRoom[roomId] ?? [], keepTitles, sceneTheme)
   }
   const characters = {}

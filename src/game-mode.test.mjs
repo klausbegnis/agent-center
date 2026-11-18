@@ -288,7 +288,7 @@ test('the view state of a busy save stays far below the panel post limit', async
   // ranks (each open city's rank card and next charter, and four achievements: about 2 KiB) to 106.8 KiB.
   // The second region (eight instances and sixteen bosses in the content, about 12 KiB the same for
   // every world, with an instance under fog sending only its place) and the rematches take it to
-  // about 121 KiB.
+  // about 121 KiB, and each instance's scene path to 122.1 KiB.
   assert.ok(size < 126 * 1024, `${size} bytes`)
   assert.equal(partyOf(game).length, 6)
 })

@@ -653,6 +653,10 @@ one room at a time.
   instance; all twelve guard an item of their own (`game/legendary.json`), which is what a clear
   rolls for. The vault's pool lists other bosses' equipment (its elite's among them), never an
   instance boss's item and never a relic: a boss's own relic comes only from that boss.
+- Each instance has a room-size scene (`scene`, a 200×125 PNG under `ui/instances/`, drawn at the
+  room's size): while a room is inside, the UI hides its theme's scenery and draws that scene behind
+  its characters and monster, and a travelling room keeps the theme it entered in until it leaves
+  (its kills inside do not move it on).
 - The site of each instance on the 256×144 roadmap is `map: { x, y }`; the three roadmap pictures
   (0, 3 and 6 cleared) are enough because the UI places live markers over them.
 
@@ -2193,7 +2197,7 @@ by the usual closing rules.
     region: { id: 'old-road', name: 'The Old Road', title: 'Roadwarden', width: 256, height: 144, after: null },
     regions: [{ id: 'old-road', ... }, { id: 'gloaming-isles', name: 'The Gloaming Isles', title: 'Islewarden',
       width: 256, height: 144, after: 'old-road' }],
-    instances: [{ id: 'sunken-crypt', region: 'old-road', name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
+    instances: [{ id: 'sunken-crypt', region: 'old-road', scene, name, races, opensAt: 5, map: { x: 82, y: 94 }, banner, card,
       alt, route?: { start, mid, boss, alt }, relic: 'tidewake-bell', boss: 'ossric', elite: 'old-mattock',
       rooms: [{ kind: 'entrance', name }, ..., { kind: 'trap', name, check: { attribute: 'agility' } }, ...],
       rotation: ['regenerating-boss', ...] }],

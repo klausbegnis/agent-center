@@ -108,28 +108,17 @@
   .ac-roadmap-marker-inside { animation: none; }
 }
 
-/* A room inside an instance: the instance's banner as its backdrop, over the theme's scenery and
-   under its characters, fading into the theme's floor, which is shaded so characters stay clear. */
-.ac-instance-backdrop { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* A room inside an instance: the instance's room-size scene fills the room, and the theme's scenery
+   is hidden, so nothing of the theme shows through. Characters, bubbles and the monster sit on top. */
+.ac-room-in-instance > .ac-bg { visibility: hidden; }
+.ac-instance-backdrop { position: absolute; inset: 0; pointer-events: none; overflow: hidden; background: #0d0f14; }
 .ac-instance-backdrop-art {
   position: absolute;
-  left: 0;
-  top: 0;
+  inset: 0;
   width: 100%;
-  height: 72%;
+  height: 100%;
   object-fit: cover;
-  object-position: center 70%;
   image-rendering: pixelated;
-  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
-  mask-image: linear-gradient(to bottom, #000 70%, transparent);
-}
-.ac-instance-backdrop-shade {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 45%;
-  background: linear-gradient(to bottom, transparent, rgba(8, 10, 16, 0.55) 40%);
 }
 .ac-game-pill.ac-instance-pill { display: inline-flex; flex-direction: row; align-items: center; gap: 4px; white-space: nowrap; }
 .ac-instance-pill[hidden] { display: none; }

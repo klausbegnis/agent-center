@@ -267,7 +267,9 @@ export function instanceBand(game, roomId, base) {
     text: INSTANCES.band(run.name, run.room, run.roomName),
     short: INSTANCES.bandShort(run.name, run.room),
     icon: roomIconUrl(base, ROOM_ICON[run.roomKind] ?? 'icon-fight'),
-    backdrop: instanceArtUrl(base, content.banner),
+    // The instance's room-size scene, drawn instead of the theme's scenery; its banner when it has none.
+    scene: instanceArtUrl(base, content.scene ?? content.banner),
+    fullScene: Boolean(content.scene),
     alt: content.alt
   }
 }

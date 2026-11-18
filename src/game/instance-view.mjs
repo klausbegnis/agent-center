@@ -137,6 +137,7 @@ export function instancesContentView(content) {
       map: { ...instance.map },
       banner: instance.banner,
       card: instance.card,
+      ...(instance.scene ? { scene: instance.scene } : {}),
       alt: instance.alt,
       ...(instance.route ? { route: { ...instance.route } } : {}),
       relic: instance.relic,
