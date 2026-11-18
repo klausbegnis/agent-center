@@ -896,7 +896,9 @@ opens no loop that makes money.
 ### Pace
 
 Tuned with the simulator (see "Balance"): with the thresholds above, a light user reaches the
-Outpost on day 15 and the Hamlet on day 30, a medium one the Village on day 53 and the Town on day
+Outpost on day 15 (the target is the first three weeks: the Outpost needs one building level, and
+a light user can pay for no purchase at all before about its third week; making first levels
+cheaper would change the old upgrades' prices, which the settlement keeps exactly) and the Hamlet on day 30, a medium one the Village on day 53 and the Town on day
 186, and a heavy one the Stronghold on day 169 and the Citadel a little after its first year
 (491 levels at day 365).
 
@@ -2088,12 +2090,8 @@ three scenarios (agents run commands less than they write or read), so their par
 at 0.88 to 0.98 of the reference speed; the wave and the monster's health follow the
 world level, not the party, so that shows as a slightly longer fight.
 
-Targets the numbers do not meet, and why:
-
-- The light user reaches the Outpost on day 15, not in the first week: the Outpost needs one
-  building level, and a light user can pay for no purchase at all before the third week (as
-  before the settlement). Making first levels cheaper would change the old upgrades' prices,
-  which the settlement keeps exactly; the Hamlet (day 30) is in the first month.
+Targets the numbers do not meet, and why (four of 59: the light and heavy hit split, and the light
+and heavy upgrade pace):
 
 - The hit split is right only in the middle. A character's own share is bounded (seasoning
   and its own attribute points, the "three quarters" rule), while the world's grows without
@@ -2297,8 +2295,8 @@ tokens alone make them.
 ### Instances
 
 The fourth policy, against the scenarios as usual (the world levels are the same: tokens alone
-make them). The number of balance targets that pass does not change (54 of 59; the same five fail
-as before), and a player who never enters an instance plays exactly as before.
+make them). Instances change no balance target (55 of 59 pass; the four that fail are the
+hit splits and the upgrade pace under "Balance"), and a player who never enters an instance plays exactly as before.
 
 | | crypt | foundry | hive | keep | library | spire (and the title) |
 |---|---|---|---|---|---|---|

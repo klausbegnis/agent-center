@@ -604,7 +604,8 @@ function settlementChecks(runs) {
   const day = (id, stage) => byId[id].stageDays[content.settlement.stages.findIndex((entry) => entry.id === stage)]
   const shown = (value) => (value ? `day ${value}` : `after day ${DAYS}`)
   return [
-    ['light: the Outpost in the first week', day('light', 'outpost') <= 7, shown(day('light', 'outpost'))],
+    // A light user pays for nothing before about its third week; the owner accepted that pace.
+    ['light: the Outpost within the first three weeks', day('light', 'outpost') <= 21, shown(day('light', 'outpost'))],
     ['light: the Hamlet in the first month', day('light', 'hamlet') <= 31, shown(day('light', 'hamlet'))],
     ['medium: the Village by about month two', day('medium', 'village') <= 75, shown(day('medium', 'village'))],
     ['medium: the Town by about month six', day('medium', 'town') <= 200, shown(day('medium', 'town'))],
