@@ -61,9 +61,11 @@ gone quiet, across every machine Orca is connected to.
 You do not play it so much as feed it. Your agents do their work, and the work is what moves
 the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
+![Game mode playing in a Guild Hall room: the party fights an elite orc, its health bar drops, the orc is defeated with materials and bestiary news popping up, and the next monster, a pack of rats, comes in; above, the room chips, the world's materials, the weekly event's banner and the game's eight tabs](docs/screenshots/game-mode.gif)
+
 | Rooms | Chest | Skills | Market |
 | --- | --- | --- | --- |
-| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips and the world's coins and materials over the seven tabs, then the chest's item slots under a Move items button with a legendary sword in a gold frame, a free cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill and Deepforge, each with what it sells cheap and pays well for, under the world's coins and materials](docs/screenshots/game-market.png) |
+| ![A room's party facing its monster, with the wave and the monster's health](docs/screenshots/game-rooms.png) | ![The Chest tab: the room chips, the world's coins and materials and the weekly event's banner over the eight tabs, then the chest's item slots under a Move items button with a legendary sword in a gold frame, a cudgel's detail with its upgrade and Send to another room, and the room's relics with Rimeheart active](docs/screenshots/game-chest.png) | ![The world level and the work skills with their progress](docs/screenshots/game-skills.png) | ![The Market tab: the pixel-art banners of Goldmill at rank III and Deepforge at rank II during its festival, each with what it sells cheap and pays well for](docs/screenshots/game-market.png) |
 
 ### How it plays
 
@@ -120,7 +122,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   and beating more different bosses levels a boss hunter track. It is a small bonus too: a whole
   bestiary adds under a tenth to a party.
 
-![The Camp tab as a settlement: the pixel-art Village with "31 of 60 building levels to become a Town" and its bonus, then the Hearth's card at its second tier, Cooking hearth, with what it does now and next and its price in materials and, half in coins](docs/screenshots/game-settlement.png)
+![The Camp tab as a settlement: the pixel-art Village at stage 4 of 7 with "31 of 60 building levels to become a Town" and its bonus, then the Hearth's card at its second tier, Cooking hearth, with what it does now and next and its price](docs/screenshots/game-settlement.png)
 
 - **Instances.** A road of dungeons opens as the world grows, one after another: six on the Old
   Road, from a sunken crypt to a dragon's spire, then, once those are cleared, eight more in a
@@ -128,7 +130,7 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
   from the Roadmap tab:
   while inside, the room's wave waits and its working time plays the instance's six rooms (an
   entrance, a hall, a trap or puzzle, an elite's chamber, a vault where you pick one of two boons,
-  and a named boss), and the room shows the instance's banner behind its characters. The first
+  and a named boss), and the room is drawn in the instance's own scene instead of its theme. The first
   clear of each gives a signature relic; every clear pays a purse and a chance at the boss's own
   item. Repeat runs climb tiers with no end, each harder, richer and with its own twist, and a
   beaten boss can be fought again in Rematch I to X, each opened by the world's level and paying
@@ -144,7 +146,22 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 
 ![The Roadmap tab under the weekly event's banner: the switch between The Old Road and The Gloaming Isles (locked), then the parchment map of the road with a cleared crypt, a party on its way to the foundry and the sites ahead under fog](docs/screenshots/game-roadmap.png)
 
-![The Bestiary tab: the hunter rank and boss hunter bars, then cards of slimes with the title Slime-scourer II, goblins, orcs and skeletons, each with its level, points to the next level, damage bonus and next step](docs/screenshots/game-bestiary.png)
+- **Achievements and titles.** Over 150 achievements in fourteen groups follow everything the
+  game counts, from a first kill to a cleared region; each gives points, and some give a title.
+  Pick one of the titles your world earned for a room's party, and it shows beside its
+  characters' names. A summary button above the tabs opens the day journal: what the world did
+  today and since you last looked, and its highlights.
+- **Traits.** Every character is born with a trait, a small named perk, and earns more slots as
+  it levels. Elites, champions and bosses now and then drop trait scrolls that teach one; each
+  city's Trait broker trades them.
+- **City ranks.** Trading in a city earns standing there; with enough, its charter raises it
+  through five ranks, each with a lower fee, a richer stall and a small perk for the whole world.
+
+| Party | Achievements |
+| --- | --- |
+| ![The Party tab: rumble-banana's characters, each with the party title "the Eager" under its name, its class, level, attributes and gear, and its traits with a free slot](docs/screenshots/game-party.png) | ![The Achievements view of the World tab: the world's points and achievements earned, the title picked for rumble-banana's party, and the Battle group with First Blood and Warming Up earned](docs/screenshots/game-achievements.png) |
+
+![The World tab's bestiary: the races discovered and bosses beaten, the hunter rank and boss hunter bars, and the bestiary's bonuses](docs/screenshots/game-bestiary.png)
 
 ### The bestiary
 

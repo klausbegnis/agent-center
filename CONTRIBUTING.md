@@ -116,7 +116,20 @@ The game tabs `game-rooms.png`, `game-chest.png`, `game-skills.png` and `game-ma
 500 × 900 window and scale 2; the Chest one adds `&room=local:/work/rumble-banana` and has its free
 Whittled Cudgel chosen, so the item detail and its **Send to** show. Look at each before committing it: `--screenshot` can fire before
 the city banners are painted, and then the Market shot shows empty cards. Taking the picture
-through Chrome's DevTools protocol once every image has loaded avoids that.
+through Chrome's DevTools protocol once every image has loaded avoids that; `scripts/capture.mjs`
+does it at scale 2 with reduced motion:
+
+```bash
+node scripts/capture.mjs shot "http://127.0.0.1:47700/?view=list&tab=market" docs/screenshots/game-market.png 500 900
+```
+
+The same goes for `game-settlement.png` (`tab=camp`), `game-bestiary.png` (`tab=world`),
+`game-roadmap.png` (`?tab=roadmap&room=local:/work/rumble-banana`), `game-party.png`
+(`tab=party&room=local:/work/rumble-banana`) and `game-achievements.png`
+(`?tab=world&view=achievements&room=local:/work/rumble-banana`, without `view=list`, which would
+take the place of the World tab's view). For the Chest, `--eval` clicks the cudgel first:
+`--eval "[...document.querySelectorAll('button')].find((b) => /Whittled Cudgel/.test(b.getAttribute('aria-label') ?? ''))?.click()"`.
+The demo for all of them is `GAME=1 FREEZE=1 node scripts/demo.mjs guild-hall`.
 
 ### The game-mode GIF
 
@@ -152,8 +165,9 @@ committing it.
 The images in `assets/` are what Orca's plugin directory shows. They come from the demo too,
 with `--window-size=1280,800` and `?view=gallery` for all rooms, or `?view=gallery&only=rumble`,
 `only=cosmic` and `only=turbo` for one room each. The cover is the game-mode gallery
-(`GAME=1 FREEZE=1`, `?view=gallery`) on Guild Hall at 1280×800, and `assets/screenshot-game.png`
-the settlement on the Camp tab (`?tab=camp`) at the same size, so the listing never shows one
+(`GAME=1 FREEZE=1`, `?view=gallery`) on Guild Hall at 1280×800 (`--scale 1`, and the README's
+`game-gallery.png` is the same picture), and `assets/screenshot-game.png` the settlement on the
+Camp tab (`?view=gallery&tab=camp`) at the same size, so the listing never shows one
 picture twice. The bestiary
 (`assets/screenshot-bestiary.png`, exactly 1280×800) and the README's `game-bosses.png` and
 `game-ranks.png` come from the contact sheet (`?part=bosses`, `?part=races`) with everything but
