@@ -6,6 +6,16 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Game mode: **Auto: what is scarcest**, a gathering choice for a room or a character on the
+  Party tab. Its idle characters gather the materials the world has least of, measured against
+  what its buildings' next levels cost, spread over the three scarcest, and the room looks again
+  once an hour of game time, so the picks do not flap. A character's own trade still wins. Each
+  follower says what it gathers now. Opt-in: saves keep their choices; the room's picks are a new
+  optional save field, `scarcest`. `npm run simulate` shows it narrows the spread between the
+  most and least stocked gathered material without lowering gathering.
+
 ### Fixed
 
 - Game mode: a room's active relic could not be sent, so a room with one relic could never send it,

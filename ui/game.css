@@ -876,6 +876,8 @@ button.ac-game-slotbox:hover { filter: brightness(1.15); }
   color: var(--orca-muted-foreground, #9aa3b2);
 }
 .ac-game-hero-who { display: flex; flex-direction: column; min-width: 0; }
+.ac-game-trade-why[hidden] { display: none; }
+.ac-game-trade-why { display: block; margin: 2px 0 0; font-size: 11px; }
 .ac-game-hero-who .ac-game-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-game-hero-progress { font-size: 11px; color: var(--orca-muted-foreground, #9aa3b2); }
 /* Trade pickers: the trade's icon beside a compact select, at the right of a character's head and

@@ -604,6 +604,8 @@ const TRADE_MATERIAL = {
   hunting: 'hides',
   runecraft: 'runes'
 }
+/** The material a gathering trade yields, or null. */
+export const tradeMaterial = (skillId) => (Object.hasOwn(TRADE_MATERIAL, skillId) ? TRADE_MATERIAL[skillId] : null)
 
 /**
  * What a skill does, in one line: "Grows while agents write code; stronger physical attacks".

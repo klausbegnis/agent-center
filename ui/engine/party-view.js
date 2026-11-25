@@ -25,7 +25,9 @@ import {
 } from './labels.js'
 import { TRADES_TEXT } from './trade-labels.js'
 import { createTraitSlots } from './trait-view.js'
-import { canChooseTrades, characterTradeOptions, pickerValue, roomTradeOptions } from './trade-model.js'
+import {
+  canChooseTrades, characterTradeOptions, choiceIcon, pickerValue, roomTradeOptions, scarcestLine
+} from './trade-model.js'
 import { tradePicker } from './trade-picker.js'
 
 /** The seven attributes as short pairs; each short name carries its full name. */
@@ -55,6 +57,8 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   // The title the room's party wears (achievements-view.js), beside the name.
   const titleText = el('span', 'ac-party-title')
   const facts = el('span', 'ac-muted')
+  // On "what is scarcest": what it gathers now and why.
+  const why = el('span', 'ac-muted ac-game-trade-why')
   who.append(nameText, titleText, facts)
   let classIcon = el('span')
   // Holds the picker, or on a page that cannot choose, the trade as text.
@@ -72,7 +76,7 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
   // The character's traits: a free slot teaches a scroll, a trait can be swapped (trait-view.js).
   const traits = createTraitSlots({ getRoomId: () => roomId, sessionId, name, actions })
   details.append(attributes, equip.element)
-  node.append(top, progress.element, details, traits.element)
+  node.append(top, why, progress.element, details, traits.element)
   let drawnDetails = null
   return {
     element: node,
@@ -85,6 +89,8 @@ function createCharacterCard({ roomId, sessionId, name, actions, openSlot, base,
       if (portraitFor) portrait.set(...portraitFor(agent))
       portrait.element.hidden = !portraitFor
       facts.textContent = characterFacts(character)
+      why.textContent = scarcestLine(character)
+      why.hidden = !why.textContent
       if (classIcon.dataset.iconId !== character.class) {
         const nextIcon = gameIcon(character.class, 'ac-game-hero-icon')
         nextIcon.dataset.iconId = character.class
@@ -187,7 +193,7 @@ function createCharactersCard(actions, base = '', onShowAgent = () => {}) {
           label: TRADES_TEXT.roomTradeLabel(roomName(state, roomId)),
           options: roomTradeOptions(),
           value: pickerValue(roomChoice),
-          iconId: roomChoice
+          iconId: choiceIcon(roomChoice)
         })
       }
       const shown = members.map((member) => {

@@ -82,7 +82,9 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Idle agents gather.** A character whose agent has finished takes a trade (mining, fishing,
   farming, woodcutting, hunting or runecraft) and brings materials home. The game picks one for
   each character (Auto); on the Party tab you can set what everyone in a room
-  gathers, or what one character gathers, which wins over the room's choice.
+  gathers, or what one character gathers, which wins over the room's choice. **Auto: what is
+  scarcest** spreads idle characters over the materials the world has least of, against what its
+  buildings cost next, looks again every hour, and says on each character what it gathers now.
 - **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
   a new character takes the best free item of each slot by itself. On the Party tab, click a
   character's slot to choose another item from the chest (or swap with whoever holds it); a

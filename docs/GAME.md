@@ -30,10 +30,10 @@ milliseconds the caller passes.
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
 | `buyGroupUpgrade(save, { worldId, upgradeId, useCoins? })` | Buys the next level of a group upgrade (a building of the settlement), in materials alone or, with `useCoins`, half in coins from the tier that allows it; unchanged when it cannot pay, the building is not open at the settlement's stage, or coins were asked of a tier that takes none. `buildingProblem(save, which)` says why the last two refuse, or null. |
 | `settlementNews(before, after)` | The tiers, stages and renovation stars a change reached, per world (see "Settlement"). |
-| `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
+| `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill, `'scarcest'` or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
 | `equipItem(save, { projectId, sessionId, slot, itemId })` | Sets what a living character holds in a slot: an item of the room's chest, `null` for nothing, or `'auto'` (see "Choosing equipment"); unchanged when the choice is refused or changes nothing. `equipProblem(project, { sessionId, slot, itemId })` says why a choice is refused, or null. |
 | `bestGearForRoom(save, { projectId })` | Re-runs the automatic pick for every slot of a room nobody pinned; unchanged when nothing would change. |
-| `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
+| `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill, `'scarcest'` or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
 | `setActiveRelic(save, { projectId, relicId })` | Makes one of a room's relics the active one, or none with null; unchanged when the room does not own it. See "Legendary loot". |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
@@ -270,7 +270,25 @@ project id:
   3. otherwise its `trade`, the engine's pick (Auto).
   So the room's choice reaches every character without one of its own, those that join later
   included, and changing it leaves characters with their own choice alone. Null, missing or
-  unknown values are no choice. A character keeps its choice in its retiree record and has it
+  unknown values are no choice.
+- Either choice may be `'scarcest'` ("Auto: what is scarcest", `scarcest.mjs`): the character
+  then gathers what its room picked for it, toward the materials the world has least of. The room
+  picks for all its followers at once (`withScarcestPicks`, at the start of each advance):
+  - it orders the six gathering trades by `stock / (need + mean need + 1)`, where `need` is
+    what the next level of every building asks of that material (`gatheredNeed`, open or not, so
+    no content is needed): a material wanted soon counts as scarcer, one no building wants is
+    still gathered once its stock is low, and a material no trade yields (bars, crystals...) is
+    never picked. Ties keep the order of the trades;
+  - the followers, in session order, take the `SCARCEST_SPREAD` (3) scarcest in turn, the
+    scarcest first: one character takes the scarcest, two the two scarcest, five go 2/2/1;
+  - the picks are kept in `project.scarcest` (`{ at, picks: { [sessionId]: trade } }`) and made
+    again `SCARCEST_REVIEW_MS` (an hour) of game time later, or at once for a new follower, so they
+    do not flap with every unit gathered. A follower the room has not picked for yet gathers its
+    Auto trade. A room nobody in follows the choice keeps no `scarcest`.
+  The view gives each character a `tradeReason` (`own`, `room`, `scarcest` or `auto`), and the
+  Party tab says what a follower gathers now and why. `npm run simulate` compares every room on
+  it with the trades the game gives ("Gathering" table): it narrows the spread of the gathered
+  stocks and does not lower gathering. A character keeps its choice in its retiree record and has it
   again when its session comes back. A world reset forgets the room's choice with the rest of
   the project.
 - An idle character gathers its trade:
@@ -1710,7 +1728,7 @@ Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns?,
-            scrolls?: { [traitId]: count } }
+            scrolls?: { [traitId]: count }, scarcest?: { at, picks: { [sessionId]: trade } } }
 Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
@@ -1732,7 +1750,9 @@ when parts or races are added later; a look is about 300 bytes. A monster saved 
 looks has neither `rank` nor `look`: it keeps its `sprite` and is drawn and fought as before.
 
 `tradeChoice`, on a project and on a character (and kept on a retiree record), is a gathering
-skill or null (see "Gathering"); a save from before it existed has null everywhere. `kills`
+skill, `'scarcest'` or null (see "Gathering"); a save from before it existed has null everywhere.
+`scarcest` holds a room's picks of what is scarcest, optional: a gathering skill by session id,
+and the time they were made. `kills`
 counts every kill of the project (see "Scenes"); `stamina` is a share of the party's
 pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
@@ -2063,10 +2083,10 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.setActiveRelic` | `/api/game/active-relic` | `{ roomId, relicId }`, `relicId` null for none; a relic the room owns |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
-| `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, or null to follow the room |
+| `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, `'scarcest'`, or null to follow the room |
 | `game.equip` | `/api/game/equip` | `{ roomId, sessionId, slot, itemId }`: a living character of a room that plays, `weapon`, `outfit` or `tool`, and an item of that room's chest, null for nothing or `'auto'`; a choice the rules refuse says why. |
 | `game.bestGear` | `/api/game/best-gear` | `{ roomId }`; answers `{ changed, slotsChanged }` |
-| `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, or null for Auto |
+| `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, `'scarcest'`, or null for Auto |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
@@ -2342,8 +2362,8 @@ by the usual closing rules.
 - `tokenSource` is `history` or `estimated` (see "When it runs"). A UI should say plainly when
   progress is estimated.
 - A character's `trade` is the one it gathers now (see "Gathering"), `tradeChoice` its own
-  choice or null, and `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
-  to.
+  choice or null, `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
+  to, and `tradeReason` why it gathers `trade`: `own`, `room`, `scarcest` or `auto`.
 - A character's `pinned` names the slots chosen by hand (see "Choosing equipment"); a page that
   only watches shows them without the choice.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the

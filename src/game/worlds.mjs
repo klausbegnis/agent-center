@@ -7,7 +7,7 @@ import { MARKET_MAX_COINS, MARKET_PRESSURE_MAX, MARKET_PRESSURE_MIN } from './co
 import { normalizeProjectInstance, normalizeWorldInstances } from './instance-save.mjs'
 import { normalizeLegendary } from './legendary.mjs'
 import { emptyMarket } from './market.mjs'
-import { GATHERING_SKILLS } from './skills.mjs'
+import { GATHERING_SKILLS, TRADE_CHOICES } from './skills.mjs'
 import { normalizeTraitRecord } from './trait-check.mjs'
 import { normalizeDaily } from './quest-save.mjs'
 import { normalizeWeekly } from './weekly-save.mjs'
@@ -219,8 +219,14 @@ function keepEntries(value, isValid) {
   return Object.fromEntries(Object.entries(objectOr(value, {})).filter(([, entry]) => isValid(entry)))
 }
 
+/** A room's scarcest picks as stored, or nothing: a damaged entry is made again at the next round. */
+function scarcestField(value) {
+  if (!isPlainObject(value) || !isNumber(value.at) || !isPlainObject(value.picks)) return {}
+  return { scarcest: { at: value.at, picks: keepEntries(value.picks, (skillId) => GATHERING_SKILLS.includes(skillId)) } }
+}
+
 function normalizeProject(value) {
-  const { legendary, ...project } = { ...emptyProject(), ...value }
+  const { legendary, scarcest, ...project } = { ...emptyProject(), ...value }
   return {
     ...project,
     // Kept only when the room has legendary loot or pity; a save from before it has none.
@@ -233,7 +239,9 @@ function normalizeProject(value) {
     restTicks: isNumber(project.restTicks) ? project.restTicks : 0,
     fightMs: isNumber(project.fightMs) ? project.fightMs : 0,
     // Saves from before trades could be chosen, or with an unknown one, have Auto.
-    tradeChoice: GATHERING_SKILLS.includes(project.tradeChoice) ? project.tradeChoice : null,
+    tradeChoice: TRADE_CHOICES.includes(project.tradeChoice) ? project.tradeChoice : null,
+    // The room's picks of what is scarcest (scarcest.mjs): kept only when well formed.
+    ...scarcestField(scarcest),
     chest: Array.isArray(project.chest) ? project.chest.filter(isPlainObject) : [],
     characters: keepEntries(project.characters, isPlainObject),
     retirees: Array.isArray(project.retirees) ? project.retirees.filter(isPlainObject) : [],

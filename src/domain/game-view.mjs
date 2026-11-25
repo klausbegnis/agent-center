@@ -173,6 +173,8 @@ function characterView(member, link, state) {
     equipment,
     trade: member.trade,
     tradeChoice: member.tradeChoice ?? null,
+    // 'own', 'room', 'scarcest' or 'auto': why it gathers its trade, for the Party tab.
+    tradeReason: member.tradeReason ?? 'auto',
     autoTrade: member.autoTrade ?? null,
     pinned: member.pinned ?? {},
     // What it carries, its slots and its next one; null without traits in the content.

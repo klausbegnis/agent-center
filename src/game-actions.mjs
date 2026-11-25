@@ -14,7 +14,7 @@ import { LAST_OFFER_INDEX } from './game/city-rank-constants.mjs'
 import { MARKET_MAX_AMOUNT } from './game/constants.mjs'
 import { legendaryOf } from './game/legendary.mjs'
 import { rebalanceWorkSkills } from './game/rebalance.mjs'
-import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
+import { GATHERING_SKILLS, MATERIALS, TRADE_CHOICES, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
 import { SAVE_VERSION, assignProject, migrate, resetWorld, worldIdOf } from './game/worlds.mjs'
@@ -25,7 +25,7 @@ const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)
 
 /** A trade to gather, or null for none chosen (Auto). */
 function requireTrade(trade) {
-  if (trade !== null && !GATHERING_SKILLS.includes(trade)) throw refuse('unknown trade', trade)
+  if (trade !== null && !TRADE_CHOICES.includes(trade)) throw refuse('unknown trade', trade)
 }
 
 /**

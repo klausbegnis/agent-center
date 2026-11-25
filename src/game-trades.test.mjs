@@ -84,6 +84,22 @@ test('a room\'s trade and a character\'s are kept with the save and shown in the
   assert.deepEqual([project.tradeChoice, project.characters.s1.tradeChoice], ['fishing', 'runecraft'])
 })
 
+test('a room set to what is scarcest is kept, and its character says why it gathers what it does', async () => {
+  const played = setup()
+  await joined(played)
+  const { game, tick } = played
+  assert.deepEqual(await game.setRoomTrade({ roomId: BANANA, trade: 'scarcest' }), { changed: true })
+  tick(MINUTE)
+  await game.round()
+  const view = game.getView()
+  assert.equal(view.rooms[BANANA].tradeChoice, 'scarcest')
+  assert.equal(view.characters['pane-1'].tradeReason, 'scarcest')
+  await game.flush()
+  const stored = played.storage.get(GAME_STORAGE_KEY).save.worlds.main.projects[BANANA]
+  assert.equal(stored.tradeChoice, 'scarcest')
+  assert.ok(stored.scarcest.picks.s1)
+})
+
 test('trade choices naming nothing that exists are refused and change nothing', async () => {
   const played = setup()
   await joined(played)
