@@ -70,6 +70,24 @@ function enterModel(game, entry, content, { roomIds, roomId, names }) {
 }
 
 /**
+ * The room and tier an Enter control shows: the person's own pick while that room can still enter
+ * and the tier is still offered, otherwise the default. A pick of a room that has since gone into
+ * another instance (or cooled down, or lost its characters) gives way to one that can enter, so
+ * the control is not left disabled on a room that no longer can.
+ *
+ * @param {{ rooms: { id: string, reason: string | null }[], defaultRoomId: string,
+ *   tiers: { tier: number }[], defaultTier: number }} enter from instanceCard's `enter`
+ * @param {{ roomId?: string, tier?: number } | undefined} choice what the person picked last
+ * @returns {{ roomId: string, tier: number }}
+ */
+export function enterPick(enter, choice = {}) {
+  const picked = enter.rooms.find((room) => room.id === choice.roomId)
+  const roomId = picked && (picked.reason === null || !enter.canEnter) ? picked.id : enter.defaultRoomId
+  const tier = enter.tiers.some((each) => each.tier === choice.tier) ? choice.tier : enter.defaultTier
+  return { roomId, tier }
+}
+
+/**
  * The rematch control of a beaten instance: the next rematch, the reason of each room on screen, and
  * the lines that say the best one and what the next asks. Null before the boss is beaten.
  */
@@ -237,8 +255,22 @@ export function runCardModel(game, roomId, { base }) {
     foundText: INSTANCES.found(run.found.kills, formatAmount(run.found.coins)),
     offered: run.offered?.map((boon) => ({ id: boon.id, name: boon.name, text: boonText(boon.effect), key: `boon:${boon.id}` })) ?? null,
     vaultWaitText: run.vaultWaitMs !== null && run.vaultWaitMs !== undefined ? INSTANCES.vaultWait(workTimeText(run.vaultWaitMs)) : '',
+    startText: startText(run, game.rooms[roomId].party),
     recallKey: `recall:${roomId}`
   }
+}
+
+/**
+ * What a run that has not set off yet says: entering only freezes the room's wave, and its party
+ * moves at its first working tick, so with no agent working the run would look as if nothing
+ * happened. '' once it has worked inside, or while its party fights.
+ *
+ * @param {{ workedMs: number }} run
+ * @param {'fighting' | 'resting' | 'idle' | 'paused' | undefined} party the room's party state
+ */
+function startText(run, party) {
+  if (run.workedMs > 0 || party === 'fighting' || party === 'resting') return ''
+  return party === 'paused' ? INSTANCES.waitsForYou : INSTANCES.setsOff
 }
 
 /**

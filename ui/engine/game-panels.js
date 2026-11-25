@@ -76,6 +76,8 @@ export function createGamePanels({ contents, actions, base, onChosenItem, librar
   const worldView = createWorldView({ panel: contents.world, base, actions, prefs })
 
   return {
+    /** Says a message about an action where it was asked, besides the notice (roadmap-view.js). */
+    showMessage: (action, message) => roadmap.showMessage(action, message),
     /** The Chest tab's drag of a slot onto a room chip (chest-view.js). */
     chestDrop: { draggingFrom: () => chest.draggingFrom(), dropOn: (payload, toRoomId) => chest.dropOn(payload, toRoomId) },
     /**

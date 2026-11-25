@@ -816,6 +816,14 @@ pictures.
   above the map. It opens on the furthest open region;
   a locked one shows its map dimmed with what opens it ("It opens when The Old Road is complete: 4 of 6
   cleared there"). Clearing a whole region gives its title.
+- **Entering from a card.** Enter and Rematch say "Entering…" under them while the worker is
+  asked (and take no second click), and a refusal is said there too, where the person clicked,
+  as well as in the notice above the tabs. The room picker keeps only a room the person picked,
+  and only while it can still enter: a room that has since gone into another instance, cooled
+  down or lost its characters gives way to one that can (`enterPick` in `instance-model.js`), so
+  the control is never left disabled on a room that no longer can. A run that has not worked
+  inside yet says why its party has not set off: no agent of the room works, or one waits for
+  the person (the party moves only on working ticks, and not while an agent waits).
 
 The second region, **The Gloaming Isles** (title **Islewarden**, `rankStep` 1), a night sea chart:
 

@@ -201,6 +201,11 @@ const ACTION_NAMES = {
   tradeMaterial: 'The trade',
   buyStallOffer: 'The purchase',
   setPartyTitle: 'Changing the title',
+  enterInstance: 'Entering the instance',
+  chooseBoon: 'Choosing the boon',
+  recallParty: 'Recalling the party',
+  setRoomTrade: 'Changing what the room gathers',
+  setCharacterTrade: 'Changing what the character gathers',
   markSummarySeen: 'Marking the summary read',
   traitAction: 'The trait deal'
 }

@@ -42,7 +42,9 @@ const transport = {
     orca.plugin.request('game.sendItem', { roomId, toRoomId, itemIds, confirmHeld }),
   previewSendItem: (roomId, toRoomId, itemIds) => orca.plugin.request('game.previewSendItem', { roomId, toRoomId, itemIds }),
   sendRelic: (roomId, toRoomId, relicId) => orca.plugin.request('game.sendRelic', { roomId, toRoomId, relicId }),
-  enterInstance: (roomId, instanceId, tier, rematch) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier, rematch }),
+  // A plain entry sends no `rematch` key at all: a host that copies the input need not carry undefined.
+  enterInstance: (roomId, instanceId, tier, rematch) => orca.plugin.request('game.enterInstance',
+    rematch === undefined ? { roomId, instanceId, tier } : { roomId, instanceId, tier, rematch }),
   chooseBoon: (roomId, boonId) => orca.plugin.request('game.chooseBoon', { roomId, boonId }),
   recallParty: (roomId) => orca.plugin.request('game.recallParty', { roomId }),
   setPartyTitle: (roomId, achievementId) => orca.plugin.request('game.partyTitle', { roomId, achievementId }),

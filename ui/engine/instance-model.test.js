@@ -8,6 +8,7 @@ import { legendaryIndexOf } from '../../src/game/legendary-effects.mjs'
 import { emptyProject } from '../../src/game/worlds.mjs'
 import {
   cooldownLines,
+  enterPick,
   instanceNews,
   instanceBand,
   roadmapModel,
@@ -207,4 +208,44 @@ test('an unlocked second region is where the roadmap opens, with its own sites',
   assert.equal(model.regionId, 'gloaming-isles')
   assert.equal(model.markers.length, 8)
   assert.ok(Math.abs(model.markers[0].left - (100 * 58) / 256) < 1e-9)
+})
+
+const ENTER = {
+  rooms: [{ id: 'a', reason: null }, { id: 'b', reason: 'already inside an instance' }, { id: 'c', reason: null }],
+  defaultRoomId: 'a',
+  tiers: [{ tier: 2 }, { tier: 1 }],
+  defaultTier: 2,
+  canEnter: true
+}
+
+test('the Enter control keeps the person\'s pick of room and tier while it can still enter', () => {
+  assert.deepEqual(enterPick(ENTER, { roomId: 'c', tier: 1 }), { roomId: 'c', tier: 1 })
+  assert.deepEqual(enterPick(ENTER, undefined), { roomId: 'a', tier: 2 })
+})
+
+test('a picked room that has gone inside another instance gives way to one that can enter', () => {
+  assert.deepEqual(enterPick(ENTER, { roomId: 'b', tier: 2 }), { roomId: 'a', tier: 2 })
+})
+
+test('a pick of a room or tier no longer offered falls back to the default', () => {
+  assert.deepEqual(enterPick(ENTER, { roomId: 'gone', tier: 5 }), { roomId: 'a', tier: 2 })
+})
+
+test('when no room can enter, the person\'s pick stays so its reason is shown', () => {
+  const blocked = { ...ENTER, rooms: ENTER.rooms.map((room) => ({ ...room, reason: 'cooling down' })), canEnter: false }
+  assert.deepEqual(enterPick(blocked, { roomId: 'c', tier: 2 }), { roomId: 'c', tier: 2 })
+})
+
+/** The test game with its run just entered: no tick worked inside, the party as given. */
+function justEntered(party) {
+  const state = game()
+  const room = state.rooms[ROOM]
+  return { ...state, rooms: { ...state.rooms, [ROOM]: { ...room, party, run: { ...room.run, workedMs: 0 } } } }
+}
+
+test('a run just entered says when its party sets off while no agent of the room works', () => {
+  assert.match(runCardModel(justEntered('idle'), ROOM, { base: '/' }).startText, /sets off when an agent of this room works/)
+  assert.match(runCardModel(justEntered('paused'), ROOM, { base: '/' }).startText, /waits for you/)
+  assert.equal(runCardModel(justEntered('fighting'), ROOM, { base: '/' }).startText, '')
+  assert.equal(runCardModel(game(), ROOM, { base: '/' }).startText, '')
 })

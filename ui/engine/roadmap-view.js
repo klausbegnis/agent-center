@@ -4,9 +4,11 @@
 // (room and tier, with the reason a room cannot) for an open one, a Rematch beside it once its boss
 // is beaten (with a tier badge on the banner and the map), and the run's card for one a room is
 // inside. Cards are made once and updated, so focus, choices and open questions survive redraws.
+// Enter and Rematch say under them that they are asking, and, when the worker refuses, why, where
+// the person clicked: the notice above the tabs may be scrolled far out of view.
 import { button, el, select, setOptions } from './dom.js'
 import { INSTANCES } from './instance-labels.js'
-import { cooldownLines, roadmapModel, runCardModel } from './instance-model.js'
+import { cooldownLines, enterPick, roadmapModel, runCardModel } from './instance-model.js'
 import { roomTitle } from './labels.js'
 import { createRunCard } from './run-card-view.js'
 
@@ -16,8 +18,11 @@ const MARKER_SIZE = 16
 const BANNER = { width: 192, height: 72 }
 const RELIC_SIZE = 32
 
-/** An instance's card: made once, updated from its model. */
-function createInstanceCard(model, { actions, choices }) {
+/**
+ * An instance's card: made once, updated from its model. `onAsk` names the card whose Enter or
+ * Rematch is being asked, so a refusal reaches it (see `showMessage` below).
+ */
+function createInstanceCard(model, { actions, choices, onAsk }) {
   const element = el('article', 'ac-instance-card')
   element.dataset.key = model.key
   const banner = el('div', 'ac-instance-banner')
@@ -45,13 +50,31 @@ function createInstanceCard(model, { actions, choices }) {
   roomPick.dataset.key = `${model.key}:room`
   const tierPick = select('ac-select ac-instance-tier', INSTANCES.tier)
   tierPick.dataset.key = `${model.key}:tier`
+  /** Whether Enter or Rematch is being asked: both wait, so one click is one request. */
+  let isAsking = false
+  // Says "Entering…" while asked and the worker's reason when it refuses; empty otherwise.
+  const result = el('p', 'ac-game-card-line ac-instance-result')
+  result.setAttribute('role', 'status')
+  async function ask(...entry) {
+    if (isAsking || !actions.enterInstance) return
+    isAsking = true
+    result.textContent = INSTANCES.entering
+    onAsk(card)
+    sync()
+    const went = await actions.enterInstance(...entry)
+    isAsking = false
+    onAsk(null)
+    // A refusal has put its reason here already; one that went shows as the run's card.
+    if (went || result.textContent === INSTANCES.entering) result.textContent = ''
+    sync()
+  }
   const go = button(INSTANCES.enter, 'ac-button ac-primary ac-instance-go', {
-    onClick: () => actions.enterInstance?.(roomPick.value, model.id, Number(tierPick.value))
+    onClick: () => ask(roomPick.value, model.id, Number(tierPick.value))
   })
   go.dataset.key = `${model.key}:go`
   // The rematch of a beaten boss goes beside Enter, with the same room.
   const rematchGo = button('', 'ac-button ac-instance-rematch-go', {
-    onClick: () => current.rematch?.next && actions.enterInstance?.(roomPick.value, model.id, 1, current.rematch.next)
+    onClick: () => current.rematch?.next && ask(roomPick.value, model.id, 1, current.rematch.next)
   })
   rematchGo.dataset.key = `${model.key}:rematch`
   const why = el('p', 'ac-game-card-line ac-muted ac-instance-why')
@@ -65,7 +88,7 @@ function createInstanceCard(model, { actions, choices }) {
   tierLabel.append(el('span', 'ac-instance-field-name', INSTANCES.tier), tierPick)
   const fields = el('div', 'ac-instance-fields')
   fields.append(roomLabel, tierLabel, go, rematchGo)
-  enter.append(fields, why, rematchWhy)
+  enter.append(fields, result, why, rematchWhy)
   const run = createRunCard({ actions })
   element.append(banner, stateLine, cleared, races, boss, relic, rematchLines, enter, run.element)
   let current = model
@@ -73,38 +96,47 @@ function createInstanceCard(model, { actions, choices }) {
   function sync() {
     const chosen = current.enter?.rooms.find((room) => room.id === roomPick.value)
     const reason = chosen?.reason ?? null
-    go.disabled = !chosen || reason !== null
+    go.disabled = !chosen || reason !== null || isAsking
     why.textContent = reason ? INSTANCES.why(reason) : ''
     go.setAttribute('aria-label', INSTANCES.enterLabel(current.name, chosen?.name ?? '', Number(tierPick.value)))
-    choices.set(current.id, { roomId: roomPick.value, tier: Number(tierPick.value) })
     const rematch = current.rematch
     const rematchRoom = rematch?.rooms.find((room) => room.id === roomPick.value)
     rematchGo.hidden = !rematch?.next
     rematchGo.textContent = rematch?.buttonText ?? ''
     const rematchReason = rematchRoom?.reason ?? null
-    rematchGo.disabled = !rematchRoom || rematchReason !== null
+    rematchGo.disabled = !rematchRoom || rematchReason !== null || isAsking
     // A reason Enter already gives is said once.
     rematchWhy.textContent = rematch?.next && rematchReason && rematchReason !== reason ? INSTANCES.rematchWhy(rematchReason) : ''
     if (rematch?.next) rematchGo.setAttribute('aria-label', INSTANCES.rematchLabel(current.name, rematchRoom?.name ?? '', rematch.next))
   }
-  roomPick.addEventListener('change', sync)
-  tierPick.addEventListener('change', sync)
+  // Another pick is another question: an old refusal no longer answers it.
+  const repick = () => {
+    if (!isAsking) result.textContent = ''
+    // Only a pick the person made is remembered; the default follows the room picked above the tabs.
+    choices.set(current.id, { roomId: roomPick.value, tier: Number(tierPick.value) })
+    sync()
+  }
+  roomPick.addEventListener('change', repick)
+  tierPick.addEventListener('change', repick)
 
   function drawEnter(model) {
     const shown = Boolean(model.enter && actions.enterInstance)
     enter.hidden = !shown
     if (!shown) return
-    const choice = choices.get(model.id) ?? {}
+    const pick = enterPick(model.enter, choices.get(model.id))
     setOptions(roomPick, model.enter.rooms.map((room) => [room.id, room.name]))
-    roomPick.value = model.enter.rooms.some((room) => room.id === choice.roomId) ? choice.roomId : model.enter.defaultRoomId
+    roomPick.value = pick.roomId
     setOptions(tierPick, model.enter.tiers.map((tier) => [String(tier.tier), tier.text]))
-    const tier = model.enter.tiers.some((each) => each.tier === choice.tier) ? choice.tier : model.enter.defaultTier
-    tierPick.value = String(tier)
+    tierPick.value = String(pick.tier)
     sync()
   }
 
-  return {
+  const card = {
     element,
+    /** Shows the worker's answer to this card's Enter or Rematch, where the person clicked. */
+    showRefusal(message) {
+      result.textContent = INSTANCES.refused(message)
+    },
     update(model, runModel) {
       current = model
       element.dataset.state = model.state
@@ -142,6 +174,7 @@ function createInstanceCard(model, { actions, choices }) {
       if (runModel) run.update(runModel)
     }
   }
+  return card
 }
 
 /**
@@ -172,6 +205,8 @@ export function createRoadmapView({ actions, base }) {
   const cards = new Map()
   /** The room and tier chosen on each card, kept across redraws and across worlds. */
   const choices = new Map()
+  /** The card whose Enter or Rematch is being asked, or null. */
+  let asking = null
   let markersDrawn = ''
   /** The region picked on the switch, and what was last drawn, to draw again on a pick. */
   let regionId = null
@@ -256,12 +291,23 @@ export function createRoadmapView({ actions, base }) {
       const lines = roomId ? cooldownLines(game, roomId) : []
       cooldowns.replaceChildren(...lines.map((line) => el('p', 'ac-game-card-line ac-muted', line)))
       const nodes = model.cards.map((card) => {
-        if (!cards.has(card.id)) cards.set(card.id, createInstanceCard(card, { actions, choices }))
+        if (!cards.has(card.id)) {
+          cards.set(card.id, createInstanceCard(card, { actions, choices, onAsk: (which) => { asking = which } }))
+        }
         const view = cards.get(card.id)
         view.update(card, card.roomInside ? runCardModel(game, card.roomInside, { base }) : null)
         return view.element
       })
       if (list.childElementCount !== nodes.length || nodes.some((node, at) => list.children[at] !== node)) list.replaceChildren(...nodes)
+    },
+    /**
+     * A message about an action (game-actions.js): a refused Enter or Rematch is said on its card.
+     *
+     * @param {string} action
+     * @param {string} message
+     */
+    showMessage(action, message) {
+      if (action === 'enterInstance' && asking) asking.showRefusal(message)
     }
   }
   return view

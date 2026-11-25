@@ -33,6 +33,14 @@ All notable changes to this project are recorded here. The format follows
   a sending the worker would refuse, such as a legendary item the target owns, is refused where it
   was sent, with the reason. Afterwards the notice names every item salvaged. New local-only route
   `/api/game/preview-send-item` (panel request `game.previewSendItem`), which changes nothing.
+- Game mode: entering an instance could look as if nothing happened. A run's party moves only on
+  working ticks and not while an agent waits for you, so a room entered while nobody worked, or
+  while an agent waited, showed no progress: its run card now says why it has not set off. The
+  Roadmap's room picker held on to the first room it showed, so once that room went into another
+  instance the Enter button stayed disabled until the person picked another room; it now falls
+  back to a room that can enter. Enter and Rematch say "Entering…" and show a refusal on the card
+  instead of only in the notice above the tabs, which a long Roadmap scrolls out of view. The
+  panel no longer sends an undefined `rematch` key with a plain entry.
 
 ## 0.4.0 - 2026-11-18
 
