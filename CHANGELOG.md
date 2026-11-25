@@ -18,6 +18,10 @@ All notable changes to this project are recorded here. The format follows
 
 ### Fixed
 
+- A room's chest showed twelve items counting the ones its characters hold, so a full party left
+  no free item to see or send, and an item sent to such a room seemed to vanish. The chest now
+  shows every item in use and every legendary one, plus the 24 strongest free plain items.
+
 - Game mode: a room's active relic could not be sent, so a room with one relic could never send it,
   and the Relics card offered no way to have no relic active. The card now has a **No active
   relic** button, and any relic can be sent: sending the active one asks first and leaves the

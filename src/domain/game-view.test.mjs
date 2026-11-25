@@ -102,14 +102,22 @@ test('a room that has not joined has no scene even while rooms travel', () => {
   assert.deepEqual(room, { worldId: 'main', joined: false })
 })
 
-test('a room shows the items in use first, then the strongest, up to a limit', () => {
+test('a room shows the items in use first, then the strongest free ones up to a limit', () => {
   const chest = [item('spare-weak', 1), ...Array.from({ length: CHEST_ITEMS_SHOWN }, (_, index) => item(`spare-${index}`, 10 + index)),
     item('in-use', 0, 's1')]
   const room = buildGameView(input(engineView({ chest }))).rooms[BANANA]
-  assert.equal(room.chest.length, CHEST_ITEMS_SHOWN)
+  assert.equal(room.chest.length, CHEST_ITEMS_SHOWN + 1)
   assert.equal(room.chest[0].id, 'in-use')
   assert.equal(room.chest.some((shown) => shown.id === 'spare-weak'), false)
   assert.equal(room.chestSize, CHEST_ITEMS_SHOWN + 2)
+})
+
+test('a full party\'s gear does not hide the free items of its chest', () => {
+  const held = Array.from({ length: 12 }, (_, index) => item(`held-${index}`, 30, `s${index % 4}`))
+  const free = Array.from({ length: 5 }, (_, index) => item(`free-${index}`, 1 + index))
+  const room = buildGameView(input(engineView({ chest: [...held, ...free] }))).rooms[BANANA]
+  for (const spare of free) assert.ok(room.chest.some((shown) => shown.id === spare.id), `${spare.id} is shown`)
+  assert.equal(room.chest.length, 17)
 })
 
 test('a legendary item is always shown, however many stronger plain items the chest holds', () => {
@@ -117,7 +125,7 @@ test('a legendary item is always shown, however many stronger plain items the ch
   const axe = { ...item('gravewarden-axe', 3), legendary: true, entryId: 'gravewarden-axe' }
   const room = buildGameView(input(engineView({ chest: [...stronger, axe] }))).rooms[BANANA]
   assert.ok(room.chest.some((shown) => shown.id === 'gravewarden-axe' && shown.legendary))
-  assert.equal(room.chest.length, CHEST_ITEMS_SHOWN)
+  assert.equal(room.chest.length, CHEST_ITEMS_SHOWN + 1)
 })
 
 test('retirees are shown newest first, without titles unless they are kept', () => {

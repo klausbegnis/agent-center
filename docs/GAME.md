@@ -2406,7 +2406,7 @@ by the usual closing rules.
   state, so no honest hourly figure exists. A UI sees a new character in `characters`, with the
   items it holds.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
-  chest shows the items in use and every legendary item, then the strongest free ones up to 12
+  chest shows the items in use and every legendary item, then the 24 strongest free plain ones
   in all (`chestSize` is the whole count). A legendary item is never left out, however weak: one
   sent to a room must show there at once, and the send control must see that the room owns it;
   retirees show the newest 8 (`retiredCount` counts all).
