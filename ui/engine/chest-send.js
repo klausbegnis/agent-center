@@ -1,6 +1,9 @@
 // Sending items of the Chest tab to another room: the control in an item's detail, the bar of the
-// "Move items" mode, and the question asked before taking items from characters (after a drop on a
-// room chip, too). It says what happened on the chest's status line, including what each character
+// "Move items" mode, and the questions asked before taking items from characters (after a drop on a
+// room chip, too) and before the target's copies cap would salvage any of them: the worker is asked
+// first what the sending would do, so an item never turns into materials unannounced, and one it
+// would refuse (a legendary item the target owns) is refused where the person sent it. It says
+// what happened on the chest's status line, including what was salvaged and what each character
 // that lost an item took instead.
 import { button, el } from './dom.js'
 import { SEND } from './send-labels.js'
@@ -29,16 +32,75 @@ export function createChestSender({ actions, status, ask }) {
     const answer = await actions.sendItem(roomId, toRoomId, items.map((item) => item.id), confirmHeld)
     if (!answer) return false
     const roomName = sendTargets(state, roomId).find((room) => room.id === toRoomId)?.name ?? toRoomId
+    // A worker that names what it salvaged says so in one sentence of its own; an older one only counts.
+    const named = Array.isArray(answer.salvagedItems)
+    const counts = named ? {} : answer
     const head = items.length === 1
-      ? SEND.itemSent(items[0].name, roomName, answer)
-      : SEND.manySent(items.length, roomName, answer)
+      ? SEND.itemSent(items[0].name, roomName, counts)
+      : SEND.manySent(items.length, roomName, counts)
     const repicks = repickedNames(state, answer.repicks).map(({ name, slot, itemName }) => SEND.repicked(name, itemName, slot))
-    status.textContent = [head, ...repicks].join(' ')
+    status.textContent = [head, named ? SEND.salvagedAfter(answer.salvagedItems) : '', ...repicks].filter(Boolean).join(' ')
     for (const item of items) {
       openFor.delete(item.id)
       picked.delete(item.id)
     }
     return true
+  }
+
+  const roomNameOf = (state, roomId, toRoomId) =>
+    sendTargets(state, roomId).find((room) => room.id === toRoomId)?.name ?? toRoomId
+
+  /** Asks the worker what the sending would do; null when it cannot say (the send then decides). */
+  async function forecast(roomId, items, toRoomId) {
+    if (typeof actions.previewSendItem !== 'function') return null
+    const answer = await actions.previewSendItem(roomId, toRoomId, items.map((item) => item.id))
+    return answer && typeof answer === 'object' ? answer : null
+  }
+
+  /** A question with a primary answer and Cancel, in the ask box, with the focus on Cancel. */
+  function showAsk(question, yesLabel, onYes) {
+    const nodes = [el('p', 'ac-game-card-line', question)]
+    const row = el('div', 'ac-game-row')
+    if (onYes) {
+      const yes = button(yesLabel, 'ac-button ac-primary', {
+        onClick: () => {
+          clearAsk()
+          onYes()
+        }
+      })
+      yes.dataset.key = 'send:ask:yes'
+      row.append(yes)
+    }
+    const no = button(onYes ? 'Cancel' : 'OK', 'ac-button', { onClick: () => clearAsk() })
+    no.dataset.key = 'send:ask:no'
+    row.append(no)
+    ask.replaceChildren(...nodes, row)
+    ask.hidden = false
+    ask.scrollIntoView?.({ block: 'nearest' })
+    no.focus()
+  }
+
+  /**
+   * Sends after asking the worker what would happen: a refusal is said in the ask box, a salvage
+   * is asked about (with the held question's words in front when `heldQuestion` is given), and
+   * otherwise the items go at once. `after` runs once they went.
+   */
+  async function sendChecked(state, roomId, items, toRoomId, { confirmHeld, heldQuestion = '', after = () => {} }) {
+    const outlook = await forecast(roomId, items, toRoomId)
+    if (outlook?.problem) {
+      showAsk(SEND.refused(outlook.problem), '', null)
+      status.textContent = SEND.refused(outlook.problem)
+      return false
+    }
+    const salvaged = outlook?.salvaged ?? []
+    const salvage = salvaged.length > 0 ? SEND.salvageQuestion(roomNameOf(state, roomId, toRoomId), salvaged, outlook.materials) : ''
+    const question = [heldQuestion, salvage].filter(Boolean).join(' ')
+    const go = async () => {
+      if (await send(state, roomId, items, toRoomId, confirmHeld)) after()
+    }
+    if (!question) return go()
+    showAsk(question, salvage ? SEND.sendAnyway : SEND.confirm, go)
+    return false
   }
 
   /** The control of an item's detail: always there, disabled with its reason when it cannot be used. */
@@ -71,7 +133,10 @@ export function createChestSender({ actions, status, ask }) {
           }
         : undefined,
       onPick: ([toRoomId]) => picked.set(item.id, toRoomId),
-      onSend: ([toRoomId]) => send(state, roomId, [item], toRoomId, sending.isHeld)
+      onSend: ([toRoomId]) => {
+        openFor.delete(item.id)
+        return sendChecked(state, roomId, [item], toRoomId, { confirmHeld: sending.isHeld })
+      }
     })
   }
 
@@ -82,27 +147,13 @@ export function createChestSender({ actions, status, ask }) {
   function sendAsking(state, roomId, items, toRoomId, after = () => {}) {
     const holders = holdersOf(state, items)
     const isHeld = items.some((item) => item.heldBy)
-    if (!isHeld) return send(state, roomId, items, toRoomId, false).then(after)
-    const roomName = sendTargets(state, roomId).find((room) => room.id === toRoomId)?.name ?? toRoomId
-    const question = items.length === 1
-      ? SEND.heldQuestion(items[0].name, roomName, holders[0] ?? '', items[0].slot)
-      : SEND.moveQuestion(items.length, roomName, holders.length ? holders : [SEND.someone])
-    const yes = button(SEND.confirm, 'ac-button ac-primary', {
-      onClick: async () => {
-        clearAsk()
-        await send(state, roomId, items, toRoomId, true)
-        after()
-      }
-    })
-    yes.dataset.key = 'send:ask:yes'
-    const no = button('Cancel', 'ac-button', { onClick: () => clearAsk() })
-    no.dataset.key = 'send:ask:no'
-    const actionsRow = el('div', 'ac-game-row')
-    actionsRow.append(yes, no)
-    ask.replaceChildren(el('p', 'ac-game-card-line', question), actionsRow)
-    ask.hidden = false
-    no.focus()
-    return Promise.resolve()
+    const roomName = roomNameOf(state, roomId, toRoomId)
+    const heldQuestion = !isHeld
+      ? ''
+      : items.length === 1
+        ? SEND.heldQuestion(items[0].name, roomName, holders[0] ?? '', items[0].slot)
+        : SEND.moveQuestion(items.length, roomName, holders.length ? holders : [SEND.someone])
+    return sendChecked(state, roomId, items, toRoomId, { confirmHeld: isHeld, heldQuestion, after })
   }
 
   function clearAsk() {
@@ -146,7 +197,7 @@ export function createChestSender({ actions, status, ask }) {
       },
       onSend: async ([toRoomId]) => {
         isMoveAskOpen = false
-        if (await send(state, roomId, items, toRoomId, items.some((item) => item.heldBy))) onSent()
+        await sendChecked(state, roomId, items, toRoomId, { confirmHeld: items.some((item) => item.heldBy), after: onSent })
       }
     })
     const done = button(SEND.moveDone, 'ac-button', { onClick: onDone })

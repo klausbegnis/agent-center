@@ -206,7 +206,7 @@ after from anywhere in the game. A long row scrolls sideways, and from eight roo
 list reaches any of them. In the Chest tab, any item can be sent to another room of the same
 world: from its detail (**Send to**), several at once with **Move items**, or by dragging its slot
 onto a room's chip; taking one from a character asks first, and that character picks the next
-best. Any relic can be sent from the Relics card; sending the active one asks first and leaves the
+best. A sending that the target's copies limit would partly salvage names what and asks first. Any relic can be sent from the Relics card; sending the active one asks first and leaves the
 room with none active. On the Party tab each character shows its agent's
 sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
 panel the tabs show their icons only, and the open tab its name beside its icon. The cog in the panel's header opens the game's own

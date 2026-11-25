@@ -241,6 +241,7 @@ export function createGameActions(dependencies) {
      */
     async sendItem({ roomId, toRoomId, itemIds, confirmHeld = false }) {
       let result = null
+      let keptByTarget = new Set()
       const answer = change((save) => {
         const sending = requireSending(save, roomId, toRoomId)
         const chest = joinedProject(save, roomId).chest
@@ -251,6 +252,7 @@ export function createGameActions(dependencies) {
         const full = { ...sending, itemIds, confirmHeld: confirmHeld === true }
         const problem = engine.sendItemProblem(save, full)
         if (problem) throw new Error(problem)
+        keptByTarget = new Set(joinedProject(save, toRoomId).chest)
         result = engine.sendItemWithSalvage(save, full)
         return result.save
       })
@@ -263,8 +265,42 @@ export function createGameActions(dependencies) {
         sent: answer.changed ? itemIds.length : 0,
         salvaged: result?.salvaged.length ?? 0,
         sentSalvaged: result?.sentSalvaged.length ?? 0,
+        // By name, so the notice says what went to materials: a sent item or a copy the target had.
+        salvagedItems: (result?.salvaged ?? []).map((item) => ({
+          name: engine.itemName(item.entryId ?? item.id), level: item.level, isSent: !keptByTarget.has(item)
+        })),
         repicks
       }
+    },
+
+    /**
+     * What sending items would do, without sending them: why it would be refused (a reason a
+     * person can act on), or the items the target's copies cap would salvage, by name and level and
+     * whether each is one sent, and how many materials the world would get for them. Held items
+     * are assumed confirmed, so the forecast comes before that question. Changes nothing.
+     *
+     * @param {{ roomId: string, toRoomId: string, itemIds: string[] }} input
+     * @returns {Promise<{ problem: string | null, salvaged: { name: string, level: number, isSent: boolean }[],
+     *   materials: number }>}
+     */
+    async previewSendItem({ roomId, toRoomId, itemIds }) {
+      requireRunning()
+      const { save } = data()
+      const sending = requireSending(save, roomId, toRoomId)
+      const chest = joinedProject(save, roomId).chest
+      if (!Array.isArray(itemIds)) throw refuse('not a list of items', itemIds)
+      for (const itemId of itemIds) {
+        if (typeof itemId !== 'string' || !findItem(chest, itemId)) throw refuse('unknown item', itemId)
+      }
+      const forecast = engine.forecastSend(save, { ...sending, itemIds })
+      if (forecast.problem) return { problem: forecast.problem, salvaged: [], materials: 0 }
+      const salvaged = forecast.salvaged.map(({ item, isSent }) => ({
+        name: engine.itemName(item.entryId ?? item.id),
+        level: item.level,
+        isSent
+      }))
+      const materials = Object.values(forecast.materials).reduce((sum, amount) => sum + amount, 0)
+      return { problem: null, salvaged, materials }
     },
 
     /**

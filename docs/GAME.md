@@ -42,6 +42,7 @@ milliseconds the caller passes.
 | `enterInstance(save, { projectId, instanceId, tier, rematch? })` | Sends a room's party into an open instance at a tier, or into a rematch of its boss (see "Rematches"), freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
 | `chooseBoon(save, { projectId, boonId })` | Takes one of the two boons a room's run is offered in the vault; the same save when refused, and `boonProblem(save, choice)` says why. |
 | `recallParty(save, { projectId })` | Ends a room's run by hand, as a failed run ends: what it found is kept, its wave comes back, and the instance waits on a cooldown for that room. |
+| `forecastSend(save, sending)` | What `sendItem` would do, changing nothing: `{ problem, salvaged: { item, isSent }[], materials }`. Held items are assumed confirmed. |
 | `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns to another project of the same world; sending its active one leaves it with none active. The same save when refused, and `sendRelicProblem(save, sending)` says why. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
@@ -376,6 +377,12 @@ chip above the tabs.
   behind is moved (`mergeChests` in `orphans.mjs`): items held there always stay, the best of the
   rest stay, and the lowest is salvaged into the world's materials as a drop past the cap would be.
   That may be an item sent; the answer says which.
+- **Nothing turns into materials unannounced.** Before a sending, the Chest tab asks the worker
+  what it would do (`forecastSend` in `transfer.mjs`, which runs the sending on a copy and changes
+  nothing): when the target's cap would salvage any item, sent or kept, it names each one and the
+  materials the world would get, and asks "Send anyway?"; a sending the rules would refuse is
+  refused where the person sent it, with the reason. After it, the notice names where the items
+  went and every item salvaged.
 - **Legendary equipment** is never salvaged and never doubled: one the target already owns is
   refused, and so are two copies of one entry in a single sending.
 - **A relic** the room owns moves to the target's relics, after its own; the target keeps its
@@ -2064,7 +2071,8 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
-| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemIds, confirmHeld }` (or a single `itemId`): two rooms that play in the same world, the target on screen, items of the first's chest, and `confirmHeld` true when a character holds one of them; answers `{ changed, sent, salvaged, sentSalvaged, repicks }`: how many items went, how many copies past the target's cap were salvaged and how many of those were sent ones, and `{ sessionId, slot, itemName }` for each holder's new pick (`itemName` null for nothing). A sending the rules refuse says why. |
+| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemIds, confirmHeld }` (or a single `itemId`): two rooms that play in the same world, the target on screen, items of the first's chest, and `confirmHeld` true when a character holds one of them; answers `{ changed, sent, salvaged, sentSalvaged, salvagedItems, repicks }`: how many items went, how many copies past the target's cap were salvaged and how many of those were sent ones, each salvaged item as `{ name, level, isSent }`, and `{ sessionId, slot, itemName }` for each holder's new pick (`itemName` null for nothing). A sending the rules refuse says why. |
+| `game.previewSendItem` | `/api/game/preview-send-item` | `{ roomId, toRoomId, itemIds }`, checked as `send-item`: what the sending would do, changing nothing. Answers `{ problem, salvaged, materials }`: the reason it would be refused (or null), each item the target's cap would salvage as `{ name, level, isSent }`, and the materials the world would get in all. Held items are assumed confirmed. |
 | `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns, its active one included; answers `{ changed, wasActive }` (`wasActive`: the room now has no active relic). A sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |

@@ -74,6 +74,7 @@ function recordingGame() {
     bestGear: record('bestGear'),
     setActiveRelic: record('activeRelic'),
     sendItem: record('sendItem'),
+    previewSendItem: record('previewSendItem'),
     sendRelic: record('sendRelic'),
     enterInstance: record('enterInstance'),
     chooseBoon: record('chooseBoon'),
@@ -168,12 +169,16 @@ test('sending an item or a relic reaches the game with its fields; a missing id 
   await assert.rejects(controller.gameSendItem(from, to, 'whittled-cudgel', false), /invalid item/)
   await assert.rejects(controller.gameSendItem(from, to, ['whittled-cudgel'], 'yes'), /invalid confirmation/)
   await controller.gameSendRelic(from, to, 'rimeheart')
+  await controller.gamePreviewSendItem(from, to, ['whittled-cudgel'])
+  await assert.rejects(controller.gamePreviewSendItem(from, to, 'whittled-cudgel'), /invalid item/)
   await assert.rejects(controller.gameSendItem(from, null, ['whittled-cudgel']), /invalid room/)
   await assert.rejects(controller.gameSendRelic(from, to, 7), /invalid relic/)
   assert.deepEqual(calls, [
     ['sendItem', { roomId: from, toRoomId: to, itemIds: ['whittled-cudgel'], confirmHeld: true }],
-    ['sendRelic', { roomId: from, toRoomId: to, relicId: 'rimeheart' }]
+    ['sendRelic', { roomId: from, toRoomId: to, relicId: 'rimeheart' }],
+    ['previewSendItem', { roomId: from, toRoomId: to, itemIds: ['whittled-cudgel'] }]
   ])
+  // The preview changes nothing, so it asks for no redraw.
   assert.equal(changes(), 2)
 })
 

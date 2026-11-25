@@ -40,6 +40,7 @@ const transport = {
   moveOrphanItems: (fromRoomId, toRoomId) => orca.plugin.request('game.moveOrphanItems', { fromRoomId, toRoomId }),
   sendItem: (roomId, toRoomId, itemIds, confirmHeld) =>
     orca.plugin.request('game.sendItem', { roomId, toRoomId, itemIds, confirmHeld }),
+  previewSendItem: (roomId, toRoomId, itemIds) => orca.plugin.request('game.previewSendItem', { roomId, toRoomId, itemIds }),
   sendRelic: (roomId, toRoomId, relicId) => orca.plugin.request('game.sendRelic', { roomId, toRoomId, relicId }),
   enterInstance: (roomId, instanceId, tier, rematch) => orca.plugin.request('game.enterInstance', { roomId, instanceId, tier, rematch }),
   chooseBoon: (roomId, boonId) => orca.plugin.request('game.chooseBoon', { roomId, boonId }),

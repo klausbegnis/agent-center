@@ -70,3 +70,11 @@ test('the reason of a refusal loses the prefixes a request adds', () => {
   assert.equal(refusalReason(new Error('Error: Error: the game is not running')), 'the game is not running')
   assert.equal(refusalReason(null), '')
 })
+
+test('a failed preview of a sending is answered with null and says nothing: the send itself will', async () => {
+  const messages = []
+  const actions = createGameActions({ previewSendItem: async () => { throw new Error('the worker is old') } },
+    (message) => messages.push(message))
+  assert.equal(await actions.previewSendItem('a', 'b', ['x']), null)
+  assert.deepEqual(messages, [])
+})

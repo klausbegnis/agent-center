@@ -8,7 +8,7 @@ import { legendaryItemFor } from './legendary-drops.mjs'
 import { legendaryIndexOf } from './legendary-effects.mjs'
 import { cleanSave } from './save-check.mjs'
 import { upgradeCost } from './items.mjs'
-import { TRANSFER_REFUSALS, sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
+import { TRANSFER_REFUSALS, forecastSend, sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { emptyProject, emptySave, emptyWorld } from './worlds.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -276,4 +276,42 @@ test('the save still passes the check an imported file must pass after a held it
   const next = sendItem(save, { fromProjectId: FROM, toProjectId: TO, itemId: 'brass-multitool', confirmHeld: true }, index).save
   const checked = cleanSave(next, { cityIds: [], legendary })
   assert.equal(checked.ok, true, checked.problem)
+})
+
+test('a forecast names the sent item the target would salvage and what the world would get, changing nothing', () => {
+  const copies = Array.from({ length: COPIES_PER_ITEM }, (_, copy) => item(copy === 0 ? 'brass-multitool' : `brass-multitool-${copy + 1}`,
+    { entryId: 'brass-multitool', level: 5 }))
+  const save = saveWith({ chest: [item('brass-multitool', { level: 1 })] }, { chest: copies })
+  const forecast = forecastSend(save, { fromProjectId: FROM, toProjectId: TO, itemIds: ['brass-multitool'] })
+  assert.equal(forecast.problem, null)
+  assert.deepEqual(forecast.salvaged.map(({ item: salvaged, isSent }) => [salvaged.level, isSent]), [[1, true]])
+  assert.ok(Object.values(forecast.materials).reduce((sum, amount) => sum + amount, 0) > 0)
+  assert.equal(save.worlds.main.projects[FROM].chest.length, 1)
+})
+
+test('a forecast of an item that fits salvages nothing', () => {
+  const save = saveWith({ chest: [item('brass-multitool')] }, { chest: [] })
+  const forecast = forecastSend(save, { fromProjectId: FROM, toProjectId: TO, itemIds: ['brass-multitool'] })
+  assert.deepEqual([forecast.problem, forecast.salvaged, forecast.materials], [null, [], {}])
+})
+
+test('a forecast of a held item assumes the confirmation, and one of a legendary item the target owns is its refusal', () => {
+  const held = saveWith(holding([item('brass-multitool', { heldBy: 's1' })], { tool: 'brass-multitool' }), { chest: [] })
+  assert.equal(forecastSend(held, { fromProjectId: FROM, toProjectId: TO, itemIds: ['brass-multitool'] }, index).problem, null)
+  const cleaver = legendaryItemFor(index.byId.get('labyrinth-cleaver'), 4)
+  const owned = saveWith({ chest: [cleaver] }, { chest: [legendaryItemFor(index.byId.get('labyrinth-cleaver'), 9)] })
+  const forecast = forecastSend(owned, { fromProjectId: FROM, toProjectId: TO, itemIds: ['labyrinth-cleaver'] }, index)
+  assert.equal(forecast.problem, TRANSFER_REFUSALS.legendaryOwned)
+  assert.deepEqual(forecast.salvaged, [])
+})
+
+test('legendary equipment the target lacks always arrives, even into a chest full of copies of other items', () => {
+  const copies = Array.from({ length: COPIES_PER_ITEM }, (_, copy) => item(copy === 0 ? 'brass-multitool' : `brass-multitool-${copy + 1}`,
+    { entryId: 'brass-multitool', level: 5 }))
+  const cleaver = legendaryItemFor(index.byId.get('labyrinth-cleaver'), 4)
+  const save = saveWith({ chest: [cleaver] }, { chest: copies })
+  const sent = sendItem(save, { fromProjectId: FROM, toProjectId: TO, itemIds: ['labyrinth-cleaver'] }, index)
+  assert.deepEqual(sent.salvaged, [])
+  assert.ok(chestOf(sent.save, TO).some((owned) => owned.legendary && owned.entryId === 'labyrinth-cleaver'))
+  assert.equal(chestOf(sent.save, FROM).length, 0)
 })

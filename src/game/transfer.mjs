@@ -161,6 +161,37 @@ export function sendItem(save, sending, index = null) {
 }
 
 /**
+ * What a sending would do, without doing it: why it would be refused, or which items the target's
+ * copies cap would salvage (the sent ones among them) and the materials the world would get. The
+ * confirmation of held items is assumed, so the forecast is ready before that question is asked.
+ * Legendary equipment never appears among the salvaged: one the target owns is a refusal.
+ *
+ * @param {object} save
+ * @param {{ fromProjectId: string, toProjectId: string, itemId?: string, itemIds?: string[] }} sending
+ * @param {LegendaryIndex} [index]
+ * @returns {{ problem: string | null, salvaged: { item: object, isSent: boolean }[],
+ *   materials: Record<string, number> }} `salvaged` each item the cap would salvage and whether it
+ *   is one sent (rather than a copy the target kept); `materials` what the world gains, by material
+ */
+export function forecastSend(save, sending, index = null) {
+  const assumed = { ...sending, confirmHeld: true }
+  const problem = sendItemProblem(save, assumed)
+  if (problem !== null) return { problem, salvaged: [], materials: {} }
+  const { save: next, salvaged } = sendItem(save, assumed, index)
+  const worldId = sharedWorldId(save, sending.fromProjectId, sending.toProjectId)
+  // The target's own copies keep their identity through the merge; anything else salvaged arrived.
+  const kept = new Set(save.worlds[worldId].projects[sending.toProjectId].chest)
+  const before = save.worlds[worldId].materials
+  const after = next.worlds[worldId].materials
+  const materials = {}
+  for (const [material, amount] of Object.entries(after)) {
+    const gained = amount - (before[material] ?? 0)
+    if (gained > 0) materials[material] = gained
+  }
+  return { problem: null, salvaged: salvaged.map((item) => ({ item, isSent: !kept.has(item) })), materials }
+}
+
+/**
  * Why a relic cannot be sent, or null when it can.
  *
  * @param {object} save

@@ -22,6 +22,7 @@ export const GAME_ACTION_METHODS = [
   'importSave',
   'moveOrphanItems',
   'sendItem',
+  'previewSendItem',
   'sendRelic',
   'sellMaterial',
   'tradeMaterial',
@@ -41,7 +42,12 @@ const EXPECTS_CHANGE = new Set(['prestigeSkill', 'upgradeItem', 'buyGroupUpgrade
   'sellMaterial', 'tradeMaterial', 'buyStallOffer', 'setEquipment', 'sendRelic', 'enterInstance', 'chooseBoon', 'recallParty',
   'traitAction', 'buyCharter'])
 /** Actions that answer with something to show instead of `{ changed }`. */
-const GIVES_ANSWER = new Set(['exportSave', 'bestGear', 'sendItem'])
+const GIVES_ANSWER = new Set(['exportSave', 'bestGear', 'sendItem', 'previewSendItem'])
+/**
+ * Questions asked before an action, not actions: a failure is logged and answered with null, and
+ * the action they come before says what is wrong if it fails too.
+ */
+const ASKS_ONLY = new Set(['previewSendItem'])
 /** Actions the worker refuses for reasons a person can act on, such as a damaged file: say why. */
 const SAYS_WHY = new Set(['exportSave', 'importSave', 'moveOrphanItems', 'setEquipment', 'bestGear', 'sendItem',
   'sendRelic', 'buyGroupUpgrade', 'enterInstance', 'chooseBoon', 'recallParty', 'setPartyTitle',
@@ -84,6 +90,7 @@ export function createGameActions(transport, onMessage) {
         return true
       } catch (error) {
         console.error(`game: ${name} failed`, error)
+        if (ASKS_ONLY.has(name)) return null
         onMessage(gameActionFailed(name, SAYS_WHY.has(name) ? refusalReason(error) : ''), name)
         return GIVES_ANSWER.has(name) ? null : false
       }

@@ -17,6 +17,12 @@ All notable changes to this project are recorded here. The format follows
   its Chest tab, so it looked lost: the view sends a chest's held items and its 12 strongest free
   ones, and a legendary piece could be weaker than all of them. Every legendary item is now always
   shown. The same gap let the send control offer a room that already owned the item.
+- Game mode: a sent item could be salvaged on arrival (the target already kept as many better
+  copies as it holds) with only a line after the fact. The Chest tab now asks the worker first
+  and, when anything would be salvaged, names each item and the materials and asks "Send anyway?";
+  a sending the worker would refuse, such as a legendary item the target owns, is refused where it
+  was sent, with the reason. Afterwards the notice names every item salvaged. New local-only route
+  `/api/game/preview-send-item` (panel request `game.previewSendItem`), which changes nothing.
 
 ## 0.4.0 - 2026-11-18
 

@@ -155,3 +155,22 @@ test('the chosen items are the ones still in the chest, in its order', () => {
   assert.deepEqual(chosenItems(chest, new Set(['c', 'gone', 'a'])).map((item) => item.id), ['a', 'c'])
   assert.equal(nameList(['A', 'B', 'C']), 'A, B and C')
 })
+
+test('the salvage question names a sent item the target would salvage, and the materials', () => {
+  const question = SEND.salvageQuestion('turbo-waffle', [{ name: 'Whittled Cudgel', level: 0, isSent: true }], 12)
+  assert.equal(question, 'turbo-waffle already keeps as many better copies as it holds of Whittled Cudgel +0: ' +
+    'it would be salvaged on arrival, for 12 materials in all. Send anyway?')
+})
+
+test('the salvage question names the lower copies the target keeps that would make room', () => {
+  const question = SEND.salvageQuestion('turbo-waffle', [{ name: 'Whittled Cudgel', level: 1, isSent: false }], 1)
+  assert.match(question, /^1 lower copy turbo-waffle keeps \(Whittled Cudgel \+1\) would be salvaged to make room, for 1 material in all/)
+})
+
+test('after a sending, the notice names what was salvaged and a refusal is said with its reason', () => {
+  assert.equal(SEND.salvagedAfter([]), '')
+  assert.equal(SEND.salvagedAfter([{ name: 'Whittled Cudgel', level: 0, isSent: true }, { name: 'Ashwood Wand', level: 2, isSent: false }]),
+    'Salvaged into the world\'s materials: Whittled Cudgel +0 and Ashwood Wand +2 (a copy it kept).')
+  assert.equal(SEND.refused('that room already owns this legendary item'),
+    'This cannot be sent: that room already owns this legendary item.')
+})

@@ -307,7 +307,7 @@ const networkAddress = Object.values(os.networkInterfaces()).flat()
 const GAME_ROUTES = ['prestige', 'upgrade-item', 'buy-upgrade', 'assign-room', 'reset-world', 'rebalance-skills',
   'auto-spend',
   'travel', 'character-trade', 'room-trade', 'keep-titles', 'export-save', 'import-save', 'move-orphan-items',
-  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'send-relic', 'enter-instance',
+  'sell', 'trade', 'buy-offer', 'equip', 'best-gear', 'active-relic', 'send-item', 'preview-send-item', 'send-relic', 'enter-instance',
   'choose-boon', 'recall-party', 'party-title', 'summary-seen', 'buy-charter']
 
 const gameState = {
