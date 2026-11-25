@@ -2407,7 +2407,7 @@ by the usual closing rules.
   items it holds.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
   chest shows the items in use and every legendary item, then the 24 strongest free plain ones
-  in all (`chestSize` is the whole count). A legendary item is never left out, however weak: one
+  (`chestSize` is the whole count). A legendary item is never left out, however weak: one
   sent to a room must show there at once, and the send control must see that the room owns it;
   retirees show the newest 8 (`retiredCount` counts all).
 - A character's `state` and its room's `party` and `pausedBy` come from the store's agents at
