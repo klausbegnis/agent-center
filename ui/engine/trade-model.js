@@ -1,19 +1,23 @@
 // The trade pickers of the Arsenal's Party section as data: their choices, the value shown and
 // whether they are offered at all. Never touches the DOM.
-import { skillLabel } from './labels.js'
+import { materialLabel, skillLabel, tradeMaterial } from './labels.js'
 import { TRADES_TEXT } from './trade-labels.js'
 
 /** The gathering skills in the game's order; the worker refuses any other. */
 export const TRADES = ['mining', 'fishing', 'farming', 'woodcutting', 'hunting', 'runecraft']
 
+/** The choice that follows the world's scarcest materials; the worker knows it by this id. */
+export const SCARCEST = 'scarcest'
+
 /** The value of the "no choice" entry of a picker: a trade id is never empty. */
 export const NO_CHOICE = ''
 
-const tradeChoices = () => TRADES.map((trade) => [trade, skillLabel(trade)])
+const tradeChoices = () => [[SCARCEST, TRADES_TEXT.scarcest], ...TRADES.map((trade) => [trade, skillLabel(trade)])]
 const isTrade = (value) => TRADES.includes(value)
+const isChoice = (value) => isTrade(value) || value === SCARCEST
 
 /**
- * The choices of a room's picker: Auto, then the six trades.
+ * The choices of a room's picker: Auto, "what is scarcest", then the six trades.
  *
  * @returns {[value: string, label: string][]}
  */
@@ -30,17 +34,32 @@ export function roomTradeOptions() {
  * @returns {[value: string, label: string][]}
  */
 export function characterTradeOptions(character, roomChoice) {
-  const fallback = isTrade(roomChoice)
-    ? TRADES_TEXT.followRoom(roomChoice)
-    : TRADES_TEXT.auto(isTrade(character.autoTrade) ? character.autoTrade : null)
+  let fallback = TRADES_TEXT.auto(isTrade(character.autoTrade) ? character.autoTrade : null)
+  if (isTrade(roomChoice)) fallback = TRADES_TEXT.followRoom(roomChoice)
+  if (roomChoice === SCARCEST) fallback = TRADES_TEXT.followScarcest
   return [[NO_CHOICE, fallback], ...tradeChoices()]
 }
 
-/** A picker's value for a choice from the view state: the trade, or NO_CHOICE. */
-export const pickerValue = (choice) => (isTrade(choice) ? choice : NO_CHOICE)
+/** A picker's value for a choice from the view state: the trade or SCARCEST, or NO_CHOICE. */
+export const pickerValue = (choice) => (isChoice(choice) ? choice : NO_CHOICE)
 
-/** The choice to send for a picker's value: the trade, or null for none. */
-export const choiceOf = (value) => (isTrade(value) ? value : null)
+/** The choice to send for a picker's value: the trade or SCARCEST, or null for none. */
+export const choiceOf = (value) => (isChoice(value) ? value : null)
+
+/** The icon a picker shows for a choice: the trade's own, none for "what is scarcest" or none. */
+export const choiceIcon = (choice) => (isTrade(choice) ? choice : null)
+
+/**
+ * The line under a character that follows "what is scarcest": what it gathers now and why, or
+ * that it picks at the next round; '' for any other character.
+ *
+ * @param {{ trade?: string | null, tradeReason?: string }} character an entry of `game.characters`
+ */
+export function scarcestLine(character) {
+  if (character.tradeReason !== SCARCEST) return ''
+  const material = isTrade(character.trade) ? tradeMaterial(character.trade) : null
+  return material ? TRADES_TEXT.scarcestNow(materialLabel(material)) : TRADES_TEXT.scarcestSoon
+}
 
 /**
  * Whether the trade pickers are offered: not on a page that only watches, and only when the

@@ -51,6 +51,8 @@ export function registerPanelHandlers(orca, controller) {
   orca.panels.handle('game.sendItem', (input) =>
     controller.gameSendItem(input?.roomId, input?.toRoomId,
       input?.itemIds ?? (input?.itemId === undefined ? undefined : [input.itemId]), input?.confirmHeld ?? false))
+  orca.panels.handle('game.previewSendItem', (input) =>
+    controller.gamePreviewSendItem(input?.roomId, input?.toRoomId, input?.itemIds))
   orca.panels.handle('game.sendRelic', (input) =>
     controller.gameSendRelic(input?.roomId, input?.toRoomId, input?.relicId))
   orca.panels.handle('game.sell', (input) =>

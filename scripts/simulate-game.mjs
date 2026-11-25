@@ -32,6 +32,7 @@ import {
 import { bestiaryGain, bestiaryProgress, levelUpsIn } from './bestiary-balance.mjs'
 import { legendaryGain } from './legendary-balance.mjs'
 import { printTraits, traitProgress, visitBroker } from './trait-balance.mjs'
+import { followScarcest, printScarcest, stockSpread } from './scarcest-balance.mjs'
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'))
 const content = {
@@ -274,6 +275,7 @@ function playWorkday(run, day) {
   run.period.workdays += 1
   run.dayKills = 0
   run.dayFightHours = 0
+  if (run.scarcest) run.save = followScarcest(run.engine, run.save)
   let clock = day * DAY
   for (const [start, end] of workIntervals(day)) {
     advanceAndCount(run, clock, start, idleReadings(run))
@@ -410,16 +412,20 @@ function closePeriod(run, day) {
  * @param {{ trades?: boolean, funnel?: boolean, instances?: boolean, traits?: boolean, withEngine?: object }} [policy]
  *   `trades` adds a visit to the market every working day; `funnel` sends every spare piece of gear
  *   into one room every working day; `instances` runs the highest open instance whenever one is
- *   available; `traits` adds a visit to the trait brokers (trait-balance.mjs); `withEngine` plays on
- *   another engine than the full one
+ *   available; `traits` adds a visit to the trait brokers (trait-balance.mjs); `scarcest` sets every
+ *   room to gather what is scarcest (scarcest-balance.mjs); `withEngine` plays on another engine
+ *   than the full one
  */
-function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, quests = false, withEngine = engine } = {}) {
+function simulate(scenario, { trades = false, funnel = false, instances = false, traits = false, quests = false, scarcest = false,
+  withEngine = engine } = {}) {
   const run = {
     questStats: quests ? newQuestStats() : null,
     traitBroker: traits ? { bought: 0, spent: 0, taught: 0 } : null,
     scenario,
     instances: instances ? newInstanceStats(content.instances, content.legendary) : null,
     trades,
+    scarcest,
+    stockSpreads: [],
     funnel,
     funnelled: { items: 0, relics: 0 },
     engine: withEngine,
@@ -450,6 +456,7 @@ function simulate(scenario, { trades = false, funnel = false, instances = false,
     trackStages(run, day)
     noteWeek(run)
     if (trades) trackCityRanks(run, day, content.cities.cities)
+    run.stockSpreads.push(stockSpread(run.save.worlds.main))
     if (CHECKPOINTS.includes(day + 1)) closePeriod(run, day + 1)
   }
   return run
@@ -664,6 +671,7 @@ const shared = SCENARIOS.filter((scenario) => scenario.projects > 1)
 printFunnelComparison(runs.filter((run) => run.scenario.projects > 1), shared.map((scenario) => simulate(scenario, { funnel: true })))
 printInstances(runs, instanceRuns, { content, legendaryKind })
 printTraits(runs, SCENARIOS.map((scenario) => simulate(scenario, { trades: true, traits: true })), content)
+printScarcest(runs, SCENARIOS.map((scenario) => simulate(scenario, { scarcest: true })))
 const seconds = fixed((Date.now() - started) / 1000)
 console.log(`\nSimulated ${DAYS} days of ${runs.length} scenarios in ${seconds} s.`)
 console.log('Skills show level*stars. Waves are per project. Ticks: the median fight, in ticks of ten ' +

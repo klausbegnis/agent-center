@@ -7,14 +7,16 @@ import {
   NO_CHOICE,
   pickerValue,
   roomTradeOptions,
+  scarcestLine,
   TRADES
 } from './trade-model.js'
 
 const BOTH = { setCharacterTrade: async () => true, setRoomTrade: async () => true }
 
-test('the room\'s picker offers Auto, then the six trades by name', () => {
+test('the room\'s picker offers Auto, what is scarcest, then the six trades by name', () => {
   assert.deepEqual(roomTradeOptions(), [
     [NO_CHOICE, 'Auto: each their own'],
+    ['scarcest', 'Auto: what is scarcest'],
     ['mining', 'Mining'], ['fishing', 'Fishing'], ['farming', 'Farming'],
     ['woodcutting', 'Woodcutting'], ['hunting', 'Hunting'], ['runecraft', 'Runecraft']
   ])
@@ -24,7 +26,8 @@ test('a character\'s "no choice" names the trade it falls back to: the room\'s, 
   assert.deepEqual(characterTradeOptions({ autoTrade: 'mining' }, null)[0], [NO_CHOICE, 'Auto: Mining'])
   assert.deepEqual(characterTradeOptions({ autoTrade: 'mining' }, 'fishing')[0], [NO_CHOICE, 'Room\'s: Fishing'])
   assert.deepEqual(characterTradeOptions({ autoTrade: null }, 'gold')[0], [NO_CHOICE, 'Auto'])
-  assert.equal(characterTradeOptions({ autoTrade: 'mining' }, null).length, TRADES.length + 1)
+  assert.deepEqual(characterTradeOptions({ autoTrade: 'mining' }, 'scarcest')[0], [NO_CHOICE, 'Room\'s: what is scarcest'])
+  assert.equal(characterTradeOptions({ autoTrade: 'mining' }, null).length, TRADES.length + 2)
 })
 
 test('a picker shows a trade as itself and no choice as the empty value, and sends them back the same way', () => {
@@ -34,6 +37,14 @@ test('a picker shows a trade as itself and no choice as the empty value, and sen
   assert.equal(choiceOf('hunting'), 'hunting')
   assert.equal(choiceOf(NO_CHOICE), null)
   assert.equal(choiceOf('__proto__'), null)
+  assert.equal(pickerValue('scarcest'), 'scarcest')
+  assert.equal(choiceOf('scarcest'), 'scarcest')
+})
+
+test('a character on what is scarcest says what it gathers now and why; others say nothing', () => {
+  assert.equal(scarcestLine({ trade: 'hunting', tradeReason: 'scarcest' }), 'Gathering Hides: scarcest in the world now')
+  assert.equal(scarcestLine({ trade: 'hunting', tradeReason: 'own' }), '')
+  assert.equal(scarcestLine({ trade: null, tradeReason: 'scarcest' }), 'Picks what is scarcest at the next round')
 })
 
 test('the pickers are offered only where both choices can be sent and the page is not view only', () => {

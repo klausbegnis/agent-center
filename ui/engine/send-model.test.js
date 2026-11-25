@@ -49,9 +49,15 @@ test('a room alone in its world, or out of the game, has nowhere to send', () =>
 })
 
 
-test('every relic but the active one can be sent', () => {
-  assert.deepEqual(sendableRelics(state.game, STOREFRONT), ['tidecall-conch'])
+test('every relic the room owns can be sent, the active one included', () => {
+  assert.deepEqual(sendableRelics(state.game, STOREFRONT), ['rimeheart', 'tidecall-conch'])
   assert.deepEqual(sendableRelics(state.game, LEDGER), [])
+})
+
+test('the message after sending the active relic says the room has none active now', () => {
+  assert.equal(SEND.relicSent('Rimeheart', 'search'), 'Rimeheart went to search.')
+  assert.match(SEND.relicSent('Rimeheart', 'search', true), /^Rimeheart went to search\. It was the active relic here/)
+  assert.match(SEND.activeRelicQuestion('Rimeheart', 'search'), /active relic: the room will have no active relic/)
 })
 
 test('the message says where the item went and when a copy was salvaged, the sent one included', () => {
@@ -108,15 +114,21 @@ test('when every other room owns the legendary item, the control says so', () =>
   assert.equal(itemSending(only, STOREFRONT, cleaver, { canSend: true, words: SEND }).reason, SEND.legendaryEverywhere)
 })
 
-test('the relic row says why it cannot be used: no relic, only the active one, no other room', () => {
+test('the relic row says why it cannot be used: no relic, no other room', () => {
   const words = SEND
   assert.equal(relicSending(withPeople(), STOREFRONT, { canSend: true, words }).reason, null)
   assert.equal(relicSending(withPeople(), LEDGER, { canSend: true, words }).reason, SEND.noRelics)
-  const onlyActive = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [STOREFRONT]: { ...state.game.rooms[STOREFRONT], relics: { owned: ['rimeheart'], active: 'rimeheart' } } } } }
-  assert.equal(relicSending(onlyActive, STOREFRONT, { canSend: true, words }).reason, SEND.onlyActive)
   const alone = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [OTHER_WORLD]: { joined: true, worldId: 'side', relics: { owned: ['a', 'b'], active: 'a' } } } } }
   assert.equal(relicSending(alone, OTHER_WORLD, { canSend: true, words }).reason, SEND.noRoom)
   assert.equal(relicSending(withPeople(), STOREFRONT, { canSend: false, words }).reason, SEND.viewOnly)
+})
+
+test('a room whose only relic is active can send it, and the row says which one is active', () => {
+  const onlyActive = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [STOREFRONT]: { ...state.game.rooms[STOREFRONT], relics: { owned: ['rimeheart'], active: 'rimeheart' } } } } }
+  const sending = relicSending(onlyActive, STOREFRONT, { canSend: true, words: SEND })
+  assert.equal(sending.reason, null)
+  assert.deepEqual(sending.relicIds, ['rimeheart'])
+  assert.equal(sending.activeId, 'rimeheart')
 })
 
 test('the holders of chosen items are named once each, in chest order', () => {
@@ -142,4 +154,23 @@ test('the chosen items are the ones still in the chest, in its order', () => {
   const chest = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
   assert.deepEqual(chosenItems(chest, new Set(['c', 'gone', 'a'])).map((item) => item.id), ['a', 'c'])
   assert.equal(nameList(['A', 'B', 'C']), 'A, B and C')
+})
+
+test('the salvage question names a sent item the target would salvage, and the materials', () => {
+  const question = SEND.salvageQuestion('turbo-waffle', [{ name: 'Whittled Cudgel', level: 0, isSent: true }], 12)
+  assert.equal(question, 'turbo-waffle already keeps as many better copies as it holds of Whittled Cudgel +0: ' +
+    'it would be salvaged on arrival, for 12 materials in all. Send anyway?')
+})
+
+test('the salvage question names the lower copies the target keeps that would make room', () => {
+  const question = SEND.salvageQuestion('turbo-waffle', [{ name: 'Whittled Cudgel', level: 1, isSent: false }], 1)
+  assert.match(question, /^1 lower copy turbo-waffle keeps \(Whittled Cudgel \+1\) would be salvaged to make room, for 1 material in all/)
+})
+
+test('after a sending, the notice names what was salvaged and a refusal is said with its reason', () => {
+  assert.equal(SEND.salvagedAfter([]), '')
+  assert.equal(SEND.salvagedAfter([{ name: 'Whittled Cudgel', level: 0, isSent: true }, { name: 'Ashwood Wand', level: 2, isSent: false }]),
+    'Salvaged into the world\'s materials: Whittled Cudgel +0 and Ashwood Wand +2 (a copy it kept).')
+  assert.equal(SEND.refused('that room already owns this legendary item'),
+    'This cannot be sent: that room already owns this legendary item.')
 })

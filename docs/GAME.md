@@ -30,10 +30,10 @@ milliseconds the caller passes.
 | `upgradeItem(save, { projectId, itemId })` | Upgrades a chest item with the world's materials; unchanged when it cannot pay. |
 | `buyGroupUpgrade(save, { worldId, upgradeId, useCoins? })` | Buys the next level of a group upgrade (a building of the settlement), in materials alone or, with `useCoins`, half in coins from the tier that allows it; unchanged when it cannot pay, the building is not open at the settlement's stage, or coins were asked of a tier that takes none. `buildingProblem(save, which)` says why the last two refuse, or null. |
 | `settlementNews(before, after)` | The tiers, stages and renovation stars a change reached, per world (see "Settlement"). |
-| `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
+| `setCharacterTrade(save, { projectId, sessionId, trade })` | Sets the trade a living character gathers, a gathering skill, `'scarcest'` or null for none (see "Gathering"); unchanged when there is no such character, the trade is unknown or nothing would change. |
 | `equipItem(save, { projectId, sessionId, slot, itemId })` | Sets what a living character holds in a slot: an item of the room's chest, `null` for nothing, or `'auto'` (see "Choosing equipment"); unchanged when the choice is refused or changes nothing. `equipProblem(project, { sessionId, slot, itemId })` says why a choice is refused, or null. |
 | `bestGearForRoom(save, { projectId })` | Re-runs the automatic pick for every slot of a room nobody pinned; unchanged when nothing would change. |
-| `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
+| `setRoomTrade(save, { projectId, trade })` | Sets the trade of a project's characters that have none of their own, a gathering skill, `'scarcest'` or null for Auto; unchanged when the project is not in the save, is out of the game, the trade is unknown or nothing would change. |
 | `setActiveRelic(save, { projectId, relicId })` | Makes one of a room's relics the active one, or none with null; unchanged when the room does not own it. See "Legendary loot". |
 | `setKeepTitles(save, value)` | Turns keeping session titles on or off; off forgets every title kept. |
 | `autoSpend(save)` / `autoSpendWithPurchases(save)` | Buys the best affordable purchase again and again (see "Spending"). |
@@ -42,7 +42,8 @@ milliseconds the caller passes.
 | `enterInstance(save, { projectId, instanceId, tier, rematch? })` | Sends a room's party into an open instance at a tier, or into a rematch of its boss (see "Rematches"), freezing its wave (see "Instances"); the same save when refused, and `enterProblem(save, entry)` says why. |
 | `chooseBoon(save, { projectId, boonId })` | Takes one of the two boons a room's run is offered in the vault; the same save when refused, and `boonProblem(save, choice)` says why. |
 | `recallParty(save, { projectId })` | Ends a room's run by hand, as a failed run ends: what it found is kept, its wave comes back, and the instance waits on a cooldown for that room. |
-| `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns, not its active one, to another project of the same world; the same save when refused, and `sendRelicProblem(save, sending)` says why. |
+| `forecastSend(save, sending)` | What `sendItem` would do, changing nothing: `{ problem, salvaged: { item, isSent }[], materials }`. Held items are assumed confirmed. |
+| `sendRelic(save, { fromProjectId, toProjectId, relicId })` | Sends a relic a project owns to another project of the same world; sending its active one leaves it with none active. The same save when refused, and `sendRelicProblem(save, sending)` says why. |
 | `cleanSave(save)` | Checks a save that comes from outside the plugin (an imported file) part by part and rebuilds it from the fields the engine writes: `{ ok: true, save }`, or `{ ok: false, problem }` naming the first part that is not what the engine writes (an unknown id, a number out of range, an item held by nobody, a project in two worlds or in another world than its own, more than `MAX_WORLDS` worlds, a world id the actions would not accept, `__proto__`, `constructor` or `prototype` as a key, coins that are not whole or out of range, a market that names a city not in the content, an unknown material, a pressure out of range or an offer sold twice). A file from before the market reads with no coins and a market at rest. Worlds and world ids follow `src/game/world-ids.mjs`, which the actions use too. Unlike `migrate`, which repairs what the plugin's own storage holds, it refuses. |
 | `sellMaterial(save, { worldId, cityId, materialId, amount })` | Sells a whole amount of a material the world holds to an open city for coins (see "Market"); unchanged when it cannot. |
 | `tradeMaterial(save, { worldId, cityId, fromId, toId, amount })` | Sells `amount` of one material and buys as many whole units of another, which the city produces, as the sale paid for; the coins left over go to the world. Unchanged when it gives nothing. |
@@ -269,7 +270,25 @@ project id:
   3. otherwise its `trade`, the engine's pick (Auto).
   So the room's choice reaches every character without one of its own, those that join later
   included, and changing it leaves characters with their own choice alone. Null, missing or
-  unknown values are no choice. A character keeps its choice in its retiree record and has it
+  unknown values are no choice.
+- Either choice may be `'scarcest'` ("Auto: what is scarcest", `scarcest.mjs`): the character
+  then gathers what its room picked for it, toward the materials the world has least of. The room
+  picks for all its followers at once (`withScarcestPicks`, at the start of each advance):
+  - it orders the six gathering trades by `stock / (need + mean need + 1)`, where `need` is
+    what the next level of every building asks of that material (`gatheredNeed`, open or not, so
+    no content is needed): a material wanted soon counts as scarcer, one no building wants is
+    still gathered once its stock is low, and a material no trade yields (bars, crystals...) is
+    never picked. Ties keep the order of the trades;
+  - the followers, in session order, take the `SCARCEST_SPREAD` (3) scarcest in turn, the
+    scarcest first: one character takes the scarcest, two the two scarcest, five go 2/2/1;
+  - the picks are kept in `project.scarcest` (`{ at, picks: { [sessionId]: trade } }`) and made
+    again `SCARCEST_REVIEW_MS` (an hour) of game time later, or at once for a new follower, so they
+    do not flap with every unit gathered. A follower the room has not picked for yet gathers its
+    Auto trade. A room nobody in follows the choice keeps no `scarcest`.
+  The view gives each character a `tradeReason` (`own`, `room`, `scarcest` or `auto`), and the
+  Party tab says what a follower gathers now and why. `npm run simulate` compares every room on
+  it with the trades the game gives ("Gathering" table): it narrows the spread of the gathered
+  stocks and does not lower gathering. A character keeps its choice in its retiree record and has it
   again when its session comes back. A world reset forgets the room's choice with the rest of
   the project.
 - An idle character gathers its trade:
@@ -376,12 +395,19 @@ chip above the tabs.
   behind is moved (`mergeChests` in `orphans.mjs`): items held there always stay, the best of the
   rest stay, and the lowest is salvaged into the world's materials as a drop past the cap would be.
   That may be an item sent; the answer says which.
+- **Nothing turns into materials unannounced.** Before a sending, the Chest tab asks the worker
+  what it would do (`forecastSend` in `transfer.mjs`, which runs the sending on a copy and changes
+  nothing): when the target's cap would salvage any item, sent or kept, it names each one and the
+  materials the world would get, and asks "Send anyway?"; a sending the rules would refuse is
+  refused where the person sent it, with the reason. After it, the notice names where the items
+  went and every item salvaged.
 - **Legendary equipment** is never salvaged and never doubled: one the target already owns is
   refused, and so are two copies of one entry in a single sending.
-- **A relic** the room owns, other than its active one, moves to the target's relics, after its
-  own; a target with no relic makes it active, as a first drop does. One the target owns is
-  refused, and so is the active relic: make another one active first. Pity counters stay with
-  their room.
+- **A relic** the room owns moves to the target's relics, after its own; the target keeps its
+  active relic, and a target with no relic makes it active, as a first drop does. One the target
+  owns is refused. The active relic can be sent too: the sending room is then left with no active
+  relic (another is never picked for it, so the person chooses), and the Relics card asks before
+  sending it and says so after. Pity counters stay with their room.
 - Both rooms must play in the same world, and the target must be on screen. Each refusal names
   its reason (`TRANSFER_REFUSALS`).
 
@@ -790,6 +816,14 @@ pictures.
   above the map. It opens on the furthest open region;
   a locked one shows its map dimmed with what opens it ("It opens when The Old Road is complete: 4 of 6
   cleared there"). Clearing a whole region gives its title.
+- **Entering from a card.** Enter and Rematch say "Entering…" under them while the worker is
+  asked (and take no second click), and a refusal is said there too, where the person clicked,
+  as well as in the notice above the tabs. The room picker keeps only a room the person picked,
+  and only while it can still enter: a room that has since gone into another instance, cooled
+  down or lost its characters gives way to one that can (`enterPick` in `instance-model.js`), so
+  the control is never left disabled on a room that no longer can. A run that has not worked
+  inside yet says why its party has not set off: no agent of the room works, or one waits for
+  the person (the party moves only on working ticks, and not while an agent waits).
 
 The second region, **The Gloaming Isles** (title **Islewarden**, `rankStep` 1), a night sea chart:
 
@@ -1702,7 +1736,7 @@ Market    { clock: number | null, pressure: { [cityId]: { [materialId]: number }
 Project   { wave, waveKills, kills, monster, stamina, restTicks, fightMs, fightTicks, fightRested,
             themeId, tradeChoice, chest: Item[], characters: { [sessionId]: Character },
             retirees: Retiree[], retiredCount, legendary?, run?, instanceCooldowns?,
-            scrolls?: { [traitId]: count } }
+            scrolls?: { [traitId]: count }, scarcest?: { at, picks: { [sessionId]: trade } } }
 Legendary { relics: string[], active: string | null, relicPity, bossPity }
 Character { sessionId, class, level, xp, attributes, levelActivityXp, equipment, trade,
             tradeChoice, tokens, bornAt, lastSeenAt, skillXp, gatherCarry, title, state,
@@ -1724,7 +1758,9 @@ when parts or races are added later; a look is about 300 bytes. A monster saved 
 looks has neither `rank` nor `look`: it keeps its `sprite` and is drawn and fought as before.
 
 `tradeChoice`, on a project and on a character (and kept on a retiree record), is a gathering
-skill or null (see "Gathering"); a save from before it existed has null everywhere. `kills`
+skill, `'scarcest'` or null (see "Gathering"); a save from before it existed has null everywhere.
+`scarcest` holds a room's picks of what is scarcest, optional: a gathering skill by session id,
+and the time they were made. `kills`
 counts every kill of the project (see "Scenes"); `stamina` is a share of the party's
 pool; `restTicks` the rest left; `fightMs` fight time not
 yet worth a tick; `fightTicks` and `fightRested` describe the fight under way. `skillXp` tallies
@@ -2055,16 +2091,17 @@ Through the controller, the panel requests `game.*` and the HTTP routes `/api/ga
 | `game.setActiveRelic` | `/api/game/active-relic` | `{ roomId, relicId }`, `relicId` null for none; a relic the room owns |
 | `game.autoSpend` | `/api/game/auto-spend` | `{ on }` |
 | `game.travel` | `/api/game/travel` | `{ on }`: "new scene after each monster" |
-| `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, or null to follow the room |
+| `game.characterTrade` | `/api/game/character-trade` | `{ roomId, sessionId, trade }`: a living character of a room that plays; `trade` a gathering skill, `'scarcest'`, or null to follow the room |
 | `game.equip` | `/api/game/equip` | `{ roomId, sessionId, slot, itemId }`: a living character of a room that plays, `weapon`, `outfit` or `tool`, and an item of that room's chest, null for nothing or `'auto'`; a choice the rules refuse says why. |
 | `game.bestGear` | `/api/game/best-gear` | `{ roomId }`; answers `{ changed, slotsChanged }` |
-| `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, or null for Auto |
+| `game.roomTrade` | `/api/game/room-trade` | `{ roomId, trade }`: a room that plays; `trade` a gathering skill, `'scarcest'`, or null for Auto |
 | `game.keepTitles` | `/api/game/keep-titles` | `{ on }` |
 | `game.exportSave` | `/api/game/export-save` | none |
 | `game.importSave` | `/api/game/import-save` | `{ file }`, a save file as `exportSave` answers it |
 | `game.moveOrphanItems` | `/api/game/move-orphan-items` | `{ fromRoomId, toRoomId }`: a project of the save that is not on screen, and a room on screen that plays in the same world |
-| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemIds, confirmHeld }` (or a single `itemId`): two rooms that play in the same world, the target on screen, items of the first's chest, and `confirmHeld` true when a character holds one of them; answers `{ changed, sent, salvaged, sentSalvaged, repicks }`: how many items went, how many copies past the target's cap were salvaged and how many of those were sent ones, and `{ sessionId, slot, itemName }` for each holder's new pick (`itemName` null for nothing). A sending the rules refuse says why. |
-| `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns that is not its active one; a sending the rules refuse says why. |
+| `game.sendItem` | `/api/game/send-item` | `{ roomId, toRoomId, itemIds, confirmHeld }` (or a single `itemId`): two rooms that play in the same world, the target on screen, items of the first's chest, and `confirmHeld` true when a character holds one of them; answers `{ changed, sent, salvaged, sentSalvaged, salvagedItems, repicks }`: how many items went, how many copies past the target's cap were salvaged and how many of those were sent ones, each salvaged item as `{ name, level, isSent }`, and `{ sessionId, slot, itemName }` for each holder's new pick (`itemName` null for nothing). A sending the rules refuse says why. |
+| `game.previewSendItem` | `/api/game/preview-send-item` | `{ roomId, toRoomId, itemIds }`, checked as `send-item`: what the sending would do, changing nothing. Answers `{ problem, salvaged, materials }`: the reason it would be refused (or null), each item the target's cap would salvage as `{ name, level, isSent }`, and the materials the world would get in all. Held items are assumed confirmed. |
+| `game.sendRelic` | `/api/game/send-relic` | `{ roomId, toRoomId, relicId }`: as above, and a relic the first owns, its active one included; answers `{ changed, wasActive }` (`wasActive`: the room now has no active relic). A sending the rules refuse says why. |
 | `game.sell` | `/api/game/sell` | `{ worldId, cityId, materialId, amount }` |
 | `game.trade` | `/api/game/trade` | `{ worldId, cityId, fromId, toId, amount }` |
 | `game.enterInstance` | `/api/game/enter-instance` | `{ roomId, instanceId, tier, rematch? }`: a room that plays, an instance of `game/instances.json` and a whole tier, or a rematch (1 to 10) of a beaten boss, which plays at its own tier; a choice the rules refuse says why (closed, level, tier, another room inside, no characters, cooldown) |
@@ -2333,8 +2370,8 @@ by the usual closing rules.
 - `tokenSource` is `history` or `estimated` (see "When it runs"). A UI should say plainly when
   progress is estimated.
 - A character's `trade` is the one it gathers now (see "Gathering"), `tradeChoice` its own
-  choice or null, and `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
-  to.
+  choice or null, `autoTrade` the engine's pick, so a UI can say what "no choice" falls back
+  to, and `tradeReason` why it gathers `trade`: `own`, `room`, `scarcest` or `auto`.
 - A character's `pinned` names the slots chosen by hand (see "Choosing equipment"); a page that
   only watches shows them without the choice.
 - `characters` is keyed by the agent id the rooms use, so a UI puts a class and a level on the
@@ -2369,8 +2406,10 @@ by the usual closing rules.
   state, so no honest hourly figure exists. A UI sees a new character in `characters`, with the
   items it holds.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
-  chest shows the items in use and the strongest free ones, 12 at most (`chestSize` is the
-  whole count); retirees show the newest 8 (`retiredCount` counts all).
+  chest shows the items in use and every legendary item, then the 24 strongest free plain ones
+  (`chestSize` is the whole count). A legendary item is never left out, however weak: one
+  sent to a room must show there at once, and the send control must see that the room owns it;
+  retirees show the newest 8 (`retiredCount` counts all).
 - A character's `state` and its room's `party` and `pausedBy` come from the store's agents at
   the moment the view is built, not from the last round, so they always match the room drawn
   next to them: `working`, `waiting` and `blocked` as the agent is, `idle` for one that is done.

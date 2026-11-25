@@ -14,7 +14,7 @@ import { LAST_OFFER_INDEX } from './game/city-rank-constants.mjs'
 import { MARKET_MAX_AMOUNT } from './game/constants.mjs'
 import { legendaryOf } from './game/legendary.mjs'
 import { rebalanceWorkSkills } from './game/rebalance.mjs'
-import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './game/skills.mjs'
+import { GATHERING_SKILLS, MATERIALS, TRADE_CHOICES, WORK_SKILLS } from './game/skills.mjs'
 import { GROUP_UPGRADE_IDS } from './game/spending.mjs'
 import { MAX_WORLDS, isWorldId } from './game/world-ids.mjs'
 import { SAVE_VERSION, assignProject, migrate, resetWorld, worldIdOf } from './game/worlds.mjs'
@@ -25,7 +25,7 @@ const refuse = (what, value) => new Error(`${what}: ${String(value).slice(0, 80)
 
 /** A trade to gather, or null for none chosen (Auto). */
 function requireTrade(trade) {
-  if (trade !== null && !GATHERING_SKILLS.includes(trade)) throw refuse('unknown trade', trade)
+  if (trade !== null && !TRADE_CHOICES.includes(trade)) throw refuse('unknown trade', trade)
 }
 
 /**
@@ -241,6 +241,7 @@ export function createGameActions(dependencies) {
      */
     async sendItem({ roomId, toRoomId, itemIds, confirmHeld = false }) {
       let result = null
+      let keptByTarget = new Set()
       const answer = change((save) => {
         const sending = requireSending(save, roomId, toRoomId)
         const chest = joinedProject(save, roomId).chest
@@ -251,6 +252,7 @@ export function createGameActions(dependencies) {
         const full = { ...sending, itemIds, confirmHeld: confirmHeld === true }
         const problem = engine.sendItemProblem(save, full)
         if (problem) throw new Error(problem)
+        keptByTarget = new Set(joinedProject(save, toRoomId).chest)
         result = engine.sendItemWithSalvage(save, full)
         return result.save
       })
@@ -263,23 +265,61 @@ export function createGameActions(dependencies) {
         sent: answer.changed ? itemIds.length : 0,
         salvaged: result?.salvaged.length ?? 0,
         sentSalvaged: result?.sentSalvaged.length ?? 0,
+        // By name, so the notice says what went to materials: a sent item or a copy the target had.
+        salvagedItems: (result?.salvaged ?? []).map((item) => ({
+          name: engine.itemName(item.entryId ?? item.id), level: item.level, isSent: !keptByTarget.has(item)
+        })),
         repicks
       }
     },
 
     /**
-     * Sends a relic a room owns, not its active one, to another room on screen of the same world.
+     * What sending items would do, without sending them: why it would be refused (a reason a
+     * person can act on), or the items the target's copies cap would salvage, by name and level and
+     * whether each is one sent, and how many materials the world would get for them. Held items
+     * are assumed confirmed, so the forecast comes before that question. Changes nothing.
+     *
+     * @param {{ roomId: string, toRoomId: string, itemIds: string[] }} input
+     * @returns {Promise<{ problem: string | null, salvaged: { name: string, level: number, isSent: boolean }[],
+     *   materials: number }>}
+     */
+    async previewSendItem({ roomId, toRoomId, itemIds }) {
+      requireRunning()
+      const { save } = data()
+      const sending = requireSending(save, roomId, toRoomId)
+      const chest = joinedProject(save, roomId).chest
+      if (!Array.isArray(itemIds)) throw refuse('not a list of items', itemIds)
+      for (const itemId of itemIds) {
+        if (typeof itemId !== 'string' || !findItem(chest, itemId)) throw refuse('unknown item', itemId)
+      }
+      const forecast = engine.forecastSend(save, { ...sending, itemIds })
+      if (forecast.problem) return { problem: forecast.problem, salvaged: [], materials: 0 }
+      const salvaged = forecast.salvaged.map(({ item, isSent }) => ({
+        name: engine.itemName(item.entryId ?? item.id),
+        level: item.level,
+        isSent
+      }))
+      const materials = Object.values(forecast.materials).reduce((sum, amount) => sum + amount, 0)
+      return { problem: null, salvaged, materials }
+    },
+
+    /**
+     * Sends a relic a room owns to another room on screen of the same world. Answers whether it
+     * was the room's active one, which leaves the room with none active.
      *
      * @param {{ roomId: string, toRoomId: string, relicId: string }} input
      */
     async sendRelic({ roomId, toRoomId, relicId }) {
-      return change((save) => {
+      let wasActive = false
+      const answer = change((save) => {
         const sending = requireSending(save, roomId, toRoomId)
         if (typeof relicId !== 'string') throw refuse('unknown relic', relicId)
         const problem = engine.sendRelicProblem(save, { ...sending, relicId })
         if (problem) throw new Error(problem)
+        wasActive = legendaryOf(joinedProject(save, roomId)).active === relicId
         return engine.sendRelic(save, { ...sending, relicId })
       })
+      return { ...answer, wasActive }
     },
 
     /**

@@ -1,5 +1,5 @@
-// Sending what a room owns to another room of the same world: any item of its chest, or a relic
-// that is not its active one. An item a character holds is first taken from it, and that slot goes
+// Sending what a room owns to another room of the same world: any item of its chest, or a relic,
+// the active one included (the sending room is then left with none active). An item a character holds is first taken from it, and that slot goes
 // back to the automatic pick. Gear is per room on purpose; sending it is free, and only moves
 // where the power sits. Pure.
 import { addToChest, findItem } from './chest.mjs'
@@ -26,7 +26,6 @@ export const TRANSFER_REFUSALS = Object.freeze({
   legendaryOwned: 'that room already owns this legendary item',
   legendaryTwice: 'two copies of one legendary item cannot go to one room',
   noRelic: 'this room does not own that relic',
-  activeRelic: 'the active relic stays; make another one active first',
   relicOwned: 'that room already owns this relic'
 })
 
@@ -162,6 +161,37 @@ export function sendItem(save, sending, index = null) {
 }
 
 /**
+ * What a sending would do, without doing it: why it would be refused, or which items the target's
+ * copies cap would salvage (the sent ones among them) and the materials the world would get. The
+ * confirmation of held items is assumed, so the forecast is ready before that question is asked.
+ * Legendary equipment never appears among the salvaged: one the target owns is a refusal.
+ *
+ * @param {object} save
+ * @param {{ fromProjectId: string, toProjectId: string, itemId?: string, itemIds?: string[] }} sending
+ * @param {LegendaryIndex} [index]
+ * @returns {{ problem: string | null, salvaged: { item: object, isSent: boolean }[],
+ *   materials: Record<string, number> }} `salvaged` each item the cap would salvage and whether it
+ *   is one sent (rather than a copy the target kept); `materials` what the world gains, by material
+ */
+export function forecastSend(save, sending, index = null) {
+  const assumed = { ...sending, confirmHeld: true }
+  const problem = sendItemProblem(save, assumed)
+  if (problem !== null) return { problem, salvaged: [], materials: {} }
+  const { save: next, salvaged } = sendItem(save, assumed, index)
+  const worldId = sharedWorldId(save, sending.fromProjectId, sending.toProjectId)
+  // The target's own copies keep their identity through the merge; anything else salvaged arrived.
+  const kept = new Set(save.worlds[worldId].projects[sending.toProjectId].chest)
+  const before = save.worlds[worldId].materials
+  const after = next.worlds[worldId].materials
+  const materials = {}
+  for (const [material, amount] of Object.entries(after)) {
+    const gained = amount - (before[material] ?? 0)
+    if (gained > 0) materials[material] = gained
+  }
+  return { problem: null, salvaged: salvaged.map((item) => ({ item, isSent: !kept.has(item) })), materials }
+}
+
+/**
  * Why a relic cannot be sent, or null when it can.
  *
  * @param {object} save
@@ -173,15 +203,15 @@ export function sendRelicProblem(save, { fromProjectId, toProjectId, relicId }) 
   if (rooms.problem) return rooms.problem
   const own = legendaryOf(rooms.source)
   if (!own.relics.includes(relicId)) return TRANSFER_REFUSALS.noRelic
-  if (own.active === relicId) return TRANSFER_REFUSALS.activeRelic
   if (legendaryOf(rooms.target).relics.includes(relicId)) return TRANSFER_REFUSALS.relicOwned
   return null
 }
 
 /**
- * Sends a relic a project owns, not its active one, to another project of the same world. The
- * target adds it after its own; a target that had no relic makes it active, as a first drop does.
- * Pity counters stay with their room.
+ * Sends a relic a project owns to another project of the same world. When it was the active one,
+ * the sending room is left with no active relic: another is never picked for it, so the person
+ * chooses. The target adds it after its own and keeps its active relic; a target that had no relic
+ * makes it active, as a first drop does. Pity counters stay with their room.
  *
  * @param {object} save
  * @param {{ fromProjectId: string, toProjectId: string, relicId: string }} sending
@@ -192,7 +222,8 @@ export function sendRelic(save, sending) {
   const { fromProjectId, toProjectId, relicId } = sending
   const { worldId, world, source, target } = twoRooms(save, fromProjectId, toProjectId)
   const own = legendaryOf(source)
-  const kept = { ...own, relics: own.relics.filter((id) => id !== relicId) }
+  const relics = own.relics.filter((id) => id !== relicId)
+  const kept = { ...own, relics, active: own.active === relicId ? null : own.active }
   const projects = {
     ...world.projects,
     [fromProjectId]: withLegendary(source, kept),

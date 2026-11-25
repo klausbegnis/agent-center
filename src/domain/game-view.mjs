@@ -4,8 +4,12 @@ import { describeBestiaryEvent } from './game-bestiary-view.mjs'
 import { describeLegendaryDrop, legendaryMarks, legendaryShown } from './game-legendary-view.mjs'
 import { gameStateOf } from './game-sessions.mjs'
 
-/** Items of a room's chest sent to the UI: the ones in use, then the strongest free ones. */
-export const CHEST_ITEMS_SHOWN = 12
+/**
+ * Free plain items of a room's chest sent to the UI, the strongest first. The items in use and
+ * every legendary one are sent on top of these: a full party holds a dozen pieces, and counting
+ * them against one cap left a room with no free item to see or send.
+ */
+export const CHEST_ITEMS_SHOWN = 24
 /** Retirees of a room sent to the UI, newest first; the rest are only counted. */
 export const RETIREES_SHOWN = 8
 /** Events kept for a UI to animate. */
@@ -95,11 +99,18 @@ const compactItem = (item) => item && {
   ...legendaryMarks(item)
 }
 
-/** The items in use, then the strongest free ones, up to CHEST_ITEMS_SHOWN. */
+/**
+ * The items in use, then every free legendary item, then the CHEST_ITEMS_SHOWN strongest free plain
+ * ones. A legendary item is one of a kind and may be weaker than many plain copies, so the cap never
+ * hides it: one sent here must show at once, and the send control must see that the room owns it.
+ * The items in use do not count against the cap either, so a full party never hides the free ones.
+ */
 function shownChest(chest) {
   const held = chest.filter((item) => item.heldBy)
-  const free = chest.filter((item) => !item.heldBy).sort((a, b) => b.power - a.power || a.id.localeCompare(b.id))
-  return [...held, ...free].slice(0, CHEST_ITEMS_SHOWN).map(compactItem)
+  const legendary = chest.filter((item) => !item.heldBy && item.legendary)
+  const free = chest.filter((item) => !item.heldBy && !item.legendary)
+    .sort((a, b) => b.power - a.power || a.id.localeCompare(b.id))
+  return [...held, ...legendary, ...free.slice(0, CHEST_ITEMS_SHOWN)].map(compactItem)
 }
 
 function shownRetirees(retirees, keepTitles) {
@@ -162,6 +173,8 @@ function characterView(member, link, state) {
     equipment,
     trade: member.trade,
     tradeChoice: member.tradeChoice ?? null,
+    // 'own', 'room', 'scarcest' or 'auto': why it gathers its trade, for the Party tab.
+    tradeReason: member.tradeReason ?? 'auto',
     autoTrade: member.autoTrade ?? null,
     pinned: member.pinned ?? {},
     // What it carries, its slots and its next one; null without traits in the content.

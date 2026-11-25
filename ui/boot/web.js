@@ -60,6 +60,7 @@ const transport = {
   importSave: (file) => postGame('import-save', { file }),
   moveOrphanItems: (fromRoomId, toRoomId) => postGame('move-orphan-items', { fromRoomId, toRoomId }),
   sendItem: (roomId, toRoomId, itemIds, confirmHeld) => postGame('send-item', { roomId, toRoomId, itemIds, confirmHeld }),
+  previewSendItem: (roomId, toRoomId, itemIds) => postGame('preview-send-item', { roomId, toRoomId, itemIds }),
   sendRelic: (roomId, toRoomId, relicId) => postGame('send-relic', { roomId, toRoomId, relicId }),
   enterInstance: (roomId, instanceId, tier, rematch) => postGame('enter-instance', { roomId, instanceId, tier, rematch }),
   chooseBoon: (roomId, boonId) => postGame('choose-boon', { roomId, boonId }),

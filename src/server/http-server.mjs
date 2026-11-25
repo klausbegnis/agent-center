@@ -151,6 +151,8 @@ export async function startServer({ root, port, lan, controller, log = () => {} 
     // One item (`itemId`) or several (`itemIds`); `confirmHeld` lets an item a character holds go.
     '/api/game/send-item': (input) => controller.gameSendItem(input.roomId, input.toRoomId,
       input.itemIds ?? (input.itemId === undefined ? undefined : [input.itemId]), input.confirmHeld ?? false),
+    // What a sending would salvage at the target; changes nothing.
+    '/api/game/preview-send-item': (input) => controller.gamePreviewSendItem(input.roomId, input.toRoomId, input.itemIds),
     '/api/game/send-relic': (input) => controller.gameSendRelic(input.roomId, input.toRoomId, input.relicId),
     '/api/game/sell': (input) => controller.gameSellMaterial(input.worldId, input.cityId, input.materialId, input.amount),
     '/api/game/trade': (input) =>

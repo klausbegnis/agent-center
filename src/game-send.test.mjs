@@ -86,9 +86,45 @@ const chestIds = (game, roomId) => game.getView().rooms[roomId].chest.map((item)
 test('a free item sent to another room of the world leaves one chest for the other', async () => {
   const { game } = await setup()
   const answer = await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['brass-multitool'] })
-  assert.deepEqual(answer, { changed: true, sent: 1, salvaged: 0, sentSalvaged: 0, repicks: [] })
+  assert.deepEqual(answer, { changed: true, sent: 1, salvaged: 0, sentSalvaged: 0, salvagedItems: [], repicks: [] })
   assert.ok(!chestIds(game, BANANA).includes('brass-multitool'))
   assert.deepEqual(chestIds(game, PANCAKE), ['brass-multitool'])
+})
+
+/** Four copies of the multitool at level 5: a target whose cap salvages a weaker one sent. */
+const fullOfMultitools = () => [1, 2, 3, 4].map((copy) =>
+  tool(copy === 1 ? 'brass-multitool' : `brass-multitool-${copy}`, { entryId: 'brass-multitool', level: 5 }))
+
+test('a preview names the sent item the target would salvage and the materials, and changes nothing', async () => {
+  const { game, storage } = await setup({ pancakeChest: fullOfMultitools() })
+  const before = JSON.stringify(storage.get(GAME_STORAGE_KEY))
+  const preview = await game.previewSendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['brass-multitool'] })
+  assert.equal(preview.problem, null)
+  assert.deepEqual(preview.salvaged.map(({ level, isSent }) => [level, isSent]), [[2, true]])
+  assert.match(preview.salvaged[0].name, /Multitool/)
+  assert.ok(preview.materials > 0)
+  assert.equal(JSON.stringify(storage.get(GAME_STORAGE_KEY)), before)
+  assert.ok(chestIds(game, BANANA).includes('brass-multitool'))
+})
+
+test('a preview of a legendary item the target owns gives the refusal, so it is never sent to be destroyed', async () => {
+  const { game } = await setup({ pancakeChest: [legendaryItemFor(index.byId.get('labyrinth-cleaver'), 3)] })
+  const preview = await game.previewSendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['labyrinth-cleaver'] })
+  assert.match(preview.problem, /already owns this legendary item/)
+})
+
+test('after a send, the answer names each item salvaged and whether it was a sent one', async () => {
+  const { game } = await setup({ pancakeChest: fullOfMultitools() })
+  const answer = await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['brass-multitool'] })
+  assert.equal(answer.sentSalvaged, 1)
+  assert.deepEqual(answer.salvagedItems.map(({ level, isSent }) => [level, isSent]), [[2, true]])
+})
+
+test('a legendary item sent into a room with a full chest shows there at once', async () => {
+  const many = Array.from({ length: 14 }, (_, copy) => tool(`spare-${copy}`, { level: 30 }))
+  const { game } = await setup({ pancakeChest: many })
+  await game.sendItem({ roomId: BANANA, toRoomId: PANCAKE, itemIds: ['labyrinth-cleaver'] })
+  assert.ok(chestIds(game, PANCAKE).includes('labyrinth-cleaver'))
 })
 
 test('what was sent is saved, and the save still passes the check an imported file must pass', async () => {
@@ -103,15 +139,19 @@ test('what was sent is saved, and the save still passes the check an imported fi
 
 test('a relic that is not active can be sent, and arrives active in a room that had none', async () => {
   const { game } = await setup()
-  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'rimeheart' }), { changed: true })
+  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'rimeheart' }), { changed: true, wasActive: false })
   const view = game.getView()
   assert.deepEqual(view.rooms[BANANA].relics, { owned: ['tidecall-conch'], active: 'tidecall-conch' })
   assert.deepEqual(view.rooms[PANCAKE].relics, { owned: ['rimeheart'], active: 'rimeheart' })
 })
 
-test('the active relic is refused with its reason', async () => {
+test('the active relic can be sent: the answer says it was active and the room keeps none', async () => {
   const { game } = await setup()
-  await assert.rejects(game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'tidecall-conch' }), /active relic stays/)
+  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'tidecall-conch' }),
+    { changed: true, wasActive: true })
+  const view = game.getView()
+  assert.deepEqual(view.rooms[BANANA].relics, { owned: ['rimeheart'], active: null })
+  assert.deepEqual(view.rooms[PANCAKE].relics, { owned: ['tidecall-conch'], active: 'tidecall-conch' })
 })
 
 test('a legendary item the target owns already is refused with its reason', async () => {

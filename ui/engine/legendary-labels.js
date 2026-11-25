@@ -154,9 +154,14 @@ export const RELICS = {
   emptySlot: 'An empty relic slot: legendary bosses drop relics, and some bosses guard one of their own',
   teaser: 'No relics yet. The first boss this room beats leaves one; legendary bosses drop more, and a ' +
     'few bosses guard a relic of their own.',
-  hint: 'One relic is active at a time and helps the whole party. Pick one to make it active.',
+  hint: 'At most one relic is active at a time and helps the whole party. Pick one to make it active, ' +
+    'or "No active relic" for none.',
   slotLabel: (name, text, isActive) => `${name}: ${text}${isActive ? '. Active' : '. Make it active'}`,
   nowActive: (name) => `${name} is now the active relic.`,
+  /** The control that leaves the room with no active relic. */
+  deactivate: 'No active relic',
+  deactivateLabel: (name) => `Put ${name} away: no relic is active`,
+  noneNow: 'No relic is active now.',
   pictureAlt: (name) => name
 }
 

@@ -20,7 +20,7 @@ import { settlementIndexOf } from './settlement-content.mjs'
 import { groupEffect, settlementView } from './settlement-view.mjs'
 import { GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
 import { GROUP_UPGRADE_IDS, groupLevel, groupUpgradeCost, isUpgradeOpen } from './spending.mjs'
-import { effectiveTrade, tradeChoiceOf } from './trades.mjs'
+import { effectiveTrade, tradeChoiceOf, tradeReason } from './trades.mjs'
 import { withTraitsView } from './trait-view.mjs'
 import { weeklyView } from './weekly-view.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
@@ -76,6 +76,8 @@ function characterView(character, project, names, prices) {
     },
     trade: effectiveTrade(character, project),
     tradeChoice: tradeChoiceOf(character.tradeChoice),
+    // Why it gathers that: its own choice, its room's, the room's pick of what is scarcest, or Auto.
+    tradeReason: tradeReason(character, project),
     autoTrade: character.trade ?? null,
     state: character.state ?? 'idle',
     tokens: character.tokens

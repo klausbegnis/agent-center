@@ -112,6 +112,12 @@ export const INSTANCES = {
   tier: 'Tier',
   tierOption: (tier, modifier) => (modifier ? `Tier ${tier}: ${modifier}` : `Tier ${tier}`),
   why: (reason) => `Cannot enter: ${reason}.`,
+  /** Said under Enter while the worker is asked, and where it was clicked when it refuses. */
+  entering: 'Entering…',
+  refused: (message) => message,
+  /** A run whose party has not worked inside yet, and why it has not set off. */
+  setsOff: 'Entered: the party sets off when an agent of this room works.',
+  waitsForYou: 'Entered: the party sets off once no agent of this room waits for you.',
   noRooms: 'No room of this world can enter now.',
   marker: (name, stateText) => `${name}: ${stateText}`,
   partyMarker: (roomName) => `${roomName}'s party`,

@@ -11,6 +11,10 @@ export const GATHERING_SKILLS = Object.freeze([
   'hunting',
   'runecraft'
 ])
+/** The trade choice that follows the world's scarcest materials instead of one trade (scarcest.mjs). */
+export const SCARCEST = 'scarcest'
+/** Every trade a person can choose besides none: a gathering skill, or "what is scarcest". */
+export const TRADE_CHOICES = Object.freeze([...GATHERING_SKILLS, SCARCEST])
 export const CLASSES = Object.freeze(['physical', 'magical', 'defense', 'support'])
 export const ATTRIBUTES = Object.freeze([
   'strength',

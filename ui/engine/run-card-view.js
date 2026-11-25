@@ -38,9 +38,13 @@ export function createRunCard({ actions }) {
   const boon = el('p', 'ac-game-card-line ac-run-boon')
   const modifier = el('p', 'ac-game-card-line ac-run-modifier')
   const worked = el('p', 'ac-game-card-line ac-muted ac-run-worked')
+  // A run entered while no agent works: says when the party sets off.
+  const start = el('p', 'ac-game-card-line ac-run-start')
+  start.setAttribute('role', 'status')
   const vault = el('div', 'ac-run-vault')
   const recall = el('div', 'ac-run-recall')
-  element.append(title, roomLine, route, icons, progress.element, time.element, tries, boon, modifier, worked, vault, recall)
+  element.append(title, roomLine, start, route, icons, progress.element, time.element, tries, boon, modifier, worked,
+    vault, recall)
   let iconsDrawn = ''
   let vaultDrawn = ''
   let recallDrawn = ''
@@ -120,6 +124,8 @@ export function createRunCard({ actions }) {
       boon.textContent = model.boonText
       modifier.textContent = model.modifierText
       worked.textContent = `${model.workedText} · ${model.foundText}`
+      start.textContent = model.startText
+      start.hidden = !model.startText
       drawVault(model)
       drawRecall(model)
     }

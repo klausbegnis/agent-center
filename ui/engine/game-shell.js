@@ -179,7 +179,10 @@ export function createGameShell({ root, roomsElement, transport, onTabChange, on
     notice.textContent = message
     noticeUntil = Date.now() + NOTICE_MS
     // The line above the panels may be scrolled away while the settings are read: say it there too.
-    if (action) settings.showMessage(action, message)
+    if (action) {
+      settings.showMessage(action, message)
+      views.showMessage(action, message)
+    }
   }
 
   function setSettingsOpen(isOpen, returnFocus = false) {

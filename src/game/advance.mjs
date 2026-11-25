@@ -18,6 +18,7 @@ import { effectMultiplier, effectiveLevel, emptySkill, grantSkillXp, worldLevel 
 import { retireeBonus } from './retirement.mjs'
 import { inScene, scenesOf } from './scenes.mjs'
 import { materialOfSkill } from './skills.mjs'
+import { withScarcestPicks } from './scarcest.mjs'
 import { effectiveTrade } from './trades.mjs'
 import { withTraitEffects } from './trait-effects.mjs'
 import { worldEffectsOf } from './world-effects.mjs'
@@ -58,9 +59,12 @@ function gatherFor(world, project, character, hours, bonuses) {
   return { world: { ...world, materials, skills }, character: { ...character, gatherCarry: carry }, units }
 }
 
-/** Records each reported session's state and lets the idle ones gather. */
+/**
+ * Records each reported session's state and lets the idle ones gather; the room first brings its
+ * picks of what is scarcest up to date (scarcest.mjs).
+ */
 function settleCharacters(world, projectId, readings, { from, to, content }) {
-  let current = world
+  let current = withProjectIn(world, projectId, withScarcestPicks(world.projects[projectId], world, from))
   const index = legendaryIndexOf(content)
   // The room's relic and its world's bestiary act on gathering alike.
   const relic = [...relicEffects(world.projects[projectId], index), ...worldEffectsOf(world, content)]

@@ -28,7 +28,7 @@ import { RELIC_OFFER_INDEX, buyStallRelic } from './stall-relic.mjs'
 import { setCharacterTrade, setRoomTrade } from './trades.mjs'
 import { traitIndexOf } from './trait-content.mjs'
 import { closeSessionKeepingTraits, moveKeepingTraits, traitActions } from './trait-engine.mjs'
-import { sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
+import { forecastSend, sendItem, sendItemProblem, sendRelic, sendRelicProblem } from './transfer.mjs'
 import { bestGearForRoom, equipItem, equipProblem } from './equip.mjs'
 import { viewOf } from './view.mjs'
 import { advanceWeek } from './weekly.mjs'
@@ -238,6 +238,8 @@ export function createEngine({ content }) {
     // An item a character holds is taken from it, and the slot re-picked under the legendary rules.
     sendItem: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)).save,
     sendItemWithSalvage: (save, sending) => sendItem(save, sending, legendaryIndexOf(content)),
+    // What a sending would salvage at the target, asked before it goes; changes nothing.
+    forecastSend: (save, sending) => forecastSend(save, sending, legendaryIndexOf(content)),
     sendItemProblem,
     sendRelic,
     sendRelicProblem,

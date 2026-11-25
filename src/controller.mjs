@@ -37,10 +37,14 @@ import { traitInputOf } from './game-trait-actions.mjs'
  *   moves a room left behind's chest and retirees into a room on screen
  * @property {(roomId: string, toRoomId: string, itemIds: string[], confirmHeld: boolean) =>
  *   Promise<GameResult & { sent: number, salvaged: number, sentSalvaged: number,
- *   repicks: object[] }>} gameSendItem sends items to another room of the world; one a character
- *   holds only with confirmHeld; says what was salvaged and what each holder took instead
+ *   salvagedItems: object[], repicks: object[] }>} gameSendItem sends items to another room of the
+ *   world; one a character holds only with confirmHeld; says what was salvaged and what each holder
+ *   took instead
+ * @property {(roomId: string, toRoomId: string, itemIds: string[]) => Promise<{ problem: string | null,
+ *   salvaged: object[], materials: number }>} gamePreviewSendItem says what a sending would salvage
+ *   at the target, or why it would be refused, without sending
  * @property {(roomId: string, toRoomId: string, relicId: string) => Promise<GameResult>} gameSendRelic
- *   sends a relic that is not active to another room of the world
+ *   sends a relic to another room of the world, its active one included
  * @property {(input: object) => Promise<GameResult>} gameTraitAction teaches, swaps, buys, sells or
  *   sends a trait scroll, as `input.action` names (game-trait-actions.mjs)
  * @property {(roomId: string, instanceId: string, tier: number, rematch?: number) => Promise<GameResult>} gameEnterInstance
@@ -219,6 +223,12 @@ export function createController({
       itemIds: requireTexts(itemIds, 'item'),
       confirmHeld: requireBoolean(confirmHeld, 'confirmation')
     })),
+    // Asks what a sending would salvage; changes nothing, so no redraw follows.
+    gamePreviewSendItem: async (roomId, toRoomId, itemIds) => game.previewSendItem({
+      roomId: requireText(roomId, 'room'),
+      toRoomId: requireText(toRoomId, 'room'),
+      itemIds: requireTexts(itemIds, 'item')
+    }),
     gameSendRelic: (roomId, toRoomId, relicId) => playAction(() => game.sendRelic({
       roomId: requireText(roomId, 'room'),
       toRoomId: requireText(toRoomId, 'room'),

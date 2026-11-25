@@ -82,7 +82,9 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Idle agents gather.** A character whose agent has finished takes a trade (mining, fishing,
   farming, woodcutting, hunting or runecraft) and brings materials home. The game picks one for
   each character (Auto); on the Party tab you can set what everyone in a room
-  gathers, or what one character gathers, which wins over the room's choice.
+  gathers, or what one character gathers, which wins over the room's choice. **Auto: what is
+  scarcest** spreads idle characters over the materials the world has least of, against what its
+  buildings cost next, looks again every hour, and says on each character what it gathers now.
 - **Loot, a chest and upgrades.** Monsters drop materials and gear. Each room has a chest;
   a new character takes the best free item of each slot by itself. On the Party tab, click a
   character's slot to choose another item from the chest (or swap with whoever holds it); a
@@ -109,8 +111,8 @@ the game: no clicking is needed, and nothing is lost by ignoring it for a day.
 - **Worlds keep things apart.** Progress belongs to a world, a group of rooms you choose. Put
   work and side projects in different worlds, or leave a room out of the game altogether.
 - **No level cap.** At level 99 a skill can be prestiged for a star and started again, stronger.
-- **Legendary loot.** Bosses leave relics that help a room's whole party (one is active at a
-  time; pick it on the Chest tab), and some named bosses guard a relic or a legendary weapon,
+- **Legendary loot.** Bosses leave relics that help a room's whole party (at most one is active at a
+  time; pick it, or none, on the Chest tab), and some named bosses guard a relic or a legendary weapon,
   outfit or tool of their own, with a buff for the character that holds it. A room's first boss
   always leaves a relic, and a city's stall sells one of its two relics now and then, for coins.
   They are a bonus on top: a full set adds well under a fifth to a party.
@@ -206,7 +208,8 @@ after from anywhere in the game. A long row scrolls sideways, and from eight roo
 list reaches any of them. In the Chest tab, any item can be sent to another room of the same
 world: from its detail (**Send to**), several at once with **Move items**, or by dragging its slot
 onto a room's chip; taking one from a character asks first, and that character picks the next
-best. A relic that is not active can be sent from the Relics card. On the Party tab each character shows its agent's
+best. A sending that the target's copies limit would partly salvage names what and asks first. Any relic can be sent from the Relics card; sending the active one asks first and leaves the
+room with none active. On the Party tab each character shows its agent's
 sprite as its room draws it; a click on it opens the room with that agent selected. In a narrow
 panel the tabs show their icons only, and the open tab its name beside its icon. The cog in the panel's header opens the game's own
 settings: auto-spend (it never spends coins), **New scene after each monster** (off by default; see "The party can

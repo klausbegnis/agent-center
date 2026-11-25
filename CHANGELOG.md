@@ -6,6 +6,48 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+## 0.4.1 - 2026-11-25
+
+### Added
+
+- Game mode: **Auto: what is scarcest**, a gathering choice for a room or a character on the
+  Party tab. Its idle characters gather the materials the world has least of, measured against
+  what its buildings' next levels cost, spread over the three scarcest, and the room looks again
+  once an hour of game time, so the picks do not flap. A character's own trade still wins. Each
+  follower says what it gathers now. Opt-in: saves keep their choices; the room's picks are a new
+  optional save field, `scarcest`. `npm run simulate` shows it narrows the spread between the
+  most and least stocked gathered material without lowering gathering.
+
+### Fixed
+
+- A room's chest showed twelve items counting the ones its characters hold, so a full party left
+  no free item to see or send, and an item sent to such a room seemed to vanish. The chest now
+  shows every item in use and every legendary one, plus the 24 strongest free plain items.
+
+- Game mode: a room's active relic could not be sent, so a room with one relic could never send it,
+  and the Relics card offered no way to have no relic active. The card now has a **No active
+  relic** button, and any relic can be sent: sending the active one asks first and leaves the
+  sending room with none active (another is never picked for it). The receiving room keeps its own
+  active relic, or makes the arrival active when it had no relic.
+- Game mode: a legendary item sent to a room with a dozen stronger plain items did not show in
+  its Chest tab, so it looked lost: the view sends a chest's held items and its 12 strongest free
+  ones, and a legendary piece could be weaker than all of them. Every legendary item is now always
+  shown. The same gap let the send control offer a room that already owned the item.
+- Game mode: a sent item could be salvaged on arrival (the target already kept as many better
+  copies as it holds) with only a line after the fact. The Chest tab now asks the worker first
+  and, when anything would be salvaged, names each item and the materials and asks "Send anyway?";
+  a sending the worker would refuse, such as a legendary item the target owns, is refused where it
+  was sent, with the reason. Afterwards the notice names every item salvaged. New local-only route
+  `/api/game/preview-send-item` (panel request `game.previewSendItem`), which changes nothing.
+- Game mode: entering an instance could look as if nothing happened. A run's party moves only on
+  working ticks and not while an agent waits for you, so a room entered while nobody worked, or
+  while an agent waited, showed no progress: its run card now says why it has not set off. The
+  Roadmap's room picker held on to the first room it showed, so once that room went into another
+  instance the Enter button stayed disabled until the person picked another room; it now falls
+  back to a room that can enter. Enter and Rematch say "Entering…" and show a refusal on the card
+  instead of only in the notice above the tabs, which a long Roadmap scrolls out of view. The
+  panel no longer sends an undefined `rematch` key with a plain entry.
+
 ## 0.4.0 - 2026-11-18
 
 ### Fixed

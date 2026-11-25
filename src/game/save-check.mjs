@@ -23,7 +23,7 @@ import { legendaryIndexOf } from './legendary-effects.mjs'
 import { emptyMarket } from './market.mjs'
 import { AFFIXES } from './monsters.mjs'
 import { isReservedKey, worldLayoutProblem } from './save-layout.mjs'
-import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, WORK_SKILLS } from './skills.mjs'
+import { ATTRIBUTES, CLASSES, GATHERING_SKILLS, MATERIALS, TRADE_CHOICES, WORK_SKILLS } from './skills.mjs'
 import { indexSettlement } from './settlement-content.mjs'
 import { GROUP_UPGRADE_IDS, isUpgradeOpen } from './spending.mjs'
 import { checkCharacterTraits, checkRoomScrolls, checkWorldTraits } from './trait-check.mjs'
@@ -86,6 +86,25 @@ function oneOf(value, choices, path) {
 /** A gathering skill, or null (missing in saves from before it was kept). */
 const tradeOrNull = (value, path) =>
   (value === null || value === undefined ? null : oneOf(value, GATHERING_SKILLS, path))
+
+/** A person's trade choice: a gathering skill, "what is scarcest", or null for none. */
+const choiceOrNull = (value, path) =>
+  (value === null || value === undefined ? null : oneOf(value, TRADE_CHOICES, path))
+
+/**
+ * A room's picks of what is scarcest (scarcest.mjs), when it has them: the time they were made
+ * and a gathering skill by session id. Optional; saves from before it have none.
+ */
+function scarcestPart(value, path) {
+  if (value === undefined) return {}
+  const source = record(value, path)
+  return {
+    scarcest: {
+      at: number(source.at, `${path}.at`, { min: -Infinity }),
+      picks: entries(source.picks, `${path}.picks`, { key: text, entry: (skillId, at) => oneOf(skillId, GATHERING_SKILLS, at) })
+    }
+  }
+}
 
 function boolean(value, path) {
   if (typeof value !== 'boolean') fail(path, 'is not true or false')
@@ -160,7 +179,7 @@ function character(value, path, sessionId, traitIndex = null) {
     equipment: Object.fromEntries(EQUIPMENT_SLOTS.map((slot) =>
       [slot, textOrNull(equipment[slot], `${path}.equipment.${slot}`)])),
     trade: tradeOrNull(source.trade, `${path}.trade`),
-    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
+    tradeChoice: choiceOrNull(source.tradeChoice, `${path}.tradeChoice`),
     tokens: number(source.tokens, `${path}.tokens`),
     bornAt: number(source.bornAt, `${path}.bornAt`, { min: -Infinity }),
     lastSeenAt: number(source.lastSeenAt, `${path}.lastSeenAt`, { min: -Infinity }),
@@ -202,7 +221,7 @@ function retiree(value, path) {
     retiredAt: number(source.retiredAt, `${path}.retiredAt`, { min: -Infinity }),
     title: textOrNull(source.title, `${path}.title`),
     trade: tradeOrNull(source.trade, `${path}.trade`),
-    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
+    tradeChoice: choiceOrNull(source.tradeChoice, `${path}.tradeChoice`),
     bornAt: numberOrNull(source.bornAt, `${path}.bornAt`)
   }
 }
@@ -328,7 +347,8 @@ function project(value, path, legendaryIndex, instanceIndex, traitIndex = null) 
     fightTicks: whole(source.fightTicks ?? 0, `${path}.fightTicks`),
     fightRested: boolean(source.fightRested ?? false, `${path}.fightRested`),
     themeId: textOrNull(source.themeId, `${path}.themeId`),
-    tradeChoice: tradeOrNull(source.tradeChoice, `${path}.tradeChoice`),
+    tradeChoice: choiceOrNull(source.tradeChoice, `${path}.tradeChoice`),
+    ...scarcestPart(source.scarcest, `${path}.scarcest`),
     chest,
     characters,
     retirees: list(source.retirees, `${path}.retirees`).map((entry, index) => retiree(entry, `${path}.retirees.${index}`)),

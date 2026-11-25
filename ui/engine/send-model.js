@@ -23,7 +23,7 @@ export function sendTargets(state, roomId) {
 export const ITEM_DRAG_TYPE = 'application/x-agent-center-items'
 
 /**
- * The relics a room owns that can be sent: every one but the active one, in the order owned.
+ * The relics a room owns that can be sent: every one, the active one included, in the order owned.
  *
  * @param {object} game the view state's `game`
  * @param {string} roomId
@@ -31,8 +31,7 @@ export const ITEM_DRAG_TYPE = 'application/x-agent-center-items'
  */
 export function sendableRelics(game, roomId) {
   const relics = game?.rooms?.[roomId]?.relics
-  if (!relics) return []
-  return relics.owned.filter((id) => id !== relics.active)
+  return relics ? [...relics.owned] : []
 }
 
 /**
@@ -78,24 +77,24 @@ export function itemSending(state, roomId, item, { canSend, words }) {
 }
 
 /**
- * What the Relics card's send row shows: the relics that can go, the rooms, and why it cannot be
- * used when it cannot.
+ * What the Relics card's send row shows: the relics that can go, which of them is active (sending
+ * it leaves the room with none active), the rooms, and why it cannot be used when it cannot.
  *
  * @param {{ rooms: object[], game: object }} state
  * @param {string} roomId
- * @param {{ canSend: boolean, words: { viewOnly: string, noRoom: string, noRelics: string, onlyActive: string } }} options
- * @returns {{ reason: string | null, relicIds: string[], targets: { id: string, name: string }[] }}
+ * @param {{ canSend: boolean, words: { viewOnly: string, noRoom: string, noRelics: string } }} options
+ * @returns {{ reason: string | null, relicIds: string[], activeId: string | null,
+ *   targets: { id: string, name: string }[] }}
  */
 export function relicSending(state, roomId, { canSend, words }) {
-  const owned = state.game?.rooms?.[roomId]?.relics?.owned ?? []
   const relicIds = sendableRelics(state.game, roomId)
+  const activeId = state.game?.rooms?.[roomId]?.relics?.active ?? null
   const targets = sendTargets(state, roomId)
   let reason = null
   if (!canSend) reason = words.viewOnly
-  else if (owned.length === 0) reason = words.noRelics
-  else if (relicIds.length === 0) reason = words.onlyActive
+  else if (relicIds.length === 0) reason = words.noRelics
   else if (targets.length === 0) reason = words.noRoom
-  return { reason, relicIds, targets }
+  return { reason, relicIds, activeId, targets }
 }
 
 /**
