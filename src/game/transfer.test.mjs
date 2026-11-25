@@ -149,14 +149,31 @@ test('a relic sent to a room with none becomes its active one', () => {
   assert.equal(relicsOf(next, TO).active, 'tidecall-conch')
 })
 
-test('the active relic, one not owned, or one the target owns is refused', () => {
+test('a relic not owned or one the target owns is refused', () => {
   const save = saveWith(withRelics(['rimeheart', 'tidecall-conch'], 'rimeheart'), withRelics(['tidecall-conch'], 'tidecall-conch'))
   const problem = (relicId, toProjectId = TO) => sendRelicProblem(save, { fromProjectId: FROM, toProjectId, relicId })
-  assert.equal(problem('rimeheart'), TRANSFER_REFUSALS.activeRelic)
   assert.equal(problem('everwarm-anvil'), TRANSFER_REFUSALS.noRelic)
   assert.equal(problem('tidecall-conch'), TRANSFER_REFUSALS.relicOwned)
   assert.equal(problem('tidecall-conch', ELSEWHERE), TRANSFER_REFUSALS.otherWorld)
-  assert.equal(sendRelic(save, { fromProjectId: FROM, toProjectId: TO, relicId: 'rimeheart' }), save)
+  assert.equal(sendRelic(save, { fromProjectId: FROM, toProjectId: TO, relicId: 'tidecall-conch' }), save)
+})
+
+test('the active relic can be sent: the sending room is left with no active relic', () => {
+  const save = saveWith(withRelics(['rimeheart', 'tidecall-conch'], 'rimeheart'), withRelics(['everwarm-anvil'], 'everwarm-anvil'))
+  assert.equal(sendRelicProblem(save, { fromProjectId: FROM, toProjectId: TO, relicId: 'rimeheart' }), null)
+  const next = sendRelic(save, { fromProjectId: FROM, toProjectId: TO, relicId: 'rimeheart' })
+  assert.deepEqual(relicsOf(next, FROM), { relics: ['tidecall-conch'], active: null, relicPity: 0, bossPity: 0 })
+  assert.deepEqual(relicsOf(next, TO).relics, ['everwarm-anvil', 'rimeheart'])
+  assert.equal(relicsOf(next, TO).active, 'everwarm-anvil')
+})
+
+test('a room whose only relic was active and sent keeps none, and a target with none makes it active', () => {
+  const save = saveWith(withRelics(['rimeheart'], 'rimeheart'), {})
+  const next = sendRelic(save, { fromProjectId: FROM, toProjectId: TO, relicId: 'rimeheart' })
+  // A room with nothing legendary left keeps no record of it at all.
+  assert.equal(relicsOf(next, FROM), null)
+  assert.equal(relicsOf(next, TO).active, 'rimeheart')
+  assert.equal(cleanSave(next, { cityIds: [], legendary }).ok, true)
 })
 
 test('pity counters stay with their room', () => {

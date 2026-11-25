@@ -49,9 +49,15 @@ test('a room alone in its world, or out of the game, has nowhere to send', () =>
 })
 
 
-test('every relic but the active one can be sent', () => {
-  assert.deepEqual(sendableRelics(state.game, STOREFRONT), ['tidecall-conch'])
+test('every relic the room owns can be sent, the active one included', () => {
+  assert.deepEqual(sendableRelics(state.game, STOREFRONT), ['rimeheart', 'tidecall-conch'])
   assert.deepEqual(sendableRelics(state.game, LEDGER), [])
+})
+
+test('the message after sending the active relic says the room has none active now', () => {
+  assert.equal(SEND.relicSent('Rimeheart', 'search'), 'Rimeheart went to search.')
+  assert.match(SEND.relicSent('Rimeheart', 'search', true), /^Rimeheart went to search\. It was the active relic here/)
+  assert.match(SEND.activeRelicQuestion('Rimeheart', 'search'), /active relic: the room will have no active relic/)
 })
 
 test('the message says where the item went and when a copy was salvaged, the sent one included', () => {
@@ -108,15 +114,21 @@ test('when every other room owns the legendary item, the control says so', () =>
   assert.equal(itemSending(only, STOREFRONT, cleaver, { canSend: true, words: SEND }).reason, SEND.legendaryEverywhere)
 })
 
-test('the relic row says why it cannot be used: no relic, only the active one, no other room', () => {
+test('the relic row says why it cannot be used: no relic, no other room', () => {
   const words = SEND
   assert.equal(relicSending(withPeople(), STOREFRONT, { canSend: true, words }).reason, null)
   assert.equal(relicSending(withPeople(), LEDGER, { canSend: true, words }).reason, SEND.noRelics)
-  const onlyActive = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [STOREFRONT]: { ...state.game.rooms[STOREFRONT], relics: { owned: ['rimeheart'], active: 'rimeheart' } } } } }
-  assert.equal(relicSending(onlyActive, STOREFRONT, { canSend: true, words }).reason, SEND.onlyActive)
   const alone = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [OTHER_WORLD]: { joined: true, worldId: 'side', relics: { owned: ['a', 'b'], active: 'a' } } } } }
   assert.equal(relicSending(alone, OTHER_WORLD, { canSend: true, words }).reason, SEND.noRoom)
   assert.equal(relicSending(withPeople(), STOREFRONT, { canSend: false, words }).reason, SEND.viewOnly)
+})
+
+test('a room whose only relic is active can send it, and the row says which one is active', () => {
+  const onlyActive = { ...state, game: { ...state.game, rooms: { ...state.game.rooms, [STOREFRONT]: { ...state.game.rooms[STOREFRONT], relics: { owned: ['rimeheart'], active: 'rimeheart' } } } } }
+  const sending = relicSending(onlyActive, STOREFRONT, { canSend: true, words: SEND })
+  assert.equal(sending.reason, null)
+  assert.deepEqual(sending.relicIds, ['rimeheart'])
+  assert.equal(sending.activeId, 'rimeheart')
 })
 
 test('the holders of chosen items are named once each, in chest order', () => {

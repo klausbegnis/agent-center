@@ -27,7 +27,11 @@ export const SEND = {
   legendaryEverywhere: 'Every other room of this world already owns this legendary item.',
   ownsIt: (roomName) => `${roomName} (owns it already)`,
   noRelics: 'This room has no relic to send yet.',
-  onlyActive: 'The active relic stays; make another one active first.',
+  /** A relic in the picker that is the room's active one. */
+  activeRelicOption: (name) => `${name} (active)`,
+  /** Asked once before the active relic leaves. */
+  activeRelicQuestion: (name, roomName) =>
+    `Send ${name} to ${roomName}? It is this room's active relic: the room will have no active relic until you pick one.`,
   /** Asked once before taking an item from a character. */
   heldQuestion: (itemName, roomName, holder, slot) =>
     `Send ${itemName} to ${roomName}? ${holder || 'The character holding it'} will take the next best ${slot}.`,
@@ -45,7 +49,9 @@ export const SEND = {
   },
   /** Said for each character that lost a sent item. */
   repicked: (holder, itemName, slot = 'item') => (itemName ? `${holder} now holds ${itemName}.` : `${holder} now holds no ${slot}.`),
-  relicSent: (name, roomName) => `${name} went to ${roomName}.`,
+  relicSent: (name, roomName, wasActive = false) => (wasActive
+    ? `${name} went to ${roomName}. It was the active relic here, so no relic is active now: pick one above.`
+    : `${name} went to ${roomName}.`),
   hint: 'Gear stays in its room; sending it is free and only moves where the power sits.',
   /** Moving several items at once. */
   move: 'Move items',

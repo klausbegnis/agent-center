@@ -36,6 +36,8 @@
 .ac-legendary-active { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 6px 0 8px; }
 .ac-legendary-active-picture { width: 80px; }
 .ac-legendary-active-words { display: flex; flex-direction: column; min-width: 0; }
+/* Puts the active relic away; sits under its words, never stretched across them. */
+.ac-legendary-deactivate { align-self: flex-start; margin-top: 6px; }
 .ac-legendary-kicker {
   font-size: 10px;
   font-weight: 700;

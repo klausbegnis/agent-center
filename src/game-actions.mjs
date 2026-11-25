@@ -268,18 +268,22 @@ export function createGameActions(dependencies) {
     },
 
     /**
-     * Sends a relic a room owns, not its active one, to another room on screen of the same world.
+     * Sends a relic a room owns to another room on screen of the same world. Answers whether it
+     * was the room's active one, which leaves the room with none active.
      *
      * @param {{ roomId: string, toRoomId: string, relicId: string }} input
      */
     async sendRelic({ roomId, toRoomId, relicId }) {
-      return change((save) => {
+      let wasActive = false
+      const answer = change((save) => {
         const sending = requireSending(save, roomId, toRoomId)
         if (typeof relicId !== 'string') throw refuse('unknown relic', relicId)
         const problem = engine.sendRelicProblem(save, { ...sending, relicId })
         if (problem) throw new Error(problem)
+        wasActive = legendaryOf(joinedProject(save, roomId)).active === relicId
         return engine.sendRelic(save, { ...sending, relicId })
       })
+      return { ...answer, wasActive }
     },
 
     /**

@@ -6,6 +6,14 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- Game mode: a room's active relic could not be sent, so a room with one relic could never send it,
+  and the Relics card offered no way to have no relic active. The card now has a **No active
+  relic** button, and any relic can be sent: sending the active one asks first and leaves the
+  sending room with none active (another is never picked for it). The receiving room keeps its own
+  active relic, or makes the arrival active when it had no relic.
+
 ## 0.4.0 - 2026-11-18
 
 ### Fixed

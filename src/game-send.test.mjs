@@ -103,15 +103,19 @@ test('what was sent is saved, and the save still passes the check an imported fi
 
 test('a relic that is not active can be sent, and arrives active in a room that had none', async () => {
   const { game } = await setup()
-  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'rimeheart' }), { changed: true })
+  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'rimeheart' }), { changed: true, wasActive: false })
   const view = game.getView()
   assert.deepEqual(view.rooms[BANANA].relics, { owned: ['tidecall-conch'], active: 'tidecall-conch' })
   assert.deepEqual(view.rooms[PANCAKE].relics, { owned: ['rimeheart'], active: 'rimeheart' })
 })
 
-test('the active relic is refused with its reason', async () => {
+test('the active relic can be sent: the answer says it was active and the room keeps none', async () => {
   const { game } = await setup()
-  await assert.rejects(game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'tidecall-conch' }), /active relic stays/)
+  assert.deepEqual(await game.sendRelic({ roomId: BANANA, toRoomId: PANCAKE, relicId: 'tidecall-conch' }),
+    { changed: true, wasActive: true })
+  const view = game.getView()
+  assert.deepEqual(view.rooms[BANANA].relics, { owned: ['rimeheart'], active: null })
+  assert.deepEqual(view.rooms[PANCAKE].relics, { owned: ['tidecall-conch'], active: 'tidecall-conch' })
 })
 
 test('a legendary item the target owns already is refused with its reason', async () => {
