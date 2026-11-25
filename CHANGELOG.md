@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## Unreleased
 
+## 0.4.1 - 2026-11-25
+
 ### Added
 
 - Game mode: **Auto: what is scarcest**, a gathering choice for a room or a character on the
