@@ -10,6 +10,9 @@ import { SEND } from './send-labels.js'
 import { holdersOf, itemSending, repickedNames, sendTargets } from './send-model.js'
 import { sendControl } from './send-view.js'
 
+/** The id of the ask box's question, which its focused button is described by; one chest per page. */
+const ASK_WORDS_ID = 'ac-send-ask-words'
+
 /**
  * @param {{
  *   actions: Record<string, (...args: unknown[]) => Promise<unknown>>,
@@ -59,7 +62,9 @@ export function createChestSender({ actions, status, ask }) {
 
   /** A question with a primary answer and Cancel, in the ask box, with the focus on Cancel. */
   function showAsk(question, yesLabel, onYes) {
-    const nodes = [el('p', 'ac-game-card-line', question)]
+    const words = el('p', 'ac-game-card-line', question)
+    words.id = ASK_WORDS_ID
+    const nodes = [words]
     const row = el('div', 'ac-game-row')
     if (onYes) {
       const yes = button(yesLabel, 'ac-button ac-primary', {
@@ -73,6 +78,8 @@ export function createChestSender({ actions, status, ask }) {
     }
     const no = button(onYes ? 'Cancel' : 'OK', 'ac-button', { onClick: () => clearAsk() })
     no.dataset.key = 'send:ask:no'
+    // The focus lands here: a screen reader reads the question with it.
+    no.setAttribute('aria-describedby', ASK_WORDS_ID)
     row.append(no)
     ask.replaceChildren(...nodes, row)
     ask.hidden = false
@@ -88,8 +95,9 @@ export function createChestSender({ actions, status, ask }) {
   async function sendChecked(state, roomId, items, toRoomId, { confirmHeld, heldQuestion = '', after = () => {} }) {
     const outlook = await forecast(roomId, items, toRoomId)
     if (outlook?.problem) {
+      // Said once, in the ask box where the person sent it from.
       showAsk(SEND.refused(outlook.problem), '', null)
-      status.textContent = SEND.refused(outlook.problem)
+      status.textContent = ''
       return false
     }
     const salvaged = outlook?.salvaged ?? []
