@@ -112,6 +112,14 @@ test('a room shows the items in use first, then the strongest, up to a limit', (
   assert.equal(room.chestSize, CHEST_ITEMS_SHOWN + 2)
 })
 
+test('a legendary item is always shown, however many stronger plain items the chest holds', () => {
+  const stronger = Array.from({ length: CHEST_ITEMS_SHOWN }, (_, index) => item(`spare-${index}`, 20 + index))
+  const axe = { ...item('gravewarden-axe', 3), legendary: true, entryId: 'gravewarden-axe' }
+  const room = buildGameView(input(engineView({ chest: [...stronger, axe] }))).rooms[BANANA]
+  assert.ok(room.chest.some((shown) => shown.id === 'gravewarden-axe' && shown.legendary))
+  assert.equal(room.chest.length, CHEST_ITEMS_SHOWN)
+})
+
 test('retirees are shown newest first, without titles unless they are kept', () => {
   const retirees = Array.from({ length: RETIREES_SHOWN + 2 }, (_, index) =>
     ({ nameId: index, class: 'support', level: 3, retiredAt: index, title: 'Release notes' }))

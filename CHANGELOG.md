@@ -13,6 +13,10 @@ All notable changes to this project are recorded here. The format follows
   relic** button, and any relic can be sent: sending the active one asks first and leaves the
   sending room with none active (another is never picked for it). The receiving room keeps its own
   active relic, or makes the arrival active when it had no relic.
+- Game mode: a legendary item sent to a room with a dozen stronger plain items did not show in
+  its Chest tab, so it looked lost: the view sends a chest's held items and its 12 strongest free
+  ones, and a legendary piece could be weaker than all of them. Every legendary item is now always
+  shown. The same gap let the send control offer a room that already owned the item.
 
 ## 0.4.0 - 2026-11-18
 

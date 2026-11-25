@@ -2370,8 +2370,10 @@ by the usual closing rules.
   state, so no honest hourly figure exists. A UI sees a new character in `characters`, with the
   items it holds.
 - Lists are capped so the state stays far below the 256 KiB a panel post may carry: a room's
-  chest shows the items in use and the strongest free ones, 12 at most (`chestSize` is the
-  whole count); retirees show the newest 8 (`retiredCount` counts all).
+  chest shows the items in use and every legendary item, then the strongest free ones up to 12
+  in all (`chestSize` is the whole count). A legendary item is never left out, however weak: one
+  sent to a room must show there at once, and the send control must see that the room owns it;
+  retirees show the newest 8 (`retiredCount` counts all).
 - A character's `state` and its room's `party` and `pausedBy` come from the store's agents at
   the moment the view is built, not from the last round, so they always match the room drawn
   next to them: `working`, `waiting` and `blocked` as the agent is, `idle` for one that is done.

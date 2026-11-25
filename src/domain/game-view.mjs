@@ -4,7 +4,10 @@ import { describeBestiaryEvent } from './game-bestiary-view.mjs'
 import { describeLegendaryDrop, legendaryMarks, legendaryShown } from './game-legendary-view.mjs'
 import { gameStateOf } from './game-sessions.mjs'
 
-/** Items of a room's chest sent to the UI: the ones in use, then the strongest free ones. */
+/**
+ * Items of a room's chest sent to the UI: the ones in use and every legendary one, then the
+ * strongest free ones up to this many.
+ */
 export const CHEST_ITEMS_SHOWN = 12
 /** Retirees of a room sent to the UI, newest first; the rest are only counted. */
 export const RETIREES_SHOWN = 8
@@ -95,11 +98,19 @@ const compactItem = (item) => item && {
   ...legendaryMarks(item)
 }
 
-/** The items in use, then the strongest free ones, up to CHEST_ITEMS_SHOWN. */
+/**
+ * The items in use, then every free legendary item, then the strongest free ones, up to
+ * CHEST_ITEMS_SHOWN. A legendary item is one of a kind and may be weaker than many plain copies,
+ * so the cap never hides it: one sent here must show at once, and the send control must see that
+ * the room owns it.
+ */
 function shownChest(chest) {
   const held = chest.filter((item) => item.heldBy)
-  const free = chest.filter((item) => !item.heldBy).sort((a, b) => b.power - a.power || a.id.localeCompare(b.id))
-  return [...held, ...free].slice(0, CHEST_ITEMS_SHOWN).map(compactItem)
+  const legendary = chest.filter((item) => !item.heldBy && item.legendary)
+  const free = chest.filter((item) => !item.heldBy && !item.legendary)
+    .sort((a, b) => b.power - a.power || a.id.localeCompare(b.id))
+  const always = [...held, ...legendary]
+  return [...always, ...free.slice(0, Math.max(0, CHEST_ITEMS_SHOWN - always.length))].map(compactItem)
 }
 
 function shownRetirees(retirees, keepTitles) {
